@@ -2,8 +2,8 @@
 
 | 材料 | 内容 |
 |---|---|
-| [PICSimLab 对比与消融](picsimlab_comparison_20261108/FINAL_RESULTS.md) | 冻结自动生成组及消融。含编译、逐题功能判定、源码和仿真检查 |
-| [296 题交付快照](picsimlab_verification_20261107/PICSIMLAB_COMPLETE_RESULTS_296_AFTER_REVIEW.md) | 含历史人工修复和存档补齐。目标板编译通过 296/296，核心功能通过 283/296 |
+| [完整工作流（最终交付版）](picsimlab_verification_20261107/PICSIMLAB_COMPLETE_RESULTS_296_AFTER_REVIEW.md) | 含历史人工修复和存档补齐。目标板编译通过 296/296，核心功能通过 283/296 |
+| [早期 PICSimLab 对比与消融](picsimlab_comparison_20261108/FINAL_RESULTS.md) | 2026-10-17 冻结批次的生成结果。含编译、逐题功能判定、源码和仿真检查 |
 | [补充指标](additional_metrics_20261109/FINAL_RESULTS.md) | 指标定义、逐题结果、资源统计和需求覆盖率审查材料 |
 | [周期蜂鸣器修复案例](case_studies/medium_029/) | 同轮直接生成与工作流固件、契约、SysML 诊断和修复记录、主机测试 |
 | [历史实验与复现](../README.md) | 三个数据集的输入、原有实验汇总、去重源码、执行轨迹与复测命令 |
