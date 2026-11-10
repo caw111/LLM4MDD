@@ -1,6 +1,8 @@
-# 实验结果总表
+# 历史实验与主机复测
 
-全量任务共 296 题，含本地数据集 120 题、PCEval 50 题和 EmbedBench 126 题。以下数据来自已保存的实验记录。
+本页保存早期对比、固定 16 题主机测试、人工修复及定向补齐记录。284/296 和 289/296 分别对应两个历史开发阶段的累计核心确认。
+
+[PICSimLab 对比与消融](evidence/picsimlab_comparison_20261108/FINAL_RESULTS.md) 和 [296 题交付快照](evidence/picsimlab_verification_20261107/PICSIMLAB_COMPLETE_RESULTS_296_AFTER_REVIEW.md) 各有独立报告。全量任务共 296 题，含本地数据集 120 题、PCEval 50 题和 EmbedBench 126 题。
 
 ## 2026-11-07 定向补齐后的累计结果
 
