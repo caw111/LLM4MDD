@@ -1,0 +1,382 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is forced to arduino:avr:uno and all provided/explicitly wired endpoints are preserved: A1(LM35), A0(MQ-2), D2(flame input), D6(buzzer), D13(red LED), D12(green LED), D4/D5(TM1637).",
+    "Pin D2 is treated as a digital_input because it is the dedicated flame sensor terminal and the requirement describes it as triggering the alarm level; electrical polarity/active level is not specified, so the model must align to actual wiring without additional inversion at the request level.",
+    "LM35 and MQ-2 are both configured as analog_input; no explicit scale/offset calibration is provided, so calibration conversion to °C/smoke units must be done in SysML using the raw adc_count values.",
+    "TM1637 is configured as tm1637_number (single numeric selection) using clk=D4 and dio=D5; the model decides what number (alert level ID and key value) to show, including valid range handling and any overwrite sequencing.",
+    "Buzzer is configured as tone_output with initial 0; the SysML model must implement intermittent on/off behavior for the fire alert using elapsed_ms (device request provides only the tone channel).",
+    "Serial output is configured only for the fire alert trigger (alarm level). The application must format exactly the chosen typed values per SysML; no fixed text lines were specified in the requirements.",
+    "Control period is set to 10 ms as a scheduling granularity. Any report cadence or buzzer intermittent pattern must be implemented in SysML using elapsed_ms."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "LM35 temperature (°C) input for fire prewarning",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "MQ-2 smoke (analog) input for fire prewarning",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Flame sensor trigger (fire/flame detected) input",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer output for intermittent fire alert",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Red LED indicator for current alert level",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Green LED indicator for current alert level",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D12"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637 display number: alert level ID and key value",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "fire alert condition gate (alarm级下触发并持续间歇报警时的串口输出条件)",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "Current temperature key value reported during fire alert",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"temp\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "temp"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Current smoke key value reported during fire alert",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"smoke\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "smoke"
+      }
+    },
+    {
+      "name": "serial_0_value_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Flame sensor detected status reported during fire alert",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"flame\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "flame"
+      }
+    },
+    {
+      "name": "serial_0_value_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "level_id",
+      "initial": 0,
+      "meaning": "Alert level ID (e.g., alarm level identifier) reported during fire alert",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"level\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "level"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D12"
+        },
+        "resolved": {
+          "pin": "D12"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个多传感器火灾预警系统，使用温度传感器 LM35（A1）、烟雾传感器 MQ-2（A0）、火焰传感器 D2、蜂鸣器 D6、红色 LED D13、绿色 LED D12、TM1637（CLK=D4，DIO=D5）和串口。系统将预警分为正常、关注、警报三级：任一指标轻微超限进入关注，多个指标超限或火焰传感器触发进入警报。数码管显示当前等级编号和关键值；警报级下蜂鸣器持续间歇报警并串口输出 fire alert。",
+    "effective_requirement": "实现一个多传感器火灾预警系统，使用温度传感器 LM35（A1）、烟雾传感器 MQ-2（A0）、火焰传感器 D2、蜂鸣器 D6、红色 LED D13、绿色 LED D12、TM1637（CLK=D4，DIO=D5）和串口。系统将预警分为正常、关注、警报三级：任一指标轻微超限进入关注，多个指标超限或火焰传感器触发进入警报。数码管显示当前等级编号和关键值；警报级下蜂鸣器持续间歇报警并串口输出 fire alert。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D12\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "实现一个多传感器火灾预警系统，使用温度传感器 LM35（A1）、烟雾传感器 MQ-2（A0）、火焰传感器 D2、蜂鸣器 D6、红色 LED D13、绿色 LED D12、TM1637（CLK=D4，DIO=D5）和串口。系统将预警分为正常、关注、警报三级：任一指标轻微超限进入关注，多个指标超限或火焰传感器触发进入警报。数码管显示当前等级编号和关键值；警报级下蜂鸣器持续间歇报警并串口输出 fire alert。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_3": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2",
+          "serial_0_value_3"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1435 @@
+{
+  "status": "passed",
+  "contract_revisions": 0,
+  "rounds": [
+    {
+      "revision": 0,
+      "contract": {
+        "version": 1,
+        "board": "arduino:avr:uno",
+        "control_period_ms": 5,
+        "planning_notes": [
+          "Preserve the external 10 kΩ pull-down on D2; the button connects D2 to 5V when pressed. Internal pull-up is disabled.",
+          "The model selects display code 1 while the button is pressed and code 0 while released, including a button held during startup. Initial code 0 represents the released state before the first input sample.",
+          "Retain the correct visible text between state changes; newly pressed does not mean a one-step Pressed! indication. Changed text must clear the previous field against the black background.",
+          "Initialize the ILI9341 using SPI, Adafruit_GFX and Adafruit_ILI9341, with landscape rotation 1. Setup must return within 500 ms, and subsequent button changes must appear within 250 ms.",
+          "No serial reporting or model business-time input is required for this direct button-to-display behavior."
+        ],
+        "interfaces": [
+          {
+            "name": "io_0",
+            "direction": "input",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Current button state: true while pressed, false while released",
+            "sample_period_ms": 5,
+            "device": "push button1",
+            "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+            "binding": {
+              "kind": "digital_input",
+              "active_high": true,
+              "pullup": false,
+              "pin": "D2"
+            },
+            "model_semantics": {
+              "kind": "digital_boolean",
+              "true_level": "HIGH",
+              "false_level": "LOW"
+            }
+          },
+          {
+            "name": "io_1",
+            "direction": "output",
+            "type": "i32",
+            "unit": "1",
+            "initial": 0,
+            "meaning": "Display the current button state in white on black at position (0, 0)",
+            "sample_period_ms": 5,
+            "device": "ili9341 lcd display1",
+            "hardware": "{\"background\": 0, \"color\": 65535, \"cs_pin\": \"D10\", \"dc_pin\": \"D9\", \"kind\": \"lcd_text\", \"messages\": {\"0\": \"Not pressed!\", \"1\": \"Pressed!\"}, \"miso_pin\": \"D12\", \"mosi_pin\": \"D11\", \"rotation\": 1, \"rst_pin\": \"D8\", \"sck_pin\": \"D13\", \"text_size\": 2, \"x\": 0, \"y\": 0}",
+            "binding": {
+              "kind": "lcd_text",
+              "rotation": 1,
+              "color": 65535,
+              "background": 0,
+              "text_size": 2,
+              "x": 0,
+              "y": 0,
+              "rst_pin": "D8",
+              "miso_pin": "D12",
+              "cs_pin": "D10",
+              "messages": {
+                "0": "Not pressed!",
+                "1": "Pressed!"
+              },
+              "mosi_pin": "D11",
+              "dc_pin": "D9",
+              "sck_pin": "D13"
+            }
+          }
+        ],
+        "required_dependencies": {},
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# LCD Display with Button\n\n## Project Description\nThis is an Arduino project that shows button state to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- Push Button\n- 10kΩ resistor\n\n## Circuit Description\nIli9341 LCD Display and push button are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v. The push button input is connected to pin 2. It is configured in a cathode-style circuit so that the input reads HIGH when pressed and LOW when released.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode, and set the text color to white, and size to 2\n3. Set button pin as INPUT, and countinuosly read the button state\n4. If the button is newly pressed, clear the display with a black background and print the test \"Pressed! at position (0, 0)\n5. ELse, clear the display with a black background and print the test \"Not pressed! at position (0, 0)\n\n## Success Criteria\nThe test is successful when:\n1. Button state is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show button state with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 198.2,\n            \"left\": 316.8,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 224.75,\n            \"left\": 403.2,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v0\",\n                \"h27.6\",\n                \"v96\",\n                \"h-374.4\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v336\",\n                \"h-220.6\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed core acceptance clarification for the source wording conflict: the stated project goal and success criterion are to display the current button state. Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released. The phrase newly pressed describes when to redraw, rather than limiting visibility to one controller tick. Retained correct LCD text is valid; repeated identical print calls are not required. This interpretation is the existing frozen core test criterion; original source text is preserved.",
+          "effective_requirement": "# LCD Display with Button\n\n## Project Description\nThis is an Arduino project that shows button state to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- Push Button\n- 10kΩ resistor\n\n## Circuit Description\nIli9341 LCD Display and push button are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v. The push button input is connected to pin 2. It is configured in a cathode-style circuit so that the input reads HIGH when pressed and LOW when released.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode, and set the text color to white, and size to 2\n3. Set button pin as INPUT, and countinuosly read the button state\n4. If the button is newly pressed, clear the display with a black background and print the test \"Pressed! at position (0, 0)\n5. ELse, clear the display with a black background and print the test \"Not pressed! at position (0, 0)\n\n## Success Criteria\nThe test is successful when:\n1. Button state is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\"version\": 1.0, \"author\": \"Blind Author\", \"description\": \"Show button state with lcd display\", \"parts\": [{\"type\": \"wokwi-arduino-uno\", \"id\": \"arduino uno1\", \"top\": 331.89, \"left\": 1.49, \"attrs\": {}}, {\"type\": \"wokwi-ili9341\", \"id\": \"ili9341 lcd display1\", \"top\": 5.51, \"left\": 40.77, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"push button1\", \"top\": 198.2, \"left\": 316.8, \"attrs\": {\"color\": \"green\", \"xray\": \"1\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor1\", \"top\": 224.75, \"left\": 403.2, \"attrs\": {\"value\": \"10000 ohm\"}}], \"connections\": [[\"ili9341 lcd display1:GND\", \"arduino uno1:GND.1\", \"black\", [\"v22\", \"h-46\"]], [\"ili9341 lcd display1:SCK\", \"arduino uno1:13\", \"green\", [\"v16\", \"h-75\"]], [\"ili9341 lcd display1:MISO\", \"arduino uno1:12\", \"limegreen\", [\"v20\", \"h-78\"]], [\"ili9341 lcd display1:MOSI\", \"arduino uno1:11\", \"green\", [\"v24\", \"h-75\"]], [\"ili9341 lcd display1:RST\", \"arduino uno1:8\", \"green\", [\"v33.69\", \"h54.93\"]], [\"ili9341 lcd display1:CS\", \"arduino uno1:10\", \"orange\", [\"v32\", \"h-64\"]], [\"ili9341 lcd display1:D/C\", \"arduino uno1:9\", \"purple\", [\"v36\", \"h-84\"]], [\"ili9341 lcd display1:VCC\", \"arduino uno1:5V\", \"red\", [\"v24.09\", \"h-98.67\", \"v230.4\", \"h172.8\"]], [\"push button1:2.r\", \"resistor1:1\", \"green\", [\"h0\"]], [\"resistor1:2\", \"arduino uno1:GND.1\", \"black\", [\"v0\", \"h27.6\", \"v96\", \"h-374.4\"]], [\"push button1:2.l\", \"arduino uno1:2\", \"green\", [\"h0\"]], [\"push button1:1.r\", \"arduino uno1:5V\", \"red\", [\"v336\", \"h-220.6\"]]], \"dependencies\": {}}\nDisclosed core acceptance clarification for the source wording conflict: the stated project goal and success criterion are to display the current button state. Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released. The phrase newly pressed describes when to redraw, rather than limiting visibility to one controller tick. Retained correct LCD text is valid; repeated identical print calls are not required. This interpretation is the existing frozen core test criterion; original source text is preserved.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [
+            {
+              "device": "resistor1",
+              "terminal": "value",
+              "original": "10000",
+              "resolved": "10000 ohm",
+              "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+            }
+          ],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Show button state with lcd display",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 331.89,
+                  "left": 1.49,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ili9341",
+                  "id": "ili9341 lcd display1",
+                  "top": 5.51,
+                  "left": 40.77,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-pushbutton",
+                  "id": "push button1",
+                  "top": 198.2,
+                  "left": 316.8,
+                  "attrs": {
+                    "color": "green",
+                    "xray": "1"
+                  }
+                },
+                {
+                  "type": "wokwi-resistor",
+                  "id": "resistor1",
+                  "top": 224.75,
+                  "left": 403.2,
+                  "attrs": {
+                    "value": "10000 ohm"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "ili9341 lcd display1:GND",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v22",
+                    "h-46"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:SCK",
+                  "arduino uno1:13",
+                  "green",
+                  [
+                    "v16",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MISO",
+                  "arduino uno1:12",
+                  "limegreen",
+                  [
+                    "v20",
+                    "h-78"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MOSI",
+                  "arduino uno1:11",
+                  "green",
+                  [
+                    "v24",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:RST",
+                  "arduino uno1:8",
+                  "green",
+                  [
+                    "v33.69",
+                    "h54.93"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:CS",
+                  "arduino uno1:10",
+                  "orange",
+                  [
+                    "v32",
+                    "h-64"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:D/C",
+                  "arduino uno1:9",
+                  "purple",
+                  [
+                    "v36",
+                    "h-84"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:VCC",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v24.09",
+                    "h-98.67",
+                    "v230.4",
+                    "h172.8"
+                  ]
+                ],
+                [
+                  "push button1:2.r",
+                  "resistor1:1",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "resistor1:2",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v0",
+                    "h27.6",
+                    "v96",
+                    "h-374.4"
+                  ]
+                ],
+                [
+                  "push button1:2.l",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "push button1:1.r",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v336",
+                    "h-220.6"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": false
+        },
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "# LCD Display with Button\n\n## Project Description\nThis is an Arduino project that shows button state to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- Push Button\n- 10kΩ resistor\n\n## Circuit Description\nIli9341 LCD Display and push button are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v. The push button input is connected to pin 2. It is configured in a cathode-style circuit so that the input reads HIGH when pressed and LOW when released.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode, and set the text color to white, and size to 2\n3. Set button pin as INPUT, and countinuosly read the button state\n4. If the button is newly pressed, clear the display with a black background and print the test \"Pressed! at position (0, 0)\n5. ELse, clear the display with a black background and print the test \"Not pressed! at position (0, 0)\n\n## Success Criteria\nThe test is successful when:\n1. Button state is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show button state with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 198.2,\n            \"left\": 316.8,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 224.75,\n            \"left\": 403.2,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v0\",\n                \"h27.6\",\n                \"v96\",\n                \"h-374.4\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v336\",\n                \"h-220.6\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed core acceptance clarification for the source wording conflict: the stated project goal and success criterion are to display the current button state. Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released. The phrase newly pressed describes when to redraw, rather than limiting visibility to one controller tick. Retained correct LCD text is valid; repeated identical print calls are not required. This interpretation is the existing frozen core test criterion; original source text is preserved.",
+            "assertion_ids": [
+              "source_requirement_R1"
+            ]
+          }
+        ],
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_1": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": []
+        }
+      },
+      "planning": {
+        "contract_sha256": "6c1d0003116cef580e1904019e149c3648ad6b9f8fadc828ee515192a9d371a4",
+        "provenance": "program_assembled",
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_1": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": []
+        },
+        "registered_relationships": "verified",
+        "functional_status": "unverified",
+        "attempts": [
+          {
+            "ok": true,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"device\": \"push button1\",\n      \"pin\": \"D2\",\n      \"active_high\": true,\n      \"pullup\": false,\n      \"initial\": false,\n      \"meaning\": \"Current button state: true while pressed, false while released\"\n    },\n    {\n      \"kind\": \"lcd_text\",\n      \"device\": \"ili9341 lcd display1\",\n      \"cs_pin\": \"D10\",\n      \"dc_pin\": \"D9\",\n      \"rst_pin\": \"D8\",\n      \"mosi_pin\": \"D11\",\n      \"miso_pin\": \"D12\",\n      \"sck_pin\": \"D13\",\n      \"rotation\": 1,\n      \"color\": 65535,\n      \"background\": 0,\n      \"text_size\": 2,\n      \"x\": 0,\n      \"y\": 0,\n      \"messages\": {\n        \"0\": \"Not pressed!\",\n        \"1\": \"Pressed!\"\n      },\n      \"initial\": 0,\n      \"meaning\": \"Display the current button state in white on black at position (0, 0)\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Preserve the external 10 kΩ pull-down on D2; the button connects D2 to 5V when pressed. Internal pull-up is disabled.\",\n    \"The model selects display code 1 while the button is pressed and code 0 while released, including a button held during startup. Initial code 0 represents the released state before the first input sample.\",\n    \"Retain the correct visible text between state changes; newly pressed does not mean a one-step Pressed! indication. Changed text must clear the previous field against the black background.\",\n    \"Initialize the ILI9341 using SPI, Adafruit_GFX and Adafruit_ILI9341, with landscape rotation 1. Setup must return within 500 ms, and subsequent button changes must appear within 250 ms.\",\n    \"No serial reporting or model business-time input is required for this direct button-to-display behavior.\"\n  ]\n}",
+            "construction": [
+              "catalog_interfaces_and_serial_channels_assembled"
+            ],
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            }
+          }
+        ],
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# LCD Display with Button\n\n## Project Description\nThis is an Arduino project that shows button state to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- Push Button\n- 10kΩ resistor\n\n## Circuit Description\nIli9341 LCD Display and push button are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v. The push button input is connected to pin 2. It is configured in a cathode-style circuit so that the input reads HIGH when pressed and LOW when released.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode, and set the text color to white, and size to 2\n3. Set button pin as INPUT, and countinuosly read the button state\n4. If the button is newly pressed, clear the display with a black background and print the test \"Pressed! at position (0, 0)\n5. ELse, clear the display with a black background and print the test \"Not pressed! at position (0, 0)\n\n## Success Criteria\nThe test is successful when:\n1. Button state is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show button state with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 198.2,\n            \"left\": 316.8,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 224.75,\n            \"left\": 403.2,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v0\",\n                \"h27.6\",\n                \"v96\",\n                \"h-374.4\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v336\",\n                \"h-220.6\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed core acceptance clarification for the source wording conflict: the stated project goal and success criterion are to display the current button state. Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released. The phrase newly pressed describes when to redraw, rather than limiting visibility to one controller tick. Retained correct LCD text is valid; repeated identical print calls are not required. This interpretation is the existing frozen core test criterion; original source text is preserved.",
+          "effective_requirement": "# LCD Display with Button\n\n## Project Description\nThis is an Arduino project that shows button state to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- Push Button\n- 10kΩ resistor\n\n## Circuit Description\nIli9341 LCD Display and push button are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v. The push button input is connected to pin 2. It is configured in a cathode-style circuit so that the input reads HIGH when pressed and LOW when released.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode, and set the text color to white, and size to 2\n3. Set button pin as INPUT, and countinuosly read the button state\n4. If the button is newly pressed, clear the display with a black background and print the test \"Pressed! at position (0, 0)\n5. ELse, clear the display with a black background and print the test \"Not pressed! at position (0, 0)\n\n## Success Criteria\nThe test is successful when:\n1. Button state is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\"version\": 1.0, \"author\": \"Blind Author\", \"description\": \"Show button state with lcd display\", \"parts\": [{\"type\": \"wokwi-arduino-uno\", \"id\": \"arduino uno1\", \"top\": 331.89, \"left\": 1.49, \"attrs\": {}}, {\"type\": \"wokwi-ili9341\", \"id\": \"ili9341 lcd display1\", \"top\": 5.51, \"left\": 40.77, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"push button1\", \"top\": 198.2, \"left\": 316.8, \"attrs\": {\"color\": \"green\", \"xray\": \"1\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor1\", \"top\": 224.75, \"left\": 403.2, \"attrs\": {\"value\": \"10000 ohm\"}}], \"connections\": [[\"ili9341 lcd display1:GND\", \"arduino uno1:GND.1\", \"black\", [\"v22\", \"h-46\"]], [\"ili9341 lcd display1:SCK\", \"arduino uno1:13\", \"green\", [\"v16\", \"h-75\"]], [\"ili9341 lcd display1:MISO\", \"arduino uno1:12\", \"limegreen\", [\"v20\", \"h-78\"]], [\"ili9341 lcd display1:MOSI\", \"arduino uno1:11\", \"green\", [\"v24\", \"h-75\"]], [\"ili9341 lcd display1:RST\", \"arduino uno1:8\", \"green\", [\"v33.69\", \"h54.93\"]], [\"ili9341 lcd display1:CS\", \"arduino uno1:10\", \"orange\", [\"v32\", \"h-64\"]], [\"ili9341 lcd display1:D/C\", \"arduino uno1:9\", \"purple\", [\"v36\", \"h-84\"]], [\"ili9341 lcd display1:VCC\", \"arduino uno1:5V\", \"red\", [\"v24.09\", \"h-98.67\", \"v230.4\", \"h172.8\"]], [\"push button1:2.r\", \"resistor1:1\", \"green\", [\"h0\"]], [\"resistor1:2\", \"arduino uno1:GND.1\", \"black\", [\"v0\", \"h27.6\", \"v96\", \"h-374.4\"]], [\"push button1:2.l\", \"arduino uno1:2\", \"green\", [\"h0\"]], [\"push button1:1.r\", \"arduino uno1:5V\", \"red\", [\"v336\", \"h-220.6\"]]], \"dependencies\": {}}\nDisclosed core acceptance clarification for the source wording conflict: the stated project goal and success criterion are to display the current button state. Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released. The phrase newly pressed describes when to redraw, rather than limiting visibility to one controller tick. Retained correct LCD text is valid; repeated identical print calls are not required. This interpretation is the existing frozen core test criterion; original source text is preserved.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [
+            {
+              "device": "resistor1",
+              "terminal": "value",
+              "original": "10000",
+              "resolved": "10000 ohm",
+              "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+            }
+          ],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Show button state with lcd display",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 331.89,
+                  "left": 1.49,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ili9341",
+                  "id": "ili9341 lcd display1",
+                  "top": 5.51,
+                  "left": 40.77,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-pushbutton",
+                  "id": "push button1",
+                  "top": 198.2,
+                  "left": 316.8,
+                  "attrs": {
+                    "color": "green",
+                    "xray": "1"
+                  }
+                },
+                {
+                  "type": "wokwi-resistor",
+                  "id": "resistor1",
+                  "top": 224.75,
+                  "left": 403.2,
+                  "attrs": {
+                    "value": "10000 ohm"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "ili9341 lcd display1:GND",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v22",
+                    "h-46"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:SCK",
+                  "arduino uno1:13",
+                  "green",
+                  [
+                    "v16",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MISO",
+                  "arduino uno1:12",
+                  "limegreen",
+                  [
+                    "v20",
+                    "h-78"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MOSI",
+                  "arduino uno1:11",
+                  "green",
+                  [
+                    "v24",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:RST",
+                  "arduino uno1:8",
+                  "green",
+                  [
+                    "v33.69",
+                    "h54.93"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:CS",
+                  "arduino uno1:10",
+                  "orange",
+                  [
+                    "v32",
+                    "h-64"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:D/C",
+                  "arduino uno1:9",
+                  "purple",
+                  [
+                    "v36",
+                    "h-84"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:VCC",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v24.09",
+                    "h-98.67",
+                    "v230.4",
+                    "h172.8"
+                  ]
+                ],
+                [
+                  "push button1:2.r",
+                  "resistor1:1",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "resistor1:2",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v0",
+                    "h27.6",
+                    "v96",
+                    "h-374.4"
+                  ]
+                ],
+                [
+                  "push button1:2.l",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "push button1:1.r",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v336",
+                    "h-220.6"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": false
+        }
+      },
+      "validation": {
+        "validator_version": "2026-08 / 0.62.0",
+        "attempts": [
+          {
+            "attempt": 1,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"controller\": {\n    \"states\": [],\n    \"updates\": [],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"io_0\",\n        \"then\": 1,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with D2 LOW, press and hold the button HIGH, then release LOW. Sample io_0 every 5 ms.\",\n        \"oracle\": \"io_1 is 0 for every released sample and 1 for every pressed sample, including throughout a sustained hold. The display shows Not pressed! or Pressed! respectively within 250 ms of each change, in white size-2 text at (0, 0) on black, with no residual characters.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Power up separately with the button released and with the button held pressed.\",\n        \"oracle\": \"The first controller step produces io_1=0 when io_0=false and io_1=1 when io_0=true. Setup returns within 500 ms; the ILI9341 initializes in landscape rotation 1 and displays the corresponding current state.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"inspection\",\n        \"stimulus\": \"Inspect assembled adapter configuration, library initialization and supplied circuit connections.\",\n        \"oracle\": \"SPI, Adafruit_GFX and Adafruit_ILI9341 initialize the display using RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13. D2 uses INPUT without pull-up, the external 10 kΩ pull-down and button-to-5V wiring remain intact, and display power and ground connections are preserved.\"\n      }\n    ]\n  }\n}",
+            "issues": [],
+            "ok": true,
+            "usage": {
+              "completion_tokens": 462,
+              "prompt_tokens": 14488,
+              "total_tokens": 14950,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 14485,
+                "video_tokens": 0
+              },
+              "cost": 0.0408385,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0408385,
+                "upstream_inference_prompt_cost": 0.0362185,
+                "upstream_inference_completions_cost": 0.00462
+              }
+            },
+            "structural_validation_passed": true,
+            "deterministic_behavior_passed": true,
+            "final_compile_passed": true,
+            "semantic_review": {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"For every sampled HIGH input the model selects code 1, mapped to Pressed!, and for every LOW input it selects code 0, mapped to Not pressed!. This also holds throughout a sustained press and on release. No persistent state, edge detector, or ordered update can suppress or overwrite the current-state selection. The disclosed clarification explicitly permits retained text rather than repeated identical redraws.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set button pin as INPUT, and countinuosly read the button state\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true, pullup=false, and a 5 ms sampling period. Registered acquisition semantics specify INPUT and normalize HIGH to true and LOW to false. Sampling occurs before the first controller tick, so either a released or held button at startup produces the appropriate output immediately on that tick; the adapter's initial false value is not a synthetic event.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Begin display and change it to landscape mode, and set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The registered native LCD adapter owns Adafruit_ILI9341 construction and initialization. Its contract specifies landscape rotation 1, white color 65535, text size 2, black background 0, and position (0, 0). Changed scalar selections clear the screen and redraw the registered field, preventing residual text when switching messages. These bindings satisfy the requested presentation at the model boundary.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The selected native ILI9341 adapter is the registered boundary responsible for device/library objects and peripheral initialization, including the requested Adafruit_ILI9341 object. The contract explicitly calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 initialization and contains no contrary implementation choice. Direct C++ declarations or library calls are not required in the scalar SysML controller.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit preserves every supplied connection: LCD RST/D-C/CS/MOSI/MISO/SCK use D8/D9/D10/D11/D12/D13, LCD power and ground remain 5V and GND.1, and the button retains D2, the external ground pull-down, and its 5V connection. Contract bindings agree with those connections and the specified button polarity. The circuit_preserved=false metadata does not demonstrate a wiring change: the supplied connection lists are identical.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"To use 10kΩ resistor, set the property name \\\"value\\\" to \\\"10000 ohm\\\".\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit sets resistor1.attrs.value to 10000 ohm and retains its original terminals and connections. This implements the explicit resistance-property requirement without changing the button's electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The contract schedules input sampling and control at 5 ms. The model directly selects the current input's message on each step without a delay, debounce interval, timer, or retained stale value. This is consistent with the 250 ms response bound at the model boundary. No elapsed-time input is necessary for this direct response. Actual display execution latency remains a generated-runtime verification obligation.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"Neither the stateless model nor the registered contract imposes a warmup or delayed startup contradicting this bound. The contract explicitly preserves the 500 ms setup obligation. Under the supplied review scope, actual setup duration is deferred to generated-code verification. Serial streaming, DHT reporting, unspecified LED initialization, and unwired-button defaults do not apply to this explicitly wired LCD/button project.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not executed evidence. The supplied test descriptions were not treated as completed tests.\",\n    \"After code generation, verify target compilation, the requested library integration, Adafruit_ILI9341 construction and begin calls, GPIO INPUT configuration, and actual setup completion within 500 ms.\",\n    \"Verify actual initial rendering for both released and held-button startup, subsequent screen clearing and formatting, and visible response within 250 ms after initialization. Registered adapter semantics establish the boundary responsibilities but do not establish measured peripheral execution.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1435,
+                    "prompt_tokens": 22909,
+                    "total_tokens": 24344,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 84,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 22906,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.071621,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.071621,
+                      "upstream_inference_prompt_cost": 0.057271,
+                      "upstream_inference_completions_cost": 0.01435
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 833,
+                    "prompt_tokens": 24340,
+                    "total_tokens": 25173,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 25,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 24337,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0691785,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0691785,
+                      "upstream_inference_prompt_cost": 0.0608485,
+                      "upstream_inference_completions_cost": 0.00833
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 833,
+                "prompt_tokens": 24340,
+                "total_tokens": 25173,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 25,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 24337,
+                  "video_tokens": 0
+                },
+                "cost": 0.0691785,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0691785,
+                  "upstream_inference_prompt_cost": 0.0608485,
+                  "upstream_inference_completions_cost": 0.00833
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.",
+                    "status": "satisfied",
+                    "model_quote": "out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                    "reason": "The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Button state is successfully printed to the display, with correct position, color, and size.",
+                    "status": "satisfied",
+                    "model_quote": "in attribute io_0 : Boolean;\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                    "reason": "The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.",
+                  "After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.",
+                  "Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1"
+              }
+            },
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            },
+            "normalizations": [
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id"
+            ],
+            "generation_mode": "contract_assembly",
+            "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\n  }\n  part system : Controller;\n}\n",
+            "stages": {
+              "sysml_generation": true,
+              "sysml_to_ir": true,
+              "ir_to_il": true
+            },
+            "focus_issues": [],
+            "coverage": {
+              "status": "structural_pass",
+              "issues": [],
+              "functional_status": "unverified",
+              "startup": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+              },
+              "pause": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+              },
+              "periodic": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+              },
+              "numeric": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+              },
+              "source_behavior": {
+                "status": "not_requested",
+                "checked": 0,
+                "traces": [],
+                "scope": "Only the exact source-derived scenarios; not full functionality proof"
+              },
+              "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+            },
+            "diagnostic_fingerprint": [],
+            "no_progress": false,
+            "failed_obligation_keys": [],
+            "repeated_requirement": false,
+            "repair_locations": [],
+            "repair_example": null,
+            "failure_stage": null
+          }
+        ],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "semantic_review": {
+          "enabled": true,
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "review_calls": 2,
+          "max_review_calls": 6,
+          "repair_count": 0,
+          "rounds": [
+            {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"For every sampled HIGH input the model selects code 1, mapped to Pressed!, and for every LOW input it selects code 0, mapped to Not pressed!. This also holds throughout a sustained press and on release. No persistent state, edge detector, or ordered update can suppress or overwrite the current-state selection. The disclosed clarification explicitly permits retained text rather than repeated identical redraws.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set button pin as INPUT, and countinuosly read the button state\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true, pullup=false, and a 5 ms sampling period. Registered acquisition semantics specify INPUT and normalize HIGH to true and LOW to false. Sampling occurs before the first controller tick, so either a released or held button at startup produces the appropriate output immediately on that tick; the adapter's initial false value is not a synthetic event.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Begin display and change it to landscape mode, and set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The registered native LCD adapter owns Adafruit_ILI9341 construction and initialization. Its contract specifies landscape rotation 1, white color 65535, text size 2, black background 0, and position (0, 0). Changed scalar selections clear the screen and redraw the registered field, preventing residual text when switching messages. These bindings satisfy the requested presentation at the model boundary.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The selected native ILI9341 adapter is the registered boundary responsible for device/library objects and peripheral initialization, including the requested Adafruit_ILI9341 object. The contract explicitly calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 initialization and contains no contrary implementation choice. Direct C++ declarations or library calls are not required in the scalar SysML controller.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit preserves every supplied connection: LCD RST/D-C/CS/MOSI/MISO/SCK use D8/D9/D10/D11/D12/D13, LCD power and ground remain 5V and GND.1, and the button retains D2, the external ground pull-down, and its 5V connection. Contract bindings agree with those connections and the specified button polarity. The circuit_preserved=false metadata does not demonstrate a wiring change: the supplied connection lists are identical.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"To use 10kΩ resistor, set the property name \\\"value\\\" to \\\"10000 ohm\\\".\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit sets resistor1.attrs.value to 10000 ohm and retains its original terminals and connections. This implements the explicit resistance-property requirement without changing the button's electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The contract schedules input sampling and control at 5 ms. The model directly selects the current input's message on each step without a delay, debounce interval, timer, or retained stale value. This is consistent with the 250 ms response bound at the model boundary. No elapsed-time input is necessary for this direct response. Actual display execution latency remains a generated-runtime verification obligation.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"Neither the stateless model nor the registered contract imposes a warmup or delayed startup contradicting this bound. The contract explicitly preserves the 500 ms setup obligation. Under the supplied review scope, actual setup duration is deferred to generated-code verification. Serial streaming, DHT reporting, unspecified LED initialization, and unwired-button defaults do not apply to this explicitly wired LCD/button project.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not executed evidence. The supplied test descriptions were not treated as completed tests.\",\n    \"After code generation, verify target compilation, the requested library integration, Adafruit_ILI9341 construction and begin calls, GPIO INPUT configuration, and actual setup completion within 500 ms.\",\n    \"Verify actual initial rendering for both released and held-button startup, subsequent screen clearing and formatting, and visible response within 250 ms after initialization. Registered adapter semantics establish the boundary responsibilities but do not establish measured peripheral execution.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1435,
+                    "prompt_tokens": 22909,
+                    "total_tokens": 24344,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 84,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 22906,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.071621,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.071621,
+                      "upstream_inference_prompt_cost": 0.057271,
+                      "upstream_inference_completions_cost": 0.01435
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 833,
+                    "prompt_tokens": 24340,
+                    "total_tokens": 25173,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 25,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 24337,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0691785,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0691785,
+                      "upstream_inference_prompt_cost": 0.0608485,
+                      "upstream_inference_completions_cost": 0.00833
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 833,
+                "prompt_tokens": 24340,
+                "total_tokens": 25173,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 25,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 24337,
+                  "video_tokens": 0
+                },
+                "cost": 0.0691785,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0691785,
+                  "upstream_inference_prompt_cost": 0.0608485,
+                  "upstream_inference_completions_cost": 0.00833
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.",
+                    "status": "satisfied",
+                    "model_quote": "out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                    "reason": "The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Button state is successfully printed to the display, with correct position, color, and size.",
+                    "status": "satisfied",
+                    "model_quote": "in attribute io_0 : Boolean;\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                    "reason": "The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.",
+                  "After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.",
+                  "Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1"
+              }
+            }
+          ],
+          "final_status": "passed",
+          "failure_category": null
+        },
+        "call_counts": {
+          "generation_and_repair": 1,
+          "semantic_review": 2
+        },
+        "usage": {
+          "generation_and_repair": [
+            {
+              "completion_tokens": 462,
+              "prompt_tokens": 14488,
+              "total_tokens": 14950,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 14485,
+                "video_tokens": 0
+              },
+              "cost": 0.0408385,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0408385,
+                "upstream_inference_prompt_cost": 0.0362185,
+                "upstream_inference_completions_cost": 0.00462
+              }
+            }
+          ],
+          "semantic_review": [
+            {
+              "completion_tokens": 833,
+              "prompt_tokens": 24340,
+              "total_tokens": 25173,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 25,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 24337,
+                "video_tokens": 0
+              },
+              "cost": 0.0691785,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0691785,
+                "upstream_inference_prompt_cost": 0.0608485,
+                "upstream_inference_completions_cost": 0.00833
+              }
+            }
+          ]
+        },
+        "final_status": "accepted"
+      },
+      "status": "passed"
+    }
+  ],
+  "validation": {
+    "validator_version": "2026-08 / 0.62.0",
+    "attempts": [
+      {
+        "attempt": 1,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"controller\": {\n    \"states\": [],\n    \"updates\": [],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"io_0\",\n        \"then\": 1,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with D2 LOW, press and hold the button HIGH, then release LOW. Sample io_0 every 5 ms.\",\n        \"oracle\": \"io_1 is 0 for every released sample and 1 for every pressed sample, including throughout a sustained hold. The display shows Not pressed! or Pressed! respectively within 250 ms of each change, in white size-2 text at (0, 0) on black, with no residual characters.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Power up separately with the button released and with the button held pressed.\",\n        \"oracle\": \"The first controller step produces io_1=0 when io_0=false and io_1=1 when io_0=true. Setup returns within 500 ms; the ILI9341 initializes in landscape rotation 1 and displays the corresponding current state.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"inspection\",\n        \"stimulus\": \"Inspect assembled adapter configuration, library initialization and supplied circuit connections.\",\n        \"oracle\": \"SPI, Adafruit_GFX and Adafruit_ILI9341 initialize the display using RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13. D2 uses INPUT without pull-up, the external 10 kΩ pull-down and button-to-5V wiring remain intact, and display power and ground connections are preserved.\"\n      }\n    ]\n  }\n}",
+        "issues": [],
+        "ok": true,
+        "usage": {
+          "completion_tokens": 462,
+          "prompt_tokens": 14488,
+          "total_tokens": 14950,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 14485,
+            "video_tokens": 0
+          },
+          "cost": 0.0408385,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0408385,
+            "upstream_inference_prompt_cost": 0.0362185,
+            "upstream_inference_completions_cost": 0.00462
+          }
+        },
+        "structural_validation_passed": true,
+        "deterministic_behavior_passed": true,
+        "final_compile_passed": true,
+        "semantic_review": {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"For every sampled HIGH input the model selects code 1, mapped to Pressed!, and for every LOW input it selects code 0, mapped to Not pressed!. This also holds throughout a sustained press and on release. No persistent state, edge detector, or ordered update can suppress or overwrite the current-state selection. The disclosed clarification explicitly permits retained text rather than repeated identical redraws.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set button pin as INPUT, and countinuosly read the button state\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true, pullup=false, and a 5 ms sampling period. Registered acquisition semantics specify INPUT and normalize HIGH to true and LOW to false. Sampling occurs before the first controller tick, so either a released or held button at startup produces the appropriate output immediately on that tick; the adapter's initial false value is not a synthetic event.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Begin display and change it to landscape mode, and set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The registered native LCD adapter owns Adafruit_ILI9341 construction and initialization. Its contract specifies landscape rotation 1, white color 65535, text size 2, black background 0, and position (0, 0). Changed scalar selections clear the screen and redraw the registered field, preventing residual text when switching messages. These bindings satisfy the requested presentation at the model boundary.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The selected native ILI9341 adapter is the registered boundary responsible for device/library objects and peripheral initialization, including the requested Adafruit_ILI9341 object. The contract explicitly calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 initialization and contains no contrary implementation choice. Direct C++ declarations or library calls are not required in the scalar SysML controller.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit preserves every supplied connection: LCD RST/D-C/CS/MOSI/MISO/SCK use D8/D9/D10/D11/D12/D13, LCD power and ground remain 5V and GND.1, and the button retains D2, the external ground pull-down, and its 5V connection. Contract bindings agree with those connections and the specified button polarity. The circuit_preserved=false metadata does not demonstrate a wiring change: the supplied connection lists are identical.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"To use 10kΩ resistor, set the property name \\\"value\\\" to \\\"10000 ohm\\\".\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit sets resistor1.attrs.value to 10000 ohm and retains its original terminals and connections. This implements the explicit resistance-property requirement without changing the button's electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The contract schedules input sampling and control at 5 ms. The model directly selects the current input's message on each step without a delay, debounce interval, timer, or retained stale value. This is consistent with the 250 ms response bound at the model boundary. No elapsed-time input is necessary for this direct response. Actual display execution latency remains a generated-runtime verification obligation.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"Neither the stateless model nor the registered contract imposes a warmup or delayed startup contradicting this bound. The contract explicitly preserves the 500 ms setup obligation. Under the supplied review scope, actual setup duration is deferred to generated-code verification. Serial streaming, DHT reporting, unspecified LED initialization, and unwired-button defaults do not apply to this explicitly wired LCD/button project.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not executed evidence. The supplied test descriptions were not treated as completed tests.\",\n    \"After code generation, verify target compilation, the requested library integration, Adafruit_ILI9341 construction and begin calls, GPIO INPUT configuration, and actual setup completion within 500 ms.\",\n    \"Verify actual initial rendering for both released and held-button startup, subsequent screen clearing and formatting, and visible response within 250 ms after initialization. Registered adapter semantics establish the boundary responsibilities but do not establish measured peripheral execution.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1435,
+                "prompt_tokens": 22909,
+                "total_tokens": 24344,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 84,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 22906,
+                  "video_tokens": 0
+                },
+                "cost": 0.071621,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.071621,
+                  "upstream_inference_prompt_cost": 0.057271,
+                  "upstream_inference_completions_cost": 0.01435
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 833,
+                "prompt_tokens": 24340,
+                "total_tokens": 25173,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 25,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 24337,
+                  "video_tokens": 0
+                },
+                "cost": 0.0691785,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0691785,
+                  "upstream_inference_prompt_cost": 0.0608485,
+                  "upstream_inference_completions_cost": 0.00833
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 833,
+            "prompt_tokens": 24340,
+            "total_tokens": 25173,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 25,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 24337,
+              "video_tokens": 0
+            },
+            "cost": 0.0691785,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0691785,
+              "upstream_inference_prompt_cost": 0.0608485,
+              "upstream_inference_completions_cost": 0.00833
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.",
+                "status": "satisfied",
+                "model_quote": "out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                "reason": "The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Button state is successfully printed to the display, with correct position, color, and size.",
+                "status": "satisfied",
+                "model_quote": "in attribute io_0 : Boolean;\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                "reason": "The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.",
+              "After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.",
+              "Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1"
+          }
+        },
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "normalizations": [
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id"
+        ],
+        "generation_mode": "contract_assembly",
+        "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\n  }\n  part system : Controller;\n}\n",
+        "stages": {
+          "sysml_generation": true,
+          "sysml_to_ir": true,
+          "ir_to_il": true
+        },
+        "focus_issues": [],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "diagnostic_fingerprint": [],
+        "no_progress": false,
+        "failed_obligation_keys": [],
+        "repeated_requirement": false,
+        "repair_locations": [],
+        "repair_example": null,
+        "failure_stage": null
+      }
+    ],
+    "coverage": {
+      "status": "structural_pass",
+      "issues": [],
+      "functional_status": "unverified",
+      "startup": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+      },
+      "pause": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+      },
+      "periodic": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+      },
+      "numeric": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+      },
+      "source_behavior": {
+        "status": "not_requested",
+        "checked": 0,
+        "traces": [],
+        "scope": "Only the exact source-derived scenarios; not full functionality proof"
+      },
+      "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+    },
+    "semantic_review": {
+      "enabled": true,
+      "policy_version": "sysml-semantic-review-v2-native-boundaries",
+      "review_calls": 2,
+      "max_review_calls": 6,
+      "repair_count": 0,
+      "rounds": [
+        {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"For every sampled HIGH input the model selects code 1, mapped to Pressed!, and for every LOW input it selects code 0, mapped to Not pressed!. This also holds throughout a sustained press and on release. No persistent state, edge detector, or ordered update can suppress or overwrite the current-state selection. The disclosed clarification explicitly permits retained text rather than repeated identical redraws.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set button pin as INPUT, and countinuosly read the button state\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true, pullup=false, and a 5 ms sampling period. Registered acquisition semantics specify INPUT and normalize HIGH to true and LOW to false. Sampling occurs before the first controller tick, so either a released or held button at startup produces the appropriate output immediately on that tick; the adapter's initial false value is not a synthetic event.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Begin display and change it to landscape mode, and set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The registered native LCD adapter owns Adafruit_ILI9341 construction and initialization. Its contract specifies landscape rotation 1, white color 65535, text size 2, black background 0, and position (0, 0). Changed scalar selections clear the screen and redraw the registered field, preventing residual text when switching messages. These bindings satisfy the requested presentation at the model boundary.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The selected native ILI9341 adapter is the registered boundary responsible for device/library objects and peripheral initialization, including the requested Adafruit_ILI9341 object. The contract explicitly calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 initialization and contains no contrary implementation choice. Direct C++ declarations or library calls are not required in the scalar SysML controller.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit preserves every supplied connection: LCD RST/D-C/CS/MOSI/MISO/SCK use D8/D9/D10/D11/D12/D13, LCD power and ground remain 5V and GND.1, and the button retains D2, the external ground pull-down, and its 5V connection. Contract bindings agree with those connections and the specified button polarity. The circuit_preserved=false metadata does not demonstrate a wiring change: the supplied connection lists are identical.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"To use 10kΩ resistor, set the property name \\\"value\\\" to \\\"10000 ohm\\\".\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The resolved circuit sets resistor1.attrs.value to 10000 ohm and retains its original terminals and connections. This implements the explicit resistance-property requirement without changing the button's electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The contract schedules input sampling and control at 5 ms. The model directly selects the current input's message on each step without a delay, debounce interval, timer, or retained stale value. This is consistent with the 250 ms response bound at the model boundary. No elapsed-time input is necessary for this direct response. Actual display execution latency remains a generated-runtime verification obligation.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"Neither the stateless model nor the registered contract imposes a warmup or delayed startup contradicting this bound. The contract explicitly preserves the 500 ms setup obligation. Under the supplied review scope, actual setup duration is deferred to generated-code verification. Serial streaming, DHT reporting, unspecified LED initialization, and unwired-button defaults do not apply to this explicitly wired LCD/button project.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not executed evidence. The supplied test descriptions were not treated as completed tests.\",\n    \"After code generation, verify target compilation, the requested library integration, Adafruit_ILI9341 construction and begin calls, GPIO INPUT configuration, and actual setup completion within 500 ms.\",\n    \"Verify actual initial rendering for both released and held-button startup, subsequent screen clearing and formatting, and visible response within 250 ms after initialization. Registered adapter semantics establish the boundary responsibilities but do not establish measured peripheral execution.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1435,
+                "prompt_tokens": 22909,
+                "total_tokens": 24344,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 84,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 22906,
+                  "video_tokens": 0
+                },
+                "cost": 0.071621,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.071621,
+                  "upstream_inference_prompt_cost": 0.057271,
+                  "upstream_inference_completions_cost": 0.01435
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 833,
+                "prompt_tokens": 24340,
+                "total_tokens": 25173,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 25,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 24337,
+                  "video_tokens": 0
+                },
+                "cost": 0.0691785,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0691785,
+                  "upstream_inference_prompt_cost": 0.0608485,
+                  "upstream_inference_completions_cost": 0.00833
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Button state is successfully printed to the display, with correct position, color, and size.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);\",\n      \"reason\": \"The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.\",\n    \"Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 833,
+            "prompt_tokens": 24340,
+            "total_tokens": 25173,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 25,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 24337,
+              "video_tokens": 0
+            },
+            "cost": 0.0691785,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0691785,
+              "upstream_inference_prompt_cost": 0.0608485,
+              "upstream_inference_completions_cost": 0.00833
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "Display Pressed! while the button is HIGH/held and Not pressed! while LOW/released.",
+                "status": "satisfied",
+                "model_quote": "out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                "reason": "The model selects 1 for every true input and 0 for every false input; the contract maps those codes to Pressed! and Not pressed!, respectively. There is no edge-history state, delayed update, or constant output that could lose a startup press, suppress a sustained hold, or retain the wrong selection after release. Registered acquisition samples D2 before the first controller step and normalizes HIGH to true. Input sampling and controller scheduling are both configured at 5 ms, with direct output selection and no model-imposed delay, consistent with the additional 250 ms response bound. An elapsed-time input is unnecessary for this direct response. The native LCD binding specifies landscape rotation 1, white 65535, black background 0, text size 2, and position (0, 0); the registered adapter clears and redraws changed text. Retained correct text is expressly permitted. No model or contract startup delay contradicts the 500 ms setup bound; actual setup duration and peripheral execution remain post-generation obligations. The serial, DHT, LED, and unwired-button defaults are inapplicable."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Button state is successfully printed to the display, with correct position, color, and size.",
+                "status": "satisfied",
+                "model_quote": "in attribute io_0 : Boolean;\n    out attribute io_1 : Integer = (if io_0 ? 1 else 0);",
+                "reason": "The complete requirement is consistent at the model boundary. The scalar expression selects the correct current-state message on the first sampled input, throughout a held press, and after release, as required by the disclosed clarification. The input contract uses D2, active_high=true, pullup=false, and 5 ms sampling; registered acquisition specifies INPUT rather than INPUT_PULLUP. The native LCD adapter owns Adafruit_ILI9341 construction and initialization, so their absence as C++ calls in SysML is not an omission. Its binding specifies rotation 1, white text, size 2, black clearing, and coordinates (0, 0), with the exact required messages. The contract calls for SPI, Adafruit_GFX, and Adafruit_ILI9341 integration without a contradictory library choice. LCD bindings preserve RST/D-C/CS/MOSI/MISO/SCK on D8/D9/D10/D11/D12/D13. The resolved circuit retains all supplied connections, including LCD 5V and ground, the button-to-5V connection, D2, and the external pull-down. Its resistor value is explicitly 10000 ohm. Although circuit_preserved metadata is false, comparison of the supplied connection lists shows no wiring change; the disclosed resistance-property normalization does not change resistance or connectivity. No persistent updates introduce output-order or initialization defects."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "Satisfied means consistency at the model boundary, not runtime success. Supplied test descriptions were not treated as executed evidence.",
+              "After code generation, verify target compilation, requested library integration, Adafruit_ILI9341 construction and initialization, GPIO INPUT configuration, and setup completion within 500 ms.",
+              "Verify actual initial rendering with the button both released and held, correct clearing and formatting on transitions, and visible response within 250 ms after initialization. Registered adapter semantics do not establish measured peripheral execution latency."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "9a152b7c20f31313d7fbbce532cde1512ea481d7cd0c460ac4afc0a8d7ce67f1"
+          }
+        }
+      ],
+      "final_status": "passed",
+      "failure_category": null
+    },
+    "call_counts": {
+      "generation_and_repair": 1,
+      "semantic_review": 2
+    },
+    "usage": {
+      "generation_and_repair": [
+        {
+          "completion_tokens": 462,
+          "prompt_tokens": 14488,
+          "total_tokens": 14950,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 14485,
+            "video_tokens": 0
+          },
+          "cost": 0.0408385,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0408385,
+            "upstream_inference_prompt_cost": 0.0362185,
+            "upstream_inference_completions_cost": 0.00462
+          }
+        }
+      ],
+      "semantic_review": [
+        {
+          "completion_tokens": 833,
+          "prompt_tokens": 24340,
+          "total_tokens": 25173,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 25,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 24337,
+            "video_tokens": 0
+          },
+          "cost": 0.0691785,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0691785,
+            "upstream_inference_prompt_cost": 0.0608485,
+            "upstream_inference_completions_cost": 0.00833
+          }
+        }
+      ]
+    },
+    "final_status": "accepted"
+  }
+}

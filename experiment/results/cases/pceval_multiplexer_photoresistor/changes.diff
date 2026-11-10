@@ -1,0 +1,40 @@
+--- original.ino
++++ repaired.ino
+@@ -267,22 +267,19 @@
+ }
+ 
+ void loop() {
+-  uint32_t hw_now = (uint32_t)millis();
+-  uint32_t hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_started && hw_elapsed < 5UL) return;
+-  if (hw_elapsed > 2147483647UL) return;
+-  if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+-    hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (analogRead(A0) * 1.0 + 0.0);
++  static bool started=false;
++  static uint32_t last=0;
++  uint32_t now=millis();
++  if (started && (uint32_t)(now-last)<250) return;
++  started=true;
++  last=now;
++  for (uint8_t channel=0; channel<6; ++channel) {
++    for (uint8_t bit=0; bit<4; ++bit) digitalWrite(2+bit,channel&(1U<<bit) ? HIGH : LOW);
++    delayMicroseconds(20);
++    int value=analogRead(A0);
++    Serial.print("Sensor ");
++    Serial.print(channel);
++    Serial.print(": ");
++    Serial.println(value);
+   }
+-  hw_now = (uint32_t)millis();
+-  hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_elapsed > 2147483647UL) return;
+-  hw_last_step = hw_now; hw_started = true;
+-  ProgramPage1(hw_value_io_0, &hw_value_io_1, &hw_value_io_2, &hw_value_io_3, &hw_value_io_4, &hw_value_serial_0_trigger, &hw_value_serial_0_value_0);
+-  digitalWrite(2, hw_value_io_1 ? HIGH : LOW);
+-  digitalWrite(3, hw_value_io_2 ? HIGH : LOW);
+-  digitalWrite(4, hw_value_io_3 ? HIGH : LOW);
+-  digitalWrite(5, hw_value_io_4 ? HIGH : LOW);
+-  if (hw_value_serial_0_trigger) { Serial.print("light value"); Serial.println(hw_value_serial_0_value_0); }
+-}
++}

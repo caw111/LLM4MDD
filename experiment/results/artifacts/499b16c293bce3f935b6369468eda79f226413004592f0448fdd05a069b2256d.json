@@ -1,0 +1,494 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is Arduino Mega 2560 (preserved). Wiring uses sr1:DS=A0, SHCP=A2, STCP=A1 driving sevseg1 segments (sr1 OE and MR tied to GND.3 and 5V respectively); sr2 is chained SHCP/STCP from sr1 and drives sevseg2 segments.",
+    "Buttons are wired with pull-down to GND (button top rails to GND.1, other side to D2/D3). Catalog configuration uses active_high=false and pullup=true so model value is true when pressed (no extra inversion in model).",
+    "The two-digit numeric counting, wrap/reset (00<->99), potentiometer-to-speed mapping (0.1s..1.0s) and potentiometer-to-initial digits (00..99) are all implemented in the SysML model; this JSON only declares the hardware ports needed.",
+    "Potentiometer analog values (A3, A4) are declared with scale=1 offset=0 so the model can map raw ADC readings to speed and digits according to desired calibration.",
+    "shift595_number register digit positions assume digit 0 is sevseg1 (left) and digit 1 is sevseg2 (right) per wiring meaning requirement; segment_bits and active_low are copied exactly from extracted facts."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "btn1 increment (pressed => true)",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "btn2 decrement (pressed => true)",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot1 speed/initial tens digit control",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0, \"pin\": \"A3\", \"scale\": 1}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1,
+        "offset": 0,
+        "pin": "A3"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot2 speed/initial units digit control",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0, \"pin\": \"A4\", \"scale\": 1}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1,
+        "offset": 0,
+        "pin": "A4"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "two-digit number rendered on sevseg1/sevseg2 via sr1/sr2",
+      "sample_period_ms": 10,
+      "device": "shift595_number",
+      "hardware": "{\"clock_pin\": \"A2\", \"data_pin\": \"A0\", \"invalid_policy\": \"blank\", \"kind\": \"shift595_number\", \"latch_pin\": \"A1\", \"leading_zero\": true, \"registers\": [{\"active_low\": true, \"digit\": 0, \"display\": \"sevseg1\", \"register\": \"sr1\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}, {\"active_low\": true, \"digit\": 1, \"display\": \"sevseg2\", \"register\": \"sr2\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}]}",
+      "binding": {
+        "kind": "shift595_number",
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "clock_pin": "A2",
+        "data_pin": "A0",
+        "registers": [
+          {
+            "register": "sr1",
+            "display": "sevseg1",
+            "digit": 0,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          },
+          {
+            "register": "sr2",
+            "display": "sevseg2",
+            "digit": 1,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          }
+        ],
+        "latch_pin": "A1"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "delta time since previous control step (for held-button repeat rate and speed mapping)",
+      "sample_period_ms": 10,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2). The displays will show a two-digit number that can be incremented or decremented using two push buttons (btn1, btn2). Additionally, two slide potentiometers (pot1, pot2) will control the speed at which the number increments or decrements when the buttons are held down. The potentiometers will also determine the initial value displayed on the 7-segment displays.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show a two-digit number determined by the values of the potentiometers (pot1, pot2). The value of pot1 will determine the tens digit, and the value of pot2 will determine the units digit. The number should be between 00 and 99. The speed of of incrementing or decrementing the number when the buttons are held down is from 0.1 to 1.0 seconds, determined by the value of the potentiometers.\n\nButton Interaction:\n1. The first button (btn1) will increment the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to increment at a speed determined by the value of pot1.\n2. The second button (btn2) will decrement the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to decrement at a speed determined by the value of pot2.\n3. If the number exceeds 99 after incrementing, it should reset to 00.\n4. If the number goes below 00 after decrementing, it should reset to 99.\nDisplay Update: The 7-segment displays should immediately update to reflect the new number after each button press or potentiometer adjustment.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2). The displays will show a two-digit number that can be incremented or decremented using two push buttons (btn1, btn2). Additionally, two slide potentiometers (pot1, pot2) will control the speed at which the number increments or decrements when the buttons are held down. The potentiometers will also determine the initial value displayed on the 7-segment displays.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show a two-digit number determined by the values of the potentiometers (pot1, pot2). The value of pot1 will determine the tens digit, and the value of pot2 will determine the units digit. The number should be between 00 and 99. The speed of of incrementing or decrementing the number when the buttons are held down is from 0.1 to 1.0 seconds, determined by the value of the potentiometers.\n\nButton Interaction:\n1. The first button (btn1) will increment the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to increment at a speed determined by the value of pot1.\n2. The second button (btn2) will decrement the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to decrement at a speed determined by the value of pot2.\n3. If the number exceeds 99 after incrementing, it should reset to 00.\n4. If the number goes below 00 after decrementing, it should reset to 99.\nDisplay Update: The 7-segment displays should immediately update to reflect the new number after each button press or potentiometer adjustment.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn1",
+            "top": -195.4,
+            "left": 19.2,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn2",
+            "top": -195.4,
+            "left": 105.0,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg2",
+            "top": -196.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr2",
+            "top": -87.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "btn1:2.r",
+            "black"
+          ],
+          [
+            "mega:2",
+            "btn1:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "btn2:2.r",
+            "black"
+          ],
+          [
+            "mega:3",
+            "btn2:1.l",
+            "green"
+          ],
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ],
+          [
+            "sr1:SHCP",
+            "sr2:SHCP",
+            "gray"
+          ],
+          [
+            "sr1:STCP",
+            "sr2:STCP",
+            "purple"
+          ],
+          [
+            "sr1:Q7S",
+            "sr2:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:MR",
+            "red"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:VCC",
+            "red"
+          ],
+          [
+            "sr1:OE",
+            "sr2:OE",
+            "black"
+          ],
+          [
+            "sevseg1:COM.1",
+            "sevseg2:COM.1",
+            "red"
+          ],
+          [
+            "sr2:Q0",
+            "sevseg2:A",
+            "green"
+          ],
+          [
+            "sr2:Q1",
+            "sevseg2:B",
+            "green"
+          ],
+          [
+            "sr2:Q2",
+            "sevseg2:C",
+            "green"
+          ],
+          [
+            "sr2:Q3",
+            "sevseg2:D",
+            "green"
+          ],
+          [
+            "sr2:Q4",
+            "sevseg2:E",
+            "green"
+          ],
+          [
+            "sr2:Q5",
+            "sevseg2:F",
+            "green"
+          ],
+          [
+            "sr2:Q6",
+            "sevseg2:G",
+            "green"
+          ],
+          [
+            "sr1:GND",
+            "sr2:GND",
+            "black"
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2). The displays will show a two-digit number that can be incremented or decremented using two push buttons (btn1, btn2). Additionally, two slide potentiometers (pot1, pot2) will control the speed at which the number increments or decrements when the buttons are held down. The potentiometers will also determine the initial value displayed on the 7-segment displays.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show a two-digit number determined by the values of the potentiometers (pot1, pot2). The value of pot1 will determine the tens digit, and the value of pot2 will determine the units digit. The number should be between 00 and 99. The speed of of incrementing or decrementing the number when the buttons are held down is from 0.1 to 1.0 seconds, determined by the value of the potentiometers.\n\nButton Interaction:\n1. The first button (btn1) will increment the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to increment at a speed determined by the value of pot1.\n2. The second button (btn2) will decrement the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to decrement at a speed determined by the value of pot2.\n3. If the number exceeds 99 after incrementing, it should reset to 00.\n4. If the number goes below 00 after decrementing, it should reset to 99.\nDisplay Update: The 7-segment displays should immediately update to reflect the new number after each button press or potentiometer adjustment.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

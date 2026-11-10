@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "按钮与复位键为数字输入；未给出上拉/下拉与按下电平，采用catalog默认（input默认active_high未指定时按默认配置）。模型应依据“按下为触发”的需求在SysML里做按键逻辑判断。",
+    "TM1637用于显示选手编号：启动初始显示0；当复位后清空累计统计时，模型应将该tm1637_number命令置为0或请求blank。",
+    "蜂鸣器仅用于短鸣确认：tone_output由模型在抢答锁定成功的同一业务事件触发，并用真实elapsed_ms控制持续时间与清零；本proposal不包含时序业务逻辑。",
+    "串口输出采用9600 baud，framing=line_or_idle；本proposal将“抢答事件”作为触发条件组，并在同一条报告条件下输出(timestamp_ms, winner_id)。实际时间戳捕获与格式（是否包含分隔符/换行）由序列化实现与SysML模型保证固定一致。",
+    "业务参数（累计抢答统计如何展示、串口的确切字段顺序/分隔符、短鸣频率与时长、复位清空后显示与串口行为）未在硬件需求中明确，按SysML模型处理。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "抢答按钮：选手1输入",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "抢答按钮：选手2输入",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "抢答按钮：选手3输入",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "抢答按钮：选手4输入",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D8\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D8"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "复位按钮（长按3秒清空累计抢答统计）",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D9\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D9"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "指示灯（系统抢答锁定/确认状态由模型控制）",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "蜂鸣器短鸣确认",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "数码管显示：第一个抢答选手编号（或复位后清零）",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "当产生一次有效抢答事件时，输出抢答时间戳与选手编号",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "抢答发生时间戳（由模型用elapsed_ms累计/捕获得到）",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"timestamp_ms\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "timestamp_ms"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "i32",
+      "unit": "index",
+      "initial": 0,
+      "meaning": "抢答选手编号（1..4）",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"winner_id\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "winner_id"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D8"
+        },
+        "resolved": {
+          "pin": "D8"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D9"
+        },
+        "resolved": {
+          "pin": "D9"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个多用户答题抢答系统，使用四个按钮 D2、D3、D7、D8 分别对应四位选手，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和按钮 D9 作为复位。系统只记录第一个按下的选手编号并在数码管显示，蜂鸣器短鸣确认，之后锁定其他输入直到复位；同时通过串口输出抢答时间戳和选手编号。长按复位键 3 秒可清空累计抢答统计。",
+    "effective_requirement": "实现一个多用户答题抢答系统，使用四个按钮 D2、D3、D7、D8 分别对应四位选手，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和按钮 D9 作为复位。系统只记录第一个按下的选手编号并在数码管显示，蜂鸣器短鸣确认，之后锁定其他输入直到复位；同时通过串口输出抢答时间戳和选手编号。长按复位键 3 秒可清空累计抢答统计。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_input\", \"pin\": \"D7\"}, {\"device_role\": \"digital_input\", \"pin\": \"D8\"}, {\"device_role\": \"digital_input\", \"pin\": \"D9\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "实现一个多用户答题抢答系统，使用四个按钮 D2、D3、D7、D8 分别对应四位选手，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和按钮 D9 作为复位。系统只记录第一个按下的选手编号并在数码管显示，蜂鸣器短鸣确认，之后锁定其他输入直到复位；同时通过串口输出抢答时间戳和选手编号。长按复位键 3 秒可清空累计抢答统计。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "supported": true,
+  "coverage": "core_comparison_branches",
+  "assumptions": [
+    "比较对象是题目要求的实测整数厘米，不把名义距离当成无量化误差的整数。201cm控制点约对应200cm的标准pulseIn实测整数；独立标准参考程序使用同一输入交叉校验。"
+  ],
+  "horizon_ms": 10000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 2,
+      "value": 180
+    },
+    {
+      "at_ms": 3000,
+      "kind": "distance",
+      "pin": 2,
+      "value": 201
+    },
+    {
+      "at_ms": 6000,
+      "kind": "distance",
+      "pin": 2,
+      "value": 220
+    }
+  ],
+  "ultrasonic": [
+    {
+      "trigger_pin": 3,
+      "echo_pin": 2
+    }
+  ],
+  "serial_inputs": [
+    {
+      "at_ms": 1200,
+      "text": "200\n"
+    },
+    {
+      "at_ms": 4200,
+      "text": "200\n"
+    },
+    {
+      "at_ms": 7200,
+      "text": "200\n"
+    }
+  ],
+  "checks": [
+    {
+      "id": "comparison_0",
+      "kind": "serial",
+      "from_ms": 1200,
+      "to_ms": 2200,
+      "contains": "Measured distance is less",
+      "min_count": 1,
+      "requirement_quote": "Change measured distance to integer centimeter and compare with serial target"
+    },
+    {
+      "id": "comparison_1",
+      "kind": "serial",
+      "from_ms": 4200,
+      "to_ms": 5200,
+      "contains": "Measured distance is equal to the target",
+      "min_count": 1,
+      "requirement_quote": "Change measured distance to integer centimeter and compare with serial target"
+    },
+    {
+      "id": "comparison_2",
+      "kind": "serial",
+      "from_ms": 7200,
+      "to_ms": 8200,
+      "contains": "Measured distance is greater",
+      "min_count": 1,
+      "requirement_quote": "Change measured distance to integer centimeter and compare with serial target"
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\nvoid setup(){Serial.begin(9600);pinMode(3,OUTPUT);pinMode(2,INPUT);}\nvoid loop(){if(!Serial.available())return;String input=Serial.readStringUntil('\\n');long target=input.toInt();digitalWrite(3,LOW);delayMicroseconds(2);digitalWrite(3,HIGH);delayMicroseconds(10);digitalWrite(3,LOW);long distance=pulseIn(2,HIGH,30000)/58;Serial.print(\"REFERENCE_DISTANCE:\");Serial.println(distance);if(distance>target)Serial.println(\"Measured distance is greater\");else if(distance==target)Serial.println(\"Measured distance is equal to the target\");else Serial.println(\"Measured distance is less\");}\n"
+}

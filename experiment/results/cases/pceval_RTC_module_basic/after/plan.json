@@ -1,0 +1,30 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Checks the startup report against the supplied RTC initialization, including date, Sunday weekday mapping, time, and required format. The short capture window permits seconds to advance during startup. The available input schema does not expose RTC changes, so this finite test cannot distinguish a genuine RTC read from a hardcoded correct report, independently verify begin() handling, or inspect serial baud configuration.",
+  "assumptions": [
+    "The supplied DS1307 circuit and its initTime of 2024-11-24T04:48:00 are used as the RTC fixture, with SDA on A4 and SCL on A5.",
+    "The RTC begins successfully and advances normally from the supplied initialization at simulation startup.",
+    "A startup report within 3000 ms is allowed; no loop reports or particular RTC-failure response are required.",
+    "Numeric fields may include leading zeros; the required labels, field separators, and weekday spelling are preserved.",
+    "No LED, button, or analog bench defaults are needed."
+  ],
+  "horizon_ms": 3000,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "rtc_startup_date_weekday_and_time",
+      "requirement_quote": "Current time: YYYY/M/D (Day of the week) H:M:S",
+      "from_ms": 0,
+      "to_ms": 3000,
+      "regex": "Current time: 2024/11/24 \\(Sunday\\) 0?4:48:0?[0-3](\\r?\\n|$)",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <Wire.h>\n#include <RTClib.h>\n\nRTC_DS1307 rtc;\nconst char * const weekdays[] = {\n  \"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\",\n  \"Thursday\", \"Friday\", \"Saturday\"\n};\n\nvoid setup() {\n  Serial.begin(9600);\n  Wire.begin();\n  if (!rtc.begin()) {\n    return;\n  }\n  DateTime now = rtc.now();\n  Serial.print(\"Current time: \");\n  Serial.print(now.year());\n  Serial.print('/');\n  Serial.print(now.month());\n  Serial.print('/');\n  Serial.print(now.day());\n  Serial.print(\" (\");\n  Serial.print(weekdays[now.dayOfTheWeek()]);\n  Serial.print(\") \");\n  Serial.print(now.hour());\n  Serial.print(':');\n  Serial.print(now.minute());\n  Serial.print(':');\n  Serial.println(now.second());\n}\n\nvoid loop() {\n}\n"
+}

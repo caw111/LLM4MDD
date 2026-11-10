@@ -1,0 +1,161 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"alarmActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"ledOnPhase\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"beepPhase\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"<=\": [\n                \"io_1\",\n                20.0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": \"not alarmActive\",\n        \"then\": [\n          {\n            \"assign\": \"ledOnPhase\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"beepPhase\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"alarmActive\",\n        \"then\": [\n          {\n            \"assign\": \"ledOnPhase\",\n            \"value\": \"not ledOnPhase\"\n          },\n          {\n            \"assign\": \"beepPhase\",\n            \"value\": \"beepPhase + 1\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \"and\": [\n            \"alarmActive\",\n            \"io_2\",\n            {\n              \"<=\": [\n                \"io_1\",\n                20.0\n              ]\n            },\n            {\n              \"==\": [\n                {\n                  \"n == 2 * RealFunctions::floor(n / 2)\": 0\n                },\n                1\n              ]\n            }\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_4\": \"alarmActive and ledOnPhase\",\n      \"serial_0_trigger\": \"alarmActive and io_2 and (io_1 <= 20.0)\",\n      \"serial_0_value_0\": \"if (alarmActive and io_2 and (io_1 <= 20.0)) then 1 else 0\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_2=false, io_1=10.0, io_0=任意\",\n        \"oracle\": \"io_4=false, io_3=0, serial_0_trigger=false, serial_0_value_0=0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_2=true, io_1=20.0, io_0=任意\",\n        \"oracle\": \"serial_0_trigger=true, serial_0_value_0=1, io_4在后续步骤中发生翻转，io_3在若干步骤中为非零(间歇鸣叫)\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_2=true, io_1=20.01, io_0=任意\",\n        \"oracle\": \"io_4=false, io_3=0, serial_0_trigger=false, serial_0_value_0=0\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_3: Unknown expression object {'n == 2 * RealFunctions::floor(n / 2)': 0}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/io_3"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/outputs/serial_0_value_0",
+          "original": "if (alarmActive and io_2 and (io_1 <= 20.0)) then 1 else 0",
+          "normalized": {
+            "if": {
+              "and": [
+                {
+                  "and": [
+                    "alarmActive",
+                    "io_2"
+                  ]
+                },
+                {
+                  "<=": [
+                    "io_1",
+                    20.0
+                  ]
+                }
+              ]
+            },
+            "then": 1,
+            "else": 0
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_3: Unknown expression object {'n == 2 * RealFunctions::floor(n / 2)': 0}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/io_3"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/outputs/io_3: Unknown expression object {'n == 2 * RealFunctions::floor(n / 2)': 0}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"alarmActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"alarmActive\",\n        \"value\": {\n          \"and\": [\n            {\n              \"<=\": [\n                \"io_1\",\n                20.0\n              ]\n            },\n            \"io_2\"\n          ]\n        }\n      },\n      {\n        \"if\": {\n          \">\": [\n            \"io_0\",\n            0.5\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": false\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": \"alarmActive\",\n        \"then\": 440,\n        \"else\": 0\n      },\n      \"io_4\": \"alarmActive\",\n      \"serial_0_trigger\": \"alarmActive\",\n      \"serial_0_value_0\": {\n        \"if\": \"alarmActive\",\n        \"then\": 1,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0=0.0（较暗）、io_1=20.0、io_2=true（超声有效）\",\n        \"oracle\": \"io_4=true，io_3=440，serial_0_trigger=true，serial_0_value_0=1\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0=0.6（不够暗）、io_1=10.0、io_2=true\",\n        \"oracle\": \"io_4=false，io_3=0，serial_0_trigger=false，serial_0_value_0=0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0=0.0（较暗）、io_1=20.1、io_2=true\",\n        \"oracle\": \"io_4=false，io_3=0，serial_0_trigger=false，serial_0_value_0=0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0=0.0（较暗）、io_1=10.0、io_2=false（无效回波/超时）\",\n        \"oracle\": \"io_4=false，io_3=0，serial_0_trigger=false，serial_0_value_0=0\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    attribute alarmActive : Boolean := false;\n    perform action tick {\n      first start;\n      then assign alarmActive := ((((io_1) <= (20.0))) and (io_2));\n      then if ((io_0) > (0.5)) {\n        first start;\n        then assign alarmActive := false;\n      }\n    }\n    out attribute io_3 : Integer = (if alarmActive ? 440 else 0);\n    out attribute io_4 : Boolean = alarmActive;\n    out attribute serial_0_trigger : Boolean = alarmActive;\n    out attribute serial_0_value_0 : Integer = (if alarmActive ? 1 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

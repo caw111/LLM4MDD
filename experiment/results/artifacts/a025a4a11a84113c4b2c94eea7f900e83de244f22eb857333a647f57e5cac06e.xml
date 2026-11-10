@@ -1,0 +1,64 @@
+<Root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.example.org/IRMetadata">
+  <Config>
+    <IterationCount Value="1" />
+    <MainInitFunction Name="ProgramPage1_Init" />
+    <MainExecFunction Name="ProgramPage1" />
+    <MainCompositeState Name="ProgramPage1_state" />
+  </Config>
+  <File Name="ProgramPage1">
+    <Struct Name="ProgramPage1_state" />
+    <GlobalVariable Name="ProgramPage1_instance" Type="ProgramPage1_state" />
+    <Function Name="ProgramPage1_Init" Type="FunctionInit" ReturnType="void">
+      <Ref Actor="CompositeActor" Path="ProgramPage1" />
+      <Input Name="self" Type="ProgramPage1_state" IsAddress="1" />
+      <Schedule>
+        <Calculate Name="ProgramPage1_reset">
+          <Ref Actor="CompositeActor" Path="ProgramPage1.reset" />
+          <Expression Expression="sysml_state_accumulatedMs = 0" />
+          <Expression Expression="sysml_state_positionDeg = 0" />
+          <Expression Expression="sysml_state_direction = true" />
+        </Calculate>
+      </Schedule>
+    </Function>
+    <GlobalVariable Name="sysml_state_accumulatedMs" Type="int" DefaultValue="0" />
+    <GlobalVariable Name="sysml_state_positionDeg" Type="int" DefaultValue="0" />
+    <GlobalVariable Name="sysml_state_direction" Type="bool" DefaultValue="true" />
+    <Function Name="ProgramPage1" Type="FunctionExec" ReturnType="void">
+      <Ref Actor="CompositeActor" Path="ProgramPage1" />
+      <Input Name="io_0" Type="int" />
+      <Output Name="io_1" Type="double" />
+      <Schedule>
+        <Calculate Name="ProgramPage1_body">
+          <Ref Actor="CompositeActor" Path="ProgramPage1.body" />
+          <Input Name="io_0" Type="int" Source="io_0" />
+          <Output Name="io_1" Type="double" />
+          <Expression Expression="sysml_state_accumulatedMs = (sysml_state_accumulatedMs + io_0)" />
+          <If Condition="(sysml_state_accumulatedMs &gt;= 2000)">
+            <Expression Expression="sysml_state_accumulatedMs = (sysml_state_accumulatedMs - 2000)" />
+            <If Condition="sysml_state_direction">
+              <If Condition="((sysml_state_positionDeg + 10) &lt;= 180)">
+                <Expression Expression="sysml_state_positionDeg = (sysml_state_positionDeg + 10)" />
+              </If>
+              <Else>
+                <Expression Expression="sysml_state_positionDeg = 180" />
+                <Expression Expression="sysml_state_direction = false" />
+              </Else>
+            </If>
+            <Else>
+              <If Condition="((sysml_state_positionDeg - 10) &gt;= 0)">
+                <Expression Expression="sysml_state_positionDeg = (sysml_state_positionDeg - 10)" />
+              </If>
+              <Else>
+                <Expression Expression="sysml_state_positionDeg = 0" />
+                <Expression Expression="sysml_state_direction = true" />
+              </Else>
+            </Else>
+          </If>
+          <LocalVariable Name="sysml_value_0" Type="double" />
+          <Expression Expression="sysml_value_0 = sysml_state_positionDeg" />
+          <Expression Expression="*io_1 = sysml_value_0" />
+        </Calculate>
+      </Schedule>
+    </Function>
+  </File>
+</Root>

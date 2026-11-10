@@ -1,0 +1,220 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousIo0",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousIo1",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousIo2",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "highestBedId",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "oldestWaitingBedId",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "ageOfOldestMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "callActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "serialPending",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3 and callActive",
+        "then": [
+          {
+            "assign": "callActive",
+            "value": false
+          },
+          {
+            "assign": "highestBedId",
+            "value": 0
+          },
+          {
+            "assign": "oldestWaitingBedId",
+            "value": 0
+          },
+          {
+            "assign": "ageOfOldestMs",
+            "value": 0
+          },
+          {
+            "assign": "serialPending",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "if": "io_0 and not previousIo0",
+            "then": [
+              {
+                "assign": "callActive",
+                "value": true
+              },
+              {
+                "assign": "highestBedId",
+                "value": 1
+              },
+              {
+                "assign": "oldestWaitingBedId",
+                "value": 1
+              },
+              {
+                "assign": "ageOfOldestMs",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "if": "io_1 and not previousIo1",
+            "then": [
+              {
+                "assign": "callActive",
+                "value": true
+              },
+              {
+                "assign": "highestBedId",
+                "value": {
+                  "if": "highestBedId >= 2",
+                  "then": "highestBedId",
+                  "else": 2
+                }
+              },
+              {
+                "assign": "oldestWaitingBedId",
+                "value": {
+                  "if": "callActive",
+                  "then": "oldestWaitingBedId",
+                  "else": 2
+                }
+              },
+              {
+                "assign": "ageOfOldestMs",
+                "value": {
+                  "if": "callActive",
+                  "then": "ageOfOldestMs",
+                  "else": 0
+                }
+              }
+            ]
+          },
+          {
+            "if": "io_2 and not previousIo2",
+            "then": [
+              {
+                "assign": "callActive",
+                "value": true
+              },
+              {
+                "assign": "highestBedId",
+                "value": {
+                  "if": "highestBedId >= 3",
+                  "then": "highestBedId",
+                  "else": 3
+                }
+              },
+              {
+                "assign": "oldestWaitingBedId",
+                "value": {
+                  "if": "callActive",
+                  "then": "oldestWaitingBedId",
+                  "else": 3
+                }
+              },
+              {
+                "assign": "ageOfOldestMs",
+                "value": {
+                  "if": "callActive",
+                  "then": "ageOfOldestMs",
+                  "else": 0
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "not io_3",
+        "then": [
+          {
+            "assign": "serialPending",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "previousIo0",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousIo1",
+        "value": "io_1"
+      },
+      {
+        "assign": "previousIo2",
+        "value": "io_2"
+      }
+    ],
+    "outputs": {
+      "io_4": "callActive",
+      "io_5": {
+        "if": "callActive",
+        "then": 1000,
+        "else": 0
+      },
+      "io_6": {
+        "if": "callActive",
+        "then": "oldestWaitingBedId",
+        "else": 0
+      },
+      "serial_0_trigger": "serialPending",
+      "serial_0_value_0": "ageOfOldestMs",
+      "serial_0_value_1": "highestBedId"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Press io_0 rising edge while io_3 is false, then keep io_3 false for one more control step.",
+        "oracle": "io_4 is true after the press edge; io_5 is nonzero (alarm active); serial_0_trigger is false."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Press io_0 then press io_1 (both rising edges), then press io_3 high for a step.",
+        "oracle": "After io_3 press, io_4 becomes false, io_5 becomes 0, and serial_0_trigger becomes true for that step."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute previousIo0 : Boolean := false;\n    attribute previousIo1 : Boolean := false;\n    attribute previousIo2 : Boolean := false;\n    attribute highestBedId : Integer := 0;\n    attribute oldestWaitingBedId : Integer := 0;\n    attribute ageOfOldestMs : Integer := 0;\n    attribute callActive : Boolean := false;\n    attribute serialPending : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3 and callActive {\n        first start;\n        then assign callActive := false;\n        then assign highestBedId := 0;\n        then assign oldestWaitingBedId := 0;\n        then assign ageOfOldestMs := 0;\n        then assign serialPending := true;\n      } else {\n        first start;\n        then if io_0 and not previousIo0 {\n          first start;\n          then assign callActive := true;\n          then assign highestBedId := 1;\n          then assign oldestWaitingBedId := 1;\n          then assign ageOfOldestMs := 0;\n        }\n        then if io_1 and not previousIo1 {\n          first start;\n          then assign callActive := true;\n          then assign highestBedId := (if highestBedId >= 2 ? highestBedId else 2);\n          then assign oldestWaitingBedId := (if callActive ? oldestWaitingBedId else 2);\n          then assign ageOfOldestMs := (if callActive ? ageOfOldestMs else 0);\n        }\n        then if io_2 and not previousIo2 {\n          first start;\n          then assign callActive := true;\n          then assign highestBedId := (if highestBedId >= 3 ? highestBedId else 3);\n          then assign oldestWaitingBedId := (if callActive ? oldestWaitingBedId else 3);\n          then assign ageOfOldestMs := (if callActive ? ageOfOldestMs else 0);\n        }\n      }\n      then if not io_3 {\n        first start;\n        then assign serialPending := false;\n      }\n      then assign previousIo0 := io_0;\n      then assign previousIo1 := io_1;\n      then assign previousIo2 := io_2;\n    }\n    out attribute io_4 : Boolean = callActive;\n    out attribute io_5 : Integer = (if callActive ? 1000 else 0);\n    out attribute io_6 : Integer = (if callActive ? oldestWaitingBedId else 0);\n    out attribute serial_0_trigger : Boolean = serialPending;\n    out attribute serial_0_value_0 : Integer = ageOfOldestMs;\n    out attribute serial_0_value_1 : Integer = highestBedId;\n  }\n  part system : Controller;\n}\n"
+}

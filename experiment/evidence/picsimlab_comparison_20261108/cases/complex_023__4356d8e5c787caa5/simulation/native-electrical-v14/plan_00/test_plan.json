@@ -1,0 +1,94 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests that the distance display responds to large distance changes in both directions, without mandating centimetres, a particular numeric scale, or repeatability of exact values. The suite intentionally does not assert strict PWM ordering, fixed PWM duties, or repeatability: the brightness grading, saturation range, filtering, and hysteresis are unspecified. D13's near-distance threshold is also unspecified, so its switching behavior cannot independently be asserted. These are substantial coverage gaps; this is not a full test of the system.",
+  "assumptions": [
+    "Authoritative wiring is HC-SR04 Trig D8/Echo D2, TM1637 CLK D4/DIO D5, LED D13, and PWM LED D9.",
+    "The disclosed bench LED defaults apply: anodes at D13 and D9, cathodes through resistors to GND, active HIGH.",
+    "The display unit and scale are unspecified. Checks compare displayed values rather than requiring values in the ultrasonic stimulus API's centimetre unit.",
+    "The display checks rely on a useful distance representation distinguishing 5 cm from 350 cm after settling. They do not prescribe units, decimal placement, leading zeros, or exact displayed values.",
+    "No refresh or filtering time is specified; each input is held for four seconds and observed after 3.5 seconds.",
+    "The D13 near-distance threshold is missing. The reference selects 20 cm as a permissible implementation choice, not a tested requirement.",
+    "The PWM grading, operating range, saturation policy, and temporal behavior are missing. The reference selects a decreasing linear mapping over 0–400 cm; no check requires that selection.",
+    "The reference displays rounded centimetres as one permissible representation; the checks do not require that representation."
+  ],
+  "horizon_ms": 16000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 2,
+      "value": 350
+    },
+    {
+      "at_ms": 4000,
+      "kind": "distance",
+      "pin": 2,
+      "value": 5
+    },
+    {
+      "at_ms": 8000,
+      "kind": "distance",
+      "pin": 2,
+      "value": 350
+    },
+    {
+      "at_ms": 12000,
+      "kind": "distance",
+      "pin": 2,
+      "value": 5
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [
+    {
+      "trigger_pin": 8,
+      "echo_pin": 2
+    }
+  ],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "relation",
+      "id": "display_responds_to_approach",
+      "requirement_quote": "数码管显示距离",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        3500,
+        7500
+      ],
+      "relation": "different",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "display_responds_to_retreat",
+      "requirement_quote": "数码管显示距离",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        7500,
+        11500
+      ],
+      "relation": "different",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "display_responds_to_second_approach",
+      "requirement_quote": "数码管显示距离",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        11500,
+        15500
+      ],
+      "relation": "different",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n#include <math.h>\n\nTM1637Display display(4, 5);\nconst float nearThresholdCm = 20.0f;\n\nvoid setup() {\n  pinMode(8, OUTPUT);\n  digitalWrite(8, LOW);\n  pinMode(2, INPUT);\n  pinMode(13, OUTPUT);\n  pinMode(9, OUTPUT);\n  digitalWrite(13, LOW);\n  analogWrite(9, 0);\n  display.setBrightness(7);\n  display.clear();\n}\n\nvoid loop() {\n  digitalWrite(8, LOW);\n  delayMicroseconds(2);\n  digitalWrite(8, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(8, LOW);\n  unsigned long duration = pulseIn(2, HIGH, 30000UL);\n  if (duration != 0) {\n    float cm = duration * 0.0343f / 2.0f;\n    display.showNumberDec((int)lroundf(cm), false);\n    digitalWrite(13, cm < nearThresholdCm ? HIGH : LOW);\n    float duty = 255.0f * (1.0f - cm / 400.0f);\n    if (duty < 0.0f) duty = 0.0f;\n    if (duty > 255.0f) duty = 255.0f;\n    analogWrite(9, (int)lroundf(duty));\n  }\n  delay(100);\n}\n",
+  "electrical_led_pins": {}
+}

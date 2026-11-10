@@ -1,0 +1,206 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousNear",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "todayUsageCount",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousNear"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "todayUsageCount",
+            "value": "todayUsageCount + 1"
+          }
+        ]
+      },
+      {
+        "assign": "previousNear",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": {
+          "and": [
+            "io_0",
+            "io_3"
+          ]
+        },
+        "then": {
+          "and": [
+            {
+              ">=": [
+                "io_2",
+                10.0
+              ]
+            },
+            "io_3"
+          ]
+        },
+        "else": false
+      },
+      "io_4": {
+        "if": "io_3",
+        "then": {
+          "if": {
+            "<": [
+              "io_2",
+              2.0
+            ]
+          },
+          "then": 0,
+          "else": {
+            "if": {
+              ">=": [
+                "io_2",
+                400.0
+              ]
+            },
+            "then": 100,
+            "else": {
+              "floor": {
+                "-": [
+                  "100",
+                  {
+                    "/": [
+                      {
+                        "-": [
+                          "400.0",
+                          "io_2"
+                        ]
+                      },
+                      "3.98"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "else": 0
+      },
+      "io_5": {
+        "if": {
+          "and": [
+            "io_0",
+            "io_3",
+            {
+              "<": [
+                "io_2",
+                10.0
+              ]
+            }
+          ]
+        },
+        "then": 2000,
+        "else": 0
+      },
+      "io_6": {
+        "if": {
+          "and": [
+            "io_0",
+            "io_3",
+            {
+              ">=": [
+                "io_2",
+                10.0
+              ]
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "serial_0_trigger": {
+        "if": false,
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": "todayUsageCount",
+      "serial_0_value_1": {
+        "if": "io_3",
+        "then": {
+          "if": {
+            "<": [
+              "io_2",
+              2.0
+            ]
+          },
+          "then": 0.0,
+          "else": {
+            "if": {
+              ">=": [
+                "io_2",
+                400.0
+              ]
+            },
+            "then": 100.0,
+            "else": {
+              "-": [
+                100.0,
+                {
+                  "/": [
+                    {
+                      "-": [
+                        400.0,
+                        "io_2"
+                      ]
+                    },
+                    3.98
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "else": 0.0
+      },
+      "serial_0_value_2": "io_3"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_0 rises to true while io_3 is true and io_2 >= 10.0cm (e.g., io_2=20.0); then hold io_0 true with same io_2; finally drop io_0 false",
+        "oracle": "Valve output io_1 becomes true during allowed readings and does not increment todayUsageCount again until the next rising edge; buzzer io_5 stays 0 and LED io_6 stays true; display io_4 and serial remaining percent update consistently from io_2."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_0 rises to true while io_3 is true and io_2 < 10.0cm (e.g., io_2=5.0); keep io_0 true; then set io_2=20.0cm without changing io_0",
+        "oracle": "On low level while near, io_1 is false (outlet blocked), io_5 is nonzero (alarm), and io_6 is false; when level becomes acceptable (io_2>=10.0) while still near, io_1 becomes true and alarm io_5 returns to 0."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Set io_3=false for multiple steps while io_0 toggles high/low arbitrarily; keep io_2 varying",
+        "oracle": "Water-level validity serial_0_value_2 and dependent water outputs show invalid behavior: io_1 remains false, io_5 is 0, io_6 is false, and displayed/serial remaining percent values are 0 with serial_0_value_2=false."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute previousNear : Boolean := false;\n    attribute todayUsageCount : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousNear))) {\n        first start;\n        then assign todayUsageCount := todayUsageCount + 1;\n      }\n      then assign previousNear := io_0;\n    }\n    out attribute io_1 : Boolean = (if ((io_0) and (io_3)) ? ((((io_2) >= (10.0))) and (io_3)) else false);\n    out attribute io_4 : Integer = (if io_3 ? (if ((io_2) < (2.0)) ? 0 else (if ((io_2) >= (400.0)) ? 100 else RealFunctions::floor(((100) - (((((400.0) - (io_2))) / (3.98))))))) else 0);\n    out attribute io_5 : Integer = (if ((io_0) and (io_3) and (((io_2) < (10.0)))) ? 2000 else 0);\n    out attribute io_6 : Boolean = (if ((io_0) and (io_3) and (((io_2) >= (10.0)))) ? true else false);\n    out attribute serial_0_trigger : Boolean = (if false ? true else false);\n    out attribute serial_0_value_0 : Integer = todayUsageCount;\n    out attribute serial_0_value_1 : Real = (if io_3 ? (if ((io_2) < (2.0)) ? 0.0 else (if ((io_2) >= (400.0)) ? 100.0 else ((100.0) - (((((400.0) - (io_2))) / (3.98)))))) else 0.0);\n    out attribute serial_0_value_2 : Boolean = io_3;\n  }\n  part system : Controller;\n}\n"
+}

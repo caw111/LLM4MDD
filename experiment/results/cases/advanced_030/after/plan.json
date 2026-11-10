@@ -1,0 +1,71 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "测试覆盖明确规定的连续30秒无产品报警，以及人工停线期间保持报警。目标每分钟产量、达成率计算基准、显示切换顺序、光电传感器有效电平、报警解除和停机事件串口格式均未指定，因此不强制这些选择，也不对累计产量、达成率或停机次数作不可靠的数值断言。人工停线检查发生在超时报警之后，因此不能独立证明按钮触发了新的报警或新的停机事件。",
+  "assumptions": [
+    "D3、D7采用主机台默认接法：按钮接地，INPUT_PULLUP，按下为LOW；测试显式注入释放电平。",
+    "测试期间D2始终保持HIGH且不产生任何边沿，表示没有产品通过；不假定光电传感器的计数边沿。",
+    "D6按无源蜂鸣器处理：报警需要可检测的载波，不限制具体频率或报警音色。检查使用宽时间窗口内的电平边沿数，允许间歇报警。",
+    "未规定目标产量、达成率时间基准、显示轮换周期或按钮切换顺序；参考程序选择每分钟60件，达成率按启动后经过时间计算，并在实际显示页交替显示数量与达成率。这些参考选择不是候选程序必须遵循的参数。",
+    "未规定停机事件文本格式和报警解除策略；参考程序在进入停机状态时记录一次事件，条件消失后解除报警。测试不要求特定事件文字或解除策略。",
+    "D13依赖默认主动HIGH LED接法；由于其具体提示规则未明确，不对其状态设置断言。"
+  ],
+  "horizon_ms": 45000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 7,
+      "value": 1
+    },
+    {
+      "at_ms": 37000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 43000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "edges",
+      "id": "idle_timeout_audible_alarm",
+      "requirement_quote": "若连续 30 秒无产品通过或人工停线，则报警并记录停机事件",
+      "pin": 6,
+      "from_ms": 30500,
+      "to_ms": 36500,
+      "min_count": 2
+    },
+    {
+      "kind": "edges",
+      "id": "alarm_while_manual_stop_held",
+      "requirement_quote": "若连续 30 秒无产品通过或人工停线，则报警并记录停机事件",
+      "pin": 6,
+      "from_ms": 37500,
+      "to_ms": 42500,
+      "min_count": 2
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nconst unsigned long TARGET_PER_MINUTE = 60;\nunsigned long startedAt, lastProductAt, lastReportAt;\nunsigned long products = 0, stops = 0;\nbool previousSensor = HIGH;\nbool stopped = false;\nbool buttonRaw = HIGH, buttonStable = HIGH;\nunsigned long buttonChangedAt = 0;\nuint8_t page = 1;\n\nvoid showNumber(unsigned long n) {\n  display.showNumberDec((int)(n > 9999 ? 9999 : n), false);\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(3, INPUT_PULLUP);\n  pinMode(7, INPUT_PULLUP);\n  pinMode(6, OUTPUT);\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n  Serial.begin(9600);\n  display.setBrightness(5);\n  startedAt = lastProductAt = millis();\n  previousSensor = digitalRead(2);\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  bool sensor = digitalRead(2);\n  if (previousSensor == HIGH && sensor == LOW) {\n    ++products;\n    lastProductAt = now;\n  }\n  previousSensor = sensor;\n\n  bool raw = digitalRead(7);\n  if (raw != buttonRaw) {\n    buttonRaw = raw;\n    buttonChangedAt = now;\n  }\n  if (raw != buttonStable && now - buttonChangedAt >= 40) {\n    buttonStable = raw;\n    if (buttonStable == LOW) page = (page + 1) % 3;\n  }\n\n  bool manual = digitalRead(3) == LOW;\n  bool idle = now - lastProductAt >= 30000UL;\n  bool alarm = manual || idle;\n  if (alarm && !stopped) {\n    ++stops;\n    Serial.print(\"STOP event=\"); Serial.print(stops);\n    Serial.print(\" time_ms=\"); Serial.print(now);\n    Serial.println(manual ? \" manual\" : \" idle\");\n    tone(6, 1800);\n  }\n  if (!alarm && stopped) noTone(6);\n  stopped = alarm;\n  digitalWrite(13, alarm ? HIGH : LOW);\n\n  unsigned long elapsed = now - startedAt;\n  float achievement = elapsed == 0 ? 0.0f :\n      (float)products * 6000000.0f / ((float)TARGET_PER_MINUTE * elapsed);\n  if (page == 0) showNumber(TARGET_PER_MINUTE);\n  else if (page == 2) showNumber(stops);\n  else if ((now / 2000UL) % 2 == 0) showNumber(products);\n  else showNumber((unsigned long)(achievement + 0.5f));\n\n  if (now - lastReportAt >= 1000UL) {\n    lastReportAt = now;\n    Serial.print(\"actual=\"); Serial.print(products);\n    Serial.print(\" achievement_percent=\"); Serial.print(achievement, 1);\n    Serial.print(\" stops=\"); Serial.println(stops);\n  }\n}\n"
+}

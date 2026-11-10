@@ -1,0 +1,135 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "maxTempDegC",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "showMaxActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "showMaxRemainingMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousButtonPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousButtonPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "showMaxActive",
+            "value": true
+          },
+          {
+            "assign": "showMaxRemainingMs",
+            "value": 3000
+          }
+        ]
+      },
+      {
+        "if": "showMaxActive",
+        "then": [
+          {
+            "assign": "showMaxRemainingMs",
+            "value": {
+              "if": "showMaxRemainingMs <= 0",
+              "then": 0,
+              "else": "showMaxRemainingMs"
+            }
+          },
+          {
+            "if": "showMaxRemainingMs <= 0",
+            "then": [
+              {
+                "assign": "showMaxActive",
+                "value": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "previousButtonPressed",
+        "value": "io_1"
+      },
+      {
+        "if": {
+          ">": [
+            "io_0",
+            "maxTempDegC"
+          ]
+        },
+        "then": [
+          {
+            "assign": "maxTempDegC",
+            "value": "io_0"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "showMaxActive",
+        "then": {
+          "floor": "maxTempDegC"
+        },
+        "else": {
+          "floor": "io_0"
+        }
+      },
+      "serial_0_trigger": true,
+      "serial_0_value_0": {
+        "if": "showMaxActive",
+        "then": "io_0",
+        "else": "io_0"
+      },
+      "serial_0_value_1": "maxTempDegC"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "持续施加递增的io_0温度序列，同时保持io_1未按下（io_1=false）；观察串口值和TM1637显示输出。",
+        "oracle": "maxTempDegC随io_0单调更新；showMaxActive保持false；io_2显示floor(io_0)；serial_0_trigger始终为true；serial_0_value_0始终等于io_0；serial_0_value_1始终等于历史最大温度。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "在已形成最大值maxTempDegC的条件下，将io_1产生一次按下上升边（false->true），期间io_0保持不变；随后保持io_1为true并继续若干步仿真。",
+        "oracle": "在边触发的控制步后showMaxActive为true；期间io_2显示floor(maxTempDegC)而非floor(io_0)；serial_0_trigger始终为true；serial_0_value_0仍等于io_0；serial_0_value_1仍等于maxTempDegC。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在按下触发后，将io_1释放（从true->false），同时让io_0继续变化（包含低于和高于历史最大值的阶段）。",
+        "oracle": "最大值maxTempDegC仍按io_0更新（只在io_0>maxTempDegC时增加）；serial_0_value_1始终反映历史最大值；显示在showMaxActive结束后应回到显示当前温度（io_2=floor(io_0)）。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute maxTempDegC : Real := 0.0;\n    attribute showMaxActive : Boolean := false;\n    attribute showMaxRemainingMs : Integer := 0;\n    attribute previousButtonPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousButtonPressed))) {\n        first start;\n        then assign showMaxActive := true;\n        then assign showMaxRemainingMs := 3000;\n      }\n      then if showMaxActive {\n        first start;\n        then assign showMaxRemainingMs := (if showMaxRemainingMs <= 0 ? 0 else showMaxRemainingMs);\n        then if showMaxRemainingMs <= 0 {\n          first start;\n          then assign showMaxActive := false;\n        }\n      }\n      then assign previousButtonPressed := io_1;\n      then if ((io_0) > (maxTempDegC)) {\n        first start;\n        then assign maxTempDegC := io_0;\n      }\n    }\n    out attribute io_2 : Integer = (if showMaxActive ? RealFunctions::floor(maxTempDegC) else RealFunctions::floor(io_0));\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Real = (if showMaxActive ? io_0 else io_0);\n    out attribute serial_0_value_1 : Real = maxTempDegC;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,268 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevVehApproach",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevPedApproach",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "inDanger",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "dangerStartMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "lastDangerDurationMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "dangerEventReported",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              ">=": [
+                "io_0",
+                5.0
+              ]
+            },
+            "io_3",
+            {
+              ">=": [
+                "io_2",
+                5.0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": {
+              "and": [
+                {
+                  "not": "inDanger"
+                },
+                {
+                  "and": [
+                    {
+                      "and": [
+                        "io_1",
+                        {
+                          ">=": [
+                            "io_0",
+                            5.0
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "and": [
+                        "io_3",
+                        {
+                          ">=": [
+                            "io_2",
+                            5.0
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "inDanger",
+                "value": true
+              },
+              {
+                "assign": "dangerStartMs",
+                "value": 0
+              },
+              {
+                "assign": "dangerEventReported",
+                "value": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": {
+            "and": [
+              "io_1",
+              {
+                ">=": [
+                  "io_0",
+                  5.0
+                ]
+              },
+              "io_3",
+              {
+                ">=": [
+                  "io_2",
+                  5.0
+                ]
+              }
+            ]
+          }
+        },
+        "then": [
+          {
+            "if": "inDanger",
+            "then": [
+              {
+                "assign": "inDanger",
+                "value": false
+              },
+              {
+                "assign": "lastDangerDurationMs",
+                "value": "dangerStartMs"
+              },
+              {
+                "assign": "dangerEventReported",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "prevVehApproach",
+        "value": {
+          "and": [
+            "io_1",
+            {
+              ">=": [
+                "io_0",
+                5.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "assign": "prevPedApproach",
+        "value": {
+          "and": [
+            "io_3",
+            {
+              ">=": [
+                "io_2",
+                5.0
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "io_4": "inDanger",
+      "io_5": {
+        "not": "inDanger"
+      },
+      "io_6": {
+        "if": "inDanger",
+        "then": 2000,
+        "else": 0
+      },
+      "io_7": {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "<": [
+                "io_0",
+                20.0
+              ]
+            },
+            "io_3",
+            {
+              "<": [
+                "io_2",
+                20.0
+              ]
+            }
+          ]
+        },
+        "then": 3,
+        "else": {
+          "if": {
+            "and": [
+              "io_1",
+              {
+                "<": [
+                  "io_0",
+                  50.0
+                ]
+              },
+              "io_3",
+              {
+                "<": [
+                  "io_2",
+                  50.0
+                ]
+              }
+            ]
+          },
+          "then": 2,
+          "else": {
+            "if": "inDanger",
+            "then": 1,
+            "else": 0
+          }
+        }
+      },
+      "io_8": "false",
+      "serial_0_trigger": "dangerEventReported",
+      "serial_0_value_0": "lastDangerDurationMs"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "令 io_1=true 且 io_0=10.0；同时令 io_3=true 且 io_2=10.0（满足同时接近阈值）。随后令任一有效性变为 false（例如 io_1=false），完成一次危险进入与退出。",
+        "oracle": "进入危险后 io_4=true 且 io_5=false 且 io_6>0 且 io_7输出危险等级(应为3)；退出危险后 io_4=false 且 io_5=true 且 io_6=0 且 serial_0_trigger在同一控制步为true，serial_0_value_0等于最近一次危险持续时长状态值(lastDangerDurationMs)"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "令 io_1=true 但 io_0=100.0（车辆接近条件不满足）；同时令 io_3=true 且 io_2=10.0（行人接近满足）。",
+        "oracle": "由于未满足车辆与行人同时接近，系统应输出无危险状态：io_5=true 且 io_4=false 且 io_6=0 且 io_7=0，serial_0_trigger保持false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "令 io_1=true 且 io_0=40.0；同时令 io_3=true 且 io_2=40.0（两者均满足同时接近但不满足更高危险阈值）。",
+        "oracle": "进入危险态：io_4=true，io_5=false，io_6>0；危险等级选择为2（io_7=2）；serial_0_trigger为false（尚未退出危险事件）。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute prevVehApproach : Boolean := false;\n    attribute prevPedApproach : Boolean := false;\n    attribute inDanger : Boolean := false;\n    attribute dangerStartMs : Integer := 0;\n    attribute lastDangerDurationMs : Integer := 0;\n    attribute dangerEventReported : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and (((io_0) >= (5.0))) and (io_3) and (((io_2) >= (5.0)))) {\n        first start;\n        then if (((not inDanger)) and (((((io_1) and (((io_0) >= (5.0))))) and (((io_3) and (((io_2) >= (5.0)))))))) {\n          first start;\n          then assign inDanger := true;\n          then assign dangerStartMs := 0;\n          then assign dangerEventReported := false;\n        }\n      }\n      then if (not ((io_1) and (((io_0) >= (5.0))) and (io_3) and (((io_2) >= (5.0))))) {\n        first start;\n        then if inDanger {\n          first start;\n          then assign inDanger := false;\n          then assign lastDangerDurationMs := dangerStartMs;\n          then assign dangerEventReported := true;\n        }\n      }\n      then assign prevVehApproach := ((io_1) and (((io_0) >= (5.0))));\n      then assign prevPedApproach := ((io_3) and (((io_2) >= (5.0))));\n    }\n    out attribute io_4 : Boolean = inDanger;\n    out attribute io_5 : Boolean = (not inDanger);\n    out attribute io_6 : Integer = (if inDanger ? 2000 else 0);\n    out attribute io_7 : Integer = (if ((io_1) and (((io_0) < (20.0))) and (io_3) and (((io_2) < (20.0)))) ? 3 else (if ((io_1) and (((io_0) < (50.0))) and (io_3) and (((io_2) < (50.0)))) ? 2 else (if inDanger ? 1 else 0)));\n    out attribute io_8 : Boolean = false;\n    out attribute serial_0_trigger : Boolean = dangerEventReported;\n    out attribute serial_0_value_0 : Integer = lastDangerDurationMs;\n  }\n  part system : Controller;\n}\n"
+}

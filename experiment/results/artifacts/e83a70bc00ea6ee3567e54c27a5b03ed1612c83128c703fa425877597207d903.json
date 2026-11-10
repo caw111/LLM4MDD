@@ -1,0 +1,188 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"currentHighestPriorityBed\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"callPending\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"waitingSecondsI32\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"displayBedNumberI32\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"previousIo0\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousIo1\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousIo2\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"or\": [\n            {\n              \"and\": [\n                \"io_0\",\n                {\n                  \"not\": \"previousIo0\"\n                }\n              ]\n            },\n            {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"not\": \"previousIo1\"\n                }\n              ]\n            },\n            {\n              \"and\": [\n                \"io_2\",\n                {\n                  \"not\": \"previousIo2\"\n                }\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"callPending\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"currentHighestPriorityBed\",\n            \"value\": {\n              \"if\": \"and(io_0, not previousIo0) ? 1 : and(io_1, not previousIo1) ? 2 : 3\"\n            }\n          },\n          {\n            \"assign\": \"displayBedNumberI32\",\n            \"value\": {\n              \"if\": \"io_0 ? 1 : io_1 ? 2 : 3\"\n            }\n          },\n          {\n            \"assign\": \"waitingSecondsI32\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"io_3\",\n        \"then\": [\n          {\n            \"assign\": \"callPending\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"currentHighestPriorityBed\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"waitingSecondsI32\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousIo0\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"previousIo1\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"previousIo2\",\n        \"value\": \"io_2\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": \"callPending\",\n      \"io_5\": {\n        \"if\": \"callPending\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_6\": \"if callPending then displayBedNumberI32 else 0\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0 false then rising true for one step; keep io_3 false afterward\",\n        \"oracle\": \"io_4 becomes true and io_5 becomes nonzero alarm frequency, while io_6 shows bed number 1 (nonzero) when callPending is true\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With callPending true from a prior bed call, assert io_3 true for one step\",\n        \"oracle\": \"In the step where io_3 is true, io_4 becomes false and io_5 becomes 0 (silence), and io_6 becomes 0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Rising edge on io_1 (bed 2) after callPending was cleared to false\",\n        \"oracle\": \"io_4 becomes true, io_6 shows bed number 2 (nonzero), and io_5 becomes nonzero; until io_3 asserted, outputs remain in the callPending-on configuration\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Rising edge on io_2 (bed 3) after callPending was cleared to false\",\n        \"oracle\": \"io_4 becomes true, io_6 shows bed number 3 (nonzero), and io_5 becomes nonzero; when io_3 asserted later, io_4 becomes false and io_5 becomes 0\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/0/then/1/value: Unknown expression object {'if': {'if': {'and': ['io_0', {'not': 'previousIo0'}]}, 'then': 1, 'else': {'if': {'and': ['io_1', {'not': 'previousIo1'}]}, 'then': 2, 'else': 3}}}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/updates/0/then/1/value"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/updates/0/then/1/value/if",
+          "original": "and(io_0, not previousIo0) ? 1 : and(io_1, not previousIo1) ? 2 : 3",
+          "normalized": {
+            "if": {
+              "and": [
+                "io_0",
+                {
+                  "not": "previousIo0"
+                }
+              ]
+            },
+            "then": 1,
+            "else": {
+              "if": {
+                "and": [
+                  "io_1",
+                  {
+                    "not": "previousIo1"
+                  }
+                ]
+              },
+              "then": 2,
+              "else": 3
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/updates/0/then/2/value/if",
+          "original": "io_0 ? 1 : io_1 ? 2 : 3",
+          "normalized": {
+            "if": "io_0",
+            "then": 1,
+            "else": {
+              "if": "io_1",
+              "then": 2,
+              "else": 3
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/outputs/io_6",
+          "original": "if callPending then displayBedNumberI32 else 0",
+          "normalized": {
+            "if": "callPending",
+            "then": "displayBedNumberI32",
+            "else": 0
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/0/then/1/value: Unknown expression object {'if': {'if': {'and': ['io_0', {'not': 'previousIo0'}]}, 'then': 1, 'else': {'if': {'and': ['io_1', {'not': 'previousIo1'}]}, 'then': 2, 'else': 3}}}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/updates/0/then/1/value"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/updates/0/then/1/value: Unknown expression object {'if': {'if': {'and': ['io_0', {'not': 'previousIo0'}]}, 'then': 1, 'else': {'if': {'and': ['io_1', {'not': 'previousIo1'}]}, 'then': 2, 'else': 3}}}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"prevBed1\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevBed2\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevBed3\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevAck\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"pending\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"activeBed\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"queueSeq\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"prevBed1\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"pending\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"activeBed\",\n            \"value\": 1\n          },\n          {\n            \"assign\": \"queueSeq\",\n            \"value\": \"queueSeq + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"prevBed2\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"pending\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"activeBed\",\n            \"value\": 2\n          },\n          {\n            \"assign\": \"queueSeq\",\n            \"value\": \"queueSeq + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"not\": \"prevBed3\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"pending\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"activeBed\",\n            \"value\": 3\n          },\n          {\n            \"assign\": \"queueSeq\",\n            \"value\": \"queueSeq + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_3\",\n            {\n              \"not\": \"prevAck\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"pending\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"activeBed\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevBed1\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevBed2\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"prevBed3\",\n        \"value\": \"io_2\"\n      },\n      {\n        \"assign\": \"prevAck\",\n        \"value\": \"io_3\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": \"pending\",\n      \"io_5\": {\n        \"if\": \"pending\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_6\": {\n        \"if\": \"pending\",\n        \"then\": 1000,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在无确认的情况下，对io_0产生一次从false到true的上升沿（按下床1按钮），保持io_3为false。\",\n        \"oracle\": \"输出io_4为true，io_5为1000，io_6为1000（表示处于有待处理呼叫状态且显示非零）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在已存在待处理呼叫（例如由io_0上升沿触发）时，对io_3产生一次从false到true的上升沿（按下护士确认），保持床位输入为任意值（可不释放）。\",\n        \"oracle\": \"确认后同一步/后续输出io_4为false，io_5为0，io_6为0。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute prevBed1 : Boolean := false;\n    attribute prevBed2 : Boolean := false;\n    attribute prevBed3 : Boolean := false;\n    attribute prevAck : Boolean := false;\n    attribute pending : Boolean := false;\n    attribute activeBed : Integer := 0;\n    attribute queueSeq : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not prevBed1))) {\n        first start;\n        then assign pending := true;\n        then assign activeBed := 1;\n        then assign queueSeq := queueSeq + 1;\n      }\n      then if ((io_1) and ((not prevBed2))) {\n        first start;\n        then assign pending := true;\n        then assign activeBed := 2;\n        then assign queueSeq := queueSeq + 1;\n      }\n      then if ((io_2) and ((not prevBed3))) {\n        first start;\n        then assign pending := true;\n        then assign activeBed := 3;\n        then assign queueSeq := queueSeq + 1;\n      }\n      then if ((io_3) and ((not prevAck))) {\n        first start;\n        then assign pending := false;\n        then assign activeBed := 0;\n      }\n      then assign prevBed1 := io_0;\n      then assign prevBed2 := io_1;\n      then assign prevBed3 := io_2;\n      then assign prevAck := io_3;\n    }\n    out attribute io_4 : Boolean = pending;\n    out attribute io_5 : Integer = (if pending ? 1000 else 0);\n    out attribute io_6 : Integer = (if pending ? 1000 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

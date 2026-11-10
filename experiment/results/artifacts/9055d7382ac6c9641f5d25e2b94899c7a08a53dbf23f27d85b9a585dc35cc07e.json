@@ -1,0 +1,111 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "muted",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "muted",
+            "value": {
+              "not": "muted"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "muted",
+        "then": true,
+        "else": false
+      },
+      "io_2": {
+        "if": "muted",
+        "then": 0,
+        "else": {
+          "if": {
+            "<": [
+              "io_3",
+              10.0
+            ]
+          },
+          "then": 2000,
+          "else": {
+            "if": {
+              "<": [
+                "io_3",
+                20.0
+              ]
+            },
+            "then": 1500,
+            "else": {
+              "if": {
+                "<": [
+                  "io_3",
+                  30.0
+                ]
+              },
+              "then": 1000,
+              "else": 500
+            }
+          }
+        }
+      },
+      "serial_0_trigger": "io_4",
+      "serial_0_value_0": "io_3",
+      "serial_0_value_1": "io_4"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_4=true, io_3=5.0, io_0=false for one control step",
+        "oracle": "io_2=2000 and io_1=false and serial_0_trigger=true and serial_0_value_0=5.0 and serial_0_value_1=true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Mute press: set io_0 rising edge from false to true between consecutive control steps while io_4=true and io_3=15.0 (hold io_0=true for second step then false on third), with io_4 true at each reporting step",
+        "oracle": "After the rising edge, muted toggles true: io_1=true, io_2=0 while muted, and serial_0_trigger remains true with serial_0_value_0 tracking io_3 and serial_0_value_1=true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Cancel mute: apply another rising edge on io_0 while io_4=true and set io_3=35.0",
+        "oracle": "After second press rising edge, muted becomes false: io_1=false and io_2=500 (for distance >=30) with serial_0_trigger=true, serial_0_value_0=35.0, serial_0_value_1=true"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute muted : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign muted := (not muted);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = (if muted ? true else false);\n    out attribute io_2 : Integer = (if muted ? 0 else (if ((io_3) < (10.0)) ? 2000 else (if ((io_3) < (20.0)) ? 1500 else (if ((io_3) < (30.0)) ? 1000 else 500))));\n    out attribute serial_0_trigger : Boolean = io_4;\n    out attribute serial_0_value_0 : Real = io_3;\n    out attribute serial_0_value_1 : Boolean = io_4;\n  }\n  part system : Controller;\n}\n"
+}

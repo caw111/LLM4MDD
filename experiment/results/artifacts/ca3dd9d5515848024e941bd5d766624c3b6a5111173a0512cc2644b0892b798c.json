@@ -1,0 +1,147 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"blinkPeriodMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"remainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"tickPhase\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"ledOn\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"running\",\n            \"value\": {\n              \"not\": \"running\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"io_0\",\n                0.0\n              ]\n            },\n            {\n              \"<=\": [\n                \"io_0\",\n                1023.0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"blinkPeriodMs\",\n            \"value\": {\n              \"if\": {\n                \"==\": [\n                  {\n                    \"floor\": {\n                      \"-\": [\n                        {\n                          \"*\": [\n                            \"io_0\",\n                            1000.0\n                          ]\n                        },\n                        0.0\n                      ]\n                    }\n                  },\n                  0\n                ]\n              },\n              \"then\": 1,\n              \"else\": {\n                \"floor\": {\n                  \"+\": [\n                    1.0,\n                    {\n                      \"*\": [\n                        {\n                          \"/\": [\n                            \"io_0\",\n                            1023.0\n                          ]\n                        },\n                        999.0\n                      ]\n                    }\n                  ]\n                }\n              }\n            }\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"blinkPeriodMs\",\n            \"value\": 1\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"running\",\n            {\n              \"==\": [\n                \"remainingMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"remainingMs\",\n            \"value\": \"blinkPeriodMs\"\n          },\n          {\n            \"assign\": \"tickPhase\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"ledOn\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"running\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"remainingMs\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"tickPhase\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"ledOn\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"running\",\n            {\n              \"!=\": [\n                \"remainingMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"remainingMs\",\n            \"value\": {\n              \"-\": [\n                \"remainingMs\",\n                5\n              ]\n            }\n          },\n          {\n            \"if\": {\n              \"<=\": [\n                \"remainingMs\",\n                0\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"ledOn\",\n                \"value\": {\n                  \"not\": \"ledOn\"\n                }\n              },\n              {\n                \"assign\": \"remainingMs\",\n                \"value\": \"blinkPeriodMs\"\n              },\n              {\n                \"assign\": \"tickPhase\",\n                \"value\": {\n                  \"+\": [\n                    \"tickPhase\",\n                    1\n                  ]\n                }\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"running and ledOn\",\n      \"io_3\": \"blinkPeriodMs\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个可配置闪烁系统，使用 LED D13、电位器 A0、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。电位器控制闪烁周期，数码管显示周期值；按钮用于启动和停止闪烁，停止时 LED 熄灭但保留当前周期设置。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_0为固定值(如约中值)，先不按io_1运行，观察io_2与io_3；然后对io_1做一次按下上升沿使running从false变true，持续若干控制步；再按下一次使running从true变false。\",\n        \"oracle\": \"按下之前io_2始终为false且io_3等于由io_0映射得到的blinkPeriodMs；running为true期间io_2按blinkPeriodMs半周期发生翻转(本模型以5ms步进实现)；停止后io_2必须为false，且io_3保持为停止前最后一次计算得到的blinkPeriodMs。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/4/if: Structured operator 'and' requires 2..256 expression operands; preserve every operand.",
+          "path": "/controller/updates/4/if"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/4/if: Structured operator 'and' requires 2..256 expression operands; preserve every operand.",
+          "path": "/controller/updates/4/if"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/updates/4/if: Structured operator 'and' requires 2..256 expression operands; preserve every operand."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"blinkPeriodMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"remainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"tickPhase\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"ledOn\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"running\",\n            \"value\": {\n              \"not\": \"running\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"io_0\",\n                0.0\n              ]\n            },\n            {\n              \"<=\": [\n                \"io_0\",\n                1023.0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"blinkPeriodMs\",\n            \"value\": {\n              \"if\": {\n                \"==\": [\n                  {\n                    \"floor\": {\n                      \"-\": [\n                        {\n                          \"*\": [\n                            \"io_0\",\n                            1000.0\n                          ]\n                        },\n                        0.0\n                      ]\n                    }\n                  },\n                  0\n                ]\n              },\n              \"then\": 1,\n              \"else\": {\n                \"floor\": {\n                  \"+\": [\n                    1.0,\n                    {\n                      \"*\": [\n                        {\n                          \"/\": [\n                            \"io_0\",\n                            1023.0\n                          ]\n                        },\n                        999.0\n                      ]\n                    }\n                  ]\n                }\n              }\n            }\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"blinkPeriodMs\",\n            \"value\": 1\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"running\",\n            {\n              \"==\": [\n                \"remainingMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"remainingMs\",\n            \"value\": \"blinkPeriodMs\"\n          },\n          {\n            \"assign\": \"tickPhase\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"ledOn\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"running\"\n            },\n            true\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"remainingMs\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"tickPhase\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"ledOn\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"running\",\n            {\n              \"!=\": [\n                \"remainingMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"remainingMs\",\n            \"value\": {\n              \"-\": [\n                \"remainingMs\",\n                5\n              ]\n            }\n          },\n          {\n            \"if\": {\n              \"<=\": [\n                \"remainingMs\",\n                0\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"ledOn\",\n                \"value\": {\n                  \"not\": \"ledOn\"\n                }\n              },\n              {\n                \"assign\": \"remainingMs\",\n                \"value\": \"blinkPeriodMs\"\n              },\n              {\n                \"assign\": \"tickPhase\",\n                \"value\": {\n                  \"+\": [\n                    \"tickPhase\",\n                    1\n                  ]\n                }\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"and(running, ledOn)\",\n      \"io_3\": \"blinkPeriodMs\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个可配置闪烁系统，使用 LED D13、电位器 A0、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。电位器控制闪烁周期，数码管显示周期值；按钮用于启动和停止闪烁，停止时 LED 熄灭但保留当前周期设置。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_0为固定值(如约中值)，先不按io_1运行，观察io_2与io_3；然后对io_1做一次按下上升沿使running从false变true，持续若干控制步；再按下一次使running从true变false。\",\n        \"oracle\": \"按下之前io_2始终为false且io_3等于由io_0映射得到的blinkPeriodMs；running为true期间io_2按blinkPeriodMs半周期发生翻转(本模型以5ms步进实现)；停止后io_2必须为false，且io_3保持为停止前最后一次计算得到的blinkPeriodMs。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/outputs/io_2",
+          "original": "and(running, ledOn)",
+          "normalized": {
+            "and": [
+              "running",
+              "ledOn"
+            ]
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute running : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    attribute blinkPeriodMs : Integer := 0;\n    attribute remainingMs : Integer := 0;\n    attribute tickPhase : Integer := 0;\n    attribute ledOn : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign running := (not running);\n      }\n      then assign previousPressed := io_1;\n      then if ((((io_0) >= (0.0))) and (((io_0) <= (1023.0)))) {\n        first start;\n        then assign blinkPeriodMs := (if ((RealFunctions::floor(((((io_0) * (1000.0))) - (0.0)))) == (0)) ? 1 else RealFunctions::floor(((1.0) + (((((io_0) / (1023.0))) * (999.0))))));\n      } else {\n        first start;\n        then assign blinkPeriodMs := 1;\n      }\n      then if ((running) and (((remainingMs) == (0)))) {\n        first start;\n        then assign remainingMs := blinkPeriodMs;\n        then assign tickPhase := 0;\n        then assign ledOn := true;\n      }\n      then if (((not running)) and (true)) {\n        first start;\n        then assign remainingMs := 0;\n        then assign tickPhase := 0;\n        then assign ledOn := false;\n      }\n      then if ((running) and (((remainingMs) != (0)))) {\n        first start;\n        then assign remainingMs := ((remainingMs) - (5));\n        then if ((remainingMs) <= (0)) {\n          first start;\n          then assign ledOn := (not ledOn);\n          then assign remainingMs := blinkPeriodMs;\n          then assign tickPhase := ((tickPhase) + (1));\n        }\n      }\n    }\n    out attribute io_2 : Boolean = ((running) and (ledOn));\n    out attribute io_3 : Integer = blinkPeriodMs;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

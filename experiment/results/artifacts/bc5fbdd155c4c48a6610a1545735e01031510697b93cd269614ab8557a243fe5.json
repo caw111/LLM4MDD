@@ -1,0 +1,54 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "lastServoAngleDeg",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "true",
+        "then": [
+          {
+            "assign": "lastServoAngleDeg",
+            "value": {
+              "if": "io_0 <= 0.0",
+              "then": 0,
+              "else": {
+                "if": "io_0 >= 1023.0",
+                "then": 180,
+                "else": "RealFunctions::floor(io_0 * 180.0 / 1023.0)"
+              }
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "io_2_valid",
+        "then": [],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_1": "lastServoAngleDeg",
+      "serial_0_trigger": true,
+      "serial_0_value_0": "lastServoAngleDeg"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "# Potentiometer Servo Motor\n\n## Project Description\nThis is a simple Arduino project that controls servo motor with a potentiometer.\n\n## Hardware Components\n- Arduino Uno\n- Servo motor\n- Potentiometer\n\n## Circuit Description\nThe SIG pin of the potentiometer is connected to the a0. The PWN pin of servo motor is connected to the pin9. GND pins are connected to gnd1, and VCC pins are connected to 5v. \n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Generate Servo object\n2. Set potentiometer signal pin a0 as INPUT\n3. Continuously read the potentiometer value, which ranges from 0 to 1023, and map it to a range of 0 to 180\n4. Write the mapped value to the servo motor\n5. Continuously read the servo value and print it to the serial monitor \n\n## Success Criteria\nThe test is successful when:\n1. The servo motor rotates correctly according to the mapped value from the potentiometer.\n\n## Notes for Implementation\n- Potentiometer value ranges from 0 to 1023.\n- Servo motor value ranges from 0 to 180.\n\n## Variants\nThis project may have different variants with the servo motor, potentiometer connected to different pins.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Control servo motor with potentiometer\",\n    \"config\": {\n        \"potentiometer_sig_pin\": \"A0\",\n        \"gnd_pin\": \"GND.1\",\n        \"vcc_pin\": \"5V\",\n        \"servo_pin\": \"9\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 200,\n            \"left\": 20,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-servo\",\n            \"id\": \"servo motor1\",\n            \"top\": 199.6,\n            \"left\": 403.2,\n            \"attrs\": {\n                \"hornColor\": \"black\"\n            }\n        },\n        {\n            \"type\": \"wokwi-potentiometer\",\n            \"id\": \"potentiometer1\",\n            \"top\": 440.3,\n            \"left\": 153.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:9\",\n            \"servo motor1:PWM\",\n            \"orange\",\n            [\n                \"v-20\",\n                \"*\",\n                \"h0\",\n                \"h-52\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"servo motor1:V+\",\n            \"red\",\n            [\n                \"v20\",\n                \"h0\",\n                \"*\",\n                \"h-20\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.1\",\n            \"servo motor1:GND\",\n            \"black\",\n            [\n                \"v-28\",\n                \"h240\",\n                \"*\",\n                \"h-20\"\n            ]\n        ],\n        [\n            \"potentiometer1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v19.2\",\n                \"h37.6\",\n                \"v-115.2\",\n                \"h-57.6\"\n            ]\n        ],\n        [\n            \"potentiometer1:SIG\",\n            \"arduino uno1:A0\",\n            \"green\",\n            [\n                \"v19.2\",\n                \"h66.8\"\n            ]\n        ],\n        [\n            \"potentiometer1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v19.2\",\n                \"h-192\",\n                \"v-307.2\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Set io_0 (potentiometer ADC) to {0, 512, 1023} over successive model steps; keep io_2_valid=false each step.",
+        "oracle": "io_1 is 0.0 deg at io_0=0, approximately 90.0 deg (floor(512*180/1023)) at io_0=512, and 180.0 deg at io_0=1023; serial_0_trigger is true each step and serial_0_value_0 matches the commanded servo angle integer degrees."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_2 : Integer;\n    in attribute io_2_valid : Boolean;\n    attribute lastServoAngleDeg : Integer := 0;\n    perform action tick {\n      first start;\n      then if true {\n        first start;\n        then assign lastServoAngleDeg := (if io_0 <= 0.0 ? 0 else (if io_0 >= 1023.0 ? 180 else RealFunctions::floor(io_0 * 180.0 / 1023.0)));\n      }\n      then if io_2_valid {\n        first start;\n        then done;\n      }\n    }\n    out attribute io_1 : Real = lastServoAngleDeg;\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Integer = lastServoAngleDeg;\n  }\n  part system : Controller;\n}\n"
+}

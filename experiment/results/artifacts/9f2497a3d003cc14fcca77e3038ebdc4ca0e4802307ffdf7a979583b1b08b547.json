@@ -1,0 +1,133 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"menuMode\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"serialEnabled\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dhtTemperatureValidHold\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dhtHumidityValidHold\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dhtTemperatureHold\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"dhtHumidityHold\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_5_valid\",\n        \"then\": [\n          {\n            \"assign\": \"menuMode\",\n            \"value\": \"io_5\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"serialEnabled\",\n            \"value\": {\n              \"if\": \"serialEnabled\",\n              \"then\": false,\n              \"else\": true\n            }\n          }\n        ]\n      },\n      {\n        \"if\": \"io_3\",\n        \"then\": [\n          {\n            \"assign\": \"dhtTemperatureHold\",\n            \"value\": \"io_1\"\n          },\n          {\n            \"assign\": \"dhtHumidityHold\",\n            \"value\": \"io_2\"\n          },\n          {\n            \"assign\": \"dhtTemperatureValidHold\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"dhtHumidityValidHold\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"dhtTemperatureValidHold\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"dhtHumidityValidHold\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": \"menuMode == 3\",\n        \"then\": {\n          \"if\": \"dhtTemperatureValidHold\",\n          \"then\": \"RealFunctions::floor(dhtTemperatureHold * 10.0)\",\n          \"else\": 0\n        },\n        \"else\": {\n          \"if\": \"menuMode == 2\",\n          \"then\": {\n            \"if\": \"dhtHumidityValidHold\",\n              \"then\": \"RealFunctions::floor(dhtHumidityHold * 10.0)\",\n              \"else\": 0\n            },\n          \"else\": {\n            \"if\": \"dhtTemperatureValidHold\",\n              \"then\": \"RealFunctions::floor(dhtTemperatureHold * 10.0)\",\n              \"else\": {\n                \"if\": \"dhtHumidityValidHold\",\n                \"then\": \"RealFunctions::floor(dhtHumidityHold * 10.0)\",\n                \"else\": 0\n                }\n            }\n          }\n        }\n      },\n      \"serial_0_trigger\": {\n        \"and\": [\n          \"serialEnabled\",\n          {\n            \"or\": [\n              \"io_5_valid\",\n              {\n                \"or\": [\n                  {\n                    \"and\": [\n                      \"menuMode == 3\",\n                      \"dhtTemperatureValidHold\"\n                    ]\n                  },\n                  {\n                    \"and\": [\n                      \"menuMode == 2\",\n                      \"dhtHumidityValidHold\"\n                    ]\n                  },\n                  {\n                    \"and\": [\n                      \"menuMode == 1\",\n                      {\n                        \"or\": [\n                          \"dhtTemperatureValidHold\",\n                          \"dhtHumidityValidHold\"\n                        ]\n                      }\n                    ]\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      },\n      \"serial_0_value_0\": {\n        \"if\": {\n          \"or\": [\n            {\n              \"and\": [\n                \"menuMode == 3\",\n                \"dhtTemperatureValidHold\"\n              ]\n            },\n            {\n              \"and\": [\n                \"menuMode == 1\",\n                \"dhtTemperatureValidHold\"\n              ]\n            }\n          ]\n        },\n        \"then\": \"dhtTemperatureHold\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_1\": {\n        \"if\": {\n          \"or\": [\n            {\n              \"and\": [\n                \"menuMode == 2\",\n                \"dhtHumidityValidHold\"\n              ]\n            },\n            {\n              \"and\": [\n                \"menuMode == 1\",\n                \"dhtHumidityValidHold\"\n              ]\n            }\n          ]\n        },\n        \"then\": \"dhtHumidityHold\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_2\": {\n        \"if\": {\n          \"or\": [\n            {\n              \"and\": [\n                \"menuMode == 3\",\n                \"dhtTemperatureValidHold\"\n              ]\n            },\n            {\n              \"and\": [\n                \"menuMode == 2\",\n                \"dhtHumidityValidHold\"\n              ]\n            },\n            {\n              \"and\": [\n                \"menuMode == 1\",\n                {\n                  \"or\": [\n                    \"dhtTemperatureValidHold\",\n                    \"dhtHumidityValidHold\"\n                  ]\n                }\n              ]\n            }\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_value_3\": \"menuMode\"\n    }\n  }",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Model specification requires ['controller', 'req_test_map']; optional ()"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Model specification requires ['controller', 'req_test_map']; optional ()"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Model specification requires ['controller', 'req_test_map']; optional ()"
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"menuMode\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"serialEnabled\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_5_valid\",\n        \"then\": [\n          {\n            \"assign\": \"menuMode\",\n            \"value\": \"io_5\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"serialEnabled\",\n            \"value\": {\n              \"if\": \"serialEnabled\",\n              \"then\": false,\n              \"else\": true\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": \"menuMode == 3\",\n        \"then\": {\n          \"if\": \"io_3\",\n          \"then\": \"RealFunctions::floor(io_1 * 10.0)\",\n          \"else\": 0\n        },\n        \"else\": {\n          \"if\": \"menuMode == 2\",\n          \"then\": {\n            \"if\": \"io_3\",\n            \"then\": \"RealFunctions::floor(io_2 * 10.0)\",\n            \"else\": 0\n          },\n          \"else\": {\n            \"if\": \"io_3\",\n            \"then\": \"RealFunctions::floor(io_1 * 10.0)\",\n            \"else\": 0\n          }\n        }\n      },\n      \"serial_0_trigger\": {\n        \"and\": [\n          \"serialEnabled\",\n          \"io_5_valid\"\n        ]\n      },\n      \"serial_0_value_0\": {\n        \"if\": \"menuMode == 3\",\n        \"then\": {\n          \"if\": \"io_3\",\n          \"then\": \"io_1\",\n          \"else\": 0.0\n        },\n        \"else\": {\n          \"if\": \"menuMode == 1\",\n          \"then\": {\n            \"if\": \"io_3\",\n            \"then\": \"io_1\",\n            \"else\": 0.0\n          },\n          \"else\": 0.0\n        }\n      },\n      \"serial_0_value_1\": {\n        \"if\": \"menuMode == 2\",\n        \"then\": {\n          \"if\": \"io_3\",\n          \"then\": \"io_2\",\n          \"else\": 0.0\n        },\n        \"else\": {\n          \"if\": \"menuMode == 1\",\n          \"then\": {\n            \"if\": \"io_3\",\n            \"then\": \"io_2\",\n            \"else\": 0.0\n          },\n          \"else\": 0.0\n        }\n      },\n      \"serial_0_value_2\": {\n        \"if\": \"io_3\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_value_3\": \"menuMode\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下并释放 D2 一次以切换串口输出使能为开；随后发送串口命令 TEMP（io_5=3 且 io_5_valid=1），同时在同一步满足 DHT 有效 io_3=1 且 io_1/io_2为已知值。\",\n        \"oracle\": \"serial_0_trigger 为 true；serial_0_value_0 等于 io_1；serial_0_value_1 为 0.0；serial_0_value_2 为 true；serial_0_value_3 为 3。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"当 serialEnabled 已为开时，发送串口命令 HUMI（io_5=2 且 io_5_valid=1），并设置 io_3=1，io_2/io_1为已知值。\",\n        \"oracle\": \"serial_0_trigger 为 true；serial_0_value_1 等于 io_2；serial_0_value_0 为 0.0；serial_0_value_3 为 2。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 D2 未按下（不发生按下上升沿）；serialEnabled 保持为关（初始为 false）；随后发送任意串口命令（例如 TEMP：io_5=3 且 io_5_valid=1），并使 io_3=1。\",\n        \"oracle\": \"serial_0_trigger 为 false；所有 serial_0_value_* 输出不应触发有效报告（至少 serial_0_trigger 必须为 false）。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_5 : Integer;\n    in attribute io_5_valid : Boolean;\n    attribute menuMode : Integer := 1;\n    attribute serialEnabled : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_5_valid {\n        first start;\n        then assign menuMode := io_5;\n      }\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign serialEnabled := (if serialEnabled ? false else true);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_4 : Integer = (if menuMode == 3 ? (if io_3 ? RealFunctions::floor(io_1 * 10.0) else 0) else (if menuMode == 2 ? (if io_3 ? RealFunctions::floor(io_2 * 10.0) else 0) else (if io_3 ? RealFunctions::floor(io_1 * 10.0) else 0)));\n    out attribute serial_0_trigger : Boolean = ((serialEnabled) and (io_5_valid));\n    out attribute serial_0_value_0 : Real = (if menuMode == 3 ? (if io_3 ? io_1 else 0.0) else (if menuMode == 1 ? (if io_3 ? io_1 else 0.0) else 0.0));\n    out attribute serial_0_value_1 : Real = (if menuMode == 2 ? (if io_3 ? io_2 else 0.0) else (if menuMode == 1 ? (if io_3 ? io_2 else 0.0) else 0.0));\n    out attribute serial_0_value_2 : Boolean = (if io_3 ? true else false);\n    out attribute serial_0_value_3 : Integer = menuMode;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

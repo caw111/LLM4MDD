@@ -1,0 +1,111 @@
+{
+  "contract_sha256": "a32cd0ed90e45816c8b337ec9c4b18194edef0dad1ab59f3bad9cb8d90014ac2",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"温度传感器（默认显示温度，按钮切换到湿度时该值仍用于风扇联动）\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"湿度传感器（按钮切换显示湿度；温湿度用于系统联动逻辑）\"\n    },\n    {\n      \"kind\": \"dht_valid\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"DHT 数据有效性（温湿度读取一致帧发布，失效时有效性为 false）\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"风扇 PWM 调速输出（温度>30℃时开启并随温度升高提升转速）\",\n      \"scale\": 1,\n      \"offset\": 0\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D3\",\n      \"invalid_policy\": \"blank\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 数码管显示数值（默认显示温度；按钮切换显示湿度）\",\n      \"leading_zero\": false\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"按键输入：每按一次切换显示温度/湿度模式\",\n      \"pullup\": true,\n      \"active_high\": false\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"按键 D2 未提供上拉/下拉与电平连接细节；采用 pullup=true 且 active_high=false（即按下为低电平，模型 true 表示“按下”）。若硬件不是该连接方式，需要在电平含义上调整。\",\n    \"序列口未要求：未生成 serial input/output 或串口报告通道。\",\n    \"TM1637 默认启动显示策略：tm1637_number 的 invalid_policy=blank，initial=0。具体切换逻辑、温湿度数值到显示位数/小数处理（如四舍五入、是否带小数）属于 SysML 模型问题。\",\n    \"DHT11 读取采样周期与风扇联动、显示刷新节拍未在题干明确：由 SysML 根据 control_period_ms=10ms 进一步决定采样倍数/报告门控。\",\n    \"风扇 PWM 与温度阈值/映射曲线（例如线性/分段/最大转速封顶）属于模型参数；本接口只提供可输出 PWM 的端口。\",\n    \"设备/端口的物理引脚映射完全按题干权威配置：DHT11(D7)、风扇PWM(D5)、TM1637 CLK(D4)/DIO(D3)、按钮(D2)。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。",
+    "effective_requirement": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D3）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

@@ -1,0 +1,666 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "The supplied Mega 2560 circuit takes precedence over the prose reference to Uno. All supplied wiring is preserved.",
+    "The single display digit is common-anode and uses active-low segment commands through sr1; its score range of 0 through 5 fits the supported numeric display.",
+    "SysML implements the 3000 ms preparation, 5000 ms response windows, 2000 ms intervals between rounds, score updates, five-round limit, and final-score retention using actual elapsed time.",
+    "SysML selects a randomized five-round sequence constrained to include each LED at least once; random distribution and seeding are unspecified.",
+    "Assume LEDs are off during inter-round intervals, a correct response ends its round immediately, and an incorrect response leaves the remaining response window available.",
+    "Assume each distinct button press is handled once rather than repeatedly while held. Debounce duration, simultaneous-button handling, and exact-deadline event priority remain model decisions.",
+    "Score begins at zero and is incremented before each success report, so the first successful response reports one.",
+    "Numeric serial reports use the specified message prefixes as labels followed immediately by the integer score; fixed messages are separate exact-text lines. No additional separators or labels are intended.",
+    "No serial receiver is required; the supplied receive-framing settings therefore do not introduce a serial input request."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Red LED illuminated",
+      "sample_period_ms": 5,
+      "device": "led_red",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D2\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Yellow LED illuminated",
+      "sample_period_ms": 5,
+      "device": "led_yellow",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D3\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Green LED illuminated",
+      "sample_period_ms": 5,
+      "device": "led_green",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D4\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Stop button pressed",
+      "sample_period_ms": 5,
+      "device": "btn_stop",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D5\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D5"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Back button pressed",
+      "sample_period_ms": 5,
+      "device": "btn_back",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D6\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D6"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Forward button pressed",
+      "sample_period_ms": 5,
+      "device": "btn_forward",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Current score displayed on sevseg1, retained at game end",
+      "sample_period_ms": 5,
+      "device": "sr1",
+      "hardware": "{\"clock_pin\": \"A2\", \"data_pin\": \"A0\", \"invalid_policy\": \"blank\", \"kind\": \"shift595_number\", \"latch_pin\": \"A1\", \"leading_zero\": false, \"registers\": [{\"active_low\": true, \"digit\": 0, \"display\": \"sevseg1\", \"register\": \"sr1\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}]}",
+      "binding": {
+        "kind": "shift595_number",
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "registers": [
+          {
+            "register": "sr1",
+            "display": "sevseg1",
+            "digit": 0,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          }
+        ],
+        "clock_pin": "A2",
+        "data_pin": "A0",
+        "latch_pin": "A1"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual elapsed milliseconds since the previous control step for game timing",
+      "sample_period_ms": 5,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report once when the preparation phase begins",
+      "sample_period_ms": 5,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"Ready Go!\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Ready Go!"
+      }
+    },
+    {
+      "name": "io_9",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report an incorrect button press during an active round",
+      "sample_period_ms": 5,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"Come On!\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Come On!"
+      }
+    },
+    {
+      "name": "io_10",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report expiration of a round without a correct response",
+      "sample_period_ms": 5,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"Time's up!\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Time's up!"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report once after each correct response and score increment",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Current score after the correct response",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Good Job! x\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "Good Job! x"
+      }
+    },
+    {
+      "name": "serial_1_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report once when the fifth round finishes",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_1_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Final score",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Game Over! Your score is \", \"trigger\": \"serial_1_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_1_trigger",
+        "baud": 9600,
+        "label": "Game Over! Your score is "
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to create an interactive game using three LEDs (led_red, led_yellow, led_green), three pushbuttons (btn_stop, btn_back, btn_forward), and a 7-segment display (sevseg1). The game involves reacting to the LEDs by pressing the correct button within a time limit to score points.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, all LEDs should be turned off, and the 7-segment display should show \"0\" to indicate the initial score.\n\nPreparation Phase: Wait for 3 seconds, during which all LEDs remain off, the 7-segment display shows \"0\", and the serial monitor outputs \"Ready Go!\". After this, one of the LEDs (red, yellow, or green) will randomly light up.\n\nGame Phase:\n1. **Red LED (led_red)**: The red LED will stay lit for 5 seconds. The player must press the \"Stop\" button (btn_stop) within this time. If the correct button is pressed, the serial monitor will output \"Good Job! xN\" (where N is the current score, starting at 0 and incrementing by 1 for each correct response), and the game will proceed to the next round. If the wrong button is pressed, the serial monitor will output \"Come On!\", and the player can try again within the remaining time. If no button is pressed within 5 seconds, the serial monitor will output \"Time's up!\", and the game will proceed to the next round.\n\n2. **Yellow LED (led_yellow)**: The yellow LED will stay lit for 5 seconds. The player must press the \"Back\" button (btn_back) within this time. The same rules as the red LED apply for correct, incorrect, or no button presses.\n\n3. **Green LED (led_green)**: The green LED will stay lit for 5 seconds. The player must press the \"Forward\" button (btn_forward) within this time. The same rules as the red LED apply for correct, incorrect, or no button presses.\n\nGame Repetition: The game will repeat for a total of 5 rounds, with each round having a 2-second interval between LED activations. During these 5 rounds, each LED (red, yellow, and green) must light up at least once.\n\nGame End: After 5 rounds, all LEDs will turn off, and the 7-segment display will show the final score. The serial monitor will output \"Game Over! Your score is N\", where N is the final score.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led_red\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led_yellow\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led_green\", \"top\": -70.8, \"left\": 128.6, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_stop\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_back\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_forward\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led_red:C\", \"black\"], [\"led_red:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led_yellow:C\", \"black\"], [\"led_yellow:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"led_green:C\", \"black\"], [\"led_green:A\", \"mega:4\", \"red\"], [\"mega:GND.1\", \"btn_stop:2.r\", \"black\"], [\"mega:5\", \"btn_stop:1.l\", \"green\"], [\"mega:GND.1\", \"btn_back:2.r\", \"black\"], [\"mega:6\", \"btn_back:1.l\", \"green\"], [\"mega:GND.1\", \"btn_forward:2.r\", \"black\"], [\"mega:7\", \"btn_forward:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to create an interactive game using three LEDs (led_red, led_yellow, led_green), three pushbuttons (btn_stop, btn_back, btn_forward), and a 7-segment display (sevseg1). The game involves reacting to the LEDs by pressing the correct button within a time limit to score points.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, all LEDs should be turned off, and the 7-segment display should show \"0\" to indicate the initial score.\n\nPreparation Phase: Wait for 3 seconds, during which all LEDs remain off, the 7-segment display shows \"0\", and the serial monitor outputs \"Ready Go!\". After this, one of the LEDs (red, yellow, or green) will randomly light up.\n\nGame Phase:\n1. **Red LED (led_red)**: The red LED will stay lit for 5 seconds. The player must press the \"Stop\" button (btn_stop) within this time. If the correct button is pressed, the serial monitor will output \"Good Job! xN\" (where N is the current score, starting at 0 and incrementing by 1 for each correct response), and the game will proceed to the next round. If the wrong button is pressed, the serial monitor will output \"Come On!\", and the player can try again within the remaining time. If no button is pressed within 5 seconds, the serial monitor will output \"Time's up!\", and the game will proceed to the next round.\n\n2. **Yellow LED (led_yellow)**: The yellow LED will stay lit for 5 seconds. The player must press the \"Back\" button (btn_back) within this time. The same rules as the red LED apply for correct, incorrect, or no button presses.\n\n3. **Green LED (led_green)**: The green LED will stay lit for 5 seconds. The player must press the \"Forward\" button (btn_forward) within this time. The same rules as the red LED apply for correct, incorrect, or no button presses.\n\nGame Repetition: The game will repeat for a total of 5 rounds, with each round having a 2-second interval between LED activations. During these 5 rounds, each LED (red, yellow, and green) must light up at least once.\n\nGame End: After 5 rounds, all LEDs will turn off, and the 7-segment display will show the final score. The serial monitor will output \"Game Over! Your score is N\", where N is the final score.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led_red\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led_yellow\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led_green\", \"top\": -70.8, \"left\": 128.6, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_stop\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_back\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_forward\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led_red:C\", \"black\"], [\"led_red:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led_yellow:C\", \"black\"], [\"led_yellow:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"led_green:C\", \"black\"], [\"led_green:A\", \"mega:4\", \"red\"], [\"mega:GND.1\", \"btn_stop:2.r\", \"black\"], [\"mega:5\", \"btn_stop:1.l\", \"green\"], [\"mega:GND.1\", \"btn_back:2.r\", \"black\"], [\"mega:6\", \"btn_back:1.l\", \"green\"], [\"mega:GND.1\", \"btn_forward:2.r\", \"black\"], [\"mega:7\", \"btn_forward:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"]], \"dependencies\": {}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led_red",
+            "top": -70.8,
+            "left": 13.4,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led_yellow",
+            "top": -70.8,
+            "left": 71.0,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led_green",
+            "top": -70.8,
+            "left": 128.6,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn_stop",
+            "top": -195.4,
+            "left": 19.2,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn_back",
+            "top": -195.4,
+            "left": 105.0,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn_forward",
+            "top": -195.4,
+            "left": 190.8,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "led_red:C",
+            "black"
+          ],
+          [
+            "led_red:A",
+            "mega:2",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "led_yellow:C",
+            "black"
+          ],
+          [
+            "led_yellow:A",
+            "mega:3",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "led_green:C",
+            "black"
+          ],
+          [
+            "led_green:A",
+            "mega:4",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "btn_stop:2.r",
+            "black"
+          ],
+          [
+            "mega:5",
+            "btn_stop:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "btn_back:2.r",
+            "black"
+          ],
+          [
+            "mega:6",
+            "btn_back:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "btn_forward:2.r",
+            "black"
+          ],
+          [
+            "mega:7",
+            "btn_forward:1.l",
+            "green"
+          ],
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to create an interactive game using three LEDs (led_red, led_yellow, led_green), three pushbuttons (btn_stop, btn_back, btn_forward), and a 7-segment display (sevseg1). The game involves reacting to the LEDs by pressing the correct button within a time limit to score points.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, all LEDs should be turned off, and the 7-segment display should show \"0\" to indicate the initial score.\n\nPreparation Phase: Wait for 3 seconds, during which all LEDs remain off, the 7-segment display shows \"0\", and the serial monitor outputs \"Ready Go!\". After this, one of the LEDs (red, yellow, or green) will randomly light up.\n\nGame Phase:\n1. **Red LED (led_red)**: The red LED will stay lit for 5 seconds. The player must press the \"Stop\" button (btn_stop) within this time. If the correct button is pressed, the serial monitor will output \"Good Job! xN\" (where N is the current score, starting at 0 and incrementing by 1 for each correct response), and the game will proceed to the next round. If the wrong button is pressed, the serial monitor will output \"Come On!\", and the player can try again within the remaining time. If no button is pressed within 5 seconds, the serial monitor will output \"Time's up!\", and the game will proceed to the next round.\n\n2. **Yellow LED (led_yellow)**: The yellow LED will stay lit for 5 seconds. The player must press the \"Back\" button (btn_back) within this time. The same rules as the red LED apply for correct, incorrect, or no button presses.\n\n3. **Green LED (led_green)**: The green LED will stay lit for 5 seconds. The player must press the \"Forward\" button (btn_forward) within this time. The same rules as the red LED apply for correct, incorrect, or no button presses.\n\nGame Repetition: The game will repeat for a total of 5 rounds, with each round having a 2-second interval between LED activations. During these 5 rounds, each LED (red, yellow, and green) must light up at least once.\n\nGame End: After 5 rounds, all LEDs will turn off, and the 7-segment display will show the final score. The serial monitor will output \"Game Over! Your score is N\", where N is the final score.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led_red\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led_yellow\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led_green\", \"top\": -70.8, \"left\": 128.6, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_stop\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_back\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn_forward\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led_red:C\", \"black\"], [\"led_red:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led_yellow:C\", \"black\"], [\"led_yellow:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"led_green:C\", \"black\"], [\"led_green:A\", \"mega:4\", \"red\"], [\"mega:GND.1\", \"btn_stop:2.r\", \"black\"], [\"mega:5\", \"btn_stop:1.l\", \"green\"], [\"mega:GND.1\", \"btn_back:2.r\", \"black\"], [\"mega:6\", \"btn_back:1.l\", \"green\"], [\"mega:GND.1\", \"btn_forward:2.r\", \"black\"], [\"mega:7\", \"btn_forward:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_9": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_10": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_1_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      },
+      {
+        "id": "serial_1",
+        "trigger_port": "serial_1_trigger",
+        "value_ports": [
+          "serial_1_value_0"
+        ]
+      }
+    ],
+    "serial_text_outputs": [
+      {
+        "id": "io_8",
+        "trigger_port": "io_8",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Ready Go!"
+      },
+      {
+        "id": "io_9",
+        "trigger_port": "io_9",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Come On!"
+      },
+      {
+        "id": "io_10",
+        "trigger_port": "io_10",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Time's up!"
+      }
+    ]
+  }
+}

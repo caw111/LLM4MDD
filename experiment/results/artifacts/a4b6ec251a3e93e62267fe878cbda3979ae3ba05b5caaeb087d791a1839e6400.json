@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"dhtValid\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"lastTempValid\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"lastHumValid\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"showTemp\",\n        \"type\": \"bool\",\n        \"initial\": true\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"lastTempValid\",\n            \"lastHumValid\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"showTemp\",\n            \"value\": {\n              \"not\": \"showTemp\"\n            }\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"showTemp\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"assign\": \"lastTempValid\",\n        \"value\": true\n      },\n      {\n        \"assign\": \"lastHumValid\",\n        \"value\": true\n      },\n      {\n        \"assign\": \"dhtValid\",\n        \"value\": {\n          \"and\": [\n            \"lastTempValid\",\n            \"lastHumValid\"\n          ]\n        }\n      }\n    ],\n    \"outputs\": {\n      \"io_0\": {\n        \"if\": \"dhtValid\",\n        \"then\": false,\n        \"else\": true\n      },\n      \"io_3\": {\n        \"if\": {\n          \"and\": [\n            \"dhtValid\",\n            \"showTemp\"\n          ]\n        },\n        \"then\": 0,\n        \"else\": {\n          \"if\": {\n            \"and\": [\n              \"dhtValid\",\n              {\n                \"not\": \"showTemp\"\n              }\n            ]\n          },\n          \"then\": 0,\n          \"else\": 0\n        }\n      },\n      \"serial_0_trigger\": {\n        \"not\": \"dhtValid\"\n      },\n      \"serial_0_value_0\": 0\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个带错误提示的传感器显示系统，使用 DHT11（D7）、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。正常时轮流显示温度和湿度；若读数失败，则数码管显示 0000、LED 闪烁，并在串口输出 sensor error。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_1 初始为任意值，io_2 初始为任意值（模拟首次可用读数情形）\",\n        \"oracle\": \"io_0 为 false；io_3 在后续控制步按 showTemp 在温度/湿度两种显示之间切换（本模型以占位 0 表示显示值）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个带错误提示的传感器显示系统，使用 DHT11（D7）、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。正常时轮流显示温度和湿度；若读数失败，则数码管显示 0000、LED 闪烁，并在串口输出 sensor error。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"注入 DHT 读失败事件（使 dhtValid=false 的前提成立，模拟一次读失败）\",\n        \"oracle\": \"io_3 输出 0000（即整数 0）；serial_0_trigger 为 true；serial_0_value_0 为 0；io_0 为 true。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    attribute dhtValid : Boolean := false;\n    attribute lastTempValid : Boolean := false;\n    attribute lastHumValid : Boolean := false;\n    attribute showTemp : Boolean := true;\n    perform action tick {\n      first start;\n      then if ((lastTempValid) and (lastHumValid)) {\n        first start;\n        then assign showTemp := (not showTemp);\n      } else {\n        first start;\n        then assign showTemp := true;\n      }\n      then assign lastTempValid := true;\n      then assign lastHumValid := true;\n      then assign dhtValid := ((lastTempValid) and (lastHumValid));\n    }\n    out attribute io_0 : Boolean = (if dhtValid ? false else true);\n    out attribute io_3 : Integer = (if ((dhtValid) and (showTemp)) ? 0 else (if ((dhtValid) and ((not showTemp))) ? 0 else 0));\n    out attribute serial_0_trigger : Boolean = (not dhtValid);\n    out attribute serial_0_value_0 : Integer = 0;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

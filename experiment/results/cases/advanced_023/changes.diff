@@ -1,0 +1,197 @@
+--- original.ino
++++ repaired.ino
+@@ -1,5 +1,6 @@
+ #ifdef ARDUINO
+ #include <Arduino.h>
++#include <stdlib.h>
+ #endif
+ // BEGIN COMPILED SYSML MODEL
+ #include <stdint.h>
+@@ -32,6 +33,8 @@
+ #endif
+ 
+ 
++static double manualLatitude=0,manualLongitude=0;
++static bool manualLocationValid=false;
+ /* Code of ProgramPage1 */
+ /* Global Variable define of  */
+ struct ProgramPage1_state ProgramPage1_instance;
+@@ -62,132 +65,32 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, bool io_1, bool io_2, int32_t io_6, bool io_6_valid, int32_t* io_3, int32_t* io_4, bool* io_5, bool* serial_0_trigger, double* serial_0_value_0, int32_t* serial_0_value_1) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    bool sysml_lazy_2 = 0;
+-    bool sysml_lazy_3 = 0;
+-    bool sysml_lazy_4 = 0;
+-    bool sysml_lazy_5 = 0;
+-    bool sysml_lazy_6 = 0;
+-    bool sysml_lazy_7 = 0;
+-    int32_t sysml_conditional_8 = 0;
+-    int32_t sysml_conditional_9 = 0;
+-    bool sysml_lazy_10 = 0;
+-    int32_t sysml_conditional_11 = 0;
+-    bool sysml_lazy_12 = 0;
+-    bool sysml_conditional_13 = 0;
+-    sysml_lazy_0 = io_6_valid;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = sysml_state_serialGatePending;
++    static bool prevWarm=false,prevDoor=false,prevShock=false;
++    static int events=0;
++    uint32_t now=millis();
++    double temperature=io_0*500.0/1023.0;
++    bool warm=temperature>8;
++    bool rising[]={warm && !prevWarm,io_2 && !prevDoor,io_1 && !prevShock};
++    const char *labels[]={"temperature high","box opened","shock"};
++    for (uint8_t i=0;i<3;++i) if (rising[i]) {
++        if (events<9999) ++events;
++        Serial.print(labels[i]);
++        Serial.print(" GPS: ");
++        if (manualLocationValid) {
++            Serial.print(manualLatitude,4);
++            Serial.print(",");
++            Serial.println(manualLongitude,4);
++        } else Serial.println("unknown");
+     }
+-    if (sysml_lazy_0) {
+-        sysml_state_serialPosition = io_6;
+-        sysml_state_serialGatePending = false;
+-    }
+-    sysml_lazy_1 = io_0 > 30.0;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = !sysml_state_previousTempAbnormal;
+-    }
+-    if (sysml_lazy_1) {
+-        sysml_state_abnormalCount = (sysml_state_abnormalCount + 1);
+-        sysml_state_serialGatePending = true;
+-    }
+-    sysml_lazy_2 = io_2;
+-    if (sysml_lazy_2) {
+-        sysml_lazy_2 = !sysml_state_previousDoor;
+-    }
+-    sysml_lazy_3 = sysml_lazy_2;
+-    if (sysml_lazy_3) {
+-        sysml_lazy_3 = sysml_state_displayModeTemperature == true;
+-    }
+-    if (sysml_lazy_3) {
+-        sysml_state_abnormalCount = (sysml_state_abnormalCount + 1);
+-        sysml_state_serialGatePending = true;
+-    }
+-    sysml_lazy_4 = io_2;
+-    if (sysml_lazy_4) {
+-        sysml_lazy_4 = !sysml_state_previousDoor;
+-    }
+-    if (sysml_lazy_4) {
+-        sysml_state_abnormalCount = (sysml_state_abnormalCount + 1);
+-        sysml_state_serialGatePending = true;
+-    }
+-    sysml_lazy_5 = io_1;
+-    if (sysml_lazy_5) {
+-        sysml_lazy_5 = sysml_state_displayModeTemperature == true;
+-    }
+-    if (sysml_lazy_5) {
+-        sysml_state_vibrationCount = (sysml_state_vibrationCount + 1);
+-        sysml_state_displayModeTemperature = false;
+-    }
+-    sysml_lazy_6 = io_1;
+-    if (sysml_lazy_6) {
+-        sysml_lazy_6 = sysml_state_displayModeTemperature == false;
+-    }
+-    if (sysml_lazy_6) {
+-        sysml_state_vibrationCount = (sysml_state_vibrationCount + 1);
+-        sysml_state_displayModeTemperature = true;
+-    }
+-    sysml_lazy_7 = io_0 > 30.0;
+-    if (sysml_lazy_7) {
+-        sysml_lazy_7 = io_2;
+-    }
+-    if (sysml_lazy_7) {
+-        sysml_state_serialGatePending = true;
+-    }
+-    sysml_state_previousDoor = io_2;
+-    sysml_state_previousTempAbnormal = (io_0 > 30.0);
+-    int32_t sysml_value_0 = 0;
+-    if (sysml_state_displayModeTemperature) {
+-        if (io_0 < ((double)((int32_t)io_0))) {
+-            sysml_conditional_9 = 1;
+-        }
+-        else {
+-            sysml_conditional_9 = 0;
+-        }
+-        sysml_conditional_8 = ((int32_t)io_0) - sysml_conditional_9;
+-    }
+-    else {
+-        sysml_conditional_8 = sysml_state_abnormalCount;
+-    }
+-    sysml_value_0 = sysml_conditional_8;
+-    int32_t sysml_value_1 = 0;
+-    sysml_lazy_10 = io_0 > 30.0;
+-    if (!sysml_lazy_10) {
+-        sysml_lazy_10 = io_2;
+-    }
+-    if (sysml_lazy_10) {
+-        sysml_conditional_11 = 1000;
+-    }
+-    else {
+-        sysml_conditional_11 = 0;
+-    }
+-    sysml_value_1 = sysml_conditional_11;
+-    bool sysml_value_2 = 0;
+-    sysml_lazy_12 = io_0 > 30.0;
+-    if (!sysml_lazy_12) {
+-        sysml_lazy_12 = io_2;
+-    }
+-    if (sysml_lazy_12) {
+-        sysml_conditional_13 = true;
+-    }
+-    else {
+-        sysml_conditional_13 = false;
+-    }
+-    sysml_value_2 = sysml_conditional_13;
+-    bool sysml_value_3 = 0;
+-    sysml_value_3 = sysml_state_serialGatePending;
+-    double sysml_value_4 = 0;
+-    sysml_value_4 = io_0;
+-    int32_t sysml_value_5 = 0;
+-    sysml_value_5 = sysml_state_abnormalCount;
+-    *io_3 = sysml_value_0;
+-    *io_4 = sysml_value_1;
+-    *io_5 = sysml_value_2;
+-    *serial_0_trigger = sysml_value_3;
+-    *serial_0_value_0 = sysml_value_4;
+-    *serial_0_value_1 = sysml_value_5;
++    prevWarm=warm;
++    prevDoor=io_2;
++    prevShock=io_1;
++    *io_3=now/2000%2 ? events : (int32_t)temperature;
++    *io_4=warm || io_2 ? 1000 : 0;
++    *io_5=warm || io_2;
++    *serial_0_trigger=false;
++    *serial_0_value_0=temperature;
++    *serial_0_value_1=events;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -228,6 +131,20 @@
+   char* end = hw_rx_buffer + hw_rx_size;
+   while (end > begin && (end[-1] == ' ' || end[-1] == '\t')) *--end = '\0';
+   if (!*begin) return false;
++  if (strncmp(begin,"GPS:",4)==0) {
++    char* middle;
++    char* last;
++    double latitude=strtod(begin+4,&middle);
++    if (middle==begin+4 || *middle!=',') return false;
++    double longitude=strtod(middle+1,&last);
++    if (last==middle+1 || *last || !isfinite(latitude) || !isfinite(longitude) ||
++        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return false;
++    manualLatitude=latitude;
++    manualLongitude=longitude;
++    manualLocationValid=true;
++    *value=0;
++    return true;
++  }
+   char* cursor = begin;
+   bool negative = *cursor == '-';
+   if (*cursor == '-' || *cursor == '+') ++cursor;

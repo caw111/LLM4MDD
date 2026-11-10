@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"muteMode\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"muteMode\",\n            \"value\": {\n              \"not\": \"muteMode\"\n            }\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": \"muteMode\",\n      \"io_2\": {\n        \"if\": \"muteMode\",\n        \"then\": 0,\n        \"else\": {\n          \"if\": {\n            \"and\": [\n              \"io_4\",\n              {\n                \">=\": [\n                  \"io_3\",\n                  2.0\n                ]\n              }\n            ]\n          },\n          \"then\": {\n            \"if\": {\n              \"<\": [\n                \"io_3\",\n                20.0\n              ]\n            },\n            \"then\": 2000,\n            \"else\": {\n              \"if\": {\n                \"<\": [\n                  \"io_3\",\n                  50.0\n                ]\n              },\n              \"then\": 1200,\n              \"else\": {\n                \"if\": {\n                  \"<\": [\n                    \"io_3\",\n                    100.0\n                  ]\n                },\n                \"then\": 700,\n                \"else\": 300\n              }\n            }\n          },\n          \"else\": 0\n        }\n      },\n      \"serial_0_trigger\": \"true\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_4\",\n        \"then\": \"io_3\",\n        \"else\": 0.0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_4=true，分别将io_3取值为10cm、30cm、80cm、150cm，每个值保持至少一个控制步；同时io_0保持false且不发生边沿\",\n        \"oracle\": \"muteMode一直为false；io_2为非零且随距离增大而降低（10->2000Hz，30->1200Hz，80->700Hz，150->300Hz）；io_1始终为false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在io_4=true且io_3=30cm条件下，使io_0从false经历一次上升沿（pressed边沿），之后保持io_0为true若干步，再将io_0拉回false；整个过程中io_3保持不变\",\n        \"oracle\": \"muteMode在pressed上升沿切换为true；从切换步起io_1=true（LED常亮）且io_2=0（静音）；serial_0_trigger保持true且serial_0_value_0等于30.0（或在io_4保持true时为io_3）\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在muteMode已为true（先完成一次按键上升沿切换为静音）的情况下，保持io_4=true且io_3=80cm；再次对io_0产生一次上升沿（从false到true），然后保持io_0为true若干步\",\n        \"oracle\": \"muteMode在第二次pressed上升沿切换回false；LED io_1变为false；蜂鸣器 io_2恢复为与距离对应的频率（80cm->700Hz）；serial_0_value_0持续反映io_3（在io_4=true时为80.0）且serial_0_trigger保持true\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    attribute muteMode : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign muteMode := (not muteMode);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = muteMode;\n    out attribute io_2 : Integer = (if muteMode ? 0 else (if ((io_4) and (((io_3) >= (2.0)))) ? (if ((io_3) < (20.0)) ? 2000 else (if ((io_3) < (50.0)) ? 1200 else (if ((io_3) < (100.0)) ? 700 else 300))) else 0));\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Real = (if io_4 ? io_3 else 0.0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

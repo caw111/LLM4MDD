@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"counter\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"prevIncPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDecPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"prevIncPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevDecPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"prevIncPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": \"counter == 20\",\n            \"then\": [\n              {\n                \"assign\": \"counter\",\n                \"value\": 20\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"counter\",\n                \"value\": \"counter + 1\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"prevDecPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": \"counter == 0\",\n            \"then\": [\n              {\n                \"assign\": \"counter\",\n                \"value\": 0\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"counter\",\n                \"value\": \"counter - 1\"\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": {\n          \"or\": [\n            \"counter == 20\",\n            \"counter == 0\"\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_3\": {\n        \"if\": {\n          \"or\": [\n            \"counter < 0\",\n            \"counter > 20\"\n          ]\n        },\n        \"then\": 0,\n        \"else\": \"counter\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下D2一次(产生io_0从false到true的上升沿)，再保持松开；重复多次直到counter到20；期间不按D3。\",\n        \"oracle\": \"每次D2按下上升沿后io_3显示递增计数值，且当计数达到20时io_2变为1000，之后继续按D2不会使计数超过20(io_3保持20且io_2仍为1000)。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"从计数20开始，连续按下D3并松开(产生io_1从false到true的上升沿)以递减计数，直到计数到0；期间不按D2。\",\n        \"oracle\": \"每次D3按下上升沿后io_3显示递减计数值，且当计数达到0时io_2变为1000；之后继续按D3不会使计数低于0(io_3保持0且io_2仍为1000)。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将计数设置在中间值(例如通过按D2使其从0到10)，随后只按一次D2或D3(上升沿各一次)，不触及0或20；每次按下均松开后再观测。\",\n        \"oracle\": \"当计数不等于0也不等于20时，io_2为0；io_3实时显示计数变化后的新值。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute counter : Integer := 0;\n    attribute prevIncPressed : Boolean := false;\n    attribute prevDecPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then assign prevIncPressed := io_0;\n      then assign prevDecPressed := io_1;\n      then if ((io_0) and ((not prevIncPressed))) {\n        first start;\n        then if counter == 20 {\n          first start;\n          then assign counter := 20;\n        } else {\n          first start;\n          then assign counter := counter + 1;\n        }\n      }\n      then if ((io_1) and ((not prevDecPressed))) {\n        first start;\n        then if counter == 0 {\n          first start;\n          then assign counter := 0;\n        } else {\n          first start;\n          then assign counter := counter - 1;\n        }\n      }\n    }\n    out attribute io_2 : Integer = (if ((counter == 20) or (counter == 0)) ? 1000 else 0);\n    out attribute io_3 : Integer = (if ((counter < 0) or (counter > 20)) ? 0 else counter);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

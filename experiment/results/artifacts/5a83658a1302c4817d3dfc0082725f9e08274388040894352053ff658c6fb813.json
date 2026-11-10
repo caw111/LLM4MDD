@@ -1,0 +1,330 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "mode",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "occupancyCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevParkingValid",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevEntranceApproach",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevReverseAlarmCond",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "lastAlarmOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "mode",
+            "value": {
+              "if": "mode == 2",
+              "then": 0,
+              "else": "mode + 1"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevPressed",
+        "value": "io_0"
+      },
+      {
+        "if": {
+          "and": [
+            "io_7",
+            {
+              "not": "prevParkingValid"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "occupancyCount",
+            "value": {
+              "if": "occupancyCount < 2147483647",
+              "then": "occupancyCount + 1",
+              "else": 2147483647
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevParkingValid",
+        "value": "io_7"
+      },
+      {
+        "if": {
+          "and": [
+            "io_5",
+            {
+              "not": "prevEntranceApproach"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "prevEntranceApproach",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "prevEntranceApproach",
+            "value": "io_5"
+          }
+        ]
+      },
+      {
+        "assign": "prevReverseAlarmCond",
+        "value": {
+          "and": [
+            "io_7",
+            {
+              "<": [
+                "io_6",
+                5.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "assign": "lastAlarmOn",
+        "value": {
+          "and": [
+            "io_7",
+            {
+              "<": [
+                "io_6",
+                5.0
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "and": [
+          {
+            "or": [
+              {
+                "not": "io_7"
+              },
+              {
+                ">=": [
+                  "io_6",
+                  5.0
+                ]
+              }
+            ]
+          },
+          "io_5"
+        ]
+      },
+      "io_2": {
+        "and": [
+          "io_7",
+          {
+            ">=": [
+              "io_6",
+              5.0
+            ]
+          }
+        ]
+      },
+      "io_3": {
+        "if": {
+          "and": [
+            "io_7",
+            {
+              "<": [
+                "io_6",
+                5.0
+              ]
+            }
+          ]
+        },
+        "then": 2000,
+        "else": {
+          "if": {
+            "and": [
+              "io_7",
+              {
+                ">=": [
+                  "io_6",
+                  2.0
+                ]
+              },
+              {
+                "<": [
+                  "io_6",
+                  10.0
+                ]
+              }
+            ]
+          },
+          "then": 1200,
+          "else": {
+            "if": {
+              "and": [
+                "io_7",
+                {
+                  ">=": [
+                    "io_6",
+                    10.0
+                  ]
+                },
+                {
+                  "<": [
+                    "io_6",
+                    30.0
+                  ]
+                }
+              ]
+            },
+            "then": 800,
+            "else": {
+              "if": {
+                "and": [
+                  "io_7",
+                  {
+                    ">=": [
+                      "io_6",
+                      30.0
+                    ]
+                  }
+                ]
+              },
+              "then": 400,
+              "else": 0
+            }
+          }
+        }
+      },
+      "io_8": {
+        "if": {
+          "and": [
+            {
+              "==": [
+                "mode",
+                0
+              ]
+            },
+            "io_5"
+          ]
+        },
+        "then": {
+          "if": {
+            ">=": [
+              "io_4",
+              0.0
+            ]
+          },
+          "then": {
+            "floor": "io_4"
+          },
+          "else": 0
+        },
+        "else": {
+          "if": {
+            "and": [
+              {
+                "==": [
+                  "mode",
+                  1
+                ]
+              },
+              "io_7"
+            ]
+          },
+          "then": {
+            "if": {
+              ">=": [
+                "io_6",
+                0.0
+              ]
+            },
+            "then": {
+              "floor": "io_6"
+            },
+            "else": 0
+          },
+          "else": {
+            "if": {
+              "==": [
+                "mode",
+                2
+              ]
+            },
+            "then": "occupancyCount",
+            "else": 0
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下并释放按钮 D2 一次（io_0产生一次上升沿）。令入口有效且距离为 12.7cm（io_5=true, io_4=12.7），车位有效且距离为 50cm（io_7=true, io_6=50.0），持续一个控制步。",
+        "oracle": "TM1637显示入口距离（io_8=12）。绿灯按引导逻辑点亮（io_2为true，io_1保持为false），蜂鸣器按车位距离分级为0或低频（io_3对应距离>=30cm的档位）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "不按按钮；设置车位有效且距离小于5cm（io_7=true, io_6=4.9），入口有效无关（io_5=true, io_4任意），持续一个控制步。",
+        "oracle": "蜂鸣器持续报警（io_3=2000）。红灯报警指示为true（io_1=true），绿灯引导为false（io_2=false），TM1637按当前mode显示相应距离/计数但报警不改变选择键。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "让按钮 D2 在保持车位无效到有效的过程中触发（不要求具体按键翻页）；先置车位无效（io_7=false），下一步将车位有效并设置车位距离为 25cm（io_7=true, io_6=25.0）。入口有效（io_5=true）。运行两个控制步。",
+        "oracle": "当车位有效从无效变为有效时占用计数递增（occupancyCount增加1，从而在mode=2时 io_8反映该计数）。蜂鸣器按10..30cm档位输出中频（io_3=800），红灯在该距离下点亮（io_1=true）且绿灯关闭（io_2=false）。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    in attribute io_6 : Real;\n    in attribute io_7 : Boolean;\n    attribute mode : Integer := 0;\n    attribute occupancyCount : Integer := 0;\n    attribute prevParkingValid : Boolean := false;\n    attribute prevEntranceApproach : Boolean := false;\n    attribute prevReverseAlarmCond : Boolean := false;\n    attribute lastAlarmOn : Boolean := false;\n    attribute prevPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not prevPressed))) {\n        first start;\n        then assign mode := (if mode == 2 ? 0 else mode + 1);\n      }\n      then assign prevPressed := io_0;\n      then if ((io_7) and ((not prevParkingValid))) {\n        first start;\n        then assign occupancyCount := (if occupancyCount < 2147483647 ? occupancyCount + 1 else 2147483647);\n      }\n      then assign prevParkingValid := io_7;\n      then if ((io_5) and ((not prevEntranceApproach))) {\n        first start;\n        then assign prevEntranceApproach := true;\n      } else {\n        first start;\n        then assign prevEntranceApproach := io_5;\n      }\n      then assign prevReverseAlarmCond := ((io_7) and (((io_6) < (5.0))));\n      then assign lastAlarmOn := ((io_7) and (((io_6) < (5.0))));\n    }\n    out attribute io_1 : Boolean = (((((not io_7)) or (((io_6) >= (5.0))))) and (io_5));\n    out attribute io_2 : Boolean = ((io_7) and (((io_6) >= (5.0))));\n    out attribute io_3 : Integer = (if ((io_7) and (((io_6) < (5.0)))) ? 2000 else (if ((io_7) and (((io_6) >= (2.0))) and (((io_6) < (10.0)))) ? 1200 else (if ((io_7) and (((io_6) >= (10.0))) and (((io_6) < (30.0)))) ? 800 else (if ((io_7) and (((io_6) >= (30.0)))) ? 400 else 0))));\n    out attribute io_8 : Integer = (if ((((mode) == (0))) and (io_5)) ? (if ((io_4) >= (0.0)) ? RealFunctions::floor(io_4) else 0) else (if ((((mode) == (1))) and (io_7)) ? (if ((io_6) >= (0.0)) ? RealFunctions::floor(io_6) else 0) else (if ((mode) == (2)) ? occupancyCount else 0)));\n  }\n  part system : Controller;\n}\n"
+}

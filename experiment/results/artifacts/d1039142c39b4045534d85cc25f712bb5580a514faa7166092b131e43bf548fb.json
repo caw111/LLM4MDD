@@ -1,0 +1,67 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "fanEnabled",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "assign": "fanEnabled",
+            "value": "io_1 > 30.0"
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "io_3",
+        "then": {
+          "if": {
+            ">": [
+              "io_1",
+              30.0
+            ]
+          },
+          "then": 255.0,
+          "else": 0.0
+        },
+        "else": {
+          "if": "fanEnabled",
+          "then": 255.0,
+          "else": 0.0
+        }
+      },
+      "io_4": {
+        "if": "io_3",
+        "then": "RealFunctions::floor(io_1)",
+        "else": "RealFunctions::floor(io_1)"
+      },
+      "serial_0_trigger": "io_3 and io_1 > 30.0",
+      "serial_0_value_0": {
+        "if": "io_3",
+        "then": "io_1",
+        "else": "io_1"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 DHT11 + 风扇（D5 PWM） + TM1637：显示温度，高于阈值风扇启动",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_3=false with io_1 held at 25.0, then set io_3=true and io_1=31.0 for one control step",
+        "oracle": "io_0 becomes 255.0 when io_3=true and io_1>30.0; io_4 reflects the temperature (floor of io_1); serial_0_trigger is true only on the step where io_3=true and io_1>30.0"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute fanEnabled : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3 {\n        first start;\n        then assign fanEnabled := io_1 > 30.0;\n      }\n    }\n    out attribute io_0 : Real = (if io_3 ? (if ((io_1) > (30.0)) ? 255.0 else 0.0) else (if fanEnabled ? 255.0 else 0.0));\n    out attribute io_4 : Integer = (if io_3 ? RealFunctions::floor(io_1) else RealFunctions::floor(io_1));\n    out attribute serial_0_trigger : Boolean = io_3 and io_1 > 30.0;\n    out attribute serial_0_value_0 : Real = (if io_3 ? io_1 else io_1);\n  }\n  part system : Controller;\n}\n"
+}

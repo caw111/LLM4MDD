@@ -1,0 +1,68 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "lastPrintedAtOrAfterTick",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "buttonPrev",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "accumulatedMs",
+        "value": "accumulatedMs + io_2"
+      },
+      {
+        "if": "accumulatedMs >= 1000",
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs - 1000"
+          },
+          {
+            "assign": "lastPrintedAtOrAfterTick",
+            "value": "true"
+          }
+        ],
+        "else": [
+          {
+            "assign": "lastPrintedAtOrAfterTick",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "assign": "buttonPrev",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": "lastPrintedAtOrAfterTick",
+      "serial_0_value_0": "io_0",
+      "serial_0_value_1": "io_1"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "每秒串口输出 A0 电位器值 和 D2 按钮状态",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持io_0为固定电位器值X、在io_1上制造按钮状态变化（按下/未按下交替），并让io_2以1ms为步长递增直到覆盖至少2秒（累计io_2达到2000ms）。",
+        "oracle": "每当累计时间首次达到并跨过1s、以及到达2s时，serial_0_trigger在对应控制步为true，同时serial_0_value_0等于当步的io_0，serial_0_value_1等于当步的io_1；其余控制步serial_0_trigger为false。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Integer;\n    attribute accumulatedMs : Integer := 0;\n    attribute lastPrintedAtOrAfterTick : Boolean := false;\n    attribute buttonPrev : Boolean := false;\n    perform action tick {\n      first start;\n      then assign accumulatedMs := accumulatedMs + io_2;\n      then if accumulatedMs >= 1000 {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 1000;\n        then assign lastPrintedAtOrAfterTick := true;\n      } else {\n        first start;\n        then assign lastPrintedAtOrAfterTick := false;\n      }\n      then assign buttonPrev := io_1;\n    }\n    out attribute serial_0_trigger : Boolean = lastPrintedAtOrAfterTick;\n    out attribute serial_0_value_0 : Real = io_0;\n    out attribute serial_0_value_1 : Boolean = io_1;\n  }\n  part system : Controller;\n}\n"
+}

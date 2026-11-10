@@ -1,0 +1,99 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"accumulatedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"ledOn\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"accumulatedMs\",\n        \"value\": \"accumulatedMs + io_1\"\n      },\n      {\n        \"if\": {\n          \">=\": [\n            \"accumulatedMs\",\n            500\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs - 500\"\n          },\n          {\n            \"assign\": \"ledOn\",\n            \"value\": \"not ledOn\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \">=\": [\n            \"accumulatedMs\",\n            500\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs - 500\"\n          },\n          {\n            \"assign\": \"ledOn\",\n            \"value\": \"not ledOn\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_0\": \"ledOn\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"让连接在 D12 引脚的 LED 每秒闪烁一次。\\n验收约定：每秒闪烁一次指完整周期为1000ms；初始熄灭，500ms时首次点亮，此后每500ms翻转。时间容差10ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"以控制周期5ms更新输入io_1；从系统启动开始连续提供io_1=5的delta，覆盖0ms到1200ms，采样io_0在0ms、500ms、1000ms、1500ms附近的值\",\n        \"oracle\": \"io_0初始为false；在500ms±10ms时首次变为true；之后每500ms±10ms翻转一次，形成1000ms周期\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute accumulatedMs : Integer := 0;\n    attribute ledOn : Boolean := false;\n    perform action tick {\n      first start;\n      then assign accumulatedMs := accumulatedMs + io_1;\n      then if ((accumulatedMs) >= (500)) {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 500;\n        then assign ledOn := not ledOn;\n      }\n      then if ((accumulatedMs) >= (500)) {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 500;\n        then assign ledOn := not ledOn;\n      }\n    }\n    out attribute io_0 : Boolean = ledOn;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "passed",
+          "checked": 1,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof.",
+          "inputs": {
+            "io_1": 0
+          },
+          "observed": {
+            "io_0": false
+          }
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "passed",
+          "checked": 2697,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "passed",
+      "checked": 1,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof.",
+      "inputs": {
+        "io_1": 0
+      },
+      "observed": {
+        "io_0": false
+      }
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "passed",
+      "checked": 2697,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "ledState",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "ledState",
+            "value": {
+              "if": "ledState",
+              "then": false,
+              "else": true
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": "ledState"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D3 引脚的按钮控制 D10 LED 开关，按一次切换一次状态。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Press io_0 from false to true (one rising edge), then hold io_0 true for at least one control step, then release io_0 back to false, repeat for a second rising edge.",
+        "oracle": "io_1 toggles once on each io_0 rising edge (first press makes io_1 true, next press makes io_1 false), with no change while io_0 remains held and no change on release."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute ledState : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign ledState := (if ledState ? false else true);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = ledState;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"elapsedAccumMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"cycleAccumMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousBecameActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"elapsedAccumMs\",\n        \"value\": \"elapsedAccumMs + io_0\"\n      },\n      {\n        \"assign\": \"cycleAccumMs\",\n        \"value\": \"cycleAccumMs + io_0\"\n      },\n      {\n        \"if\": {\n          \"or\": [\n            {\n              \">=\": [\n                \"cycleAccumMs\",\n                2000\n              ]\n            },\n            {\n              \">=\": [\n                \"elapsedAccumMs\",\n                2000\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"cycleAccumMs\",\n            \"value\": \"cycleAccumMs - 2000\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"<\": [\n                \"cycleAccumMs\",\n                200\n              ]\n            },\n            {\n              \">=\": [\n                \"cycleAccumMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"previousBecameActive\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"previousBecameActive\",\n            \"value\": false\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"<\": [\n                \"cycleAccumMs\",\n                200\n              ]\n            },\n            {\n              \">=\": [\n                \"cycleAccumMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": 31,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"让 D6 引脚的蜂鸣器每 2 秒响 200ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Provide io_0 deltas advancing time in milliseconds through repeated 2s periods; e.g., start from 0 and step with small deltas totaling 2000ms then continue; verify behavior over at least two full cycles.\",\n        \"oracle\": \"io_1 equals 31 Hz (non-zero) for cycleAccumMs in [0,200) and equals 0 Hz for cycleAccumMs in [200,2000); this pattern repeats every 2000ms.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    attribute elapsedAccumMs : Integer := 0;\n    attribute cycleAccumMs : Integer := 0;\n    attribute previousBecameActive : Boolean := false;\n    perform action tick {\n      first start;\n      then assign elapsedAccumMs := elapsedAccumMs + io_0;\n      then assign cycleAccumMs := cycleAccumMs + io_0;\n      then if ((((cycleAccumMs) >= (2000))) or (((elapsedAccumMs) >= (2000)))) {\n        first start;\n        then assign cycleAccumMs := cycleAccumMs - 2000;\n      }\n      then if ((((cycleAccumMs) < (200))) and (((cycleAccumMs) >= (0)))) {\n        first start;\n        then assign previousBecameActive := true;\n      } else {\n        first start;\n        then assign previousBecameActive := false;\n      }\n    }\n    out attribute io_1 : Integer = (if ((((cycleAccumMs) < (200))) and (((cycleAccumMs) >= (0)))) ? 31 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

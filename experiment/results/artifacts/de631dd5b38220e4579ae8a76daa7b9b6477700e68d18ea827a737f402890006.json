@@ -1,0 +1,270 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is fixed to arduino:avr:uno.",
+    "Authoritative wiring preserved: PIR inputs on D2 and D3, light sensor on A0, TM1637 uses CLK=D4 and DIO=D5, PWM lighting uses D6 per resolved hardware configuration.",
+    "Validator mismatch: D9 is present in the authoritative pin list and must be owned by a catalog request; added pwm_output on D9. SysML must decide whether SysML drives D6, D9, or both consistently with the actual hardware—this proposal only registers ports.",
+    "Analog sampling period set to 100ms to promptly detect 'dark' condition; dark/threshold and all business timing logic are handled in SysML.",
+    "Digital inputs model HIGH as detection (initial false).",
+    "Serial output reports cumulative illuminated ON time (ms) gated by the provided report trigger; report cadence and when to assert the gate are handled in SysML."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "PIR sensor (one end) person-detected event",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "PIR sensor (other end) person-detected event",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Environment light sensor value (for 'dark' decision)",
+      "sample_period_ms": 100,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Hallway illumination PWM output (enabled only when dark and any PIR detects)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D6\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Today's passage count displayed on TM1637",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "PWM lighting output (D9) as explicitly requested by authoritative pin list",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D9\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D9"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Serial report gate for cumulative illuminated time",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Cumulative duration that lighting has been ON",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"illuminated_on_time_ms\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "illuminated_on_time_ms"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {},
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个楼道照明与节电管理系统，使用两个 PIR 传感器 D2、D3 分别位于楼道两端，PWM 灯光 D9、环境光传感器 A0、TM1637（CLK=D4，DIO=D5）和串口。只有在环境光较暗且任一端检测到人时才开启照明；若连续检测到人员移动则延长亮灯时间并根据方向估计通行人数。数码管显示今日通行计数，串口输出累计点亮时长。",
+    "effective_requirement": "实现一个楼道照明与节电管理系统，使用两个 PIR 传感器 D2、D3 分别位于楼道两端，PWM 灯光 D9、环境光传感器 A0、TM1637（CLK=D4，DIO=D5）和串口。只有在环境光较暗且任一端检测到人时才开启照明；若连续检测到人员移动则延长亮灯时间并根据方向估计通行人数。数码管显示今日通行计数，串口输出累计点亮时长。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "pwm_output",
+        "field": "pin",
+        "original": null,
+        "resolved": "D6",
+        "reason": "unspecified wiring"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "实现一个楼道照明与节电管理系统，使用两个 PIR 传感器 D2、D3 分别位于楼道两端，PWM 灯光 D9、环境光传感器 A0、TM1637（CLK=D4，DIO=D5）和串口。只有在环境光较暗且任一端检测到人时才开启照明；若连续检测到人员移动则延长亮灯时间并根据方向估计通行人数。数码管显示今日通行计数，串口输出累计点亮时长。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

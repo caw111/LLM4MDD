@@ -1,0 +1,120 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "elapsedAccumMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "cycleAccumMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousBecameActive",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "elapsedAccumMs",
+        "value": "elapsedAccumMs + io_0"
+      },
+      {
+        "assign": "cycleAccumMs",
+        "value": "cycleAccumMs + io_0"
+      },
+      {
+        "if": {
+          "or": [
+            {
+              ">=": [
+                "cycleAccumMs",
+                2000
+              ]
+            },
+            {
+              ">=": [
+                "elapsedAccumMs",
+                2000
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "cycleAccumMs",
+            "value": "cycleAccumMs - 2000"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "<": [
+                "cycleAccumMs",
+                200
+              ]
+            },
+            {
+              ">=": [
+                "cycleAccumMs",
+                0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "previousBecameActive",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "previousBecameActive",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": {
+          "and": [
+            {
+              "<": [
+                "cycleAccumMs",
+                200
+              ]
+            },
+            {
+              ">=": [
+                "cycleAccumMs",
+                0
+              ]
+            }
+          ]
+        },
+        "then": 31,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "让 D6 引脚的蜂鸣器每 2 秒响 200ms。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Provide io_0 deltas advancing time in milliseconds through repeated 2s periods; e.g., start from 0 and step with small deltas totaling 2000ms then continue; verify behavior over at least two full cycles.",
+        "oracle": "io_1 equals 31 Hz (non-zero) for cycleAccumMs in [0,200) and equals 0 Hz for cycleAccumMs in [200,2000); this pattern repeats every 2000ms."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    attribute elapsedAccumMs : Integer := 0;\n    attribute cycleAccumMs : Integer := 0;\n    attribute previousBecameActive : Boolean := false;\n    perform action tick {\n      first start;\n      then assign elapsedAccumMs := elapsedAccumMs + io_0;\n      then assign cycleAccumMs := cycleAccumMs + io_0;\n      then if ((((cycleAccumMs) >= (2000))) or (((elapsedAccumMs) >= (2000)))) {\n        first start;\n        then assign cycleAccumMs := cycleAccumMs - 2000;\n      }\n      then if ((((cycleAccumMs) < (200))) and (((cycleAccumMs) >= (0)))) {\n        first start;\n        then assign previousBecameActive := true;\n      } else {\n        first start;\n        then assign previousBecameActive := false;\n      }\n    }\n    out attribute io_1 : Integer = (if ((((cycleAccumMs) < (200))) and (((cycleAccumMs) >= (0)))) ? 31 else 0);\n  }\n  part system : Controller;\n}\n"
+}

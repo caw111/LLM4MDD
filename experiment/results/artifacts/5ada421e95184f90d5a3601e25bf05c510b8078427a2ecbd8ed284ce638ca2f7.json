@@ -1,0 +1,262 @@
+{
+  "contract_sha256": "91e94f95054b2a3d4b30d5925ba0d35fd409c57ee1200abb54c0ba41c26d033c",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"shift595_number\",\n      \"clk_pin\": \"A2\",\n      \"data_pin\": \"A0\",\n      \"latch_pin\": \"A1\",\n      \"initial\": 0,\n      \"meaning\": \"7-segment display digit (0..9), driven via 74HC595\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\",\n      \"unit\": \"digit\",\n      \"registers\": [\n        {\n          \"register\": \"sr1\",\n          \"display\": \"sevseg1\",\n          \"digit\": 0,\n          \"segment_bits\": [\n            0,\n            1,\n            2,\n            3,\n            4,\n            5,\n            6\n          ],\n          \"active_low\": true\n        }\n      ]\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D2\",\n      \"initial\": 0,\n      \"meaning\": \"servo1 commanded angle in degrees\",\n      \"invalid_policy\": \"hold_last_valid\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"servo2 commanded angle in degrees\",\n      \"invalid_policy\": \"hold_last_valid\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D4\",\n      \"initial\": 0,\n      \"meaning\": \"servo3 commanded angle in degrees\",\n      \"invalid_policy\": \"hold_last_valid\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Board/circuit wiring is preserved exactly for: 74HC595 (A0 DS, A2 SHCP/CLK, A1 STCP/LATCH) driving sevseg1 via sr1 Q0..Q6 to segments A..G with active_low=true per extracted mapping.\",\n    \"The 74HC595 request is modeled as a single-digit shift-register display (digit=0 leftmost) showing values 0..9; tens/units are not modeled because only one digit is wired/used by the display component wiring.\",\n    \"Servo PWM-to-angle control is modeled with servo_angle outputs on Mega D2/D3/D4, initial position 0 degrees for all three on reset.\",\n    \"Business timing (display increments every 2 seconds, servo motion in sequence with each completing before the next) and angle mapping logic belong in the SysML model; no serial I/O is specified/required by the prompt.\",\n    \"Control scheduling uses control_period_ms=10ms as a safe default; SysML should manage the 2-second dwell and sequential completion timing using elapsed_ms.\"\n  ]\n}",
+      "error": "interface_requests[0]: missing fields []; unknown fields ['clk_pin']; allowed fields ['clock_pin', 'data_pin', 'device', 'initial', 'invalid_policy', 'kind', 'latch_pin', 'leading_zero', 'meaning', 'registers', 'required_inputs', 'sample_period_ms', 'unit']. Configuration keys belong directly on this object, not inside optional/binding.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"shift595_number\",\n      \"clk_pin\": \"A2\",\n      \"dio_pin\": \"A0\",\n      \"latch_pin\": \"A1\",\n      \"initial\": 0,\n      \"meaning\": \"7-segment display value driven through 74HC595 shift register (displaying 0..9 cycle)\",\n      \"leading_zero\": true,\n      \"invalid_policy\": \"blank\",\n      \"unit\": \"digits\",\n      \"registers\": [\n        {\n          \"register\": \"sr1\",\n          \"display\": \"sevseg1\",\n          \"digit\": 0,\n          \"segment_bits\": [\n            \"Q0\",\n            \"Q1\",\n            \"Q2\",\n            \"Q3\",\n            \"Q4\",\n            \"Q5\",\n            \"Q6\"\n          ],\n          \"active_low\": true\n        }\n      ]\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D2\",\n      \"initial\": 0,\n      \"meaning\": \"servo1 commanded angle (sequence: 0/45/90 then back to 0 on 9)\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"servo2 commanded angle (sequence: 45/90/135 then back to 0 on 9)\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D4\",\n      \"initial\": 0,\n      \"meaning\": \"servo3 commanded angle (sequence: 90/135/180 then back to 0 on 9)\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"sevseg1 is treated as a single-digit shift-register-driven numeric display using shift595_number. Wired segment subset is Q0..Q6 only; decimal points/signs/multiplexing are not used.\",\n    \"Startup: display initial command is 0; all three servo_angle outputs initial to 0 degrees.\",\n    \"Business timing (2 seconds per digit, sequential servo motion after each digit change, and wrap 9->0) is implemented in the SysML model using elapsed_ms deltas; no additional device requests are added for timers.\",\n    \"Exact servo motion completion timing and whether 'move immediately and accurately' requires waiting for physical settling time are handled as model assumptions; servo_angle outputs only represent target angles.\"\n  ]\n}",
+      "error": "interface_requests[0]: missing fields []; unknown fields ['clk_pin', 'dio_pin']; allowed fields ['clock_pin', 'data_pin', 'device', 'initial', 'invalid_policy', 'kind', 'latch_pin', 'leading_zero', 'meaning', 'registers', 'required_inputs', 'sample_period_ms', 'unit']. Configuration keys belong directly on this object, not inside optional/binding.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"shift595_number\",\n      \"clock_pin\": \"A2\",\n      \"data_pin\": \"A0\",\n      \"invalid_policy\": \"blank\",\n      \"latch_pin\": \"A1\",\n      \"leading_zero\": true,\n      \"initial\": 0,\n      \"meaning\": \"7-seg display number 0..9 (driven via 74HC595)\",\n      \"registers\": [\n        {\n          \"register\": \"sr1\",\n          \"display\": \"sevseg1\",\n          \"digit\": 0,\n          \"segment_bits\": [0, 1, 2, 3, 4, 5, 6],\n          \"active_low\": true\n        }\n      ]\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"pin\": \"D2\",\n      \"initial\": 0,\n      \"meaning\": \"Servo1 target angle (degrees) based on displayed number\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"Servo2 target angle (degrees) based on displayed number\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"pin\": \"D4\",\n      \"initial\": 0,\n      \"meaning\": \"Servo3 target angle (degrees) based on displayed number\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Board and wiring preserved as given for Arduino Mega 2560, including 74HC595 pins (DS=A0, STCP=A1, SHCP=A2) and single 7-segment digit shown through that shift register chain.\",\n    \"Display is modeled as a single tm/shift595 numeric output with one digit (digit 0 leftmost). Counting, 2-second per digit timing, display reset after 9, and servo sequencing (servo1 then servo2 then servo3) are implemented in the SysML model, not in these port objects.\",\n    \"No invalid input or serial protocol requirements were provided; therefore no serial interfaces are generated.\",\n    \"Servo timers/PWM resource details are handled by the model/firmware; ports only provide requested angle targets. Initial servo angles are set to 0 degrees for all three servos as required.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) and three servo motors (servo1, servo2, servo3). The 7-segment display will show a number that increments from 0 to 9, and each servo motor will rotate to a specific angle based on the displayed number. The servos should move in sequence, with each servo completing its movement before the next one starts.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment display should show \"0\", and all servos (servo1, servo2, servo3) should be at their initial position (0 degrees).\nDisplay and Servo Interaction:\n1. The 7-segment display (sevseg1) will increment its displayed number from 0 to 9, with each number displayed for 2 seconds.\n2. When the number changes, the servos will move to specific angles based on the displayed number:\n   - For numbers 0-2: servo1 moves to 0 degrees, servo2 to 45 degrees, and servo3 to 90 degrees.\n   - For numbers 3-5: servo1 moves to 45 degrees, servo2 to 90 degrees, and servo3 to 135 degrees.\n   - For numbers 6-8: servo1 moves to 90 degrees, servo2 to 135 degrees, and servo3 to 180 degrees.\n   - For number 9: all servos return to 0 degrees.\n3. After reaching 9, the display should reset to 0, and the cycle should repeat.\n4. The servos should move immediately and accurately to their target positions.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:4\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) and three servo motors (servo1, servo2, servo3). The 7-segment display will show a number that increments from 0 to 9, and each servo motor will rotate to a specific angle based on the displayed number. The servos should move in sequence, with each servo completing its movement before the next one starts.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment display should show \"0\", and all servos (servo1, servo2, servo3) should be at their initial position (0 degrees).\nDisplay and Servo Interaction:\n1. The 7-segment display (sevseg1) will increment its displayed number from 0 to 9, with each number displayed for 2 seconds.\n2. When the number changes, the servos will move to specific angles based on the displayed number:\n   - For numbers 0-2: servo1 moves to 0 degrees, servo2 to 45 degrees, and servo3 to 90 degrees.\n   - For numbers 3-5: servo1 moves to 45 degrees, servo2 to 90 degrees, and servo3 to 135 degrees.\n   - For numbers 6-8: servo1 moves to 90 degrees, servo2 to 135 degrees, and servo3 to 180 degrees.\n   - For number 9: all servos return to 0 degrees.\n3. After reaching 9, the display should reset to 0, and the cycle should repeat.\n4. The servos should move immediately and accurately to their target positions.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:4\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo3",
+            "left": -201.6,
+            "top": 170.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ],
+          [
+            "mega:2",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:3",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:4",
+            "servo3:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo3:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo3:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"displayMode\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"accumulatedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"displayMode\",\n        \"value\": {\n          \"if\": {\n            \"and\": [\n              \"io_1\",\n              {\n                \"not\": \"previousPressed\"\n              }\n            ]\n          },\n          \"then\": {\n            \"if\": \"displayMode == 2\",\n            \"then\": 0,\n            \"else\": \"displayMode + 1\"\n          },\n          \"else\": \"displayMode\"\n        }\n      },\n      {\n        \"assign\": \"accumulatedMs\",\n        \"value\": \"accumulatedMs + io_6\"\n      },\n      {\n        \"if\": \"accumulatedMs >= 2000\",\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs - 2000\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_5\": {\n        \"if\": \"displayMode == 0\",\n        \"then\": \"RealFunctions::floor(io_0)\",\n        \"else\": {\n          \"if\": \"displayMode == 1\",\n          \"then\": \"RealFunctions::floor(io_2)\",\n          \"else\": \"RealFunctions::floor(io_3)\"\n        }\n      },\n      \"serial_0_trigger\": \"accumulatedMs >= 0 and accumulatedMs < 10\",\n      \"serial_0_value_0\": \"io_0\",\n      \"serial_0_value_1\": \"io_2\",\n      \"serial_0_value_2\": \"io_3\",\n      \"serial_1_trigger\": {\n        \"and\": [\n          \"io_4\",\n          {\n            \"and\": [\n              {\n                \"<\": \"io_0\",\n                \">=iox\": 0\n              },\n              {\n                \">\": \"io_2\",\n                \">=iox\": 0\n              }\n            ]\n          }\n        ]\n      },\n      \"serial_1_value_0\": {\n        \"and\": [\n          \"io_4\",\n          {\n            \"and\": [\n              {\n                \"<\": \"io_0\",\n                \">=iox\": 0\n              },\n              {\n                \">\": \"io_2\",\n                \">=iox\": 0\n              }\n            ]\n          }\n        ]\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_2/io_3/io_4 与 io_0 不变；对 io_1 产生一次按下上升沿（从 false 到 true）并在下一控制步维持按下，期间采样 io_5。\",\n        \"oracle\": \"displayMode 在按下上升沿后切换一次，io_5 从显示上一项切换为下一项（按顺序：光照->温度->湿度）且值来自对应输入的离散化（floor）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"让 io_6 在控制步间累计，使 elapsed_ms 从 0 逐步推进并跨越 2000ms（例如每步 10ms，运行 200步），同时维持 io_0/io_2/io_3 任意固定值。\",\n        \"oracle\": \"serial_0_trigger 在每个满 2 秒周期的触发步骤为 true，并且该步 serial_0_value_0/io_1_value_1/io_1_value_2 同时反映当前 io_0/io_2/io_3。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在某一控制步设置 io_4=true；并使 io_0 满足“光照过低”的条件且 io_2 满足“温度过高”的条件（其阈值按实现约定）。保持条件持续至少一个控制步。\",\n        \"oracle\": \"serial_1_value_0 为 true，且 serial_1_trigger 为 true（提示网关开启）。当任一条件不满足或 io_4=false 时，提示输出为 false。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/serial_1_trigger: Unknown expression object {'<': 'io_0', '>=iox': 0}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/serial_1_trigger"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/serial_1_trigger: Unknown expression object {'<': 'io_0', '>=iox': 0}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/serial_1_trigger"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/outputs/serial_1_trigger: Unknown expression object {'<': 'io_0', '>=iox': 0}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"displayMode\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"serialAccMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"dhtTempValidLatched\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"dhtHumValidLatched\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"displayMode\",\n            \"value\": {\n              \"if\": \"displayMode == 0\",\n              \"then\": 1,\n              \"else\": {\n                \"if\": \"displayMode == 1\",\n                \"then\": 2,\n                \"else\": 0\n              }\n            }\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"serialAccMs\",\n        \"value\": \"serialAccMs + io_6\"\n      },\n      {\n        \"if\": \"serialAccMs >= 2000\",\n        \"then\": [\n          {\n            \"assign\": \"serialAccMs\",\n            \"value\": \"serialAccMs - 2000\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": \"io_4\",\n        \"then\": [\n          {\n            \"assign\": \"dhtTempValidLatched\",\n            \"value\": \"true\"\n          },\n          {\n            \"assign\": \"dhtHumValidLatched\",\n            \"value\": \"true\"\n          }\n        ],\n        \"else\": []\n      }\n    ],\n    \"outputs\": {\n      \"io_5\": {\n        \"if\": \"displayMode == 0\",\n        \"then\": {\n          \"if\": \"io_0 < 0.0\",\n          \"then\": 0,\n          \"else\": {\n            \"if\": \"io_0 > 2147483647.0\",\n            \"then\": 2147483647,\n            \"else\": \"RealFunctions::floor(io_0)\"\n          }\n        },\n        \"else\": {\n          \"if\": \"displayMode == 1\",\n          \"then\": {\n            \"if\": \"dhtTempValidLatched\",\n            \"then\": {\n              \"if\": \"io_2 < 0.0\",\n              \"then\": 0,\n              \"else\": {\n                \"if\": \"io_2 > 2147483647.0\",\n                \"then\": 2147483647,\n                \"else\": \"RealFunctions::floor(io_2)\"\n              }\n            },\n            \"else\": 0\n          },\n          \"else\": {\n            \"if\": \"dhtHumValidLatched\",\n            \"then\": {\n              \"if\": \"io_3 < 0.0\",\n              \"then\": 0,\n              \"else\": {\n                \"if\": \"io_3 > 2147483647.0\",\n                \"then\": 2147483647,\n                \"else\": \"RealFunctions::floor(io_3)\"\n              }\n            },\n            \"else\": 0\n          }\n        }\n      },\n      \"serial_0_trigger\": \"serialAccMs >= 0\",\n      \"serial_0_value_0\": {\n        \"if\": \"serialAccMs >= 0\",\n        \"then\": \"io_0\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_1\": {\n        \"if\": \"serialAccMs >= 0\",\n        \"then\": {\n          \"if\": \"dhtTempValidLatched\",\n          \"then\": \"io_2\",\n          \"else\": 0.0\n        },\n        \"else\": 0.0\n      },\n      \"serial_0_value_2\": {\n        \"if\": \"serialAccMs >= 0\",\n        \"then\": {\n          \"if\": \"dhtHumValidLatched\",\n          \"then\": \"io_3\",\n          \"else\": 0.0\n        },\n        \"else\": 0.0\n      },\n      \"serial_1_trigger\": {\n        \"and\": [\n          {\n            \"or\": [\n              {\n                \"not\": \"dhtTempValidLatched\"\n              },\n              \"dhtTempValidLatched\"\n            ]\n          },\n          {\n            \"or\": [\n              {\n                \"not\": \"dhtHumValidLatched\"\n              },\n              \"dhtHumValidLatched\"\n            ]\n          },\n          {\n            \"and\": [\n              {\n                \"<\": [\n                  \"io_0\",\n                  300.0\n                ]\n              },\n              {\n                \">\": [\n                  \"io_2\",\n                  30.0\n                ]\n              }\n            ]\n          }\n        ]\n      },\n      \"serial_1_value_0\": {\n        \"if\": \"serial_1_trigger\",\n        \"then\": true,\n        \"else\": false\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下io_1形成3次上升沿（按下为true），每次按下后保持若干控制步长；采样io_0/io_2/io_3保持恒定且io_4为true。记录每次按下后的io_5变化。\",\n        \"oracle\": \"displayMode依次循环：io_5在模式0显示RealFunctions::floor(io_0)，模式1显示RealFunctions::floor(io_2)，模式2显示RealFunctions::floor(io_3)，每次按下切换一次。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_6以10ms为步长连续推进250步（总时长约2500ms），保持io_0/io_2/io_3恒定，io_4为true。记录serial_0_trigger与serial_0_value_0/1/2在每次触发点的值。\",\n        \"oracle\": \"serial_0_trigger在累计达到并跨越2秒边界的步中为true；在触发步，serial_0_value_0等于io_0，serial_0_value_1等于io_2，serial_0_value_2等于io_3。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_4为true；设置io_0=299.0且io_2=31.0，推进若干控制步；随后将io_0调到>=300.0或将io_2调到<=30.0，并继续推进同样控制步数。\",\n        \"oracle\": \"当(io_0<300.0)且(io_2>30.0)时serial_1_trigger为true且serial_1_value_0为true；当不满足任一条件时serial_1_trigger为false且serial_1_value_0为false。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在某一时段先让io_4为true并设置io_2=25.0、io_3=60.0；随后将io_4置为false若干控制步并保持io_2/io_3输入在任意值；期间发生一次按钮切换到温度/湿度模式，并触发一次serial_0_trigger（推进io_6累计超过2秒）。\",\n        \"oracle\": \"当io_4为false时，不应使温度/湿度显示与serial_0_value_1/2依据本帧无效数据变化；模型应保持基于先前有效状态的latched有效门控（未曾有效前则为0）。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_6 : Integer;\n    attribute displayMode : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute serialAccMs : Integer := 0;\n    attribute dhtTempValidLatched : Boolean := false;\n    attribute dhtHumValidLatched : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign displayMode := (if displayMode == 0 ? 1 else (if displayMode == 1 ? 2 else 0));\n      }\n      then assign previousPressed := io_1;\n      then assign serialAccMs := serialAccMs + io_6;\n      then if serialAccMs >= 2000 {\n        first start;\n        then assign serialAccMs := serialAccMs - 2000;\n      }\n      then if io_4 {\n        first start;\n        then assign dhtTempValidLatched := true;\n        then assign dhtHumValidLatched := true;\n      }\n    }\n    out attribute io_5 : Integer = (if displayMode == 0 ? (if io_0 < 0.0 ? 0 else (if io_0 > 2147483647.0 ? 2147483647 else RealFunctions::floor(io_0))) else (if displayMode == 1 ? (if dhtTempValidLatched ? (if io_2 < 0.0 ? 0 else (if io_2 > 2147483647.0 ? 2147483647 else RealFunctions::floor(io_2))) else 0) else (if dhtHumValidLatched ? (if io_3 < 0.0 ? 0 else (if io_3 > 2147483647.0 ? 2147483647 else RealFunctions::floor(io_3))) else 0)));\n    out attribute serial_0_trigger : Boolean = serialAccMs >= 0;\n    out attribute serial_0_value_0 : Real = (if serialAccMs >= 0 ? io_0 else 0.0);\n    out attribute serial_0_value_1 : Real = (if serialAccMs >= 0 ? (if dhtTempValidLatched ? io_2 else 0.0) else 0.0);\n    out attribute serial_0_value_2 : Real = (if serialAccMs >= 0 ? (if dhtHumValidLatched ? io_3 else 0.0) else 0.0);\n    out attribute serial_1_trigger : Boolean = (((((not dhtTempValidLatched)) or (dhtTempValidLatched))) and ((((not dhtHumValidLatched)) or (dhtHumValidLatched))) and (((((io_0) < (300.0))) and (((io_2) > (30.0))))));\n    out attribute serial_1_value_0 : Boolean = (if serial_1_trigger ? true else false);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

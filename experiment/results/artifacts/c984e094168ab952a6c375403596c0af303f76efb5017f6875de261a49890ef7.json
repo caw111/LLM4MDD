@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board is Arduino Uno with preserved authoritative wiring: HC-SR04 Trig=D8 Echo=D2, TM1637 CLK=D4 DIO=D5, LED D13 as digital output, PWM LED on D9 as pwm output.",
+    "Control step is 5ms; ultrasonic acquisition and validity ports are sampled on a 65ms cadence to respect minimum sample_period_ms and to be a multiple of control period.",
+    "No serial reporting or serial command inputs are requested by the provided requirements, so serial_channels is empty.",
+    "PWM output and near-distance LED activation are controlled by SysML model logic using the measured ultrasonic distance and validity; no thresholds/timers are embedded in the interface requests."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Distance for tiered display (HC-SR04, cm)",
+      "sample_period_ms": 65,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D2\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D2",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "HC-SR04 distance validity",
+      "sample_period_ms": 65,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D2\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D2",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Display distance on TM1637",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Near-distance indicator (LED D13)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Distance-based PWM brightness (PWM LED D9)",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D9\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D9"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D9"
+        },
+        "resolved": {
+          "pin": "D9"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D2"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "构建一个距离分级显示系统，使用 HC-SR04（Trig=D8，Echo=D9）、TM1637（CLK=D4，DIO=D5）、LED D13 和 PWM LED D9。数码管显示距离，LED D13 在近距离亮起，PWM LED D9 根据距离远近改变亮度，距离越近亮度越高。",
+    "effective_requirement": "构建一个距离分级显示系统，使用 HC-SR04（Trig=D8，Echo=D2）、TM1637（CLK=D4，DIO=D5）、LED D13 和 PWM LED D9。数码管显示距离，LED D13 在近距离亮起，PWM LED D9 根据距离远近改变亮度，距离越近亮度越高。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D9\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D2\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [
+      {
+        "device": "ultrasonic",
+        "field": "echo_pin",
+        "original": "D9",
+        "resolved": "D2",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "构建一个距离分级显示系统，使用 HC-SR04（Trig=D8，Echo=D9）、TM1637（CLK=D4，DIO=D5）、LED D13 和 PWM LED D9。数码管显示距离，LED D13 在近距离亮起，PWM LED D9 根据距离远近改变亮度，距离越近亮度越高。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  }
+}

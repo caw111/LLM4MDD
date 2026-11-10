@@ -1,0 +1,54 @@
+--- original.ino
++++ repaired.ino
+@@ -37,24 +37,18 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, double io_1, double io_2, double* io_3, bool* io_4) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_conditional_0 = 0;
+-    sysml_state_servoAngleTarget = ((double)((io_0 * 180.0)) / 1023.0);
+-    if ((sysml_state_servoAngleCurrent != sysml_state_servoAngleTarget)) {
+-        sysml_state_servoAngleCurrent = sysml_state_servoAngleTarget;
++    static int angle=0;
++    static uint32_t last=0;
++    uint32_t now=millis();
++    unsigned interval=10+(unsigned)(io_2*90.0/1023.0);
++    int target=(int)(io_0*180.0/1023.0);
++    if (angle==target) last=now;
++    else if ((uint32_t)(now-last)>=interval) {
++        angle+=target>angle ? 1 : -1;
++        last=now;
+     }
+-    double sysml_value_0 = 0;
+-    sysml_value_0 = sysml_state_servoAngleCurrent;
+-    bool sysml_value_1 = 0;
+-    if (io_1 >= 512.0) {
+-        sysml_conditional_0 = true;
+-    }
+-    else {
+-        sysml_conditional_0 = false;
+-    }
+-    sysml_value_1 = sysml_conditional_0;
+-    *io_3 = sysml_value_0;
+-    *io_4 = sysml_value_1;
++    *io_3=angle;
++    *io_4=false;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -94,7 +88,7 @@
+     }
+   }
+   pinMode(2, OUTPUT);
+-  digitalWrite(2, hw_value_io_4 ? HIGH : LOW);
++  analogWrite(2, (int)(hw_value_io_1*255.0/1023.0));
+ }
+ 
+ void loop() {
+@@ -125,5 +119,5 @@
+       hw_servo_io_3.write(command); hw_servo_previous_io_3 = command;
+     }
+   }
+-  digitalWrite(2, hw_value_io_4 ? HIGH : LOW);
++  analogWrite(2, (int)(hw_value_io_1*255.0/1023.0));
+ }

@@ -1,0 +1,61 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Checks the required serial message and phase-independent one-second LED transitions, including repeated rising and falling edges. No fixed-time LED states or exact total edge count are required. The available check schema cannot anchor assertions to the first ON transition or compare its time with the startup message, so startup ordering is not independently verified. The finite observation horizon necessarily limits how much initialization delay and continued repetition can be observed.",
+  "assumptions": [
+    "The supplied wiring makes the LED on pin 13 active HIGH; no bench-default wiring is needed.",
+    "Serial communication uses the supplied 9600 baud setting.",
+    "No maximum initialization latency is specified. The 30-second horizon is a practical observation budget, not a requirement that initialization complete within a particular short deadline.",
+    "One-second dwell times are checked with 100 ms timing tolerance, without assuming an absolute blinking phase."
+  ],
+  "horizon_ms": 30000,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "startup_message",
+      "requirement_quote": "Send a message \"LED Blink test starts\" to the serial monitor",
+      "from_ms": 0,
+      "to_ms": 30000,
+      "contains": "LED Blink test starts",
+      "min_count": 1
+    },
+    {
+      "kind": "interval",
+      "id": "one_second_dwell_times",
+      "requirement_quote": "The LED turns on and off at regular 1-second intervals",
+      "source": "gpio",
+      "pin": 13,
+      "from_ms": 0,
+      "to_ms": 30000,
+      "expected_ms": 1000,
+      "tolerance_ms": 100,
+      "min_count": 8
+    },
+    {
+      "kind": "edges",
+      "id": "repeated_on_transitions",
+      "requirement_quote": "Repeat indefinitely",
+      "pin": 13,
+      "from_ms": 0,
+      "to_ms": 30000,
+      "edge": "rising",
+      "min_count": 4
+    },
+    {
+      "kind": "edges",
+      "id": "repeated_off_transitions",
+      "requirement_quote": "Repeat indefinitely",
+      "pin": 13,
+      "from_ms": 0,
+      "to_ms": 30000,
+      "edge": "falling",
+      "min_count": 4
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nvoid setup() {\n  pinMode(13, OUTPUT);\n  Serial.begin(9600);\n  Serial.println(\"LED Blink test starts\");\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(1000);\n  digitalWrite(13, LOW);\n  delay(1000);\n}\n"
+}

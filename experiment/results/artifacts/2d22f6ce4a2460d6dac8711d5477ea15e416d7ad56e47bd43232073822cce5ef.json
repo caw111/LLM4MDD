@@ -1,0 +1,259 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeCycling",
+        "type": "bool",
+        "initial": "true"
+      },
+      {
+        "name": "modeOff",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "currentColorIndex",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousK1",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_5",
+        "then": [
+          {
+            "assign": "modeOff",
+            "value": "true"
+          },
+          {
+            "assign": "modeCycling",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "and": [
+                "not io_5",
+                "io_4"
+              ]
+            },
+            {
+              "not": "modeOff"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeCycling",
+            "value": "true"
+          },
+          {
+            "assign": "modeOff",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "not": "previousK1"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeCycling",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "modeCycling",
+            {
+              "not": "modeOff"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs + io_6"
+          },
+          {
+            "if": {
+              ">=": [
+                "accumulatedMs",
+                2000
+              ]
+            },
+            "then": [
+              {
+                "assign": "accumulatedMs",
+                "value": "accumulatedMs - 2000"
+              },
+              {
+                "assign": "currentColorIndex",
+                "value": {
+                  "if": {
+                    "==": [
+                      "currentColorIndex",
+                      2
+                    ]
+                  },
+                  "then": 0,
+                  "else": {
+                    "+": [
+                      "currentColorIndex",
+                      1
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "previousK1",
+        "value": "io_3"
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "modeOff",
+        "then": 0.0,
+        "else": {
+          "if": {
+            "and": [
+              "modeCycling",
+              {
+                "==": [
+                  "currentColorIndex",
+                  0
+                ]
+              }
+            ]
+          },
+          "then": 255.0,
+          "else": {
+            "if": {
+              "and": [
+                {
+                  "not": "modeCycling"
+                },
+                {
+                  "==": [
+                    "currentColorIndex",
+                    0
+                  ]
+                }
+              ]
+            },
+            "then": 255.0,
+            "else": 0.0
+          }
+        }
+      },
+      "io_1": {
+        "if": "modeOff",
+        "then": 0.0,
+        "else": {
+          "if": {
+            "and": [
+              "modeCycling",
+              {
+                "==": [
+                  "currentColorIndex",
+                  1
+                ]
+              }
+            ]
+          },
+          "then": 255.0,
+          "else": {
+            "if": {
+              "and": [
+                {
+                  "not": "modeCycling"
+                },
+                {
+                  "==": [
+                    "currentColorIndex",
+                    1
+                  ]
+                }
+              ]
+            },
+            "then": 255.0,
+            "else": 0.0
+          }
+        }
+      },
+      "io_2": {
+        "if": "modeOff",
+        "then": 0.0,
+        "else": {
+          "if": {
+            "and": [
+              "modeCycling",
+              {
+                "==": [
+                  "currentColorIndex",
+                  2
+                ]
+              }
+            ]
+          },
+          "then": 255.0,
+          "else": {
+            "if": {
+              "and": [
+                {
+                  "not": "modeCycling"
+                },
+                {
+                  "==": [
+                    "currentColorIndex",
+                    2
+                  ]
+                }
+              ]
+            },
+            "then": 255.0,
+            "else": 0.0
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (led1) using three push buttons (k1, k2, k3). The RGB LED should cycle through red, green, and blue colors upon startup, and the buttons should allow the user to control the LED's behavior.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the RGB LED (led1) should start cycling through red, green, and blue colors, with each color displayed for 2 seconds.\n\nButton Interaction:\n1. Pressing btn1 (k1) should stop the color cycling and keep the LED displaying the current color.\n2. Pressing btn2 (k2) should resume the color cycling from the point it was stopped.\n3. Pressing btn3 (k3) should turn off the RGB LED (led1), making it completely dark.\n\nState Transitions:\n- **Cycling Mode**: The LED cycles through red, green, and blue, each for 2 seconds.\n- **Hold Mode**: The LED stops cycling and remains on the last color displayed before btn1 was pressed.\n- **Off Mode**: The LED turns off completely.\n\nThe system should respond to button presses immediately and transition between these states as described.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"led1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r1\", \"left\": 460.8, \"top\": -14.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r2\", \"left\": 460.8, \"top\": 4.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r3\", \"left\": 460.8, \"top\": 23.8, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r4\", \"left\": 460.8, \"top\": 43.0, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r5\", \"left\": 460.8, \"top\": 62.2, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r6\", \"left\": 460.8, \"top\": 81.4, \"attrs\": {\"value\": \"1000\"}}], \"connections\": [[\"mega:GND.1\", \"led1:COM\", \"black\"], [\"mega:2\", \"led1:R\", \"red\"], [\"mega:3\", \"led1:G\", \"green\"], [\"mega:4\", \"led1:B\", \"blue\"], [\"mega:GND.1\", \"k1:2.r\", \"black\"], [\"mega:5\", \"k1:1.l\", \"green\"], [\"mega:GND.1\", \"k2:2.r\", \"black\"], [\"mega:6\", \"k2:1.l\", \"green\"], [\"mega:GND.1\", \"k3:2.r\", \"black\"], [\"mega:7\", \"k3:1.l\", \"green\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with io_3=false, io_4=false, io_5=false; advance time with io_6 totaling 2000ms to observe first transition, then another 2000ms for the second transition; then press io_3 (k1) for one step and keep it held while advancing time; then press io_4 (k2) for one step to resume; finally press io_5 (k3) for one step.",
+        "oracle": "During cycling: io_0=255.0, io_1=0.0, io_2=0.0 for first 2s; then io_0=0.0, io_1=255.0, io_2=0.0 for next 2s; then io_0=0.0, io_1=0.0, io_2=255.0 for next 2s. On k1 rising edge: cycling stops immediately and outputs remain at the last active color while time advances. On k2 rising edge (from hold): cycling resumes from the paused point (no color change until the remaining dwell completes). On k3 pressed: outputs all become 0.0 (dark) immediately."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_3 : Boolean;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Boolean;\n    in attribute io_6 : Integer;\n    attribute modeCycling : Boolean := true;\n    attribute modeOff : Boolean := false;\n    attribute currentColorIndex : Integer := 0;\n    attribute previousK1 : Boolean := false;\n    attribute accumulatedMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_5 {\n        first start;\n        then assign modeOff := true;\n        then assign modeCycling := false;\n      }\n      then if ((((not io_5) and (io_4))) and ((not modeOff))) {\n        first start;\n        then assign modeCycling := true;\n        then assign modeOff := false;\n      }\n      then if ((io_3) and ((not previousK1))) {\n        first start;\n        then assign modeCycling := false;\n      }\n      then if ((modeCycling) and ((not modeOff))) {\n        first start;\n        then assign accumulatedMs := accumulatedMs + io_6;\n        then if ((accumulatedMs) >= (2000)) {\n          first start;\n          then assign accumulatedMs := accumulatedMs - 2000;\n          then assign currentColorIndex := (if ((currentColorIndex) == (2)) ? 0 else ((currentColorIndex) + (1)));\n        }\n      }\n      then assign previousK1 := io_3;\n    }\n    out attribute io_0 : Real = (if modeOff ? 0.0 else (if ((modeCycling) and (((currentColorIndex) == (0)))) ? 255.0 else (if (((not modeCycling)) and (((currentColorIndex) == (0)))) ? 255.0 else 0.0)));\n    out attribute io_1 : Real = (if modeOff ? 0.0 else (if ((modeCycling) and (((currentColorIndex) == (1)))) ? 255.0 else (if (((not modeCycling)) and (((currentColorIndex) == (1)))) ? 255.0 else 0.0)));\n    out attribute io_2 : Real = (if modeOff ? 0.0 else (if ((modeCycling) and (((currentColorIndex) == (2)))) ? 255.0 else (if (((not modeCycling)) and (((currentColorIndex) == (2)))) ? 255.0 else 0.0)));\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,348 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_2",
+      "type": "i32"
+    },
+    {
+      "name": "io_3",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_2",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? 31 : 0)"
+      }
+    },
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "beeping"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_2"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "remainingSeconds"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "running",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "remainingSeconds",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "beeping",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "prevAddPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "prevStartPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "beepRemainingSteps",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            },
+            {
+              "kind": "state",
+              "name": "prevAddPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "remainingSeconds",
+                "expression": "(arg0 + 10)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "remainingSeconds"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            },
+            {
+              "kind": "state",
+              "name": "prevStartPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "running",
+                "expression": "true",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "running"
+            },
+            {
+              "kind": "state",
+              "name": "beeping"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "remainingSeconds",
+                "expression": "(((arg0 == 0) && true) ? 0 : ((arg0 > 0) ? (arg0 - 1) : arg0))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "remainingSeconds"
+                  }
+                ]
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 <= 0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "remainingSeconds"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "beeping",
+                      "expression": "true",
+                      "sources": []
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "beepRemainingSteps",
+                      "expression": "0",
+                      "sources": []
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "running",
+                      "expression": "false",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (arg1 > 0))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "beeping"
+            },
+            {
+              "kind": "state",
+              "name": "beepRemainingSteps"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "beepRemainingSteps",
+                "expression": "(arg0 - 1)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "beepRemainingSteps"
+                  }
+                ]
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 <= 1)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "beepRemainingSteps"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "beeping",
+                      "expression": "false",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "prevAddPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "assign",
+          "state": "prevStartPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

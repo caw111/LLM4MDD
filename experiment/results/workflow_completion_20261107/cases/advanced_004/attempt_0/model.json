@@ -1,0 +1,1222 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "clockReady",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "clockMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "oldClockMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "alarmOne",
+        "type": "i32",
+        "initial": 420
+      },
+      {
+        "name": "alarmTwo",
+        "type": "i32",
+        "initial": 720
+      },
+      {
+        "name": "alarmThree",
+        "type": "i32",
+        "initial": 1080
+      },
+      {
+        "name": "firedOne",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "firedTwo",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "firedThree",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "activeTodayOne",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "activeTodayTwo",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "activeTodayThree",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "statusOne",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "statusTwo",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "statusThree",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "ageOne",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "ageTwo",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "ageThree",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "occurrencesOne",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "occurrencesTwo",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "occurrencesThree",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "batchMisses",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "missedCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "pendingWarnings",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "warningStep",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "displayPage",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "confirmArmed",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "previousArmed",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "nextArmed",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "confirmReleaseMs",
+        "type": "i32",
+        "initial": 30
+      },
+      {
+        "name": "previousReleaseMs",
+        "type": "i32",
+        "initial": 30
+      },
+      {
+        "name": "nextReleaseMs",
+        "type": "i32",
+        "initial": 30
+      },
+      {
+        "name": "confirmPress",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPress",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "nextPress",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "calculations": [
+      {
+        "name": "commandCode",
+        "type": "i32",
+        "expression": "RealFunctions::floor(io_0 / 10000)"
+      },
+      {
+        "name": "commandPayload",
+        "type": "i32",
+        "expression": "io_0 - commandCode * 10000"
+      },
+      {
+        "name": "payloadHours",
+        "type": "i32",
+        "expression": "RealFunctions::floor(commandPayload / 100)"
+      },
+      {
+        "name": "payloadMinutes",
+        "type": "i32",
+        "expression": "commandPayload - payloadHours * 100"
+      },
+      {
+        "name": "acceptedTimeValue",
+        "type": "bool",
+        "expression": {
+          "and": [
+            "io_0_valid",
+            "commandPayload >= 0",
+            "commandPayload <= 2359",
+            "payloadMinutes >= 0",
+            "payloadMinutes < 60",
+            "commandCode >= 1",
+            "commandCode <= 4"
+          ]
+        }
+      },
+      {
+        "name": "requestedMinutes",
+        "type": "i32",
+        "expression": "payloadHours * 60 + payloadMinutes"
+      },
+      {
+        "name": "advancedClock",
+        "type": "f64",
+        "expression": "oldClockMs * 1.0 + io_8"
+      },
+      {
+        "name": "crossedDays",
+        "type": "i32",
+        "expression": "RealFunctions::floor(advancedClock / 86400000.0)"
+      },
+      {
+        "name": "crossingsOne",
+        "type": "i32",
+        "expression": "RealFunctions::floor((advancedClock - alarmOne * 60000.0) / 86400000.0) - RealFunctions::floor((oldClockMs - alarmOne * 60000.0) / 86400000.0)"
+      },
+      {
+        "name": "crossingsTwo",
+        "type": "i32",
+        "expression": "RealFunctions::floor((advancedClock - alarmTwo * 60000.0) / 86400000.0) - RealFunctions::floor((oldClockMs - alarmTwo * 60000.0) / 86400000.0)"
+      },
+      {
+        "name": "crossingsThree",
+        "type": "i32",
+        "expression": "RealFunctions::floor((advancedClock - alarmThree * 60000.0) / 86400000.0) - RealFunctions::floor((oldClockMs - alarmThree * 60000.0) / 86400000.0)"
+      },
+      {
+        "name": "latestAgeOne",
+        "type": "i32",
+        "expression": "RealFunctions::floor(advancedClock - alarmOne * 60000.0 - 86400000.0 * RealFunctions::floor((advancedClock - alarmOne * 60000.0) / 86400000.0))"
+      },
+      {
+        "name": "latestAgeTwo",
+        "type": "i32",
+        "expression": "RealFunctions::floor(advancedClock - alarmTwo * 60000.0 - 86400000.0 * RealFunctions::floor((advancedClock - alarmTwo * 60000.0) / 86400000.0))"
+      },
+      {
+        "name": "latestAgeThree",
+        "type": "i32",
+        "expression": "RealFunctions::floor(advancedClock - alarmThree * 60000.0 - 86400000.0 * RealFunctions::floor((advancedClock - alarmThree * 60000.0) / 86400000.0))"
+      },
+      {
+        "name": "liveHours",
+        "type": "i32",
+        "expression": "RealFunctions::floor(clockMs / 3600000)"
+      },
+      {
+        "name": "liveMinutes",
+        "type": "i32",
+        "expression": "RealFunctions::floor(clockMs / 60000) - liveHours * 60"
+      },
+      {
+        "name": "signalOne",
+        "type": "bool",
+        "expression": {
+          "and": [
+            "statusOne == 1",
+            "ageOne - 1000 * RealFunctions::floor(ageOne / 1000) < 500"
+          ]
+        }
+      },
+      {
+        "name": "signalTwo",
+        "type": "bool",
+        "expression": {
+          "and": [
+            "statusTwo == 1",
+            "ageTwo - 1000 * RealFunctions::floor(ageTwo / 1000) < 500"
+          ]
+        }
+      },
+      {
+        "name": "signalThree",
+        "type": "bool",
+        "expression": {
+          "and": [
+            "statusThree == 1",
+            "ageThree - 1000 * RealFunctions::floor(ageThree / 1000) < 500"
+          ]
+        }
+      },
+      {
+        "name": "signalOn",
+        "type": "bool",
+        "expression": {
+          "or": [
+            "signalOne",
+            "signalTwo",
+            "signalThree"
+          ]
+        }
+      }
+    ],
+    "updates": [
+      {
+        "assign": "warningStep",
+        "value": false
+      },
+      {
+        "assign": "confirmPress",
+        "value": false
+      },
+      {
+        "assign": "previousPress",
+        "value": false
+      },
+      {
+        "assign": "nextPress",
+        "value": false
+      },
+      {
+        "assign": "batchMisses",
+        "value": 0
+      },
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "if": "confirmArmed",
+            "then": [
+              {
+                "assign": "confirmPress",
+                "value": true
+              },
+              {
+                "assign": "confirmArmed",
+                "value": false
+              }
+            ]
+          },
+          {
+            "assign": "confirmReleaseMs",
+            "value": 0
+          }
+        ],
+        "else": [
+          {
+            "assign": "confirmReleaseMs",
+            "value": {
+              "if": "io_8 >= 30 - confirmReleaseMs",
+              "then": 30,
+              "else": "confirmReleaseMs + io_8"
+            }
+          },
+          {
+            "if": "confirmReleaseMs >= 30",
+            "then": [
+              {
+                "assign": "confirmArmed",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "if": "previousArmed",
+            "then": [
+              {
+                "assign": "previousPress",
+                "value": true
+              },
+              {
+                "assign": "previousArmed",
+                "value": false
+              }
+            ]
+          },
+          {
+            "assign": "previousReleaseMs",
+            "value": 0
+          }
+        ],
+        "else": [
+          {
+            "assign": "previousReleaseMs",
+            "value": {
+              "if": "io_8 >= 30 - previousReleaseMs",
+              "then": 30,
+              "else": "previousReleaseMs + io_8"
+            }
+          },
+          {
+            "if": "previousReleaseMs >= 30",
+            "then": [
+              {
+                "assign": "previousArmed",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "if": "nextArmed",
+            "then": [
+              {
+                "assign": "nextPress",
+                "value": true
+              },
+              {
+                "assign": "nextArmed",
+                "value": false
+              }
+            ]
+          },
+          {
+            "assign": "nextReleaseMs",
+            "value": 0
+          }
+        ],
+        "else": [
+          {
+            "assign": "nextReleaseMs",
+            "value": {
+              "if": "io_8 >= 30 - nextReleaseMs",
+              "then": 30,
+              "else": "nextReleaseMs + io_8"
+            }
+          },
+          {
+            "if": "nextReleaseMs >= 30",
+            "then": [
+              {
+                "assign": "nextArmed",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "oldClockMs",
+        "value": "clockMs"
+      },
+      {
+        "if": "statusOne == 1",
+        "then": [
+          {
+            "assign": "ageOne",
+            "value": {
+              "if": "io_8 >= 30001 - ageOne",
+              "then": 30001,
+              "else": "ageOne + io_8"
+            }
+          }
+        ]
+      },
+      {
+        "if": "statusTwo == 1",
+        "then": [
+          {
+            "assign": "ageTwo",
+            "value": {
+              "if": "io_8 >= 30001 - ageTwo",
+              "then": 30001,
+              "else": "ageTwo + io_8"
+            }
+          }
+        ]
+      },
+      {
+        "if": "statusThree == 1",
+        "then": [
+          {
+            "assign": "ageThree",
+            "value": {
+              "if": "io_8 >= 30001 - ageThree",
+              "then": 30001,
+              "else": "ageThree + io_8"
+            }
+          }
+        ]
+      },
+      {
+        "if": "clockReady",
+        "then": [
+          {
+            "assign": "occurrencesOne",
+            "value": {
+              "-": [
+                "crossingsOne",
+                {
+                  "if": {
+                    "and": [
+                      "firedOne",
+                      "oldClockMs < alarmOne * 60000",
+                      "advancedClock >= alarmOne * 60000.0"
+                    ]
+                  },
+                  "then": 1,
+                  "else": 0
+                }
+              ]
+            }
+          },
+          {
+            "assign": "occurrencesTwo",
+            "value": {
+              "-": [
+                "crossingsTwo",
+                {
+                  "if": {
+                    "and": [
+                      "firedTwo",
+                      "oldClockMs < alarmTwo * 60000",
+                      "advancedClock >= alarmTwo * 60000.0"
+                    ]
+                  },
+                  "then": 1,
+                  "else": 0
+                }
+              ]
+            }
+          },
+          {
+            "assign": "occurrencesThree",
+            "value": {
+              "-": [
+                "crossingsThree",
+                {
+                  "if": {
+                    "and": [
+                      "firedThree",
+                      "oldClockMs < alarmThree * 60000",
+                      "advancedClock >= alarmThree * 60000.0"
+                    ]
+                  },
+                  "then": 1,
+                  "else": 0
+                }
+              ]
+            }
+          },
+          {
+            "assign": "clockMs",
+            "value": "RealFunctions::floor(advancedClock - crossedDays * 86400000.0)"
+          },
+          {
+            "if": "crossedDays > 0",
+            "then": [
+              {
+                "assign": "firedOne",
+                "value": false
+              },
+              {
+                "assign": "firedTwo",
+                "value": false
+              },
+              {
+                "assign": "firedThree",
+                "value": false
+              },
+              {
+                "assign": "activeTodayOne",
+                "value": false
+              },
+              {
+                "assign": "activeTodayTwo",
+                "value": false
+              },
+              {
+                "assign": "activeTodayThree",
+                "value": false
+              },
+              {
+                "if": "statusOne != 1",
+                "then": [
+                  {
+                    "assign": "statusOne",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": "statusTwo != 1",
+                "then": [
+                  {
+                    "assign": "statusTwo",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": "statusThree != 1",
+                "then": [
+                  {
+                    "assign": "statusThree",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "if": "occurrencesOne > 0",
+            "then": [
+              {
+                "assign": "batchMisses",
+                "value": "batchMisses + occurrencesOne - 1"
+              },
+              {
+                "if": "statusOne == 1",
+                "then": [
+                  {
+                    "assign": "batchMisses",
+                    "value": "batchMisses + 1"
+                  }
+                ]
+              },
+              {
+                "assign": "statusOne",
+                "value": 1
+              },
+              {
+                "assign": "activeTodayOne",
+                "value": "clockMs >= alarmOne * 60000"
+              },
+              {
+                "assign": "firedOne",
+                "value": "activeTodayOne"
+              },
+              {
+                "assign": "ageOne",
+                "value": {
+                  "if": "latestAgeOne > 30001",
+                  "then": 30001,
+                  "else": "latestAgeOne"
+                }
+              }
+            ]
+          },
+          {
+            "if": "occurrencesTwo > 0",
+            "then": [
+              {
+                "assign": "batchMisses",
+                "value": "batchMisses + occurrencesTwo - 1"
+              },
+              {
+                "if": "statusTwo == 1",
+                "then": [
+                  {
+                    "assign": "batchMisses",
+                    "value": "batchMisses + 1"
+                  }
+                ]
+              },
+              {
+                "assign": "statusTwo",
+                "value": 1
+              },
+              {
+                "assign": "activeTodayTwo",
+                "value": "clockMs >= alarmTwo * 60000"
+              },
+              {
+                "assign": "firedTwo",
+                "value": "activeTodayTwo"
+              },
+              {
+                "assign": "ageTwo",
+                "value": {
+                  "if": "latestAgeTwo > 30001",
+                  "then": 30001,
+                  "else": "latestAgeTwo"
+                }
+              }
+            ]
+          },
+          {
+            "if": "occurrencesThree > 0",
+            "then": [
+              {
+                "assign": "batchMisses",
+                "value": "batchMisses + occurrencesThree - 1"
+              },
+              {
+                "if": "statusThree == 1",
+                "then": [
+                  {
+                    "assign": "batchMisses",
+                    "value": "batchMisses + 1"
+                  }
+                ]
+              },
+              {
+                "assign": "statusThree",
+                "value": 1
+              },
+              {
+                "assign": "activeTodayThree",
+                "value": "clockMs >= alarmThree * 60000"
+              },
+              {
+                "assign": "firedThree",
+                "value": "activeTodayThree"
+              },
+              {
+                "assign": "ageThree",
+                "value": {
+                  "if": "latestAgeThree > 30001",
+                  "then": 30001,
+                  "else": "latestAgeThree"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "acceptedTimeValue",
+        "then": [
+          {
+            "if": "commandCode == 1",
+            "then": [
+              {
+                "assign": "clockMs",
+                "value": "requestedMinutes * 60000"
+              },
+              {
+                "assign": "clockReady",
+                "value": true
+              },
+              {
+                "if": {
+                  "and": [
+                    {
+                      "not": "firedOne"
+                    },
+                    "statusOne != 1",
+                    "requestedMinutes == alarmOne"
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "firedOne",
+                    "value": true
+                  },
+                  {
+                    "assign": "activeTodayOne",
+                    "value": true
+                  },
+                  {
+                    "assign": "statusOne",
+                    "value": 1
+                  },
+                  {
+                    "assign": "ageOne",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": {
+                  "and": [
+                    {
+                      "not": "firedTwo"
+                    },
+                    "statusTwo != 1",
+                    "requestedMinutes == alarmTwo"
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "firedTwo",
+                    "value": true
+                  },
+                  {
+                    "assign": "activeTodayTwo",
+                    "value": true
+                  },
+                  {
+                    "assign": "statusTwo",
+                    "value": 1
+                  },
+                  {
+                    "assign": "ageTwo",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": {
+                  "and": [
+                    {
+                      "not": "firedThree"
+                    },
+                    "statusThree != 1",
+                    "requestedMinutes == alarmThree"
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "firedThree",
+                    "value": true
+                  },
+                  {
+                    "assign": "activeTodayThree",
+                    "value": true
+                  },
+                  {
+                    "assign": "statusThree",
+                    "value": 1
+                  },
+                  {
+                    "assign": "ageThree",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "if": "commandCode == 2",
+            "then": [
+              {
+                "assign": "alarmOne",
+                "value": "requestedMinutes"
+              }
+            ]
+          },
+          {
+            "if": "commandCode == 3",
+            "then": [
+              {
+                "assign": "alarmTwo",
+                "value": "requestedMinutes"
+              }
+            ]
+          },
+          {
+            "if": "commandCode == 4",
+            "then": [
+              {
+                "assign": "alarmThree",
+                "value": "requestedMinutes"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "confirmPress",
+        "then": [
+          {
+            "assign": "displayPage",
+            "value": 0
+          },
+          {
+            "if": {
+              "and": [
+                "statusOne == 1",
+                "ageOne <= 30000"
+              ]
+            },
+            "then": [
+              {
+                "assign": "statusOne",
+                "value": {
+                  "if": "activeTodayOne",
+                  "then": 2,
+                  "else": 0
+                }
+              },
+              {
+                "assign": "ageOne",
+                "value": 0
+              }
+            ],
+            "else": [
+              {
+                "if": {
+                  "and": [
+                    "statusTwo == 1",
+                    "ageTwo <= 30000"
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "statusTwo",
+                    "value": {
+                      "if": "activeTodayTwo",
+                      "then": 2,
+                      "else": 0
+                    }
+                  },
+                  {
+                    "assign": "ageTwo",
+                    "value": 0
+                  }
+                ],
+                "else": [
+                  {
+                    "if": {
+                      "and": [
+                        "statusThree == 1",
+                        "ageThree <= 30000"
+                      ]
+                    },
+                    "then": [
+                      {
+                        "assign": "statusThree",
+                        "value": {
+                          "if": "activeTodayThree",
+                          "then": 2,
+                          "else": 0
+                        }
+                      },
+                      {
+                        "assign": "ageThree",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "statusOne == 1",
+            "ageOne >= 30000"
+          ]
+        },
+        "then": [
+          {
+            "assign": "statusOne",
+            "value": {
+              "if": "activeTodayOne",
+              "then": 3,
+              "else": 0
+            }
+          },
+          {
+            "assign": "ageOne",
+            "value": 0
+          },
+          {
+            "assign": "batchMisses",
+            "value": "batchMisses + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "statusTwo == 1",
+            "ageTwo >= 30000"
+          ]
+        },
+        "then": [
+          {
+            "assign": "statusTwo",
+            "value": {
+              "if": "activeTodayTwo",
+              "then": 3,
+              "else": 0
+            }
+          },
+          {
+            "assign": "ageTwo",
+            "value": 0
+          },
+          {
+            "assign": "batchMisses",
+            "value": "batchMisses + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "statusThree == 1",
+            "ageThree >= 30000"
+          ]
+        },
+        "then": [
+          {
+            "assign": "statusThree",
+            "value": {
+              "if": "activeTodayThree",
+              "then": 3,
+              "else": 0
+            }
+          },
+          {
+            "assign": "ageThree",
+            "value": 0
+          },
+          {
+            "assign": "batchMisses",
+            "value": "batchMisses + 1"
+          }
+        ]
+      },
+      {
+        "if": "batchMisses > 0",
+        "then": [
+          {
+            "assign": "missedCount",
+            "value": {
+              "if": "batchMisses >= 2147483647 - missedCount",
+              "then": 2147483647,
+              "else": "missedCount + batchMisses"
+            }
+          },
+          {
+            "assign": "pendingWarnings",
+            "value": {
+              "if": "batchMisses >= 2147483647 - pendingWarnings",
+              "then": 2147483647,
+              "else": "pendingWarnings + batchMisses"
+            }
+          }
+        ]
+      },
+      {
+        "if": "pendingWarnings > 0",
+        "then": [
+          {
+            "assign": "warningStep",
+            "value": true
+          },
+          {
+            "assign": "pendingWarnings",
+            "value": "pendingWarnings - 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "previousPress",
+            {
+              "not": "nextPress"
+            },
+            {
+              "not": "confirmPress"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "displayPage",
+            "value": {
+              "if": "displayPage == 0",
+              "then": 3,
+              "else": "displayPage - 1"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "nextPress",
+            {
+              "not": "previousPress"
+            },
+            {
+              "not": "confirmPress"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "displayPage",
+            "value": {
+              "if": "displayPage == 3",
+              "then": 0,
+              "else": "displayPage + 1"
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_4": {
+        "if": "signalOn",
+        "then": 2000,
+        "else": 0
+      },
+      "io_5": "signalOn",
+      "io_6": {
+        "if": "displayPage == 0",
+        "then": "liveHours * 100 + liveMinutes",
+        "else": {
+          "if": "displayPage == 1",
+          "then": "1000 + statusOne",
+          "else": {
+            "if": "displayPage == 2",
+            "then": "2000 + statusTwo",
+            "else": "3000 + statusThree"
+          }
+        }
+      },
+      "io_7": "warningStep"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with initial inputs and advance io_8 before any TIME command. Send io_0=10930 with io_0_valid=true for one step, then clear validity and advance 60000 ms.",
+        "oracle": "Before TIME, display is 0000 and signaling remains off. The accepted command displays 0930; elapsed time advances it to 0931. Retained serial data without validity does not reset the clock.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Send SET1 945, SET2 1300 and SET3 1830 using command codes 2,3,4 and base-10000 packing. Attempt TIME 960 and SET1 1260. Set TIME 944 and advance through 0945.",
+        "oracle": "Valid settings persist between frames. Invalid minute fields leave the clock and settings unchanged. The first reminder activates at 0945. All model-driven command and display responses occur within 250 ms.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "From startup send TIME 700. Sample alarm ages 0,499,500,999,1000,29499,29500,29999 and 30000 ms without confirmation.",
+        "oracle": "The default 0700 reminder begins ON with a 2000 Hz tone and LED true. Synchronized phases alternate 500 ms ON and 500 ms OFF. At 30000 ms signaling stops, status becomes missed, missedCount increases once and exactly one missed dose line is emitted.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Press normalized io_1 during an active reminder, hold it, introduce release bounce shorter than 30 ms, then release for 30 ms and press again. Separately confirm exactly at the 30000 ms deadline and after that deadline.",
+        "oracle": "One accepted press confirms one eligible active reminder and stops its signaling. Holding and short release bounce produce no extra actions. A 30 ms release rearms the button. Confirmation at exactly 30000 ms wins; a later confirmation cannot cancel an already overdue miss.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T5",
+        "test_method": "trace",
+        "stimulus": "Use separately released D4 presses to advance four pages, then D3 to browse backward. Test simultaneous D3/D4 and D2 while browsing. Inspect statuses before activation, during activation, after confirmation and after expiration.",
+        "oracle": "Navigation wraps through live, reminder 1, reminder 2, reminder 3 and live. Reminder pages encode index*1000+status, with 0=pending, 1=active, 2=confirmed and 3=missed. Simultaneous previous/next cancels navigation. D2 returns to live and confirms the lowest-index eligible active reminder.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T6",
+        "test_method": "trace",
+        "stimulus": "Process the default daily reminders, reissue TIME at their processed times, then advance naturally through midnight and the next day's alarms.",
+        "oracle": "TIME corrections do not clear daily processed flags. Natural midnight resets daily eligibility and completed daily statuses while retaining missedCount. New daily occurrences activate normally. Live time rolls from 2359 to 0000.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T7",
+        "test_method": "trace",
+        "stimulus": "Set all three reminders to 0800 and send TIME 800. Confirm separately twice with at least 30 ms release between presses. In another trace leave all three unconfirmed for 30 seconds.",
+        "oracle": "Coincident reminders retain independent states and deadlines. Each confirmation selects the lowest-index eligible active reminder. Three unconfirmed expirations increment missedCount by three and queue exactly three warning lines, emitted one per control step.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T8",
+        "test_method": "trace",
+        "stimulus": "During an active reminder send forward and backward TIME corrections while advancing io_8. Cross a future alarm naturally with a step ending 750 ms after its scheduled boundary.",
+        "oracle": "Clock corrections do not reset an active reminder's actual elapsed deadline. TIME activates unprocessed reminders only on exact matches, rather than treating skipped times as natural crossings. The natural crossing retains 750 ms of age, so its signal is OFF and its timeout remains aligned with the scheduled boundary.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T9",
+        "test_method": "trace",
+        "stimulus": "From startup send TIME 600 as io_0=10600 with io_8=0. Next clear validity, leave all buttons false and supply io_8=172800000. Continue ordinary steps with no confirmation.",
+        "oracle": "Clock returns to 0600 after two elapsed days. All six default daily occurrences are accounted for as missed, missedCount becomes six and exactly six missed dose lines drain from the warning queue. No physical signaling is required during the interval in which no control steps executed.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T10",
+        "test_method": "trace",
+        "stimulus": "Starting from TIME 600, provide a multi-day delta ending 20000 ms after the final day's 0700 alarm. Repeat with a delta ending exactly at that alarm's 30000 ms deadline, both with and without a confirmation press.",
+        "oracle": "Every earlier elapsed occurrence contributes one retained miss and one queued warning. The latest occurrence retains its residual age and may still be confirmed while within its deadline. At exactly 30000 ms confirmation wins; without confirmation that occurrence is counted and reported once.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T11",
+        "test_method": "trace",
+        "stimulus": "Confirm today's 0700 reminder, move TIME backward to 0600, then advance by two days. Also test an active 2359 reminder crossing midnight before confirmation or expiration.",
+        "oracle": "The already processed occurrence in the starting day is not counted again after the backward correction. Subsequent daily occurrences are counted separately. An active prior-day reminder may finish across midnight, but its eventual completed status does not overwrite today's pending status; cumulative misses remain retained.",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_0_valid : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    in attribute io_8 : Integer;\n    attribute clockReady : Boolean := false;\n    attribute clockMs : Integer := 0;\n    attribute oldClockMs : Integer := 0;\n    attribute alarmOne : Integer := 420;\n    attribute alarmTwo : Integer := 720;\n    attribute alarmThree : Integer := 1080;\n    attribute firedOne : Boolean := false;\n    attribute firedTwo : Boolean := false;\n    attribute firedThree : Boolean := false;\n    attribute activeTodayOne : Boolean := false;\n    attribute activeTodayTwo : Boolean := false;\n    attribute activeTodayThree : Boolean := false;\n    attribute statusOne : Integer := 0;\n    attribute statusTwo : Integer := 0;\n    attribute statusThree : Integer := 0;\n    attribute ageOne : Integer := 0;\n    attribute ageTwo : Integer := 0;\n    attribute ageThree : Integer := 0;\n    attribute occurrencesOne : Integer := 0;\n    attribute occurrencesTwo : Integer := 0;\n    attribute occurrencesThree : Integer := 0;\n    attribute batchMisses : Integer := 0;\n    attribute missedCount : Integer := 0;\n    attribute pendingWarnings : Integer := 0;\n    attribute warningStep : Boolean := false;\n    attribute displayPage : Integer := 0;\n    attribute confirmArmed : Boolean := true;\n    attribute previousArmed : Boolean := true;\n    attribute nextArmed : Boolean := true;\n    attribute confirmReleaseMs : Integer := 30;\n    attribute previousReleaseMs : Integer := 30;\n    attribute nextReleaseMs : Integer := 30;\n    attribute confirmPress : Boolean := false;\n    attribute previousPress : Boolean := false;\n    attribute nextPress : Boolean := false;\n    attribute commandCode : Integer = RealFunctions::floor(io_0 / 10000);\n    attribute commandPayload : Integer = io_0 - commandCode * 10000;\n    attribute payloadHours : Integer = RealFunctions::floor(commandPayload / 100);\n    attribute payloadMinutes : Integer = commandPayload - payloadHours * 100;\n    attribute acceptedTimeValue : Boolean = ((io_0_valid) and (commandPayload >= 0) and (commandPayload <= 2359) and (payloadMinutes >= 0) and (payloadMinutes < 60) and (commandCode >= 1) and (commandCode <= 4));\n    attribute requestedMinutes : Integer = payloadHours * 60 + payloadMinutes;\n    attribute advancedClock : Real = oldClockMs * 1.0 + io_8;\n    attribute crossedDays : Integer = RealFunctions::floor(advancedClock / 86400000.0);\n    attribute crossingsOne : Integer = RealFunctions::floor((advancedClock - alarmOne * 60000.0) / 86400000.0) - RealFunctions::floor((oldClockMs - alarmOne * 60000.0) / 86400000.0);\n    attribute crossingsTwo : Integer = RealFunctions::floor((advancedClock - alarmTwo * 60000.0) / 86400000.0) - RealFunctions::floor((oldClockMs - alarmTwo * 60000.0) / 86400000.0);\n    attribute crossingsThree : Integer = RealFunctions::floor((advancedClock - alarmThree * 60000.0) / 86400000.0) - RealFunctions::floor((oldClockMs - alarmThree * 60000.0) / 86400000.0);\n    attribute latestAgeOne : Integer = RealFunctions::floor(advancedClock - alarmOne * 60000.0 - 86400000.0 * RealFunctions::floor((advancedClock - alarmOne * 60000.0) / 86400000.0));\n    attribute latestAgeTwo : Integer = RealFunctions::floor(advancedClock - alarmTwo * 60000.0 - 86400000.0 * RealFunctions::floor((advancedClock - alarmTwo * 60000.0) / 86400000.0));\n    attribute latestAgeThree : Integer = RealFunctions::floor(advancedClock - alarmThree * 60000.0 - 86400000.0 * RealFunctions::floor((advancedClock - alarmThree * 60000.0) / 86400000.0));\n    attribute liveHours : Integer = RealFunctions::floor(clockMs / 3600000);\n    attribute liveMinutes : Integer = RealFunctions::floor(clockMs / 60000) - liveHours * 60;\n    attribute signalOne : Boolean = ((statusOne == 1) and (ageOne - 1000 * RealFunctions::floor(ageOne / 1000) < 500));\n    attribute signalTwo : Boolean = ((statusTwo == 1) and (ageTwo - 1000 * RealFunctions::floor(ageTwo / 1000) < 500));\n    attribute signalThree : Boolean = ((statusThree == 1) and (ageThree - 1000 * RealFunctions::floor(ageThree / 1000) < 500));\n    attribute signalOn : Boolean = ((signalOne) or (signalTwo) or (signalThree));\n    perform action tick {\n      first start;\n      then assign warningStep := false;\n      then assign confirmPress := false;\n      then assign previousPress := false;\n      then assign nextPress := false;\n      then assign batchMisses := 0;\n      then if io_1 {\n        first start;\n        then if confirmArmed {\n          first start;\n          then assign confirmPress := true;\n          then assign confirmArmed := false;\n        }\n        then assign confirmReleaseMs := 0;\n      } else {\n        first start;\n        then assign confirmReleaseMs := (if io_8 >= 30 - confirmReleaseMs ? 30 else confirmReleaseMs + io_8);\n        then if confirmReleaseMs >= 30 {\n          first start;\n          then assign confirmArmed := true;\n        }\n      }\n      then if io_2 {\n        first start;\n        then if previousArmed {\n          first start;\n          then assign previousPress := true;\n          then assign previousArmed := false;\n        }\n        then assign previousReleaseMs := 0;\n      } else {\n        first start;\n        then assign previousReleaseMs := (if io_8 >= 30 - previousReleaseMs ? 30 else previousReleaseMs + io_8);\n        then if previousReleaseMs >= 30 {\n          first start;\n          then assign previousArmed := true;\n        }\n      }\n      then if io_3 {\n        first start;\n        then if nextArmed {\n          first start;\n          then assign nextPress := true;\n          then assign nextArmed := false;\n        }\n        then assign nextReleaseMs := 0;\n      } else {\n        first start;\n        then assign nextReleaseMs := (if io_8 >= 30 - nextReleaseMs ? 30 else nextReleaseMs + io_8);\n        then if nextReleaseMs >= 30 {\n          first start;\n          then assign nextArmed := true;\n        }\n      }\n      then assign oldClockMs := clockMs;\n      then if statusOne == 1 {\n        first start;\n        then assign ageOne := (if io_8 >= 30001 - ageOne ? 30001 else ageOne + io_8);\n      }\n      then if statusTwo == 1 {\n        first start;\n        then assign ageTwo := (if io_8 >= 30001 - ageTwo ? 30001 else ageTwo + io_8);\n      }\n      then if statusThree == 1 {\n        first start;\n        then assign ageThree := (if io_8 >= 30001 - ageThree ? 30001 else ageThree + io_8);\n      }\n      then if clockReady {\n        first start;\n        then assign occurrencesOne := ((crossingsOne) - ((if ((firedOne) and (oldClockMs < alarmOne * 60000) and (advancedClock >= alarmOne * 60000.0)) ? 1 else 0)));\n        then assign occurrencesTwo := ((crossingsTwo) - ((if ((firedTwo) and (oldClockMs < alarmTwo * 60000) and (advancedClock >= alarmTwo * 60000.0)) ? 1 else 0)));\n        then assign occurrencesThree := ((crossingsThree) - ((if ((firedThree) and (oldClockMs < alarmThree * 60000) and (advancedClock >= alarmThree * 60000.0)) ? 1 else 0)));\n        then assign clockMs := RealFunctions::floor(advancedClock - crossedDays * 86400000.0);\n        then if crossedDays > 0 {\n          first start;\n          then assign firedOne := false;\n          then assign firedTwo := false;\n          then assign firedThree := false;\n          then assign activeTodayOne := false;\n          then assign activeTodayTwo := false;\n          then assign activeTodayThree := false;\n          then if statusOne != 1 {\n            first start;\n            then assign statusOne := 0;\n          }\n          then if statusTwo != 1 {\n            first start;\n            then assign statusTwo := 0;\n          }\n          then if statusThree != 1 {\n            first start;\n            then assign statusThree := 0;\n          }\n        }\n        then if occurrencesOne > 0 {\n          first start;\n          then assign batchMisses := batchMisses + occurrencesOne - 1;\n          then if statusOne == 1 {\n            first start;\n            then assign batchMisses := batchMisses + 1;\n          }\n          then assign statusOne := 1;\n          then assign activeTodayOne := clockMs >= alarmOne * 60000;\n          then assign firedOne := activeTodayOne;\n          then assign ageOne := (if latestAgeOne > 30001 ? 30001 else latestAgeOne);\n        }\n        then if occurrencesTwo > 0 {\n          first start;\n          then assign batchMisses := batchMisses + occurrencesTwo - 1;\n          then if statusTwo == 1 {\n            first start;\n            then assign batchMisses := batchMisses + 1;\n          }\n          then assign statusTwo := 1;\n          then assign activeTodayTwo := clockMs >= alarmTwo * 60000;\n          then assign firedTwo := activeTodayTwo;\n          then assign ageTwo := (if latestAgeTwo > 30001 ? 30001 else latestAgeTwo);\n        }\n        then if occurrencesThree > 0 {\n          first start;\n          then assign batchMisses := batchMisses + occurrencesThree - 1;\n          then if statusThree == 1 {\n            first start;\n            then assign batchMisses := batchMisses + 1;\n          }\n          then assign statusThree := 1;\n          then assign activeTodayThree := clockMs >= alarmThree * 60000;\n          then assign firedThree := activeTodayThree;\n          then assign ageThree := (if latestAgeThree > 30001 ? 30001 else latestAgeThree);\n        }\n      }\n      then if acceptedTimeValue {\n        first start;\n        then if commandCode == 1 {\n          first start;\n          then assign clockMs := requestedMinutes * 60000;\n          then assign clockReady := true;\n          then if (((not firedOne)) and (statusOne != 1) and (requestedMinutes == alarmOne)) {\n            first start;\n            then assign firedOne := true;\n            then assign activeTodayOne := true;\n            then assign statusOne := 1;\n            then assign ageOne := 0;\n          }\n          then if (((not firedTwo)) and (statusTwo != 1) and (requestedMinutes == alarmTwo)) {\n            first start;\n            then assign firedTwo := true;\n            then assign activeTodayTwo := true;\n            then assign statusTwo := 1;\n            then assign ageTwo := 0;\n          }\n          then if (((not firedThree)) and (statusThree != 1) and (requestedMinutes == alarmThree)) {\n            first start;\n            then assign firedThree := true;\n            then assign activeTodayThree := true;\n            then assign statusThree := 1;\n            then assign ageThree := 0;\n          }\n        }\n        then if commandCode == 2 {\n          first start;\n          then assign alarmOne := requestedMinutes;\n        }\n        then if commandCode == 3 {\n          first start;\n          then assign alarmTwo := requestedMinutes;\n        }\n        then if commandCode == 4 {\n          first start;\n          then assign alarmThree := requestedMinutes;\n        }\n      }\n      then if confirmPress {\n        first start;\n        then assign displayPage := 0;\n        then if ((statusOne == 1) and (ageOne <= 30000)) {\n          first start;\n          then assign statusOne := (if activeTodayOne ? 2 else 0);\n          then assign ageOne := 0;\n        } else {\n          first start;\n          then if ((statusTwo == 1) and (ageTwo <= 30000)) {\n            first start;\n            then assign statusTwo := (if activeTodayTwo ? 2 else 0);\n            then assign ageTwo := 0;\n          } else {\n            first start;\n            then if ((statusThree == 1) and (ageThree <= 30000)) {\n              first start;\n              then assign statusThree := (if activeTodayThree ? 2 else 0);\n              then assign ageThree := 0;\n            }\n          }\n        }\n      }\n      then if ((statusOne == 1) and (ageOne >= 30000)) {\n        first start;\n        then assign statusOne := (if activeTodayOne ? 3 else 0);\n        then assign ageOne := 0;\n        then assign batchMisses := batchMisses + 1;\n      }\n      then if ((statusTwo == 1) and (ageTwo >= 30000)) {\n        first start;\n        then assign statusTwo := (if activeTodayTwo ? 3 else 0);\n        then assign ageTwo := 0;\n        then assign batchMisses := batchMisses + 1;\n      }\n      then if ((statusThree == 1) and (ageThree >= 30000)) {\n        first start;\n        then assign statusThree := (if activeTodayThree ? 3 else 0);\n        then assign ageThree := 0;\n        then assign batchMisses := batchMisses + 1;\n      }\n      then if batchMisses > 0 {\n        first start;\n        then assign missedCount := (if batchMisses >= 2147483647 - missedCount ? 2147483647 else missedCount + batchMisses);\n        then assign pendingWarnings := (if batchMisses >= 2147483647 - pendingWarnings ? 2147483647 else pendingWarnings + batchMisses);\n      }\n      then if pendingWarnings > 0 {\n        first start;\n        then assign warningStep := true;\n        then assign pendingWarnings := pendingWarnings - 1;\n      }\n      then if ((previousPress) and ((not nextPress)) and ((not confirmPress))) {\n        first start;\n        then assign displayPage := (if displayPage == 0 ? 3 else displayPage - 1);\n      }\n      then if ((nextPress) and ((not previousPress)) and ((not confirmPress))) {\n        first start;\n        then assign displayPage := (if displayPage == 3 ? 0 else displayPage + 1);\n      }\n    }\n    out attribute io_4 : Integer = (if signalOn ? 2000 else 0);\n    out attribute io_5 : Boolean = signalOn;\n    out attribute io_6 : Integer = (if displayPage == 0 ? liveHours * 100 + liveMinutes else (if displayPage == 1 ? 1000 + statusOne else (if displayPage == 2 ? 2000 + statusTwo else 3000 + statusThree)));\n    out attribute io_7 : Boolean = warningStep;\n  }\n  part system : Controller;\n}\n"
+}

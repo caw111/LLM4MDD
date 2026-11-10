@@ -1,0 +1,134 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Verifies temperature reporting from D7 through warming, cooling, and return to the original temperature, with repeated reports during stable inputs. Exact five-second cadence is not independently asserted: the available interval check can filter only by a fixed substring, whereas temperature formatting and labels are unspecified. Generic serial intervals would incorrectly include separate labels or status messages.",
+  "assumptions": [
+    "The authoritative sensor is a DHT11 with its data pin on D7.",
+    "Temperature is interpreted in degrees Celsius, the default DHT API unit.",
+    "The first reading may occur immediately or after the first five-second period.",
+    "Serial labels and numeric formatting are unspecified; numeric checks do not require particular labels.",
+    "No behavior for invalid sensor readings is specified, so invalid readings are not tested.",
+    "No LED, button, or analog bench defaults are needed."
+  ],
+  "horizon_ms": 48000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 18
+    },
+    {
+      "at_ms": 0,
+      "kind": "humidity",
+      "pin": 7,
+      "value": 50
+    },
+    {
+      "at_ms": 12000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 31
+    },
+    {
+      "at_ms": 24000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 7
+    },
+    {
+      "at_ms": 36000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 18
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "initial_temperature",
+      "requirement_quote": "读取 DHT11（D7）温度并串口输出",
+      "from_ms": 2500,
+      "to_ms": 11500,
+      "expected": 18,
+      "tolerance": 0.5,
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "warmer_temperature",
+      "requirement_quote": "读取 DHT11（D7）温度并串口输出",
+      "from_ms": 14500,
+      "to_ms": 23500,
+      "expected": 31,
+      "tolerance": 0.5,
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "cooler_temperature",
+      "requirement_quote": "读取 DHT11（D7）温度并串口输出",
+      "from_ms": 26500,
+      "to_ms": 35500,
+      "expected": 7,
+      "tolerance": 0.5,
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "return_temperature",
+      "requirement_quote": "读取 DHT11（D7）温度并串口输出",
+      "from_ms": 38500,
+      "to_ms": 47500,
+      "expected": 18,
+      "tolerance": 0.5,
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_initial_reports",
+      "requirement_quote": "每 5 秒读取",
+      "from_ms": 0,
+      "to_ms": 11750,
+      "expected": 18,
+      "tolerance": 0.5,
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_warm_reports",
+      "requirement_quote": "每 5 秒读取",
+      "from_ms": 12300,
+      "to_ms": 23750,
+      "expected": 31,
+      "tolerance": 0.5,
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_cool_reports",
+      "requirement_quote": "每 5 秒读取",
+      "from_ms": 24300,
+      "to_ms": 35750,
+      "expected": 7,
+      "tolerance": 0.5,
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_return_reports",
+      "requirement_quote": "每 5 秒读取",
+      "from_ms": 36300,
+      "to_ms": 47750,
+      "expected": 18,
+      "tolerance": 0.5,
+      "min_count": 2
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <math.h>\n\nDHT sensor(7, DHT11);\nunsigned long lastRead = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  sensor.begin();\n  lastRead = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (now - lastRead >= 5000UL) {\n    lastRead = now;\n    float temperature = sensor.readTemperature();\n    if (!isnan(temperature)) {\n      Serial.print(\"Temperature: \");\n      Serial.println(temperature, 1);\n    }\n  }\n}\n",
+  "electrical_led_pins": {}
+}

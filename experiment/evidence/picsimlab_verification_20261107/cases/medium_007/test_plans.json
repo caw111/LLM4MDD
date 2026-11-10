@@ -1,0 +1,261 @@
+[
+  {
+    "name": "baseline",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests integer-centimeter output, both valid range endpoints, both adjacent out-of-range values, no-echo blanking, repeated recovery, and response within 250ms. Trigger rising-edge counts provide finite-window sampling-rate coverage. The available checks cannot directly verify each 60..160ms start interval or the exact 25000us echo-wait timeout. A distinct stuck-HIGH echo fault is not modeled by the distance input API, so that fault and the instantaneous initial display state are not independently verified.",
+      "assumptions": [
+        "Authoritative wiring is used: HC-SR04 TRIG D8/ECHO D9 and TM1637 CLK D4/DIO D5; no bench-default LED, button, or analog wiring is needed.",
+        "Distance inputs are centimeters synthesized into echo pulses by the host ultrasonic mapping; null represents no echo, not a separately controllable stuck-HIGH fault.",
+        "A blank four-digit TM1637 frame is represented by four spaces.",
+        "Numeric display checks allow leading zeros or blanks and the specified 1cm quantization tolerance."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "distance",
+          "pin": 9,
+          "value": null
+        },
+        {
+          "at_ms": 600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 2
+        },
+        {
+          "at_ms": 1600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 100
+        },
+        {
+          "at_ms": 2600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 400
+        },
+        {
+          "at_ms": 3600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 401
+        },
+        {
+          "at_ms": 4600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 1
+        },
+        {
+          "at_ms": 5600,
+          "kind": "distance",
+          "pin": 9,
+          "value": null
+        },
+        {
+          "at_ms": 6600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 58
+        },
+        {
+          "at_ms": 7600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 200
+        },
+        {
+          "at_ms": 8600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 2
+        },
+        {
+          "at_ms": 9600,
+          "kind": "distance",
+          "pin": 9,
+          "value": 399
+        },
+        {
+          "at_ms": 10600,
+          "kind": "distance",
+          "pin": 9,
+          "value": null
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [
+        {
+          "trigger_pin": 8,
+          "echo_pin": 9
+        }
+      ],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "display",
+          "id": "initial_no_echo_blank",
+          "requirement_quote": "无回波、卡高或越界时显示空白",
+          "name": "tm:4:5",
+          "at_ms": 300,
+          "expected": "    ",
+          "numeric": false
+        },
+        {
+          "kind": "display",
+          "id": "minimum_valid",
+          "requirement_quote": "有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）",
+          "name": "tm:4:5",
+          "at_ms": 850,
+          "min": 1,
+          "max": 3,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "one_hundred",
+          "requirement_quote": "变化250ms内反映",
+          "name": "tm:4:5",
+          "at_ms": 1850,
+          "min": 99,
+          "max": 101,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "maximum_valid",
+          "requirement_quote": "有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）",
+          "name": "tm:4:5",
+          "at_ms": 2850,
+          "min": 399,
+          "max": 401,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "above_range_blank",
+          "requirement_quote": "无回波、卡高或越界时显示空白",
+          "name": "tm:4:5",
+          "at_ms": 3850,
+          "expected": "    ",
+          "numeric": false
+        },
+        {
+          "kind": "display",
+          "id": "below_range_blank",
+          "requirement_quote": "无回波、卡高或越界时显示空白",
+          "name": "tm:4:5",
+          "at_ms": 4850,
+          "expected": "    ",
+          "numeric": false
+        },
+        {
+          "kind": "display",
+          "id": "timeout_not_zero",
+          "requirement_quote": "不得将超时当成0cm",
+          "name": "tm:4:5",
+          "at_ms": 5850,
+          "expected": "    ",
+          "numeric": false
+        },
+        {
+          "kind": "display",
+          "id": "recovery_58",
+          "requirement_quote": "恢复后继续显示真实距离",
+          "name": "tm:4:5",
+          "at_ms": 6850,
+          "min": 57,
+          "max": 59,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "change_200",
+          "requirement_quote": "变化250ms内反映",
+          "name": "tm:4:5",
+          "at_ms": 7850,
+          "min": 199,
+          "max": 201,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "return_minimum",
+          "requirement_quote": "变化250ms内反映",
+          "name": "tm:4:5",
+          "at_ms": 8850,
+          "min": 1,
+          "max": 3,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "near_upper_limit",
+          "requirement_quote": "显示整数厘米（量化容差1cm，前导零或空白均可）",
+          "name": "tm:4:5",
+          "at_ms": 9850,
+          "min": 398,
+          "max": 400,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "valid_to_timeout_blank",
+          "requirement_quote": "无回波、卡高或越界时显示空白",
+          "name": "tm:4:5",
+          "at_ms": 10850,
+          "expected": "    ",
+          "numeric": false
+        },
+        {
+          "kind": "display",
+          "id": "timeout_stays_blank",
+          "requirement_quote": "不得将超时当成0cm",
+          "name": "tm:4:5",
+          "at_ms": 11800,
+          "expected": "    ",
+          "numeric": false
+        },
+        {
+          "kind": "edges",
+          "id": "valid_sampling_density",
+          "requirement_quote": "采样开始间隔60..160ms",
+          "pin": 8,
+          "from_ms": 1700,
+          "to_ms": 2500,
+          "edge": "rising",
+          "min_count": 5,
+          "max_count": 14
+        },
+        {
+          "kind": "edges",
+          "id": "long_echo_sampling_density",
+          "requirement_quote": "采样开始间隔60..160ms",
+          "pin": 8,
+          "from_ms": 2700,
+          "to_ms": 3500,
+          "edge": "rising",
+          "min_count": 5,
+          "max_count": 14
+        },
+        {
+          "kind": "edges",
+          "id": "timeout_sampling_continues",
+          "requirement_quote": "采样开始间隔60..160ms",
+          "pin": 8,
+          "from_ms": 11000,
+          "to_ms": 11800,
+          "edge": "rising",
+          "min_count": 5,
+          "max_count": 14
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nconst uint8_t TRIG = 8;\nconst uint8_t ECHO = 9;\nTM1637Display display(4, 5);\nunsigned long lastStart = 0;\nbool firstSample = true;\n\nvoid measureAndDisplay() {\n  digitalWrite(TRIG, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG, LOW);\n  unsigned long width = pulseIn(ECHO, HIGH, 25000UL);\n  if (width == 0 || width < 116UL || width > 23200UL) {\n    display.clear();\n    return;\n  }\n  int centimeters = (int)((width + 29UL) / 58UL);\n  display.showNumberDec(centimeters, false);\n}\n\nvoid setup() {\n  pinMode(TRIG, OUTPUT);\n  digitalWrite(TRIG, LOW);\n  pinMode(ECHO, INPUT);\n  display.setBrightness(7);\n  display.clear();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (firstSample || (unsigned long)(now - lastStart) >= 100UL) {\n    firstSample = false;\n    lastStart = now;\n    measureAndDisplay();\n  }\n}\n"
+    },
+    "engine": "host"
+  }
+]

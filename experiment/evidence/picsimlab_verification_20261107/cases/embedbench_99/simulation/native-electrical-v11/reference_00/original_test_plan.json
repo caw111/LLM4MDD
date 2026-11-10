@@ -1,0 +1,68 @@
+{
+  "horizon_ms": 4000,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "id": "native_1_0",
+      "kind": "gpio",
+      "requirement_quote": "**Task**:  \nYou are tasked with programming an Arduino (uno) to control an LED (led1) and a 10-segment LED bar graph (bargraph1) using a slide potentiometer (pot1). The potentiomet",
+      "pin": "2",
+      "at_ms": 1000,
+      "expected": 0
+    },
+    {
+      "id": "native_2_1",
+      "kind": "gpio",
+      "requirement_quote": "**Task**:  \nYou are tasked with programming an Arduino (uno) to control an LED (led1) and a 10-segment LED bar graph (bargraph1) using a slide potentiometer (pot1). The potentiomet",
+      "pin": "2",
+      "at_ms": 2000,
+      "expected": 1
+    },
+    {
+      "id": "native_3_2",
+      "kind": "gpio",
+      "requirement_quote": "**Task**:  \nYou are tasked with programming an Arduino (uno) to control an LED (led1) and a 10-segment LED bar graph (bargraph1) using a slide potentiometer (pot1). The potentiomet",
+      "pin": "2",
+      "at_ms": 3000,
+      "expected": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\nconst int ledPin = 2;          \nconst int potPin = A3;         \nconst int barGraphPins[] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12}; \nint potValue = 0;             \nint brightness = 0;           \nint segmentsToLight = 0;      \nunsigned long previousMillis = 0; \nbool ledState = LOW;          \n\nvoid setup();\nvoid loop();\nvoid setup() {\n  pinMode(ledPin, OUTPUT);\n  for (int i = 0; i < 10; i++) {\n    pinMode(barGraphPins[i], OUTPUT);\n    digitalWrite(barGraphPins[i], LOW); \n  }\n}\nvoid loop() {\n  potValue = analogRead(potPin);\n  brightness = map(potValue, 0, 1023, 0, 255);\n  segmentsToLight = map(potValue, 0, 1023, 0, 10);\n  for (int i = 0; i < 10; i++) {\n    if (i < segmentsToLight) {\n      digitalWrite(barGraphPins[i], HIGH); \n    } else {\n      digitalWrite(barGraphPins[i], LOW);  \n    }\n  }\n  if (potValue == 1023) {\n    unsigned long currentMillis = millis();\n    if (currentMillis - previousMillis >= 2000) {\n      previousMillis = currentMillis;\n      ledState = !ledState; \n      digitalWrite(ledPin, ledState);\n    }\n  } else {\n    analogWrite(ledPin, brightness);\n  }\n}",
+  "coverage": "partial",
+  "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+  "native_test_entries": [
+    "test1: {'time': 1, 'state': {'led1': 'off', 'bargraph1': 'all segments off'}, 'description': 'Initialization test. After startup, the LED and all bar graph segments should be off.'}",
+    "test2: {'time': 2, 'state': {'led1': 'full brightness', 'bargraph1': 'all segments lit'}, 'description': 'Maximum potentiometer test. After moving the potentiometer to its maximum position (1023), the LED should be at full brightness and all 10 bar graph segments should be lit.'}",
+    "test3: {'time': 3, 'state': {'led1': 'off', 'bargraph1': 'all segments off'}, 'description': 'Minimum potentiometer test. After moving the potentiometer back to its minimum position (0), the LED should be off and all bar graph segments should be off.'}"
+  ],
+  "skipped_conditions": [
+    {
+      "test": 0,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "all segments off"
+    },
+    {
+      "test": 1,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "all segments lit"
+    },
+    {
+      "test": 2,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "all segments off"
+    }
+  ],
+  "assumptions": [
+    "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+    "Normalized potentiometer positions0..1 map to ADC0..1023.",
+    "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+    "Reference preflight required; no claim that reference consistency proves all prose requirements."
+  ]
+}

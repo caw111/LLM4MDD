@@ -1,0 +1,48 @@
+[
+  {
+    "name": "baseline",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "This executable partial test checks endpoint-report safety: any reported angle must be 0 or 180, and serial output must contain only numeric angle lines, without labels. These checks detect intermediate-angle reports, incorrect endpoint values, and labeled output without imposing an unspecified sweep speed. The requirement provides no step duration or completion deadline, so the test does not require a report within the observation window. Consequently, silence can pass these safety checks; sweep execution, 1-degree stepping, repetition, report ordering, and correspondence between reports and commanded position remain uncovered. The reference implements the complete intended back-and-forth behavior.",
+      "assumptions": [
+        "The explicit circuit fixes the servo signal at pin 9, with servo power connected to 5V and ground; bench wiring defaults are not needed.",
+        "Serial uses the supplied 9600 baud and line-or-idle framing.",
+        "No sweep speed, step delay, startup deadline, or sweep-completion deadline is specified. The 180-second horizon is an observation budget, not an asserted completion deadline.",
+        "The instruction to repeat is interpreted as continued back-and-forth sweeps with an endpoint report after each completed sweep.",
+        "The reference chooses a 15 ms step delay, which is permitted but is not required by the checks.",
+        "These serial safety checks operate on captured report text and do not establish that Servo.read() was used internally."
+      ],
+      "horizon_ms": 180000,
+      "input_steps": [],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "serial",
+          "id": "no_labels_or_other_characters",
+          "requirement_quote": "Print only the number when printing the angle.",
+          "from_ms": 0,
+          "to_ms": 180000,
+          "regex": "[^0-9\\r\\n]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "only_completed_sweep_endpoint_values",
+          "requirement_quote": "When the moving is finished, print the current servo position",
+          "from_ms": 0,
+          "to_ms": 180000,
+          "regex": "(^|[\\r\\n])(?!(?:0|180)(?:[\\r\\n]|$))[0-9]+",
+          "min_count": 0,
+          "max_count": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <Servo.h>\n\nServo motor;\nint angle = 0;\nint direction = 1;\nunsigned long lastStep = 0;\nconst unsigned long stepDelayMs = 15;\n\nvoid setup() {\n  Serial.begin(9600);\n  motor.attach(9);\n  motor.write(0);\n  lastStep = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (now - lastStep < stepDelayMs) return;\n  lastStep = now;\n\n  angle += direction;\n  motor.write(angle);\n\n  if (angle == 180) {\n    Serial.println(motor.read());\n    direction = -1;\n  } else if (angle == 0) {\n    Serial.println(motor.read());\n    direction = 1;\n  }\n}\n"
+    },
+    "engine": "reviewed_assertions"
+  }
+]

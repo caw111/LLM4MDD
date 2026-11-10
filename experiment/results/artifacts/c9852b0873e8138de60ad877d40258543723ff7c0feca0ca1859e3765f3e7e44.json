@@ -1,0 +1,87 @@
+{
+  "contract_sha256": "86529e04a26649af89e7e60f76cea99967ef57e2461f5a882c9aad94f8c63fd0",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": true,\n      \"meaning\": \"Button D2 state model: true means pressed (INPUT_PULLUP, active-low hardware).\",\n      \"active_high\": false,\n      \"pullup\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED D13: off when model false; on when model true.\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"满足约定：D2使用INPUT_PULLUP，按下为低电平，因此以active_high=false建模，模型中pressed状态为true。\",\n    \"按钮只触发沿切换运行/停止：长按或松开不切换。该“沿检测/消抖与20ms容差”逻辑放在SysML模型中，不在端口层实现。\",\n    \"LED初始停止且D13熄灭；启动后每500ms翻转，停止立即熄灭，再启动重新计时。翻转节拍与20ms时间容差在SysML中用elapsed_ms完成。\",\n    \"无串口需求：未提供或要求任何serial输入/输出。\"\n  ]\n}",
+      "error": "periodic_checks press-edge probes require initially released normalized input",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button D2 state model (INPUT_PULLUP active-low hardware): model true means pressed; initial false means released (high level).\",\n      \"active_high\": false,\n      \"pullup\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED D13: off when model false; on when model true.\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"满足约定：D2使用INPUT_PULLUP，低电平表示按下，因此以active_high=false建模，模型中pressed为true。\",\n    \"按钮只在按下沿/切换沿触发：长按或松开不切换。按键消抖、20ms时间容差与“每次按下沿切换运行/停止”的业务逻辑放在SysML模型中实现。\",\n    \"LED初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。翻转节拍与20ms时间容差在SysML中使用elapsed_ms完成。\",\n    \"无串口需求：未提供或要求任何serial输入/输出。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "按钮（D2）控制 LED（D13）开始/停止闪烁\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。",
+    "effective_requirement": "按钮（D2）控制 LED（D13）开始/停止闪烁\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  }
+}

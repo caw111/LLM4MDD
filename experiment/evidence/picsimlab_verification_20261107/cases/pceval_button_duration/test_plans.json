@@ -1,0 +1,167 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Exercises two distinct active-LOW holds and checks explicit INPUT configuration, the required report format, and a parsed seconds value within the physically possible range, allowing polling tolerance. Numeric validation does not depend on leading zeros or decimal spelling. Reporting cadence and whether reports occur during a hold or after release are unspecified, so these checks do not require release-triggered reports. Consequently, they do not independently establish accurate measurement of each completed hold, timer reset, exclusion of released time, or correctness of every report. The short loop delay is not independently observable with the available checks.",
+      "assumptions": [
+        "The supplied circuit overrides bench defaults: pin 4 is externally pulled HIGH through 10kΩ when released and connected to GND when pressed. No bench-default wiring assumptions are used.",
+        "Serial communication uses the supplied 9600 baud setting.",
+        "Reporting cadence, reporting trigger, and numeric precision are unspecified. Both ongoing elapsed-time reports and completed-hold reports are accepted.",
+        "A 300 ms measurement allowance accommodates ordinary polling and debounce latency; this is a test tolerance, not a required implementation delay.",
+        "The 30-second observation horizon is a practical finite-suite limit, not a requirement-derived reporting period.",
+        "Clean button transitions are supplied because no debounce interval or bounce waveform is specified."
+      ],
+      "horizon_ms": 30000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 4,
+          "value": 1
+        },
+        {
+          "at_ms": 1000,
+          "kind": "digital",
+          "pin": 4,
+          "value": 0
+        },
+        {
+          "at_ms": 5000,
+          "kind": "digital",
+          "pin": 4,
+          "value": 1
+        },
+        {
+          "at_ms": 8000,
+          "kind": "digital",
+          "pin": 4,
+          "value": 0
+        },
+        {
+          "at_ms": 20000,
+          "kind": "digital",
+          "pin": 4,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pin_mode",
+          "id": "external_pullup_input",
+          "requirement_quote": "Configure the specified button pin as INPUT",
+          "pin": 4,
+          "expected": 0
+        },
+        {
+          "kind": "serial",
+          "id": "required_duration_report_format",
+          "requirement_quote": "Button pressed duration: {duration}s",
+          "from_ms": 0,
+          "to_ms": 30000,
+          "regex": "(?:^|[\\r\\n])Button pressed duration: [+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?s(?:\\r?\\n|$)",
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "parsed_physically_possible_seconds",
+          "requirement_quote": "The pressed duration in seconds is correctly printed",
+          "from_ms": 0,
+          "to_ms": 30000,
+          "prefix": "Button pressed duration: ",
+          "expected": 6.15,
+          "tolerance": 6.15,
+          "min_count": 1
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t BUTTON_PIN = 4;\nbool wasPressed = false;\nunsigned long pressStarted = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(BUTTON_PIN, INPUT);\n}\n\nvoid loop() {\n  const bool pressed = digitalRead(BUTTON_PIN) == LOW;\n  const unsigned long now = millis();\n  if (pressed && !wasPressed) {\n    pressStarted = now;\n  } else if (!pressed && wasPressed) {\n    const unsigned long elapsed = now - pressStarted;\n    Serial.print(\"Button pressed duration: \");\n    Serial.print(elapsed / 1000.0, 3);\n    Serial.println(\"s\");\n  }\n  wasPressed = pressed;\n  delay(10);\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Exercises two distinct active-LOW holds and checks explicit INPUT configuration, the required report format, and a parsed seconds value within the physically possible range, allowing polling tolerance. Numeric validation does not depend on leading zeros or decimal spelling. Reporting cadence and whether reports occur during a hold or after release are unspecified, so these checks do not require release-triggered reports. Consequently, they do not independently establish accurate measurement of each completed hold, timer reset, exclusion of released time, or correctness of every report. The short loop delay is not independently observable with the available checks.",
+      "assumptions": [
+        "The supplied circuit overrides bench defaults: pin 4 is externally pulled HIGH through 10kΩ when released and connected to GND when pressed. No bench-default wiring assumptions are used.",
+        "Serial communication uses the supplied 9600 baud setting.",
+        "Reporting cadence, reporting trigger, and numeric precision are unspecified. Both ongoing elapsed-time reports and completed-hold reports are accepted.",
+        "A 300 ms measurement allowance accommodates ordinary polling and debounce latency; this is a test tolerance, not a required implementation delay.",
+        "The 30-second observation horizon is a practical finite-suite limit, not a requirement-derived reporting period.",
+        "Clean button transitions are supplied because no debounce interval or bounce waveform is specified."
+      ],
+      "horizon_ms": 16000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "pin": 4,
+          "value": 1,
+          "kind": "digital"
+        },
+        {
+          "at_ms": 500,
+          "pin": 4,
+          "value": 0,
+          "kind": "digital"
+        },
+        {
+          "at_ms": 3500,
+          "pin": 4,
+          "value": 1,
+          "kind": "digital"
+        },
+        {
+          "at_ms": 5500,
+          "pin": 4,
+          "value": 0,
+          "kind": "digital"
+        },
+        {
+          "at_ms": 12500,
+          "pin": 4,
+          "value": 1,
+          "kind": "digital"
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "serial",
+          "id": "duration_3",
+          "from_ms": 3500,
+          "to_ms": 4000,
+          "prefix": "Button pressed duration: ",
+          "expected": 3,
+          "tolerance": 0.1,
+          "min_count": 1,
+          "baud": 9600,
+          "requirement_quote": "Print the pressed duration in seconds"
+        },
+        {
+          "kind": "serial",
+          "id": "duration_7",
+          "from_ms": 12500,
+          "to_ms": 13000,
+          "prefix": "Button pressed duration: ",
+          "expected": 7,
+          "tolerance": 0.1,
+          "min_count": 1,
+          "baud": 9600,
+          "requirement_quote": "Print the pressed duration in seconds"
+        }
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

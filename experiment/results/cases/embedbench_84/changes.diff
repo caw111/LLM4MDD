@@ -1,0 +1,136 @@
+--- original.ino
++++ repaired.ino
+@@ -37,85 +37,15 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, double io_1, double io_2, bool io_3, bool io_4, double* io_5, double* io_6, double* io_7) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    int32_t sysml_conditional_1 = 0;
+-    int32_t sysml_conditional_2 = 0;
+-    int32_t sysml_conditional_3 = 0;
+-    bool sysml_lazy_4 = 0;
+-    double sysml_conditional_5 = 0;
+-    bool sysml_lazy_6 = 0;
+-    double sysml_conditional_7 = 0;
+-    bool sysml_lazy_8 = 0;
+-    double sysml_conditional_9 = 0;
+-    if (io_4) {
+-        sysml_state_mode = 1;
+-    }
+-    sysml_lazy_0 = io_3;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = !sysml_state_previousBtn1;
+-    }
+-    if (sysml_lazy_0) {
+-        if (sysml_state_mode == 1) {
+-            sysml_conditional_1 = 2;
+-        }
+-        else {
+-            if (sysml_state_mode == 2) {
+-                sysml_conditional_2 = 3;
+-            }
+-            else {
+-                if (sysml_state_mode == 3) {
+-                    sysml_conditional_3 = 4;
+-                }
+-                else {
+-                    sysml_conditional_3 = 1;
+-                }
+-                sysml_conditional_2 = sysml_conditional_3;
+-            }
+-            sysml_conditional_1 = sysml_conditional_2;
+-        }
+-        sysml_state_mode = sysml_conditional_1;
+-    }
+-    sysml_state_previousBtn1 = io_3;
+-    double sysml_value_0 = 0;
+-    sysml_lazy_4 = sysml_state_mode == 1;
+-    if (!sysml_lazy_4) {
+-        sysml_lazy_4 = sysml_state_mode == 4;
+-    }
+-    if (sysml_lazy_4) {
+-        sysml_conditional_5 = io_0;
+-    }
+-    else {
+-        sysml_conditional_5 = 0.0;
+-    }
+-    sysml_value_0 = sysml_conditional_5;
+-    double sysml_value_1 = 0;
+-    sysml_lazy_6 = sysml_state_mode == 2;
+-    if (!sysml_lazy_6) {
+-        sysml_lazy_6 = sysml_state_mode == 4;
+-    }
+-    if (sysml_lazy_6) {
+-        sysml_conditional_7 = io_1;
+-    }
+-    else {
+-        sysml_conditional_7 = 0.0;
+-    }
+-    sysml_value_1 = sysml_conditional_7;
+-    double sysml_value_2 = 0;
+-    sysml_lazy_8 = sysml_state_mode == 3;
+-    if (!sysml_lazy_8) {
+-        sysml_lazy_8 = sysml_state_mode == 4;
+-    }
+-    if (sysml_lazy_8) {
+-        sysml_conditional_9 = io_2;
+-    }
+-    else {
+-        sysml_conditional_9 = 0.0;
+-    }
+-    sysml_value_2 = sysml_conditional_9;
+-    *io_5 = sysml_value_0;
+-    *io_6 = sysml_value_1;
+-    *io_7 = sysml_value_2;
++    static int mode=0;
++    static bool previousNext=false,previousReset=false;
++    if (io_4 && !previousReset) mode=0;
++    else if (io_3 && !previousNext) mode=mode%4+1;
++    previousNext=io_3;
++    previousReset=io_4;
++    *io_5=mode==1 || mode==4 ? io_0*255.0/1023.0 : 0;
++    *io_6=mode==2 || mode==4 ? io_1*255.0/1023.0 : 0;
++    *io_7=mode==3 || mode==4 ? io_2*255.0/1023.0 : 0;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -146,13 +76,22 @@
+ static double hw_value_io_6 = 0;
+ static double hw_value_io_7 = 0;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+   pinMode(A3, INPUT);
+   pinMode(A4, INPUT);
+   pinMode(A5, INPUT);
+-  pinMode(2, INPUT);
+-  pinMode(3, INPUT);
++  pinMode(2, INPUT_PULLUP);
++  pinMode(3, INPUT_PULLUP);
+   pinMode(4, OUTPUT);
+   analogWrite(4, (int)constrain((hw_value_io_5 * 1.0 + 0.0), 0.0, 255.0));
+   pinMode(5, OUTPUT);
+@@ -180,11 +119,11 @@
+   }
+   if (!hw_attempted_io_3 || (uint32_t)(hw_now - hw_sampled_io_3) >= 5UL) {
+     hw_attempted_io_3 = true; hw_sampled_io_3 = hw_now;
+-    hw_value_io_3 = (digitalRead(2) == HIGH);
++    hw_value_io_3 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   if (!hw_attempted_io_4 || (uint32_t)(hw_now - hw_sampled_io_4) >= 5UL) {
+     hw_attempted_io_4 = true; hw_sampled_io_4 = hw_now;
+-    hw_value_io_4 = (digitalRead(3) == HIGH);
++    hw_value_io_4 = manual_debounce_input((digitalRead(3) == LOW), 1);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

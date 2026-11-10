@@ -1,0 +1,311 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    },
+    {
+      "name": "io_1",
+      "type": "f64"
+    },
+    {
+      "name": "io_2",
+      "type": "bool"
+    },
+    {
+      "name": "io_5",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_3",
+      "type": "f64"
+    },
+    {
+      "name": "io_4",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "f64"
+        },
+        {
+          "name": "arg2",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 && (arg1 > 30.0)) ? arg2 : 0.0)"
+      }
+    },
+    {
+      "id": "compute_io_4",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "bool"
+        },
+        {
+          "name": "arg2",
+          "type": "f64"
+        },
+        {
+          "name": "arg3",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? (arg1 ? ((int)(arg2) - ((arg2) < (double)((int)(arg2)) ? 1 : 0)) : 0) : (arg1 ? ((int)(arg3) - ((arg3) < (double)((int)(arg3)) ? 1 : 0)) : 0))"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_2"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_0"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "pwmCountFan"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg2"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "showHumidity"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_2"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_1"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg2"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_0"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg3"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_4"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "showHumidity",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "prevPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "pwmCountFan",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_5"
+            },
+            {
+              "kind": "state",
+              "name": "prevPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "showHumidity",
+                "expression": "(!arg0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "showHumidity"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "((!arg0) && arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "showHumidity"
+            },
+            {
+              "kind": "input",
+              "name": "io_2"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "pwmCountFan",
+                "expression": "((arg0 > 30.0) ? ((arg0 >= 40.0) ? 255 : ((arg0 <= 30.0) ? 0 : ((int)(((arg0 - 30.0) * 25.5)) - ((((arg0 - 30.0) * 25.5)) < (double)((int)(((arg0 - 30.0) * 25.5))) ? 1 : 0)))) : 0)",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "pwmCountFan",
+                "expression": "((arg0 && (arg1 > 30.0)) ? ((arg1 >= 40.0) ? 255 : ((arg1 <= 30.0) ? 0 : ((int)(((arg1 - 30.0) * 25.5)) - ((((arg1 - 30.0) * 25.5)) < (double)((int)(((arg1 - 30.0) * 25.5))) ? 1 : 0)))) : 0)",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_2"
+                  },
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "assign",
+          "state": "prevPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_5"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

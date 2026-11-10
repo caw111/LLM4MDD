@@ -1,0 +1,113 @@
+--- original.ino
++++ repaired.ino
+@@ -47,89 +47,28 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, double io_1, bool io_2, int32_t* io_3, bool* io_4, bool* io_5, int32_t* io_6, bool* serial_0_trigger, double* serial_0_value_0, double* serial_0_value_1, bool* serial_0_value_2, int32_t* serial_0_value_3) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    bool sysml_lazy_2 = 0;
+-    bool sysml_lazy_3 = 0;
+-    bool sysml_lazy_4 = 0;
+-    bool sysml_lazy_5 = 0;
+-    int32_t sysml_conditional_6 = 0;
+-    sysml_state_flameDetectedLatched = io_2;
+-    sysml_lazy_0 = sysml_state_flameDetectedLatched;
+-    if (!sysml_lazy_0) {
+-        sysml_lazy_1 = io_0 >= 600.0;
+-        if (sysml_lazy_1) {
+-            sysml_lazy_1 = io_1 >= 600.0;
+-        }
+-        sysml_lazy_2 = sysml_lazy_1;
+-        if (!sysml_lazy_2) {
+-            sysml_lazy_3 = io_0 >= 700.0;
+-            if (sysml_lazy_3) {
+-                sysml_lazy_3 = !(io_0 >= 900.0);
+-            }
+-            sysml_lazy_2 = sysml_lazy_3;
+-        }
+-        sysml_lazy_4 = sysml_lazy_2;
+-        if (!sysml_lazy_4) {
+-            sysml_lazy_4 = io_1 >= 900.0;
+-        }
+-        sysml_lazy_0 = sysml_lazy_4;
++    static bool previous=false;
++    static uint32_t last=0;
++    uint32_t now=millis();
++    double temperature=io_0*500.0/1023.0;
++    bool hot=temperature>=50,smoky=io_1>=550;
++    int level=io_2 || (hot && smoky) ? 2 : (hot || smoky ? 1 : 0);
++    bool alarm=level==2;
++    *io_3=alarm && now%1000<500 ? 1000 : 0;
++    *io_4=alarm;
++    *io_5=level==0;
++    unsigned page=now/2000%3;
++    *io_6=page==0 ? level : (page==1 ? (int32_t)temperature : (int32_t)io_1);
++    *serial_0_trigger=alarm && (!previous || (uint32_t)(now-last)>=1000);
++    if (*serial_0_trigger) {
++        last=now;
++        Serial.println("fire alert");
+     }
+-    if (sysml_lazy_0) {
+-        sysml_state_alertLevel = 2;
+-        sysml_state_keyValueTemp = io_0;
+-        sysml_state_keyValueSmoke = io_1;
+-    }
+-    else {
+-        sysml_lazy_5 = io_0 >= 650.0;
+-        if (!sysml_lazy_5) {
+-            sysml_lazy_5 = io_1 >= 650.0;
+-        }
+-        if (sysml_lazy_5) {
+-            sysml_state_alertLevel = 1;
+-            sysml_state_keyValueTemp = io_0;
+-            sysml_state_keyValueSmoke = io_1;
+-        }
+-        else {
+-            sysml_state_alertLevel = 0;
+-            sysml_state_keyValueTemp = 0.0;
+-            sysml_state_keyValueSmoke = 0.0;
+-        }
+-    }
+-    int32_t sysml_value_0 = 0;
+-    if (sysml_state_alertLevel == 2) {
+-        sysml_conditional_6 = 2000;
+-    }
+-    else {
+-        sysml_conditional_6 = 0;
+-    }
+-    sysml_value_0 = sysml_conditional_6;
+-    bool sysml_value_1 = 0;
+-    sysml_value_1 = (sysml_state_alertLevel == 2);
+-    bool sysml_value_2 = 0;
+-    sysml_value_2 = (sysml_state_alertLevel == 1);
+-    int32_t sysml_value_3 = 0;
+-    sysml_value_3 = sysml_state_alertLevel;
+-    bool sysml_value_4 = 0;
+-    sysml_value_4 = (sysml_state_alertLevel == 2);
+-    double sysml_value_5 = 0;
+-    sysml_value_5 = sysml_state_keyValueTemp;
+-    double sysml_value_6 = 0;
+-    sysml_value_6 = sysml_state_keyValueSmoke;
+-    bool sysml_value_7 = 0;
+-    sysml_value_7 = sysml_state_flameDetectedLatched;
+-    int32_t sysml_value_8 = 0;
+-    sysml_value_8 = sysml_state_alertLevel;
+-    *io_3 = sysml_value_0;
+-    *io_4 = sysml_value_1;
+-    *io_5 = sysml_value_2;
+-    *io_6 = sysml_value_3;
+-    *serial_0_trigger = sysml_value_4;
+-    *serial_0_value_0 = sysml_value_5;
+-    *serial_0_value_1 = sysml_value_6;
+-    *serial_0_value_2 = sysml_value_7;
+-    *serial_0_value_3 = sysml_value_8;
++    previous=alarm;
++    *serial_0_value_0=temperature;
++    *serial_0_value_1=io_1;
++    *serial_0_value_2=io_2;
++    *serial_0_value_3=level;
+ }
+ // END COMPILED SYSML MODEL
+ 

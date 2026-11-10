@@ -1,0 +1,66 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "ledOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevLedOn",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1_valid and io_1 == 2",
+        "then": [
+          {
+            "assign": "ledOn",
+            "value": true
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "io_1_valid and io_1 == 1",
+        "then": [
+          {
+            "assign": "ledOn",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "prevLedOn",
+        "value": "ledOn"
+      }
+    ],
+    "outputs": {
+      "io_0": "ledOn"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "通过串口（9600 波特率）接收字符串 ON 或 OFF，控制 D13 LED 开关。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_1_valid=true, io_1=2 (ON) for one control step, then io_1_valid=false for subsequent steps",
+        "oracle": "io_0 becomes true (LED ON) starting immediately after the ON-valid step and remains true until an OFF-valid command is received"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "通过串口（9600 波特率）接收字符串 ON 或 OFF，控制 D13 LED 开关。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_1_valid=false for one or more steps (no valid serial frame), then io_1_valid=true, io_1=1 (OFF) for one control step",
+        "oracle": "io_0 stays at its previous value while io_1_valid=false, then becomes false (LED OFF) immediately after the OFF-valid step"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    in attribute io_1_valid : Boolean;\n    attribute ledOn : Boolean := false;\n    attribute prevLedOn : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_1_valid and io_1 == 2 {\n        first start;\n        then assign ledOn := true;\n      }\n      then if io_1_valid and io_1 == 1 {\n        first start;\n        then assign ledOn := false;\n      }\n      then assign prevLedOn := ledOn;\n    }\n    out attribute io_0 : Boolean = ledOn;\n  }\n  part system : Controller;\n}\n"
+}

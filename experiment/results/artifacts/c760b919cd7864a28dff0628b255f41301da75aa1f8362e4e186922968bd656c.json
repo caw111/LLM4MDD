@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board is Arduino Uno; D0/D1 are reserved for Serial and are not used.",
+    "Two HC-SR04 sensors are declared as fully coherent acquisitions: vehicle uses Trig=D8/Echo=D9 and pedestrian uses Trig=D10/Echo=D11, each with a matching distance + validity request sharing the same physical trigger/echo pins.",
+    "Ultrasonic sample_period_ms is set to 60ms to satisfy >= ceil((timeout_us+12)/1000) and >=60ms; the SysML model determines actual warning thresholds and the simultaneous-approach logic.",
+    "LED pins: D12 is red and D13 is green, both active-high; SysML controls blinking/constant-on behavior.",
+    "TM1637 uses CLK=D4 and DIO=D5; SysML maps danger level to the supported numeric range.",
+    "Serial output reports only the most recent dangerous-event duration when the SysML boolean trigger asserts; value unit is ms.",
+    "D2 is added as a digital_output to ensure the physical board pin required by the prior authoritative hardware configuration is owned by a catalog request; no further behavior is specified in the original requirements."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Vehicle approach distance (cm)",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D8",
+        "echo_pin": "D9"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Vehicle distance validity",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D8",
+        "echo_pin": "D9"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Pedestrian approach distance (cm)",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D11\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D10\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D10",
+        "echo_pin": "D11"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Pedestrian distance validity",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D11\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D10\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D10",
+        "echo_pin": "D11"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Red warning LED command",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D12"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Green safe LED command",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer alarm tone enable/frequency control",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Danger level number display",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Reserved/placeholder output to match required wired pin D2 (no additional functional requirement specified)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D2\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report trigger for the most recent dangerous event duration",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Duration of the most recent dangerous event (ms since event start/end as defined in SysML)",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"danger_event_duration_ms\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "danger_event_duration_ms"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_output",
+        "original": {},
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。",
+    "effective_requirement": "设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_output\", \"pin\": \"D2\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "digital_output",
+        "field": "pin",
+        "original": null,
+        "resolved": "D2",
+        "reason": "unspecified wiring"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

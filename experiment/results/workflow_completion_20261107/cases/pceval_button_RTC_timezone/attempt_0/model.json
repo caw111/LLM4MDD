@@ -1,0 +1,170 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "reportAge",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousValid",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportNow",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "calculations": [
+      {
+        "name": "deltaPhase",
+        "type": "i32",
+        "expression": "io_3 - 100 * RealFunctions::floor(io_3 / 100)"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "reportNow",
+        "value": false
+      },
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "if": {
+              "or": [
+                {
+                  "not": "previousValid"
+                },
+                {
+                  "!=": [
+                    "io_0",
+                    "previousPressed"
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "reportNow",
+                "value": true
+              },
+              {
+                "assign": "reportAge",
+                "value": 0
+              }
+            ],
+            "else": [
+              {
+                "if": {
+                  ">=": [
+                    "io_3",
+                    "100 - reportAge"
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "reportNow",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "assign": "reportAge",
+                "value": "reportAge + deltaPhase"
+              },
+              {
+                "if": {
+                  ">=": [
+                    "reportAge",
+                    100
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "reportAge",
+                    "value": "reportAge - 100"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "reportAge",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "previousValid",
+        "value": "io_2"
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": "reportNow",
+      "serial_0_value_0": {
+        "if": "io_0",
+        "then": "io_1 + 32400",
+        "else": "io_1"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with io_2=false, then supply a valid RTC acquisition with io_0=false. Advance io_3 in 10 ms increments while supplying current RTC epochs.",
+        "oracle": "No timestamp is emitted while invalid. The first valid acquisition emits immediately; subsequent stable-state reports occur every 100 ms and contain the acquired UTC timestamp formatted YYYY-MM-DDTHH:MM:SS followed by one newline.",
+        "requirement_text": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "While io_2=true, press, hold, and release the active-HIGH D2 button, including changes between periodic report deadlines.",
+        "oracle": "Each button change produces an immediate report. While pressed, serial_0_value_0 equals io_1 + 32400; while released it equals io_1. Holding the button does not toggle the selected timezone.",
+        "requirement_text": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Supply valid RTC epochs near midnight, month end, leap-day boundaries, and year end with io_0=true.",
+        "oracle": "The reported ISO timestamp represents the acquired UTC instant plus nine hours, including the correct calendar rollover, with no prefix or timezone suffix.",
+        "requirement_text": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Invalidate RTC acquisitions during reporting, change the button while invalid, and then restore validity with a fresh epoch. Also exercise irregular elapsed deltas crossing multiple 100 ms intervals.",
+        "oracle": "Invalid acquisitions never trigger a report. Restored validity triggers an immediate report using the fresh epoch and current button state. Periodic timing uses actual elapsed deltas, retains residual phase, and emits at most once per control step.",
+        "requirement_text": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T5",
+        "test_method": "integration",
+        "stimulus": "Boot the assembled application with the supplied DS1307, D2 button, external 10000 ohm pull-down, and preserved circuit connections.",
+        "oracle": "Setup returns within 500 ms; Serial initializes at 9600 baud; D2 uses INPUT without an internal pull-up; the RTC initializes on A4/A5. Timestamp reports use acquired RTC time rather than a substituted simulator initialization constant.",
+        "requirement_text": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Integer;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Integer;\n    attribute reportAge : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute previousValid : Boolean := false;\n    attribute reportNow : Boolean := false;\n    attribute deltaPhase : Integer = io_3 - 100 * RealFunctions::floor(io_3 / 100);\n    perform action tick {\n      first start;\n      then assign reportNow := false;\n      then if io_2 {\n        first start;\n        then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\n          first start;\n          then assign reportNow := true;\n          then assign reportAge := 0;\n        } else {\n          first start;\n          then if ((io_3) >= (100 - reportAge)) {\n            first start;\n            then assign reportNow := true;\n          }\n          then assign reportAge := reportAge + deltaPhase;\n          then if ((reportAge) >= (100)) {\n            first start;\n            then assign reportAge := reportAge - 100;\n          }\n        }\n      } else {\n        first start;\n        then assign reportAge := 0;\n      }\n      then assign previousValid := io_2;\n      then assign previousPressed := io_0;\n    }\n    out attribute serial_0_trigger : Boolean = reportNow;\n    out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\n  }\n  part system : Controller;\n}\n"
+}

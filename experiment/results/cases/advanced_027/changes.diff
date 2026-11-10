@@ -1,0 +1,167 @@
+--- original.ino
++++ repaired.ino
+@@ -37,103 +37,27 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, double io_1, double io_2, bool io_6, double* io_3, int32_t* io_4, int32_t* io_5, bool* serial_0_trigger, int32_t* serial_0_value_0) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    double sysml_conditional_2 = 0;
+-    bool sysml_lazy_3 = 0;
+-    double sysml_conditional_4 = 0;
+-    int32_t sysml_conditional_5 = 0;
+-    int32_t sysml_conditional_6 = 0;
+-    int32_t sysml_conditional_7 = 0;
+-    int32_t sysml_conditional_8 = 0;
+-    bool sysml_conditional_9 = 0;
+-    int32_t sysml_conditional_10 = 0;
+-    sysml_lazy_0 = io_6;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = !sysml_state_prevButton;
++    static uint32_t lowSince=0;
++    static bool low=false,reported=false;
++    static int angle=90;
++    uint32_t now=millis();
++    if (io_6 && !sysml_state_prevButton) sysml_state_autoManual=!sysml_state_autoManual;
++    sysml_state_prevButton=io_6;
++    if (!sysml_state_autoManual) {
++        double balance=io_1-io_0;
++        angle=balance<-35 ? 45 : (balance>35 ? 135 : 90);
+     }
+-    if (sysml_lazy_0) {
+-        sysml_state_autoManual = (!sysml_state_autoManual);
+-    }
+-    sysml_state_prevButton = io_6;
+-    if (sysml_state_autoManual) {
+-        sysml_state_prevButton = io_6;
+-    }
+-    else {
+-        sysml_state_prevButton = io_6;
+-    }
+-    double sysml_value_0 = 0;
+-    sysml_lazy_1 = sysml_state_autoManual;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = io_0 > io_1;
+-    }
+-    if (sysml_lazy_1) {
+-        sysml_conditional_2 = 90.0;
+-    }
+-    else {
+-        sysml_lazy_3 = sysml_state_autoManual;
+-        if (sysml_lazy_3) {
+-            sysml_lazy_3 = io_1 > io_0;
+-        }
+-        if (sysml_lazy_3) {
+-            sysml_conditional_4 = 0.0;
+-        }
+-        else {
+-            sysml_conditional_4 = 45.0;
+-        }
+-        sysml_conditional_2 = sysml_conditional_4;
+-    }
+-    sysml_value_0 = sysml_conditional_2;
+-    int32_t sysml_value_1 = 0;
+-    if (sysml_state_autoManual) {
+-        if (io_0 > io_1) {
+-            sysml_conditional_6 = 2;
+-        }
+-        else {
+-            if (io_0 < io_1) {
+-                sysml_conditional_7 = 1;
+-            }
+-            else {
+-                sysml_conditional_7 = 0;
+-            }
+-            sysml_conditional_6 = sysml_conditional_7;
+-        }
+-        sysml_conditional_5 = sysml_conditional_6;
+-    }
+-    else {
+-        sysml_conditional_5 = 0;
+-    }
+-    sysml_value_1 = sysml_conditional_5;
+-    int32_t sysml_value_2 = 0;
+-    if (io_2 > 600.0) {
+-        sysml_conditional_8 = 0;
+-    }
+-    else {
+-        sysml_conditional_8 = 2000;
+-    }
+-    sysml_value_2 = sysml_conditional_8;
+-    bool sysml_value_3 = 0;
+-    if (io_2 > 600.0) {
+-        sysml_conditional_9 = false;
+-    }
+-    else {
+-        sysml_conditional_9 = true;
+-    }
+-    sysml_value_3 = sysml_conditional_9;
+-    int32_t sysml_value_4 = 0;
+-    if (io_2 > 600.0) {
+-        sysml_conditional_10 = 0;
+-    }
+-    else {
+-        sysml_conditional_10 = 1;
+-    }
+-    sysml_value_4 = sysml_conditional_10;
+-    *io_3 = sysml_value_0;
+-    *io_4 = sysml_value_1;
+-    *io_5 = sysml_value_2;
+-    *serial_0_trigger = sysml_value_3;
+-    *serial_0_value_0 = sysml_value_4;
++    bool lowNow=io_2<614;
++    if (lowNow && !low) lowSince=now;
++    if (!lowNow) reported=false;
++    low=lowNow;
++    bool alarm=low && (uint32_t)(now-lowSince)>=10000;
++    *io_3=angle;
++    *io_4=now/2000%2 ? (int32_t)!low : (int32_t)(io_2*50.0/1023.0);
++    *io_5=alarm ? 1000 : 0;
++    *serial_0_trigger=alarm && !reported;
++    if (*serial_0_trigger) reported=true;
++    *serial_0_value_0=1;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -170,6 +94,15 @@
+ static bool hw_value_serial_0_trigger = false;
+ static int32_t hw_value_serial_0_value_0 = 0;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+   Serial.begin(9600);
+@@ -196,7 +129,7 @@
+     else tone(6, (unsigned int)hw_tone_command_io_5);
+     hw_tone_io_5 = hw_tone_command_io_5;
+   }
+-  pinMode(2, INPUT);
++  pinMode(2, INPUT_PULLUP);
+ }
+ 
+ void loop() {
+@@ -218,7 +151,7 @@
+   }
+   if (!hw_attempted_io_6 || (uint32_t)(hw_now - hw_sampled_io_6) >= 10UL) {
+     hw_attempted_io_6 = true; hw_sampled_io_6 = hw_now;
+-    hw_value_io_6 = (digitalRead(2) == HIGH);
++    hw_value_io_6 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+@@ -242,5 +175,5 @@
+     else tone(6, (unsigned int)hw_tone_command_io_5);
+     hw_tone_io_5 = hw_tone_command_io_5;
+   }
+-  if (hw_value_serial_0_trigger) { Serial.print("low_charge_code"); Serial.println(hw_value_serial_0_value_0); }
++  if (hw_value_serial_0_trigger) Serial.println("low charge");
+ }

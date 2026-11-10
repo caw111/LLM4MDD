@@ -1,0 +1,158 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "showHumidity",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pwmCountFan",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_5 and not prevPressed",
+        "then": [
+          {
+            "assign": "showHumidity",
+            "value": {
+              "not": "showHumidity"
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "not showHumidity",
+            "io_2"
+          ]
+        },
+        "then": [
+          {
+            "assign": "pwmCountFan",
+            "value": {
+              "if": "io_0 > 30.0",
+              "then": {
+                "if": "io_0 >= 40.0",
+                "then": 255,
+                "else": {
+                  "if": "io_0 <= 30.0",
+                  "then": 0,
+                  "else": {
+                    "floor": "(io_0 - 30.0) * 25.5"
+                  }
+                }
+              },
+              "else": 0
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "pwmCountFan",
+            "value": {
+              "if": {
+                "and": [
+                  "io_2",
+                  "io_0 > 30.0"
+                ]
+              },
+              "then": {
+                "if": "io_0 >= 40.0",
+                "then": 255,
+                "else": {
+                  "if": "io_0 <= 30.0",
+                  "then": 0,
+                  "else": {
+                    "floor": "(io_0 - 30.0) * 25.5"
+                  }
+                }
+              },
+              "else": 0
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevPressed",
+        "value": "io_5"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": {
+          "and": [
+            "io_2",
+            "io_0 > 30.0"
+          ]
+        },
+        "then": "pwmCountFan",
+        "else": 0.0
+      },
+      "io_4": {
+        "if": "showHumidity",
+        "then": {
+          "if": "io_2",
+          "then": {
+            "floor": "io_1"
+          },
+          "else": 0
+        },
+        "else": {
+          "if": "io_2",
+          "then": {
+            "floor": "io_0"
+          },
+          "else": 0
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_2=false (initial), io_5 rising edge (pressed), keep io_0 and io_1 unchanged",
+        "oracle": "io_4 remains valid selection gate output derived from retained-if-valid logic; with io_2=false, io_4 outputs 0 and io_3 outputs 0.0; showHumidity toggles only on press rising edge"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Set io_2=true, io_0=30.0, io_1 arbitrary, io_5 held false",
+        "oracle": "io_3=0.0 and io_4=floor(io_0)=30 when showHumidity=false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Set io_2=true, io_0=35.0, io_1 arbitrary, io_5 held false; then set io_0=40.0 with io_2=true",
+        "oracle": "io_3 increases with temperature: pwmCountFan=floor((io_0-30.0)*25.5); at 35.0 it is between 0 and 255, at 40.0 io_3=255.0; io_4 shows floor(io_0)=35 then 40 when showHumidity=false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Set io_2=true, io_0=25.0, io_1=55.0; create one press rising edge on io_5 (false->true), then hold io_5 true for another step",
+        "oracle": "After rising edge: showHumidity toggles to true so io_4=floor(io_1)=55 while io_3 stays 0.0 (since io_0<=30.0); holding io_5 true does not toggle again"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_5 : Boolean;\n    attribute showHumidity : Boolean := false;\n    attribute prevPressed : Boolean := false;\n    attribute pwmCountFan : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_5 and not prevPressed {\n        first start;\n        then assign showHumidity := (not showHumidity);\n      }\n      then if ((not showHumidity) and (io_2)) {\n        first start;\n        then assign pwmCountFan := (if io_0 > 30.0 ? (if io_0 >= 40.0 ? 255 else (if io_0 <= 30.0 ? 0 else RealFunctions::floor((io_0 - 30.0) * 25.5))) else 0);\n      } else {\n        first start;\n        then assign pwmCountFan := (if ((io_2) and (io_0 > 30.0)) ? (if io_0 >= 40.0 ? 255 else (if io_0 <= 30.0 ? 0 else RealFunctions::floor((io_0 - 30.0) * 25.5))) else 0);\n      }\n      then assign prevPressed := io_5;\n    }\n    out attribute io_3 : Real = (if ((io_2) and (io_0 > 30.0)) ? pwmCountFan else 0.0);\n    out attribute io_4 : Integer = (if showHumidity ? (if io_2 ? RealFunctions::floor(io_1) else 0) else (if io_2 ? RealFunctions::floor(io_0) else 0));\n  }\n  part system : Controller;\n}\n"
+}

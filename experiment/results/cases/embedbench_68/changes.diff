@@ -1,0 +1,118 @@
+--- original.ino
++++ repaired.ino
+@@ -42,67 +42,10 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_0, bool io_1, bool io_2, double io_3, double io_4, double io_5, double* io_6, double* io_7, double* io_8) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    double sysml_conditional_0 = 0;
+-    double sysml_conditional_1 = 0;
+-    double sysml_conditional_2 = 0;
+-    double sysml_conditional_3 = 0;
+-    double sysml_conditional_4 = 0;
+-    double sysml_conditional_5 = 0;
+-    if (io_0) {
+-        if (io_3 >= 255.0) {
+-            sysml_conditional_0 = 255.0;
+-        }
+-        else {
+-            if (io_3 <= 0.0) {
+-                sysml_conditional_1 = 0.0;
+-            }
+-            else {
+-                sysml_conditional_1 = io_3;
+-            }
+-            sysml_conditional_0 = sysml_conditional_1;
+-        }
+-        sysml_state_redLocked = sysml_conditional_0;
+-    }
+-    if (io_1) {
+-        if (io_4 >= 255.0) {
+-            sysml_conditional_2 = 255.0;
+-        }
+-        else {
+-            if (io_4 <= 0.0) {
+-                sysml_conditional_3 = 0.0;
+-            }
+-            else {
+-                sysml_conditional_3 = io_4;
+-            }
+-            sysml_conditional_2 = sysml_conditional_3;
+-        }
+-        sysml_state_greenLocked = sysml_conditional_2;
+-    }
+-    if (io_2) {
+-        if (io_5 >= 255.0) {
+-            sysml_conditional_4 = 255.0;
+-        }
+-        else {
+-            if (io_5 <= 0.0) {
+-                sysml_conditional_5 = 0.0;
+-            }
+-            else {
+-                sysml_conditional_5 = io_5;
+-            }
+-            sysml_conditional_4 = sysml_conditional_5;
+-        }
+-        sysml_state_blueLocked = sysml_conditional_4;
+-    }
+-    double sysml_value_0 = 0;
+-    sysml_value_0 = sysml_state_redLocked;
+-    double sysml_value_1 = 0;
+-    sysml_value_1 = sysml_state_greenLocked;
+-    double sysml_value_2 = 0;
+-    sysml_value_2 = sysml_state_blueLocked;
+-    *io_6 = sysml_value_0;
+-    *io_7 = sysml_value_1;
+-    *io_8 = sysml_value_2;
++    if(io_0) sysml_state_redLocked=io_3*255.0/1023.0;
++    if(io_1) sysml_state_greenLocked=io_4*255.0/1023.0;
++    if(io_2) sysml_state_blueLocked=io_5*255.0/1023.0;
++    *io_6=sysml_state_redLocked;*io_7=sysml_state_greenLocked;*io_8=sysml_state_blueLocked;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -136,11 +79,21 @@
+ static double hw_value_io_7 = 0;
+ static double hw_value_io_8 = 0;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=150UL) stable[index]=raw;
++  if(!raw) stable[index]=false;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+-  pinMode(2, INPUT);
+-  pinMode(3, INPUT);
+-  pinMode(4, INPUT);
++  pinMode(2, INPUT_PULLUP);
++  pinMode(3, INPUT_PULLUP);
++  pinMode(4, INPUT_PULLUP);
+   pinMode(A3, INPUT);
+   pinMode(A4, INPUT);
+   pinMode(A5, INPUT);
+@@ -159,15 +112,15 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(2) == HIGH);
++    hw_value_io_0 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   if (!hw_attempted_io_1 || (uint32_t)(hw_now - hw_sampled_io_1) >= 5UL) {
+     hw_attempted_io_1 = true; hw_sampled_io_1 = hw_now;
+-    hw_value_io_1 = (digitalRead(3) == HIGH);
++    hw_value_io_1 = manual_debounce_input((digitalRead(3) == LOW), 1);
+   }
+   if (!hw_attempted_io_2 || (uint32_t)(hw_now - hw_sampled_io_2) >= 5UL) {
+     hw_attempted_io_2 = true; hw_sampled_io_2 = hw_now;
+-    hw_value_io_2 = (digitalRead(4) == HIGH);
++    hw_value_io_2 = manual_debounce_input((digitalRead(4) == LOW), 2);
+   }
+   if (!hw_attempted_io_3 || (uint32_t)(hw_now - hw_sampled_io_3) >= 5UL) {
+     hw_attempted_io_3 = true; hw_sampled_io_3 = hw_now;

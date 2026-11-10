@@ -1,0 +1,73 @@
+{
+  "supported": false,
+  "coverage": "partial",
+  "coverage_explanation": "The requirement specifies serial output text patterns ('MPU6050 ready!' and lines containing X/Y/Z rad/s) but does not define exact numeric values, update cadence beyond 'Delay 500ms in every loop', sensor motion inputs, or how the host should induce deterministic gyroscope readings. Without controlling MPU6050 physical state or mocking the sensor, the test can only verify presence/format of messages and approximate periodicity, not 'correct X, Y, Z gyroscope result' in a deterministic way. Therefore full executable behavioral coverage is not reliable.",
+  "assumptions": [
+    "MPU6050 is physically present on I2C at the address expected by Adafruit_MPU6050 default wiring/library behavior (commonly 0x68). No address override is specified in the requirement.",
+    "Serial is configured to 9600 baud as stated, and messages are line-oriented such that each printed gyroscope sample ends with a newline (the requirement says 'line_or_idle').",
+    "The 'Delay 500ms in every loop' means at least one gyroscope line is emitted roughly every 500ms after successful initialization (allowing tolerance).",
+    "The test environment can only observe serial output; it cannot force or guarantee specific MPU6050 rotational values, so numeric correctness is not verifiable deterministically."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 13,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "id": "ser_baud_and_ready_present",
+      "requirement_quote": "Initialize serial communication",
+      "kind": "serial",
+      "from_ms": 0,
+      "to_ms": 2500,
+      "contains": "MPU6050 ready!",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "id": "ser_x_y_z_line_format_repeats",
+      "requirement_quote": "Print the X, Y, and Z axis rotation values in rad/s",
+      "kind": "serial",
+      "from_ms": 2000,
+      "to_ms": 11000,
+      "contains": "rad/s",
+      "min_count": 8
+    },
+    {
+      "id": "ser_includes_x_y_z_labels",
+      "requirement_quote": "for example: 'X: 1.13, Y: 2.97, Z: -2.01 rad/s'",
+      "kind": "serial",
+      "from_ms": 2000,
+      "to_ms": 11000,
+      "contains": "X:",
+      "min_count": 8
+    },
+    {
+      "id": "ser_includes_y_label",
+      "requirement_quote": "Print the X, Y, and Z axis rotation values in rad/s",
+      "kind": "serial",
+      "from_ms": 2000,
+      "to_ms": 11000,
+      "contains": "Y:",
+      "min_count": 8
+    },
+    {
+      "id": "ser_includes_z_label",
+      "requirement_quote": "Print the X, Y, and Z axis rotation values in rad/s",
+      "kind": "serial",
+      "from_ms": 2000,
+      "to_ms": 11000,
+      "contains": "Z:",
+      "min_count": 8
+    }
+  ],
+  "reference_cpp": ""
+}

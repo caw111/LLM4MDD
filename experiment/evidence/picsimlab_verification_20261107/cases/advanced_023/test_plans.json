@@ -1,0 +1,450 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests repeated door-state cycles and requires event-log output during each cycle. Each cycle contains both electrical transitions, so the test does not prescribe the unspecified door-contact polarity. This covers a necessary part of opening-event logging, but does not independently establish log attribution or position contents. The temperature limit, transport-state definition, GPS input syntax, display alternation period, counter presentation, vibration polarity, and alarm/reset policy are unspecified; consequently those behaviors cannot be asserted reliably with this finite suite.",
+      "assumptions": [
+        "The system is operating as a transport monitor after setup; no separate transport-enable input or command is specified.",
+        "The door contact has two binary states. Each complete LOW/HIGH cycle includes an opening regardless of contact polarity. Both states are held long enough for ordinary debouncing.",
+        "No GPS command syntax is invented or injected. Position formatting and behavior without a GPS fix are not checked.",
+        "Bench defaults apply to the D13 LED: active HIGH with a resistor to GND. D6 is treated as a passive tone-driven buzzer.",
+        "LM35 conversion uses 10 mV per degree Celsius and the bench default 5 V ADC reference. The application temperature upper limit is missing and is not asserted.",
+        "The reference chooses an 8 C upper limit, an active-LOW door contact using INPUT_PULLUP, active-LOW vibration pulses, a two-second display alternation, and non-latching alarms. These are illustrative choices for unspecified parameters, not acceptance constraints.",
+        "For the reference only, each received serial line or idle-delimited message is retained verbatim as the simulated position. No candidate GPS grammar is required by the checks."
+      ],
+      "horizon_ms": 15000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 10
+        },
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 3,
+          "value": 1
+        },
+        {
+          "at_ms": 1500,
+          "kind": "digital",
+          "pin": 3,
+          "value": 0
+        },
+        {
+          "at_ms": 3500,
+          "kind": "digital",
+          "pin": 3,
+          "value": 1
+        },
+        {
+          "at_ms": 6000,
+          "kind": "digital",
+          "pin": 3,
+          "value": 0
+        },
+        {
+          "at_ms": 8000,
+          "kind": "digital",
+          "pin": 3,
+          "value": 1
+        },
+        {
+          "at_ms": 10500,
+          "kind": "digital",
+          "pin": 3,
+          "value": 0
+        },
+        {
+          "at_ms": 12500,
+          "kind": "digital",
+          "pin": 3,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "serial",
+          "id": "opening_log_cycle_1",
+          "requirement_quote": "运输过程中开箱，则立即报警并串口输出带位置的事件日志",
+          "from_ms": 1500,
+          "to_ms": 4000,
+          "regex": "[^\\r\\n]+",
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "opening_log_cycle_2",
+          "requirement_quote": "运输过程中开箱，则立即报警并串口输出带位置的事件日志",
+          "from_ms": 6000,
+          "to_ms": 8500,
+          "regex": "[^\\r\\n]+",
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "opening_log_cycle_3",
+          "requirement_quote": "运输过程中开箱，则立即报警并串口输出带位置的事件日志",
+          "from_ms": 10500,
+          "to_ms": 13000,
+          "regex": "[^\\r\\n]+",
+          "min_count": 1
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nconst float temperatureLimitC = 8.0f;\nunsigned long temperatureEvents = 0, openingEvents = 0, vibrationEvents = 0;\nbool wasHot = false, wasOpen = false, wasShaking = false;\nbool rawDoor = false, stableDoor = false;\nunsigned long doorChangedAt = 0, lastRxAt = 0;\nchar positionText[96] = \"unknown\";\nchar rx[96];\nunsigned int rxLength = 0;\n\nvoid finishPosition() {\n  if (!rxLength) return;\n  rx[rxLength] = '\\0';\n  strncpy(positionText, rx, sizeof(positionText) - 1);\n  positionText[sizeof(positionText) - 1] = '\\0';\n  rxLength = 0;\n}\n\nvoid readPosition(unsigned long now) {\n  while (Serial.available()) {\n    char c = (char)Serial.read();\n    lastRxAt = now;\n    if (c == '\\n' || c == '\\r') finishPosition();\n    else if (rxLength < sizeof(rx) - 1) rx[rxLength++] = c;\n  }\n  if (rxLength && now - lastRxAt >= 20) finishPosition();\n}\n\nvoid logEvent(const char *event, float temperature) {\n  Serial.print(event);\n  Serial.print(\" temperature=\");\n  Serial.print(temperature, 1);\n  Serial.print(\" position=\");\n  Serial.println(positionText);\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(A1, INPUT);\n  pinMode(2, INPUT_PULLUP);\n  pinMode(3, INPUT_PULLUP);\n  pinMode(6, OUTPUT);\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n  display.setBrightness(7);\n  display.clear();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  readPosition(now);\n  float temperature = analogRead(A1) * (500.0f / 1023.0f);\n  bool hot = temperature > temperatureLimitC;\n  bool door = digitalRead(3) == LOW;\n  if (door != rawDoor) {\n    rawDoor = door;\n    doorChangedAt = now;\n  }\n  if (now - doorChangedAt >= 30) stableDoor = rawDoor;\n  bool shaking = digitalRead(2) == LOW;\n  if (hot && !wasHot) {\n    ++temperatureEvents;\n    logEvent(\"TEMPERATURE\", temperature);\n  }\n  if (stableDoor && !wasOpen) {\n    ++openingEvents;\n    logEvent(\"OPEN\", temperature);\n  }\n  if (shaking && !wasShaking) ++vibrationEvents;\n  wasHot = hot;\n  wasOpen = stableDoor;\n  wasShaking = shaking;\n  bool alarm = hot || stableDoor;\n  digitalWrite(13, alarm ? HIGH : LOW);\n  if (alarm) tone(6, 2000);\n  else noTone(6);\n  unsigned int page = (now / 2000UL) % 4;\n  long value = page == 0 ? (long)(temperature + 0.5f) :\n               page == 1 ? temperatureEvents :\n               page == 2 ? openingEvents : vibrationEvents;\n  if (value > 9999) value = 9999;\n  display.showNumberDec((int)value, false);\n  delay(5);\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Tests repeated door-state cycles and requires event-log output during each cycle. Each cycle contains both electrical transitions, so the test does not prescribe the unspecified door-contact polarity. This covers a necessary part of opening-event logging, but does not independently establish log attribution or position contents. The temperature limit, transport-state definition, GPS input syntax, display alternation period, counter presentation, vibration polarity, and alarm/reset policy are unspecified; consequently those behaviors cannot be asserted reliably with this finite suite.",
+      "assumptions": [
+        "The system is operating as a transport monitor after setup; no separate transport-enable input or command is specified.",
+        "The door contact has two binary states. Each complete LOW/HIGH cycle includes an opening regardless of contact polarity. Both states are held long enough for ordinary debouncing.",
+        "No GPS command syntax is invented or injected. Position formatting and behavior without a GPS fix are not checked.",
+        "Bench defaults apply to the D13 LED: active HIGH with a resistor to GND. D6 is treated as a passive tone-driven buzzer.",
+        "LM35 conversion uses 10 mV per degree Celsius and the bench default 5 V ADC reference. The application temperature upper limit is missing and is not asserted.",
+        "The reference chooses an 8 C upper limit, an active-LOW door contact using INPUT_PULLUP, active-LOW vibration pulses, a two-second display alternation, and non-latching alarms. These are illustrative choices for unspecified parameters, not acceptance constraints.",
+        "For the reference only, each received serial line or idle-delimited message is retained verbatim as the simulated position. No candidate GPS grammar is required by the checks."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 0,
+          "value": 10
+        },
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 2300,
+          "value": 22
+        },
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 4800,
+          "value": 10
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 0,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 1300,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 1600,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 6100,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 6350,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 0,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 3500,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 5500,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 8100,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 8950,
+          "value": 0
+        }
+      ],
+      "serial_inputs": [
+        {
+          "at_ms": 500,
+          "text": "GPS:31.25,121.75\n"
+        },
+        {
+          "at_ms": 5700,
+          "text": "GPS:12.5,-10.125\n"
+        },
+        {
+          "at_ms": 7600,
+          "text": "GPS:100,0\n"
+        }
+      ],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_250",
+          "at_ms": 250,
+          "expected": "4",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_2600",
+          "at_ms": 2600,
+          "expected": "2",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_4200",
+          "at_ms": 4200,
+          "expected": "10",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_6500",
+          "at_ms": 6500,
+          "expected": "4",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_8350",
+          "at_ms": 8350,
+          "expected": "4",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_10250",
+          "at_ms": 10250,
+          "expected": "5",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_300",
+          "at_ms": 300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_300",
+          "at_ms": 300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_1500",
+          "at_ms": 1500,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_1500",
+          "at_ms": 1500,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_2500",
+          "at_ms": 2500,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_2500",
+          "at_ms": 2500,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_5300",
+          "at_ms": 5300,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_5300",
+          "at_ms": 5300,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_5900",
+          "at_ms": 5900,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_5900",
+          "at_ms": 5900,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_8500",
+          "at_ms": 8500,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_8500",
+          "at_ms": 8500,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_9300",
+          "at_ms": 9300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_9300",
+          "at_ms": 9300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "serial",
+          "id": "event_1300",
+          "from_ms": 1300,
+          "to_ms": 1550,
+          "regex": "^shock GPS: 31\\.2500,121\\.7500$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "event_2300",
+          "from_ms": 2300,
+          "to_ms": 2550,
+          "regex": "^temperature high GPS: 31\\.2500,121\\.7500$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "event_3500",
+          "from_ms": 3500,
+          "to_ms": 3750,
+          "regex": "^box opened GPS: 31\\.2500,121\\.7500$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "event_6100",
+          "from_ms": 6100,
+          "to_ms": 6350,
+          "regex": "^shock GPS: 12\\.5000,-10\\.1250$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "event_8100",
+          "from_ms": 8100,
+          "to_ms": 8350,
+          "regex": "^box opened GPS: 12\\.5000,-10\\.1250$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "no_event_during_stable_measurements",
+          "from_ms": 3700,
+          "to_ms": 4700,
+          "regex": " GPS:",
+          "min_count": 0,
+          "max_count": 0,
+          "requirement_quote": "Required serial output for the scenario"
+        }
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

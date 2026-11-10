@@ -1,0 +1,136 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "counter",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevIncPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevDecPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "prevIncPressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevDecPressed",
+        "value": "io_1"
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevIncPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": "counter == 20",
+            "then": [
+              {
+                "assign": "counter",
+                "value": 20
+              }
+            ],
+            "else": [
+              {
+                "assign": "counter",
+                "value": "counter + 1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevDecPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": "counter == 0",
+            "then": [
+              {
+                "assign": "counter",
+                "value": 0
+              }
+            ],
+            "else": [
+              {
+                "assign": "counter",
+                "value": "counter - 1"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": {
+          "or": [
+            "counter == 20",
+            "counter == 0"
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_3": {
+        "if": {
+          "or": [
+            "counter < 0",
+            "counter > 20"
+          ]
+        },
+        "then": 0,
+        "else": "counter"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下D2一次(产生io_0从false到true的上升沿)，再保持松开；重复多次直到counter到20；期间不按D3。",
+        "oracle": "每次D2按下上升沿后io_3显示递增计数值，且当计数达到20时io_2变为1000，之后继续按D2不会使计数超过20(io_3保持20且io_2仍为1000)。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "从计数20开始，连续按下D3并松开(产生io_1从false到true的上升沿)以递减计数，直到计数到0；期间不按D2。",
+        "oracle": "每次D3按下上升沿后io_3显示递减计数值，且当计数达到0时io_2变为1000；之后继续按D3不会使计数低于0(io_3保持0且io_2仍为1000)。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "将计数设置在中间值(例如通过按D2使其从0到10)，随后只按一次D2或D3(上升沿各一次)，不触及0或20；每次按下均松开后再观测。",
+        "oracle": "当计数不等于0也不等于20时，io_2为0；io_3实时显示计数变化后的新值。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute counter : Integer := 0;\n    attribute prevIncPressed : Boolean := false;\n    attribute prevDecPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then assign prevIncPressed := io_0;\n      then assign prevDecPressed := io_1;\n      then if ((io_0) and ((not prevIncPressed))) {\n        first start;\n        then if counter == 20 {\n          first start;\n          then assign counter := 20;\n        } else {\n          first start;\n          then assign counter := counter + 1;\n        }\n      }\n      then if ((io_1) and ((not prevDecPressed))) {\n        first start;\n        then if counter == 0 {\n          first start;\n          then assign counter := 0;\n        } else {\n          first start;\n          then assign counter := counter - 1;\n        }\n      }\n    }\n    out attribute io_2 : Integer = (if ((counter == 20) or (counter == 0)) ? 1000 else 0);\n    out attribute io_3 : Integer = (if ((counter < 0) or (counter > 20)) ? 0 else counter);\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,99 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "manualFrozen",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "frozenDisplayValue",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "frozenPwmValue",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_2",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "manualFrozen",
+            "value": {
+              "not": "manualFrozen"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": "manualFrozen"
+        },
+        "then": [
+          {
+            "assign": "frozenDisplayValue",
+            "value": {
+              "floor": "io_0"
+            }
+          },
+          {
+            "assign": "frozenPwmValue",
+            "value": {
+              "floor": "io_0"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_2"
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "manualFrozen",
+        "then": "frozenPwmValue",
+        "else": {
+          "floor": "io_0"
+        }
+      },
+      "io_3": "manualFrozen",
+      "io_4": {
+        "if": "manualFrozen",
+        "then": "frozenDisplayValue",
+        "else": {
+          "floor": "io_0"
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个光照联动显示系统，使用光敏电阻 A0、PWM LED D9、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认根据光照强度自动调节 LED 亮度并在数码管显示当前光照映射值；按下按钮后切换到手动冻结显示模式，再按一次恢复自动模式。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持io_2=false，令io_0从较小值变化到较大值，观察io_1与io_4；确认io_3为false；然后产生一次io_2的按下上升沿（从false变true一次），保持io_0继续变化，观察io_1与io_4是否保持冻结；再产生一次按下上升沿（第二次切换），继续改变io_0，观察是否恢复随io_0变化。",
+        "oracle": "在未冻结（manualFrozen=false）时，io_1与io_4随io_0更新，且io_3=false；第一次按下后冻结（manualFrozen=true），io_1与io_4保持不随io_0变化，且io_3=true；第二次按下后恢复自动，io_1与io_4重新随io_0变化，且io_3=false。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_2 : Boolean;\n    attribute manualFrozen : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    attribute frozenDisplayValue : Integer := 0;\n    attribute frozenPwmValue : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_2) and ((not previousPressed))) {\n        first start;\n        then assign manualFrozen := (not manualFrozen);\n      }\n      then if (not manualFrozen) {\n        first start;\n        then assign frozenDisplayValue := RealFunctions::floor(io_0);\n        then assign frozenPwmValue := RealFunctions::floor(io_0);\n      }\n      then assign previousPressed := io_2;\n    }\n    out attribute io_1 : Real = (if manualFrozen ? frozenPwmValue else RealFunctions::floor(io_0));\n    out attribute io_3 : Boolean = manualFrozen;\n    out attribute io_4 : Integer = (if manualFrozen ? frozenDisplayValue else RealFunctions::floor(io_0));\n  }\n  part system : Controller;\n}\n"
+}

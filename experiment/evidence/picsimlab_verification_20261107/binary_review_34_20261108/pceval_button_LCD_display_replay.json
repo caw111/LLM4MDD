@@ -1,0 +1,366 @@
+[
+  {
+    "name": "binary_review_original_core",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Exercises initial released state, repeated presses and releases, a short held press, and a longer hold. Checks the public startup deadline, INPUT mode, exact state messages, 250ms transition deadlines, display initialization, control-pin assignments, black background, text position, white color, and size 2. Startup text is accepted from power-on, including text printed during setup and subsequently retained. Forbidden opposite-state reports provide additional hold coverage without demanding repeated redraws. Coverage remains partial: these LCD record checks cannot prove uninterrupted retention against arbitrary clears or unrelated drawing operations. They also cannot independently prove landscape orientation throughout operation; either landscape rotation is permitted, and the available scalar rotation filter cannot express that alternative without imposing an arbitrary orientation. Physical pixel rendering and electrical SPI signaling are outside this API-level test.",
+      "assumptions": [
+        "The supplied wiring overrides generic bench defaults: pin 2 is externally pulled LOW through the 10kΩ resistor and reads HIGH when pressed. No default INPUT_PULLUP button wiring is used.",
+        "LCD control pins are CS=10, D/C=9, and RST=8; hardware SPI preserves MOSI=11, MISO=12, and SCK=13.",
+        "The acceptance clarification requires current-state visibility: Pressed! while HIGH and Not pressed! while LOW. Correct retained text requires no repeated print calls.",
+        "The public acceptance profile supplies the otherwise unspecified 250ms display response bound and 500ms setup completion bound.",
+        "Landscape rotations 1 and 3 are both permitted. The reference chooses rotation 1, but the checks do not require that particular choice.",
+        "Initial released-state text may be printed during setup. Its observation window therefore begins at power-on and extends through the maximum permitted setup duration plus the display response allowance.",
+        "LCD metadata checks verify documented host API state, not physical pixels. Stable-state forbidden-message checks do not establish absence of arbitrary destructive drawing."
+      ],
+      "horizon_ms": 11500,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 1500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 3000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 4300,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 4650,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 5100,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 7600,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 8800,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 10000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "setup",
+          "id": "setup_deadline",
+          "requirement_quote": "setup() must return within 500ms",
+          "max_ms": 500
+        },
+        {
+          "kind": "pin_mode",
+          "id": "externally_pulled_down_button_input",
+          "requirement_quote": "Set button pin as INPUT",
+          "pin": 2,
+          "expected": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "initial_released_display_including_setup",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 0,
+          "to_ms": 750,
+          "regex": "^Not pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "initial_release_no_opposite_report",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 751,
+          "to_ms": 1499,
+          "regex": "^Pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "first_press_response",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 1500,
+          "to_ms": 1750,
+          "regex": "^Pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "first_press_hold_no_opposite_report",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 1751,
+          "to_ms": 2999,
+          "regex": "^Not pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "first_release_response",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 3000,
+          "to_ms": 3250,
+          "regex": "^Not pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "first_release_hold_no_opposite_report",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 3251,
+          "to_ms": 4299,
+          "regex": "^Pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "short_press_response",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 4300,
+          "to_ms": 4550,
+          "regex": "^Pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "short_press_hold_no_opposite_report",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 4551,
+          "to_ms": 4649,
+          "regex": "^Not pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "short_press_release_response",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 4650,
+          "to_ms": 4900,
+          "regex": "^Not pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "short_release_hold_no_opposite_report",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 4901,
+          "to_ms": 5099,
+          "regex": "^Pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "long_press_response",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 5100,
+          "to_ms": 5350,
+          "regex": "^Pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "long_press_hold_no_opposite_report",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 5351,
+          "to_ms": 7599,
+          "regex": "^Not pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "long_press_release_response",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 7600,
+          "to_ms": 7850,
+          "regex": "^Not pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "long_press_release_hold_no_opposite_report",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 7851,
+          "to_ms": 8799,
+          "regex": "^Pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "repeated_press_response",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 8800,
+          "to_ms": 9050,
+          "regex": "^Pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "repeated_press_hold_no_opposite_report",
+          "requirement_quote": "Display Pressed! while the button is HIGH/held",
+          "from_ms": 9051,
+          "to_ms": 9999,
+          "regex": "^Not pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "lcd",
+          "id": "final_release_response",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 10000,
+          "to_ms": 10250,
+          "regex": "^Not pressed!$",
+          "min_count": 1,
+          "display_properties": {
+            "initialized": true,
+            "background": 0,
+            "x": 0,
+            "y": 0,
+            "color": 65535,
+            "size": 2,
+            "cs": 10,
+            "dc": 9,
+            "rst": 8
+          }
+        },
+        {
+          "kind": "lcd",
+          "id": "final_release_hold_no_opposite_report",
+          "requirement_quote": "Not pressed! while LOW/released",
+          "from_ms": 10251,
+          "to_ms": 11499,
+          "regex": "^Pressed!$",
+          "min_count": 0,
+          "max_count": 0
+        }
+      ],
+      "lcd_capture_interval_ms": 10
+    }
+  }
+]

@@ -1,0 +1,175 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "counter",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "overflow",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "debounceStable",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "debounceCounterMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_0",
+        "then": [
+          {
+            "if": "previousPressed",
+            "then": [
+              {
+                "assign": "debounceCounterMs",
+                "value": {
+                  "+": [
+                    "debounceCounterMs",
+                    5
+                  ]
+                }
+              }
+            ],
+            "else": [
+              {
+                "assign": "debounceCounterMs",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "if": "debounceCounterMs >= 150",
+            "then": [
+              {
+                "assign": "debounceStable",
+                "value": true
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "debounceStable",
+            "value": false
+          },
+          {
+            "assign": "debounceCounterMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "debounceStable and io_0 and (not previousPressed)",
+        "then": [
+          {
+            "if": "counter >= 10",
+            "then": [
+              {
+                "assign": "counter",
+                "value": 0
+              },
+              {
+                "assign": "overflow",
+                "value": {
+                  "+": [
+                    "overflow",
+                    1
+                  ]
+                }
+              }
+            ],
+            "else": [
+              {
+                "assign": "counter",
+                "value": {
+                  "+": [
+                    "counter",
+                    1
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "assign": "debounceStable",
+            "value": false
+          },
+          {
+            "assign": "debounceCounterMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      },
+      {
+        "if": "overflow == 3",
+        "then": [
+          {
+            "assign": "overflow",
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_1": "overflow == 1 or overflow == 3",
+      "io_2": "overflow == 2 or overflow == 3",
+      "io_3_segment_0": "counter >= 1",
+      "io_3_segment_1": "counter >= 2",
+      "io_3_segment_2": "counter >= 3",
+      "io_3_segment_3": "counter >= 4",
+      "io_3_segment_4": "counter >= 5",
+      "io_3_segment_5": "counter >= 6",
+      "io_3_segment_6": "counter >= 7",
+      "io_3_segment_7": "counter >= 8",
+      "io_3_segment_8": "counter >= 9",
+      "io_3_segment_9": "counter >= 10"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 10-segment LED bar graph (bargraph1), two individual LEDs (led1, led2), and a push button (btn1). The bar graph will display a counter value that increases with each button press, while the LEDs will show how many times the counter has overflowed in binary format.\n\n**Detail Rules**:\nInitialization: All components must start in an off state (bar graph segments unlit, LEDs off).\nButton Interaction:\n1. Each valid button press increments the counter by 1.\n2. The bar graph (bargraph1) must light up segments corresponding to the current counter value (1-10 segments,PIN A1-A10).\n3. When the counter exceeds 10, it resets to 0 and the overflow counter (shown by LEDs) increments by 1.\n4. The LEDs (led1, led2) display the overflow counter in binary:\n   - 00: 0 overflows\n   - 01: 1 overflow\n   - 10: 2 overflows\n   - 11: 3 overflows (then wraps back to 00)\n5. Button presses must be debounced to prevent false triggers (minimum 0.15-second stable press detection).\n6. The system must maintain each valid state (combination of bar graph segments and LED states) until the next valid button press.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:4\", \"btn1:1.l\", \"green\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with io_0=false. Apply 12 valid stable press cycles on io_0 (active-low -> drive false then true for >=0.15s stable), with releases between presses; each cycle should be long enough to exceed debounce threshold and then released back to false before next press.",
+        "oracle": "After each valid press, bargraph segments light for counter values 1..10 as a ramp then return to all-off when wrapping to 0 at the 11th press; led1/io_1 and led2/io_2 follow overflow binary 0..3 and wrap to 00 after 3 overflows, maintaining state between presses."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 10-segment LED bar graph (bargraph1), two individual LEDs (led1, led2), and a push button (btn1). The bar graph will display a counter value that increases with each button press, while the LEDs will show how many times the counter has overflowed in binary format.\n\n**Detail Rules**:\nInitialization: All components must start in an off state (bar graph segments unlit, LEDs off).\nButton Interaction:\n1. Each valid button press increments the counter by 1.\n2. The bar graph (bargraph1) must light up segments corresponding to the current counter value (1-10 segments,PIN A1-A10).\n3. When the counter exceeds 10, it resets to 0 and the overflow counter (shown by LEDs) increments by 1.\n4. The LEDs (led1, led2) display the overflow counter in binary:\n   - 00: 0 overflows\n   - 01: 1 overflow\n   - 10: 2 overflows\n   - 11: 3 overflows (then wraps back to 00)\n5. Button presses must be debounced to prevent false triggers (minimum 0.15-second stable press detection).\n6. The system must maintain each valid state (combination of bar graph segments and LED states) until the next valid button press.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:4\", \"btn1:1.l\", \"green\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "From initialization, apply several short spurious presses on io_0: alternate io_0=true/false such that each stable-high duration is <0.15s and never reaches the debounce stable condition, then finally apply one valid stable press >=0.15s and release.",
+        "oracle": "During spurious short presses, bargraph segments remain all-off and led1/led2 remain 00. After the final valid press, the state advances exactly once to counter=1 (one bar segment on) and overflow LEDs remain 00."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 10-segment LED bar graph (bargraph1), two individual LEDs (led1, led2), and a push button (btn1). The bar graph will display a counter value that increases with each button press, while the LEDs will show how many times the counter has overflowed in binary format.\n\n**Detail Rules**:\nInitialization: All components must start in an off state (bar graph segments unlit, LEDs off).\nButton Interaction:\n1. Each valid button press increments the counter by 1.\n2. The bar graph (bargraph1) must light up segments corresponding to the current counter value (1-10 segments,PIN A1-A10).\n3. When the counter exceeds 10, it resets to 0 and the overflow counter (shown by LEDs) increments by 1.\n4. The LEDs (led1, led2) display the overflow counter in binary:\n   - 00: 0 overflows\n   - 01: 1 overflow\n   - 10: 2 overflows\n   - 11: 3 overflows (then wraps back to 00)\n5. Button presses must be debounced to prevent false triggers (minimum 0.15-second stable press detection).\n6. The system must maintain each valid state (combination of bar graph segments and LED states) until the next valid button press.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:4\", \"btn1:1.l\", \"green\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Apply one valid press on io_0 >=0.15s then keep io_0 held true for an additional long duration before releasing; wait for several control steps while still held, then release and hold idle (io_0=false) for several control steps.",
+        "oracle": "The bargraph and LED outputs change only once per debounced press and remain at the same counter/overflow state while the button remains held and until the next valid press."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute counter : Integer := 0;\n    attribute overflow : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute debounceStable : Boolean := false;\n    attribute debounceCounterMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_0 {\n        first start;\n        then if previousPressed {\n          first start;\n          then assign debounceCounterMs := ((debounceCounterMs) + (5));\n        } else {\n          first start;\n          then assign debounceCounterMs := 0;\n        }\n        then if debounceCounterMs >= 150 {\n          first start;\n          then assign debounceStable := true;\n        }\n      } else {\n        first start;\n        then assign debounceStable := false;\n        then assign debounceCounterMs := 0;\n      }\n      then if debounceStable and io_0 and (not previousPressed) {\n        first start;\n        then if counter >= 10 {\n          first start;\n          then assign counter := 0;\n          then assign overflow := ((overflow) + (1));\n        } else {\n          first start;\n          then assign counter := ((counter) + (1));\n        }\n        then assign debounceStable := false;\n        then assign debounceCounterMs := 0;\n      }\n      then assign previousPressed := io_0;\n      then if overflow == 3 {\n        first start;\n        then assign overflow := 0;\n      }\n    }\n    out attribute io_1 : Boolean = overflow == 1 or overflow == 3;\n    out attribute io_2 : Boolean = overflow == 2 or overflow == 3;\n    out attribute io_3_segment_0 : Boolean = counter >= 1;\n    out attribute io_3_segment_1 : Boolean = counter >= 2;\n    out attribute io_3_segment_2 : Boolean = counter >= 3;\n    out attribute io_3_segment_3 : Boolean = counter >= 4;\n    out attribute io_3_segment_4 : Boolean = counter >= 5;\n    out attribute io_3_segment_5 : Boolean = counter >= 6;\n    out attribute io_3_segment_6 : Boolean = counter >= 7;\n    out attribute io_3_segment_7 : Boolean = counter >= 8;\n    out attribute io_3_segment_8 : Boolean = counter >= 9;\n    out attribute io_3_segment_9 : Boolean = counter >= 10;\n  }\n  part system : Controller;\n}\n"
+}

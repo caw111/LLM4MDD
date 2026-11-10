@@ -1,0 +1,250 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "板级目标为 arduino:avr:uno，D6 用于蜂鸣器 tone，D13 用于LED，A0 用于光敏电阻，D8/D9 用于HC-SR04(Trig/Echo)；未覆盖的其他硬件不应被假设。",
+    "安防触发条件(环境较暗 + 距离<=20cm)与LED闪烁、蜂鸣器间歇鸣叫的具体周期/频率/占空由SysML模型处理；本接口提案仅提供必要的传感器输入与执行输出端口。",
+    "串口输出：原文要求“通过串口输出alarm”但未给出具体协议(例如是否输出固定文本\"alarm\"或数值/换行细节)。为保证可实现且不臆造动态文本，本提案选择在报警触发时输出一个固定含义的布尔量表示alarm状态。",
+    "HC-SR04 timeout_us 选取30000us，满足25000..60000范围；测距样本周期与响应预算需按指令中规则向上取控制周期倍数并将采集时间计入截止时间，由应用调度器/模型自动处理。",
+    "未明确光敏阈值、距离测量有效性处理策略(如仅在ultrasonic_valid为true时判断<=20cm)；该部分作为业务逻辑记录在模型中。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "光敏电阻环境亮度(用于判断是否触发安防)",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "超声测距(用于判断物体是否在20cm内)",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "超声测距有效性(无效时保持上次距离并将此为false)",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED安防指示(报警时闪烁)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "蜂鸣器间歇鸣叫(报警时由模型控制启停与频率)",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "当且仅当进入安防报警状态时触发输出alarm",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "报警触发状态(alarm是否有效)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"alarm\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "alarm"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。",
+    "effective_requirement": "构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "elapsedTotal",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "exceeded",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "elapsedTotal",
+        "value": "elapsedTotal + io_3"
+      },
+      {
+        "assign": "exceeded",
+        "value": "io_0 >= 500.0 or io_1 >= 50.0"
+      },
+      {
+        "if": "elapsedTotal >= 1000",
+        "then": [
+          {
+            "assign": "elapsedTotal",
+            "value": "elapsedTotal - 1000"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": "exceeded",
+      "serial_0_trigger": "elapsedTotal == 0",
+      "serial_0_value_0": "io_0",
+      "serial_0_value_1": "io_1",
+      "serial_1_trigger": "exceeded and (elapsedTotal == 0)",
+      "serial_1_value_0": "exceeded"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个实验数据监视系统，使用光敏电阻 A0、LM35（A1）和串口。系统每秒通过串口输出一次光照值和温度值；如果任一值超过设定阈值，则额外输出 WARNING，并点亮 D13 LED。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持 io_0=400.0、io_1=40.0 不变；使 io_3 在连续控制步累计到 1000ms（例如每步 10ms，共100步），并继续若干步。",
+        "oracle": "在累计达到 1000ms 的控制步，serial_0_trigger=true 且 serial_0_value_0=400.0、serial_0_value_1=40.0；该步 serial_1_trigger=false 且 io_2=false。其余未到 1秒整点的控制步 serial_0_trigger=false 且 serial_1_trigger=false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个实验数据监视系统，使用光敏电阻 A0、LM35（A1）和串口。系统每秒通过串口输出一次光照值和温度值；如果任一值超过设定阈值，则额外输出 WARNING，并点亮 D13 LED。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "设置 io_0=600.0、io_1=40.0；使 io_3 累计到至少 1000ms 并跨越一次输出整点。",
+        "oracle": "每次发生 serial_0_trigger=true 的 1秒整点控制步，exceeded=true 对应的 io_2=true，且 serial_1_trigger=true、serial_1_value_0=true。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个实验数据监视系统，使用光敏电阻 A0、LM35（A1）和串口。系统每秒通过串口输出一次光照值和温度值；如果任一值超过设定阈值，则额外输出 WARNING，并点亮 D13 LED。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "设置 io_0=400.0、io_1=60.0；使 io_3 累计到 1000ms 并跨越一次输出整点。",
+        "oracle": "在 serial_0_trigger=true 的控制步，serial_0_value_0=400.0、serial_0_value_1=60.0，且 io_2=true、serial_1_trigger=true、serial_1_value_0=true。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_3 : Integer;\n    attribute elapsedTotal : Integer := 0;\n    attribute exceeded : Boolean := false;\n    perform action tick {\n      first start;\n      then assign elapsedTotal := elapsedTotal + io_3;\n      then assign exceeded := io_0 >= 500.0 or io_1 >= 50.0;\n      then if elapsedTotal >= 1000 {\n        first start;\n        then assign elapsedTotal := elapsedTotal - 1000;\n      }\n    }\n    out attribute io_2 : Boolean = exceeded;\n    out attribute serial_0_trigger : Boolean = elapsedTotal == 0;\n    out attribute serial_0_value_0 : Real = io_0;\n    out attribute serial_0_value_1 : Real = io_1;\n    out attribute serial_1_trigger : Boolean = exceeded and (elapsedTotal == 0);\n    out attribute serial_1_value_0 : Boolean = exceeded;\n  }\n  part system : Controller;\n}\n"
+}

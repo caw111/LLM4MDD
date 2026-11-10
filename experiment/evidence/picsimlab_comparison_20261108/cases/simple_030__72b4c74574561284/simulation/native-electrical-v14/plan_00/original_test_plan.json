@@ -1,0 +1,122 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests four separated active-LOW button presses and requires numeric serial output after each. An additional relational regex checks for at least one increment-by-one pair without fixing the initial count. It permits numeric labels between values and repeated reporting. The supplied check API has no serial-field extraction or numerical comparison between captured reports, so this is deliberately partial: labels can produce incidental matches, and the test cannot independently validate every increment, carry transition, or unchanged count during holds and releases. No exact transmission count or arbitrary label format is imposed.",
+  "assumptions": [
+    "Relies on the disclosed bench default: the D2 button connects to GND, uses INPUT_PULLUP, and is active LOW.",
+    "The initial count is unspecified. Assertions do not require zero initialization; the reference chooses zero.",
+    "Counts are printed as decimal integers with unrestricted surrounding labels, including labels containing digits. The requirement does not specify an exact serial representation.",
+    "The long stable input intervals allow ordinary debounce and reporting latency without requiring a particular debounce duration.",
+    "Repeated reports of an unchanged count are permitted. A held button represents one press rather than repeated presses.",
+    "The relational regex recognizes non-carry adjacent decimal integers, including negative integers. Among four consecutive increments, at least one such pair exists. Its permissive handling of labels limits its ability to distinguish count values from unrelated numeric text."
+  ],
+  "horizon_ms": 10000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 1000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 2300,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 3200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 4500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 5400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 6700,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 7600,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 8900,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "first_press_numeric_report",
+      "requirement_quote": "通过串口输出当前计数值",
+      "from_ms": 1000,
+      "to_ms": 2200,
+      "regex": "(?<![0-9])-?[0-9]+(?![0-9])",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "second_press_numeric_report",
+      "requirement_quote": "通过串口输出当前计数值",
+      "from_ms": 3200,
+      "to_ms": 4400,
+      "regex": "(?<![0-9])-?[0-9]+(?![0-9])",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "third_press_numeric_report",
+      "requirement_quote": "通过串口输出当前计数值",
+      "from_ms": 5400,
+      "to_ms": 6600,
+      "regex": "(?<![0-9])-?[0-9]+(?![0-9])",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "fourth_press_numeric_report",
+      "requirement_quote": "通过串口输出当前计数值",
+      "from_ms": 7600,
+      "to_ms": 8800,
+      "regex": "(?<![0-9])-?[0-9]+(?![0-9])",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "partial_increment_relationship",
+      "requirement_quote": "每按一次计数加 1",
+      "from_ms": 1000,
+      "to_ms": 8800,
+      "regex": "(?<![0-9-])(?:([0-9]*)0(?![0-9])[\\s\\S]*?(?<![0-9-])\\1 1|([0-9]*)1(?![0-9])[\\s\\S]*?(?<![0-9-])\\2 2|([0-9]*)2(?![0-9])[\\s\\S]*?(?<![0-9-])\\3 3|([0-9]*)3(?![0-9])[\\s\\S]*?(?<![0-9-])\\4 4|([0-9]*)4(?![0-9])[\\s\\S]*?(?<![0-9-])\\5 5|([0-9]*)5(?![0-9])[\\s\\S]*?(?<![0-9-])\\6 6|([0-9]*)6(?![0-9])[\\s\\S]*?(?<![0-9-])\\7 7|([0-9]*)7(?![0-9])[\\s\\S]*?(?<![0-9-])\\8 8|([0-9]*)8(?![0-9])[\\s\\S]*?(?<![0-9-])\\9 9|-([0-9]*)2(?![0-9])[\\s\\S]*?(?<![0-9-])-\\10 1|-([0-9]*)3(?![0-9])[\\s\\S]*?(?<![0-9-])-\\11 2|-([0-9]*)4(?![0-9])[\\s\\S]*?(?<![0-9-])-\\12 3|-([0-9]*)5(?![0-9])[\\s\\S]*?(?<![0-9-])-\\13 4|-([0-9]*)6(?![0-9])[\\s\\S]*?(?<![0-9-])-\\14 5|-([0-9]*)7(?![0-9])[\\s\\S]*?(?<![0-9-])-\\15 6|-([0-9]*)8(?![0-9])[\\s\\S]*?(?<![0-9-])-\\16 7|-([0-9]*)9(?![0-9])[\\s\\S]*?(?<![0-9-])-\\17 8)(?![0-9])",
+      "min_count": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t buttonPin = 2;\nunsigned long countValue = 0;\nint lastRaw = HIGH;\nint stableState = HIGH;\nunsigned long changedAt = 0;\n\nvoid setup() {\n  pinMode(buttonPin, INPUT_PULLUP);\n  Serial.begin(9600);\n  lastRaw = digitalRead(buttonPin);\n  changedAt = millis();\n}\n\nvoid loop() {\n  const unsigned long now = millis();\n  const int raw = digitalRead(buttonPin);\n  if (raw != lastRaw) {\n    lastRaw = raw;\n    changedAt = now;\n  }\n  if (raw != stableState && now - changedAt >= 30) {\n    stableState = raw;\n    if (stableState == LOW) {\n      ++countValue;\n      Serial.println(countValue);\n    }\n  }\n}\n"
+}

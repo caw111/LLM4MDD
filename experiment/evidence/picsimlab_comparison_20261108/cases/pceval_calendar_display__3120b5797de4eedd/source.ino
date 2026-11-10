@@ -1,0 +1,95 @@
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>
+#include <RTClib.h>
+
+// LCD wiring (per circuit)
+static const uint8_t LCD_CS  = 10;
+static const uint8_t LCD_RST = 8;
+static const uint8_t LCD_DC  = 9;
+
+// Buttons (per circuit)
+static const uint8_t BTN_PREV = 3; // Button 1
+static const uint8_t BTN_NEXT = 2; // Button 2
+
+// Day names
+const char* const daysOfWeek[] = {
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+};
+
+Adafruit_ILI9341 tft(LCD_CS, LCD_DC, LCD_RST);
+RTC_DS1307 rtc;
+
+static bool readButtonStablePressed(uint8_t pin) {
+  // Buttons are connected to 5V when pressed, otherwise pulled down to GND via 10k resistor.
+  // So pressed => HIGH.
+  if (digitalRead(pin) != HIGH) return false;
+
+  // Simple debounce: require stable HIGH across short interval
+  delay(20);
+  if (digitalRead(pin) != HIGH) return false;
+
+  // Wait for release to avoid repeated stepping while held
+  while (digitalRead(pin) == HIGH) {
+    delay(5);
+  }
+  return true;
+}
+
+void setup() {
+  pinMode(BTN_PREV, INPUT);
+  pinMode(BTN_NEXT, INPUT);
+
+  tft.begin();
+  tft.setTextSize(3);
+  tft.setTextColor(ILI9341_WHITE);
+
+  Wire.begin();
+  if (!rtc.begin()) {
+    tft.fillScreen(ILI9341_BLACK);
+    tft.setCursor(10, 30);
+    tft.print("RTC not found");
+    while (true) {
+      delay(1000);
+    }
+  }
+
+  tft.fillScreen(ILI9341_BLACK);
+}
+
+void loop() {
+  DateTime now = rtc.now();
+
+  // Navigate days with buttons:
+  // Button 1 = previous date, Button 2 = next date
+  if (readButtonStablePressed(BTN_PREV)) {
+    now = now - TimeSpan(1, 0, 0, 0); // preserve time-of-day
+    rtc.adjust(now);
+  } else if (readButtonStablePressed(BTN_NEXT)) {
+    now = now + TimeSpan(1, 0, 0, 0); // preserve time-of-day
+    rtc.adjust(now);
+  }
+
+  now = rtc.now();
+
+  // Continuously read current time and display:
+  // YYYY-MM-DD at (10, 30)
+  // Day of week at (10, 80)
+  tft.fillRect(0, 0, 240, 120, ILI9341_BLACK); // clear top area used by expected positions
+
+  char buf[11]; // "YYYY-MM-DD" + null
+  snprintf(buf, sizeof(buf), "%04u-%02u-%02u",
+           (unsigned)now.year(),
+           (unsigned)now.month(),
+           (unsigned)now.day());
+
+  tft.setCursor(10, 30);
+  tft.print(buf);
+
+  const uint8_t dow = (uint8_t)now.dayOfTheWeek(); // 0=Sunday
+  tft.setCursor(10, 80);
+  tft.print(daysOfWeek[dow]);
+
+  delay(250);
+}

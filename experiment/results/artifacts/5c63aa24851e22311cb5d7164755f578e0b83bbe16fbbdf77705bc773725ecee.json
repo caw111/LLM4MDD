@@ -1,0 +1,119 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "releasedDelayRemainingMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "toneOn",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_0 and not previousPressed",
+        "then": [
+          {
+            "assign": "releasedDelayRemainingMs",
+            "value": 0
+          },
+          {
+            "assign": "toneOn",
+            "value": true
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "not io_0 and previousPressed",
+        "then": [
+          {
+            "assign": "releasedDelayRemainingMs",
+            "value": 1000
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "releasedDelayRemainingMs",
+        "value": {
+          "if": "not io_0 and releasedDelayRemainingMs > 0",
+          "then": "releasedDelayRemainingMs - io_2",
+          "else": "releasedDelayRemainingMs"
+        }
+      },
+      {
+        "if": "not io_0 and releasedDelayRemainingMs <= 0",
+        "then": [
+          {
+            "assign": "toneOn",
+            "value": false
+          },
+          {
+            "assign": "releasedDelayRemainingMs",
+            "value": 0
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      },
+      {
+        "if": "io_0",
+        "then": [
+          {
+            "assign": "toneOn",
+            "value": true
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "toneOn",
+        "then": 440,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D3 按钮 + 蜂鸣器（D6）：按住发声，松开后延迟 1 秒停止",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Hold io_0 true for multiple steps, then set io_0 false once and keep it false for at least 1s worth of io_2 deltas (e.g., accumulate >=1000ms)",
+        "oracle": "io_1 is nonzero while io_0 is held; after release, io_1 remains nonzero for the following 1000ms, then becomes 0 once the accumulated post-release elapsed time reaches/exceeds 1000ms"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D3 按钮 + 蜂鸣器（D6）：按住发声，松开后延迟 1 秒停止",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Press and release quickly: io_0 rising for one step, then io_0 false for exactly 999ms accumulated across subsequent steps",
+        "oracle": "After release, io_1 stays nonzero throughout the 999ms interval and only turns 0 once accumulated post-release time reaches 1000ms (on/after the first step where io_2 accumulation crosses 1000ms)"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D3 按钮 + 蜂鸣器（D6）：按住发声，松开后延迟 1 秒停止",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Press (io_0 true) long enough to be in toneOn, then release (io_0 false), wait 500ms, press again before the 1s delay expires, and keep pressed for a few steps",
+        "oracle": "The post-release 1s timer is canceled by the second press edge; io_1 remains nonzero and does not transition to 0 during the second press interval"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_2 : Integer;\n    attribute previousPressed : Boolean := false;\n    attribute releasedDelayRemainingMs : Integer := 0;\n    attribute toneOn : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and not previousPressed {\n        first start;\n        then assign releasedDelayRemainingMs := 0;\n        then assign toneOn := true;\n      }\n      then if not io_0 and previousPressed {\n        first start;\n        then assign releasedDelayRemainingMs := 1000;\n      }\n      then assign releasedDelayRemainingMs := (if not io_0 and releasedDelayRemainingMs > 0 ? releasedDelayRemainingMs - io_2 else releasedDelayRemainingMs);\n      then if not io_0 and releasedDelayRemainingMs <= 0 {\n        first start;\n        then assign toneOn := false;\n        then assign releasedDelayRemainingMs := 0;\n      }\n      then assign previousPressed := io_0;\n      then if io_0 {\n        first start;\n        then assign toneOn := true;\n      }\n    }\n    out attribute io_1 : Integer = (if toneOn ? 440 else 0);\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,114 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "phaseMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "ledOn",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "phaseMs",
+        "value": "phaseMs + io_1"
+      },
+      {
+        "if": "ledOn",
+        "then": [
+          {
+            "if": "phaseMs >= 1000",
+            "then": [
+              {
+                "assign": "phaseMs",
+                "value": "phaseMs - 1000"
+              },
+              {
+                "assign": "ledOn",
+                "value": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": "ledOn"
+        },
+        "then": [
+          {
+            "if": "phaseMs >= 2000",
+            "then": [
+              {
+                "assign": "phaseMs",
+                "value": "phaseMs - 2000"
+              },
+              {
+                "assign": "ledOn",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "ledOn",
+            "phaseMs >= 3000"
+          ]
+        },
+        "then": [
+          {
+            "assign": "phaseMs",
+            "value": "phaseMs - 3000"
+          },
+          {
+            "assign": "ledOn",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "ledOn"
+            },
+            "phaseMs >= 3000"
+          ]
+        },
+        "then": [
+          {
+            "assign": "phaseMs",
+            "value": "phaseMs - 3000"
+          },
+          {
+            "assign": "ledOn",
+            "value": true
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": "ledOn"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:  \nYou are tasked with programming an Arduino (uno) to control an LED (led1) in a specific on-off sequence.  \n\n**Detail Rules**:  \nInitialization: Upon powering on or resetting, the LED should be off.  \nOperation Sequence: The LED should follow a repeating cycle of on and off states with specific durations:  \n1. First, the LED should turn on and remain lit for 1 second.  \n2. Then, the LED should turn off and remain off for 2 seconds.  \n3. Next, the LED should turn on again and remain lit for 3 seconds.  \n4. Finally, the LED should turn off and remain off for 3 seconds.  \nThis sequence should repeat indefinitely.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Apply consecutive control steps with varying io_1 deltas that sum to: 0ms, then reach 1000ms, then 2000ms, then 3000ms, then 5000ms, then 8000ms, continuing for at least one full cycle; ensure power-on/reset initializes the model with io_0 initially false.",
+        "oracle": "LED output io_0 is false at time 0, becomes true for the interval [0,1000)ms, false for [1000,3000)ms, true for [3000,6000)ms, and false for [6000,9000)ms; the pattern repeats indefinitely with the same durations."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute phaseMs : Integer := 0;\n    attribute ledOn : Boolean := false;\n    perform action tick {\n      first start;\n      then assign phaseMs := phaseMs + io_1;\n      then if ledOn {\n        first start;\n        then if phaseMs >= 1000 {\n          first start;\n          then assign phaseMs := phaseMs - 1000;\n          then assign ledOn := false;\n        }\n      }\n      then if (not ledOn) {\n        first start;\n        then if phaseMs >= 2000 {\n          first start;\n          then assign phaseMs := phaseMs - 2000;\n          then assign ledOn := true;\n        }\n      }\n      then if ((ledOn) and (phaseMs >= 3000)) {\n        first start;\n        then assign phaseMs := phaseMs - 3000;\n        then assign ledOn := false;\n      }\n      then if (((not ledOn)) and (phaseMs >= 3000)) {\n        first start;\n        then assign phaseMs := phaseMs - 3000;\n        then assign ledOn := true;\n      }\n    }\n    out attribute io_0 : Boolean = ledOn;\n  }\n  part system : Controller;\n}\n"
+}

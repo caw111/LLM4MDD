@@ -1,0 +1,142 @@
+{
+  "contract_sha256": "f7788a225e54c27c1ed412230071bfe4330b80f2a52c8ad8827d3d42f836d237",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"光敏电阻环境亮度(用于判断是否触发安防)\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"超声测距(用于判断物体是否在20cm内)\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"超声测距有效性(无效时保持上次距离并将此为false)\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED安防指示(报警时闪烁)\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"蜂鸣器间歇鸣叫(报警时由模型控制启停与频率)\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"当且仅当进入安防报警状态时触发输出alarm\"\n      },\n      \"values\": [\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"报警触发状态(alarm是否有效)\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"板级目标为 arduino:avr:uno，D6 用于蜂鸣器 tone，D13 用于LED，A0 用于光敏电阻，D8/D9 用于HC-SR04(Trig/Echo)；未覆盖的其他硬件不应被假设。\",\n    \"安防触发条件(环境较暗 + 距离<=20cm)与LED闪烁、蜂鸣器间歇鸣叫的具体周期/频率/占空由SysML模型处理；本接口提案仅提供必要的传感器输入与执行输出端口。\",\n    \"串口输出：原文要求“通过串口输出alarm”但未给出具体协议(例如是否输出固定文本\\\"alarm\\\"或数值/换行细节)。为保证可实现且不臆造动态文本，本提案选择在报警触发时输出一个固定含义的布尔量表示alarm状态。\",\n    \"HC-SR04 timeout_us 选取30000us，满足25000..60000范围；测距样本周期与响应预算需按指令中规则向上取控制周期倍数并将采集时间计入截止时间，由应用调度器/模型自动处理。\",\n    \"未明确光敏阈值、距离测量有效性处理策略(如仅在ultrasonic_valid为true时判断<=20cm)；该部分作为业务逻辑记录在模型中。\"\n  ]\n}",
+      "error": "serial_channels[0].values: missing fields ['label']; unknown fields []; allowed fields ['initial', 'label', 'meaning', 'required_inputs', 'type', 'unit']. Configuration keys belong directly on this object, not inside optional/binding.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"光敏电阻环境亮度采样（暗环境判定阈值由模型确定）\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"超声距离（用于20cm内判定）\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"超声有效性（回波超时或越界时为false）\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"蜂鸣器间歇鸣叫控制音频（报警时模型决定频率与停鸣时序）\",\n      \"invalid_policy\": \"silence\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED报警闪烁控制（报警时模型决定闪烁节拍）\",\n      \"active_high\": true\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"报警状态为真时，输出alarm固定文本\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"state\",\n          \"initial\": 0,\n          \"meaning\": \"报警状态码（1=报警；0=非报警）\",\n          \"label\": \"alarm\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"业务逻辑：仅当(环境较暗) AND(超声距离<=20cm)时触发报警；具体“较暗”阈值与滤波/采样策略放在SysML模型中。\",\n    \"LED闪烁与蜂鸣器间歇鸣叫的频率/占空比/周期均在模型中定义；此JSON仅保留必要的物理端口。\",\n    \"串口协议：未提供报警输出的固定文本要求，仅要求通过串口输出alarm。为避免杜撰固定文本，选择在报警门控时输出一个i32报警状态码(1/0)。若实际需要固定字符串(例如\\\"alarm\\\"或其它精确文本)，请补充协议文本。\",\n    \"超声timeout_us与样本周期按卡目录约束由应用端按控制周期倍数展开；此处给出最小允许timeout_us=25000以满足HC-SR04与响应预算范围。\",\n    \"报警门控仅用于序列输出触发；输出cadence/去抖/重复报警策略由SysML的elapsed_ms驱动决定。\"\n  ],\n  \"unsupported\": []\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。",
+    "effective_requirement": "构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

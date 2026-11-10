@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "All seven-segment segment control is implemented via the single shift-register chain using one shift595_number port; digit 0 is sevseg1 (left), digit 1 is sevseg2 (right), using the provided segment_bits [0..6] and active_low=true for both registers.",
+    "The model (not ports) must implement: start-up display as '0' on both digits; increment by +6 each real-world second; when total exceeds 99, display only the last two digits.",
+    "Because shift595_number only supports signed range -999..9999 and invalid_policy='blank', the model should clamp or map the computed timer value into a 0..99 two-digit display value to avoid invalid commands.",
+    "No serial reporting is specified in the circuit/prose, so serial_channels is empty."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Two-digit timer value (last two digits after exceeding 99); blanking handled by model",
+      "sample_period_ms": 10,
+      "device": "shift595_number",
+      "hardware": "{\"clock_pin\": \"A2\", \"data_pin\": \"A0\", \"invalid_policy\": \"blank\", \"kind\": \"shift595_number\", \"latch_pin\": \"A1\", \"leading_zero\": false, \"registers\": [{\"active_low\": true, \"digit\": 0, \"display\": \"sevseg1\", \"register\": \"sr1\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}, {\"active_low\": true, \"digit\": 1, \"display\": \"sevseg2\", \"register\": \"sr2\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}]}",
+      "binding": {
+        "kind": "shift595_number",
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clock_pin": "A2",
+        "data_pin": "A0",
+        "registers": [
+          {
+            "register": "sr1",
+            "display": "sevseg1",
+            "digit": 0,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          },
+          {
+            "register": "sr2",
+            "display": "sevseg2",
+            "digit": 1,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          }
+        ],
+        "latch_pin": "A1"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2). The goal is to create a timer that increments by 6 seconds for every real-world second that passes. Once the timer exceeds 99 seconds, it should only display the last two digits.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"0\". The sevseg1 is in the extinguished state and sevseg2 show \"0\".\nTimer Operation: Every real-world second, the timer should increment by 6 seconds. The updated time should be displayed on the 7-segment displays.\nDisplay Rules: If the timer exceeds 99 seconds, only the last two digits of the timer should be displayed on the 7-segment displays. For example, if the timer reaches 102 seconds, the displays should show \"2\".\nThe timer should continue to increment and update the display every second, following the above rules.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2). The goal is to create a timer that increments by 6 seconds for every real-world second that passes. Once the timer exceeds 99 seconds, it should only display the last two digits.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"0\". The sevseg1 is in the extinguished state and sevseg2 show \"0\".\nTimer Operation: Every real-world second, the timer should increment by 6 seconds. The updated time should be displayed on the 7-segment displays.\nDisplay Rules: If the timer exceeds 99 seconds, only the last two digits of the timer should be displayed on the 7-segment displays. For example, if the timer reaches 102 seconds, the displays should show \"2\".\nThe timer should continue to increment and update the display every second, following the above rules.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr2",
+            "top": -87.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg2",
+            "top": -196.6,
+            "left": 494.7,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ],
+          [
+            "sr1:SHCP",
+            "sr2:SHCP",
+            "gray"
+          ],
+          [
+            "sr1:STCP",
+            "sr2:STCP",
+            "purple"
+          ],
+          [
+            "sr1:Q7S",
+            "sr2:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:MR",
+            "red"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:VCC",
+            "red"
+          ],
+          [
+            "sr1:OE",
+            "sr2:OE",
+            "black"
+          ],
+          [
+            "sevseg1:COM.1",
+            "sevseg2:COM.1",
+            "red"
+          ],
+          [
+            "sr2:Q0",
+            "sevseg2:A",
+            "green"
+          ],
+          [
+            "sr2:Q1",
+            "sevseg2:B",
+            "green"
+          ],
+          [
+            "sr2:Q2",
+            "sevseg2:C",
+            "green"
+          ],
+          [
+            "sr2:Q3",
+            "sevseg2:D",
+            "green"
+          ],
+          [
+            "sr2:Q4",
+            "sevseg2:E",
+            "green"
+          ],
+          [
+            "sr2:Q5",
+            "sevseg2:F",
+            "green"
+          ],
+          [
+            "sr2:Q6",
+            "sevseg2:G",
+            "green"
+          ],
+          [
+            "sr1:GND",
+            "sr2:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2). The goal is to create a timer that increments by 6 seconds for every real-world second that passes. Once the timer exceeds 99 seconds, it should only display the last two digits.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"0\". The sevseg1 is in the extinguished state and sevseg2 show \"0\".\nTimer Operation: Every real-world second, the timer should increment by 6 seconds. The updated time should be displayed on the 7-segment displays.\nDisplay Rules: If the timer exceeds 99 seconds, only the last two digits of the timer should be displayed on the 7-segment displays. For example, if the timer reaches 102 seconds, the displays should show \"2\".\nThe timer should continue to increment and update the display every second, following the above rules.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

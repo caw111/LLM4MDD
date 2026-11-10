@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"alarmActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"ledState\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"beepState\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"alarmActive\",\n        \"value\": {\n          \"and\": [\n            {\n              \"<=\": [\n                \"io_0\",\n                300.0\n              ]\n            },\n            {\n              \"and\": [\n                \"io_2\",\n                {\n                  \"<=\": [\n                    \"io_1\",\n                    20.0\n                  ]\n                }\n              ]\n            }\n          ]\n        }\n      },\n      {\n        \"if\": \"alarmActive\",\n        \"then\": [\n          {\n            \"assign\": \"ledState\",\n            \"value\": {\n              \"not\": \"ledState\"\n            }\n          },\n          {\n            \"assign\": \"beepState\",\n            \"value\": {\n              \"not\": \"beepState\"\n            }\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"ledState and alarmActive\",\n      \"io_4\": {\n        \"if\": \"alarmActive and beepState\",\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"serial_0_trigger\": \"alarmActive\",\n      \"serial_0_value_0\": \"alarmActive\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_2=false（无效测距），io_0取任意≤300，观察输出\",\n        \"oracle\": \"serial_0_trigger=false，serial_0_value_0=false，io_3=false，io_4=0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_2=true且io_1=20.0，io_0=300.0（暗阈值边界），执行一个控制步\",\n        \"oracle\": \"serial_0_trigger=true，serial_0_value_0=true，io_3等于ledState且为报警指示，io_4在该步取决于beepState且为(2000或0)但不为静默以外值以外的其他Hz\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_2=true且io_1=20.1（略大于20cm），io_0=100.0（暗），执行一个控制步\",\n        \"oracle\": \"serial_0_trigger=false，serial_0_value_0=false，io_3=false，io_4=0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个双传感器安防系统，使用光敏电阻 A0、HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6 和 LED D13。只有在环境较暗且检测到 20cm 内物体时才触发安防报警；报警时 LED 闪烁、蜂鸣器间歇鸣叫，并通过串口输出 alarm。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_2=true且io_1=10.0（在20cm内），io_0从250.0切到301.0（从暗到亮），执行一个控制步\",\n        \"oracle\": \"从切换后起 serial_0_trigger=false，serial_0_value_0=false，io_3=false，io_4=0\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    attribute alarmActive : Boolean := false;\n    attribute ledState : Boolean := false;\n    attribute beepState : Boolean := false;\n    perform action tick {\n      first start;\n      then assign alarmActive := ((((io_0) <= (300.0))) and (((io_2) and (((io_1) <= (20.0))))));\n      then if alarmActive {\n        first start;\n        then assign ledState := (not ledState);\n        then assign beepState := (not beepState);\n      }\n    }\n    out attribute io_3 : Boolean = ledState and alarmActive;\n    out attribute io_4 : Integer = (if alarmActive and beepState ? 2000 else 0);\n    out attribute serial_0_trigger : Boolean = alarmActive;\n    out attribute serial_0_value_0 : Boolean = alarmActive;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,77 @@
+--- original.ino
++++ repaired.ino
+@@ -37,39 +37,25 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, bool io_1, bool* io_2, int32_t* io_3, int32_t* io_4, bool* io_5, bool* serial_0_trigger, double* serial_0_value_0) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    if (io_1) {
+-        sysml_state_doorOpenMs = sysml_state_doorOpenMs;
+-    }
+-    if ((!io_1)) {
+-        sysml_state_doorOpenMs = 0;
+-    }
+-    sysml_lazy_0 = !io_1;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = sysml_state_prevDoorOpen;
+-    }
+-    if (sysml_lazy_0) {
+-    }
+-    sysml_state_prevDoorOpen = io_1;
+-    bool sysml_value_0 = 0;
+-    sysml_value_0 = false;
+-    int32_t sysml_value_1 = 0;
+-    sysml_value_1 = 0;
+-    int32_t sysml_value_2 = 0;
+-    sysml_value_2 = 0;
+-    bool sysml_value_3 = 0;
+-    sysml_value_3 = false;
+-    bool sysml_value_4 = 0;
+-    sysml_value_4 = false;
+-    double sysml_value_5 = 0;
+-    sysml_value_5 = 0.0;
+-    *io_2 = sysml_value_0;
+-    *io_3 = sysml_value_1;
+-    *io_4 = sysml_value_2;
+-    *io_5 = sysml_value_3;
+-    *serial_0_trigger = sysml_value_4;
+-    *serial_0_value_0 = sysml_value_5;
++    static bool cooling=false,reported=false;
++    static uint32_t opened=0,lastReport=0;
++    uint32_t now=millis();
++    double temperature=io_0*500.0/1023.0;
++    if (temperature>=8) cooling=true;
++    if (temperature<=6) cooling=false;
++    if (io_1 && !sysml_state_prevDoorOpen) opened=now;
++    sysml_state_prevDoorOpen=io_1;
++    uint32_t duration=io_1 ? (uint32_t)(now-opened) : 0;
++    bool alarm=duration>10000;
++    bool critical=io_1 && temperature>8;
++    *serial_0_trigger=critical && (!reported || (uint32_t)(now-lastReport)>=1000);
++    if (*serial_0_trigger) lastReport=now;
++    reported=critical;
++    *serial_0_value_0=temperature;
++    *io_2=cooling;
++    *io_3=alarm ? 1000 : 0;
++    *io_4=now/2000%2 ? (int32_t)min(duration/1000,(uint32_t)9999) : (int32_t)temperature;
++    *io_5=alarm && (duration-10000)%1000<500;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -102,7 +88,7 @@
+   ProgramPage1_Init(&ProgramPage1_instance);
+   Serial.begin(9600);
+   pinMode(A1, INPUT);
+-  pinMode(2, INPUT);
++  pinMode(2, INPUT_PULLUP);
+   pinMode(10, OUTPUT);
+   digitalWrite(10, hw_value_io_2 ? HIGH : LOW);
+   pinMode(6, OUTPUT);
+@@ -153,5 +139,5 @@
+     hw_display_previous_io_4 = hw_value_io_4;
+   }
+   digitalWrite(13, hw_value_io_5 ? HIGH : LOW);
+-  if (hw_value_serial_0_trigger) { Serial.print("temperature"); Serial.println(hw_value_serial_0_value_0); }
++  if (hw_value_serial_0_trigger) { Serial.print("critical cooling loss: "); Serial.println(hw_value_serial_0_value_0); }
+ }

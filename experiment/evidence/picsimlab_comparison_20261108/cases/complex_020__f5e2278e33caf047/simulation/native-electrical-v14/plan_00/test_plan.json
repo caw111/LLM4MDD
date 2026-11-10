@@ -1,0 +1,145 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises LM35 reporting at three distinct inputs and on return to the initial input. Temperature assertions accept conventional Celsius, Fahrenheit, or Kelvin representations and integer rounding or truncation, rather than requiring two-decimal Celsius output. Reporting checks also require numeric output in successive one-second-scale windows. Coverage remains partial: light calibration, temperature output units, precision, and alarm thresholds are not specified. The suite does not independently establish light-value correctness, exact reporting cadence, baud rate, threshold equality behavior, WARNING behavior, or D13 alarm behavior.",
+  "assumptions": [
+    "Bench defaults apply: analog inputs are raw ADC readings with a 5 V reference, and the D13 LED is active HIGH.",
+    "LM35 has its standard 10 mV per degree Celsius transfer function.",
+    "Temperature is reported numerically in a conventional temperature unit: Celsius, Fahrenheit, or Kelvin. The checks accept all three without requiring labels or field order, and allow integer rounding or truncation. Other representations cannot be checked independently with this finite suite.",
+    "Threshold values and their configuration mechanism are missing. No candidate threshold values or command syntax are imposed.",
+    "Light-value units and calibration are missing. The reference chooses raw ADC counts, but the checks do not require this choice.",
+    "The reference chooses fixed thresholds of 700 light ADC counts and 50 degrees Celsius. These are implementation choices, not test expectations.",
+    "The supported serial checks cannot condition temperature interpretation on a candidate-declared unit or independently correlate WARNING reports with D13 state."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 137
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 102
+    },
+    {
+      "at_ms": 3000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 812
+    },
+    {
+      "at_ms": 3000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 205
+    },
+    {
+      "at_ms": 6000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 400
+    },
+    {
+      "at_ms": 6000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 51
+    },
+    {
+      "at_ms": 9000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 137
+    },
+    {
+      "at_ms": 9000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 102
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "temperature_initial",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 300,
+      "to_ms": 1450,
+      "regex": "(^|[^0-9.])(49|50|121|122|323)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_initial_repeat",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 1451,
+      "to_ms": 2600,
+      "regex": "(^|[^0-9.])(49|50|121|122|323)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_high",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 3300,
+      "to_ms": 4450,
+      "regex": "(^|[^0-9.])(100|212|213|373)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_high_repeat",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 4451,
+      "to_ms": 5600,
+      "regex": "(^|[^0-9.])(100|212|213|373)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_low",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 6300,
+      "to_ms": 7450,
+      "regex": "(^|[^0-9.])(24|25|76|77|298)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_low_repeat",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 7451,
+      "to_ms": 8600,
+      "regex": "(^|[^0-9.])(24|25|76|77|298)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_return",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 9300,
+      "to_ms": 10450,
+      "regex": "(^|[^0-9.])(49|50|121|122|323)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_return_repeat",
+      "requirement_quote": "系统每秒通过串口输出一次光照值和温度值",
+      "from_ms": 10451,
+      "to_ms": 11600,
+      "regex": "(^|[^0-9.])(49|50|121|122|323)(\\.[0-9]+)?([^0-9.]|$)",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nconst int LIGHT_THRESHOLD = 700;\nconst float TEMPERATURE_THRESHOLD_C = 50.0f;\nunsigned long lastReport = 0;\n\nvoid setup() {\n  pinMode(A0, INPUT);\n  pinMode(A1, INPUT);\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n  Serial.begin(9600);\n  lastReport = millis();\n}\n\nvoid loop() {\n  int light = analogRead(A0);\n  float temperatureC = analogRead(A1) * (500.0f / 1023.0f);\n  bool alarm = light > LIGHT_THRESHOLD || temperatureC > TEMPERATURE_THRESHOLD_C;\n  digitalWrite(13, alarm ? HIGH : LOW);\n  unsigned long now = millis();\n  if (now - lastReport >= 1000UL) {\n    lastReport += 1000UL;\n    Serial.print(\"Light: \");\n    Serial.print(light);\n    Serial.print(\" Temperature C: \");\n    Serial.println(temperatureC, 2);\n    if (alarm) Serial.println(\"WARNING\");\n  }\n}\n",
+  "electrical_led_pins": {}
+}

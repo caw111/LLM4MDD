@@ -1,0 +1,135 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"autoMode\",\n        \"type\": \"bool\",\n        \"initial\": \"true\"\n      },\n      {\n        \"name\": \"manualAnglePercent\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"prevBtn2\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prevBtn3\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"curAnglePercent\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"lightMode\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"autoMode\",\n        \"then\": [\n          {\n            \"if\": {\n              \">=\": [\n                \"io_1\",\n                30.0\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"curAnglePercent\",\n                \"value\": 0\n              },\n              {\n                \"assign\": \"lightMode\",\n                \"value\": \"false\"\n              }\n            ],\n            \"else\": [\n              {\n                \"if\": {\n                  \"<=\": [\n                    \"io_0\",\n                    400.0\n                  ]\n                },\n                \"then\": [\n                  {\n                    \"assign\": \"curAnglePercent\",\n                    \"value\": 100\n                  },\n                  {\n                    \"assign\": \"lightMode\",\n                    \"value\": \"true\"\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"assign\": \"curAnglePercent\",\n                    \"value\": 0\n                  },\n                  {\n                    \"assign\": \"lightMode\",\n                    \"value\": \"false\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"not\": \"autoMode\"\n        },\n        \"then\": [\n          {\n            \"assign\": \"curAnglePercent\",\n            \"value\": \"manualAnglePercent\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"not\": \"prevBtn2\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"autoMode\",\n            \"value\": {\n              \"if\": \"autoMode\",\n              \"then\": \"false\",\n              \"else\": \"true\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_3\",\n            {\n              \"not\": \"prevBtn3\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": {\n              \"not\": \"autoMode\"\n            },\n            \"then\": [\n              {\n                \"assign\": \"manualAnglePercent\",\n                \"value\": {\n                  \"if\": {\n                    \"==\": [\n                      \"manualAnglePercent\",\n                      100\n                    ]\n                  },\n                  \"then\": 0,\n                  \"else\": \"manualAnglePercent + 10\"\n                }\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevBtn2\",\n        \"value\": \"io_2\"\n      },\n      {\n        \"assign\": \"prevBtn3\",\n        \"value\": \"io_3\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": \"lightMode\",\n      \"io_5\": {\n        \"if\": {\n          \">=\": [\n            \"curAnglePercent\",\n            0\n          ]\n        },\n        \"then\": {\n          \"if\": {\n            \"<=\": [\n              \"curAnglePercent\",\n              100\n            ]\n          },\n          \"then\": {\n            \"toReal\": \"curAnglePercent\"\n          },\n          \"else\": 100.0\n        },\n        \"else\": 0.0\n      },\n      \"io_6\": {\n        \"if\": {\n          \"<=\": [\n            \"curAnglePercent\",\n            100\n          ]\n        },\n        \"then\": {\n          \"if\": {\n            \">=\": [\n              \"curAnglePercent\",\n              0\n            ]\n          },\n          \"then\": \"curAnglePercent\",\n          \"else\": 0\n        },\n        \"else\": 100\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"启动保持默认（autoMode初始为true），保持io_1=31.0（温度过高）且任意io_0，观测一个控制步后的输出\",\n        \"oracle\": \"io_5（窗帘角度）=0（curAnglePercent=0），io_4（室内灯）=false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"自动模式下保持io_1=25.0（不过高），设置io_0=300.0（光照过弱阈值内），观测一个控制步后的输出\",\n        \"oracle\": \"io_5=100，io_4=true\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"自动模式下保持io_1=25.0（不过高），设置io_0=600.0（光照过强），观测一个控制步后的输出\",\n        \"oracle\": \"io_5=0，io_4=false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先在auto模式下让io_2产生一次按下上升沿（active-low：从false到true），观测一个控制步后模式切换；随后保持io_3产生按下上升沿，观测输出窗帘角度变化\",\n        \"oracle\": \"切换到手动后，io_5按手动角度百分比更新；一次io_3上升沿使manualAnglePercent从初始0变为10（因此io_6=10，io_5=10.0）\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_5: Unknown expression object {'toReal': 'curAnglePercent'}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/io_5"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_5: Unknown expression object {'toReal': 'curAnglePercent'}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/io_5"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/outputs/io_5: Unknown expression object {'toReal': 'curAnglePercent'}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"autoMode\",\n        \"type\": \"bool\",\n        \"initial\": \"true\"\n      },\n      {\n        \"name\": \"manualAnglePercent\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"prevBtn2\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prevBtn3\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"curAnglePercent\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"lightMode\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"autoMode\",\n        \"then\": [\n          {\n            \"if\": {\n              \">=\": [\n                \"io_1\",\n                30.0\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"curAnglePercent\",\n                \"value\": 0\n              },\n              {\n                \"assign\": \"lightMode\",\n                \"value\": \"false\"\n              }\n            ],\n            \"else\": [\n              {\n                \"if\": {\n                  \"<=\": [\n                    \"io_0\",\n                    400.0\n                  ]\n                },\n                \"then\": [\n                  {\n                    \"assign\": \"curAnglePercent\",\n                    \"value\": 100\n                  },\n                  {\n                    \"assign\": \"lightMode\",\n                    \"value\": \"true\"\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"assign\": \"curAnglePercent\",\n                    \"value\": 0\n                  },\n                  {\n                    \"assign\": \"lightMode\",\n                    \"value\": \"false\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"not\": \"autoMode\"\n        },\n        \"then\": [\n          {\n            \"assign\": \"curAnglePercent\",\n            \"value\": \"manualAnglePercent\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"not\": \"prevBtn2\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"autoMode\",\n            \"value\": {\n              \"if\": \"autoMode\",\n              \"then\": \"false\",\n              \"else\": \"true\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_3\",\n            {\n              \"not\": \"prevBtn3\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": {\n              \"not\": \"autoMode\"\n            },\n            \"then\": [\n              {\n                \"assign\": \"manualAnglePercent\",\n                \"value\": {\n                  \"if\": {\n                    \"==\": [\n                      \"manualAnglePercent\",\n                      100\n                    ]\n                  },\n                  \"then\": 0,\n                  \"else\": \"manualAnglePercent + 10\"\n                }\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevBtn2\",\n        \"value\": \"io_2\"\n      },\n      {\n        \"assign\": \"prevBtn3\",\n        \"value\": \"io_3\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": \"lightMode\",\n      \"io_5\": {\n        \"if\": {\n          \">=\": [\n            \"curAnglePercent\",\n            0\n          ]\n        },\n        \"then\": {\n          \"if\": {\n            \"<=\": [\n              \"curAnglePercent\",\n              100\n            ]\n          },\n          \"then\": \"curAnglePercent\",\n          \"else\": 100.0\n        },\n        \"else\": 0.0\n      },\n      \"io_6\": {\n        \"if\": {\n          \"<=\": [\n            \"curAnglePercent\",\n            100\n          ]\n        },\n        \"then\": {\n          \"if\": {\n            \">=\": [\n              \"curAnglePercent\",\n              0\n            ]\n          },\n          \"then\": \"curAnglePercent\",\n          \"else\": 0\n        },\n        \"else\": 100\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"启动保持默认（autoMode初始为true），保持io_1=31.0（温度过高）且任意io_0，观测一个控制步后的输出\",\n        \"oracle\": \"io_5（窗帘角度）=0（curAnglePercent=0），io_4（室内灯）=false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"自动模式下保持io_1=25.0（不过高），设置io_0=300.0（光照过弱阈值内），观测一个控制步后的输出\",\n        \"oracle\": \"io_5=100，io_4=true\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"自动模式下保持io_1=25.0（不过高），设置io_0=600.0（光照过强），观测一个控制步后的输出\",\n        \"oracle\": \"io_5=0，io_4=false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先在auto模式下让io_2产生一次按下上升沿（active-low：从false到true），观测一个控制步后模式切换；随后保持io_3产生按下上升沿，观测输出窗帘角度变化\",\n        \"oracle\": \"切换到手动后，io_5按手动角度百分比更新；一次io_3上升沿使manualAnglePercent从初始0变为10（因此io_6=10，io_5=10.0）\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    in attribute io_7 : Integer;\n    attribute autoMode : Boolean := true;\n    attribute manualAnglePercent : Integer := 0;\n    attribute prevBtn2 : Boolean := false;\n    attribute prevBtn3 : Boolean := false;\n    attribute curAnglePercent : Integer := 0;\n    attribute lightMode : Boolean := false;\n    perform action tick {\n      first start;\n      then if autoMode {\n        first start;\n        then if ((io_1) >= (30.0)) {\n          first start;\n          then assign curAnglePercent := 0;\n          then assign lightMode := false;\n        } else {\n          first start;\n          then if ((io_0) <= (400.0)) {\n            first start;\n            then assign curAnglePercent := 100;\n            then assign lightMode := true;\n          } else {\n            first start;\n            then assign curAnglePercent := 0;\n            then assign lightMode := false;\n          }\n        }\n      }\n      then if (not autoMode) {\n        first start;\n        then assign curAnglePercent := manualAnglePercent;\n      }\n      then if ((io_2) and ((not prevBtn2))) {\n        first start;\n        then assign autoMode := (if autoMode ? false else true);\n      }\n      then if ((io_3) and ((not prevBtn3))) {\n        first start;\n        then if (not autoMode) {\n          first start;\n          then assign manualAnglePercent := (if ((manualAnglePercent) == (100)) ? 0 else manualAnglePercent + 10);\n        }\n      }\n      then assign prevBtn2 := io_2;\n      then assign prevBtn3 := io_3;\n    }\n    out attribute io_4 : Boolean = lightMode;\n    out attribute io_5 : Real = (if ((curAnglePercent) >= (0)) ? (if ((curAnglePercent) <= (100)) ? curAnglePercent else 100.0) else 0.0);\n    out attribute io_6 : Integer = (if ((curAnglePercent) <= (100)) ? (if ((curAnglePercent) >= (0)) ? curAnglePercent else 0) else 100);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

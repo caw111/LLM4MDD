@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"recyclableCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"otherCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"totalCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"fullBinAlarmed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousResetPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"fillHeightCmLatched\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_3\",\n        \"then\": [\n          {\n            \"assign\": \"fillHeightCmLatched\",\n            \"value\": \"io_2\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"fillHeightCmLatched\",\n                20.0\n              ]\n            },\n            {\n              \"not\": \"fullBinAlarmed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"fullBinAlarmed\",\n            \"value\": true\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"fullBinAlarmed\"\n            },\n            \"io_0\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"recyclableCount\",\n            \"value\": \"recyclableCount + 1\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"fullBinAlarmed\"\n            },\n            \"io_1\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"otherCount\",\n            \"value\": \"otherCount + 1\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"totalCount\",\n        \"value\": \"recyclableCount + otherCount\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_7\",\n            {\n              \"not\": \"previousResetPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"recyclableCount\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"otherCount\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"totalCount\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"fullBinAlarmed\",\n            \"value\": false\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousResetPressed\",\n        \"value\": \"io_7\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": \"totalCount\",\n      \"io_5\": {\n        \"if\": \"fullBinAlarmed\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_6\": \"fullBinAlarmed\",\n      \"serial_0_trigger\": \"fullBinAlarmed\",\n      \"serial_0_value_0\": {\n        \"if\": \"fullBinAlarmed\",\n        \"then\": 1,\n        \"else\": 0\n      },\n      \"serial_0_value_1\": \"fillHeightCmLatched\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"令io_0为true保持两步、io_1为true保持一步且io_7始终为false，且io_3始终为false（不更新超声有效高度）。\",\n        \"oracle\": \"io_4的值最终等于3；fullBinAlarmed保持false，io_6为false，io_5为0，serial_0_trigger为false。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先让计数增长到非零（io_0或io_1为true若干步，io_7为false），然后在某一步将io_3置为true且io_2给出大于等于20.0的高度；此后继续让io_0/io_1为true若干步，io_7仍为false。\",\n        \"oracle\": \"fullBinAlarmed在高度满足条件后变为true，之后io_4保持不再变化；io_6变为true，io_5变为1000且serial_0_trigger为true，serial_0_value_1等于最后一次io_3为true时的io_2值。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先触发满载报警（使fullBinAlarmed为true），然后将io_7从false翻转为true至少一控制步，再保持io_7为true若干步，最后io_7回到false。\",\n        \"oracle\": \"在io_7上升边到来后的同一控制步，计数器清零（io_4变为0），fullBinAlarmed清零（io_6为false且io_5为0），serial_0_trigger为false；在io_7保持true期间不重复清零（计数仍为0）。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_7 : Boolean;\n    attribute recyclableCount : Integer := 0;\n    attribute otherCount : Integer := 0;\n    attribute totalCount : Integer := 0;\n    attribute fullBinAlarmed : Boolean := false;\n    attribute previousResetPressed : Boolean := false;\n    attribute fillHeightCmLatched : Real := 0.0;\n    perform action tick {\n      first start;\n      then if io_3 {\n        first start;\n        then assign fillHeightCmLatched := io_2;\n      }\n      then if ((((fillHeightCmLatched) >= (20.0))) and ((not fullBinAlarmed))) {\n        first start;\n        then assign fullBinAlarmed := true;\n      }\n      then if (((not fullBinAlarmed)) and (io_0)) {\n        first start;\n        then assign recyclableCount := recyclableCount + 1;\n      }\n      then if (((not fullBinAlarmed)) and (io_1)) {\n        first start;\n        then assign otherCount := otherCount + 1;\n      }\n      then assign totalCount := recyclableCount + otherCount;\n      then if ((io_7) and ((not previousResetPressed))) {\n        first start;\n        then assign recyclableCount := 0;\n        then assign otherCount := 0;\n        then assign totalCount := 0;\n        then assign fullBinAlarmed := false;\n      }\n      then assign previousResetPressed := io_7;\n    }\n    out attribute io_4 : Integer = totalCount;\n    out attribute io_5 : Integer = (if fullBinAlarmed ? 1000 else 0);\n    out attribute io_6 : Boolean = fullBinAlarmed;\n    out attribute serial_0_trigger : Boolean = fullBinAlarmed;\n    out attribute serial_0_value_0 : Integer = (if fullBinAlarmed ? 1 else 0);\n    out attribute serial_0_value_1 : Real = fillHeightCmLatched;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "distance_cm_last_valid",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "distance_cm_effective",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "distance_cm_last_valid",
+            "value": "io_0"
+          }
+        ]
+      },
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "distance_cm_effective",
+            "value": "io_0"
+          }
+        ],
+        "else": [
+          {
+            "assign": "distance_cm_effective",
+            "value": "distance_cm_last_valid"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              ">=": [
+                "distance_cm_effective",
+                2.0
+              ]
+            },
+            {
+              "<=": [
+                "distance_cm_effective",
+                400.0
+              ]
+            }
+          ]
+        },
+        "then": {
+          "floor": "distance_cm_effective"
+        },
+        "else": 0
+      },
+      "io_3": {
+        "and": [
+          "io_1",
+          {
+            "<": [
+              "distance_cm_effective",
+              20.0
+            ]
+          }
+        ]
+      },
+      "io_4": {
+        "if": "io_1",
+        "then": {
+          "if": {
+            "<=": [
+              "distance_cm_effective",
+              10.0
+            ]
+          },
+          "then": 1023.0,
+          "else": {
+            "if": {
+              ">=": [
+                "distance_cm_effective",
+                100.0
+              ]
+            },
+            "then": 0.0,
+            "else": {
+              "if": {
+                ">": [
+                  "distance_cm_effective",
+                  10.0
+                ]
+              },
+              "then": {
+                "floor": "((100.0 - distance_cm_effective) * 1023.0 / 90.0)"
+              },
+              "else": 1023.0
+            }
+          }
+        },
+        "else": 0.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个距离分级显示系统，使用 HC-SR04（Trig=D8，Echo=D9）、TM1637（CLK=D4，DIO=D5）、LED D13 和 PWM LED D9。数码管显示距离，LED D13 在近距离亮起，PWM LED D9 根据距离远近改变亮度，距离越近亮度越高。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_1=false with io_0=25.0 first, then io_1=false with io_0=100.0 while last valid distance retained",
+        "oracle": "io_2 stays based on retained last_valid distance and does not change with invalid sample; io_3 is false unless retained distance is <20.0; io_4 is 0.0 when io_1=false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个距离分级显示系统，使用 HC-SR04（Trig=D8，Echo=D9）、TM1637（CLK=D4，DIO=D5）、LED D13 和 PWM LED D9。数码管显示距离，LED D13 在近距离亮起，PWM LED D9 根据距离远近改变亮度，距离越近亮度越高。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_1=true, io_0=5.2 then io_1=true, io_0=50.0",
+        "oracle": "With 5.2cm, io_2=floor(5.2)=5, io_3=true, io_4 near maximum (1023.0); With 50.0cm, io_2=50, io_3=false, io_4 lower (proportional to (100-distance)/90)"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个距离分级显示系统，使用 HC-SR04（Trig=D8，Echo=D9）、TM1637（CLK=D4，DIO=D5）、LED D13 和 PWM LED D9。数码管显示距离，LED D13 在近距离亮起，PWM LED D9 根据距离远近改变亮度，距离越近亮度越高。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "io_1=true with boundary values io_0=20.0 then io_0=19.9",
+        "oracle": "At 20.0cm, io_3=false (not strictly near); at 19.9cm, io_3=true; io_2 matches floor of each distance; io_4 increases when moving closer"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute distance_cm_last_valid : Real := 0.0;\n    attribute distance_cm_effective : Real := 0.0;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign distance_cm_last_valid := io_0;\n      }\n      then if io_1 {\n        first start;\n        then assign distance_cm_effective := io_0;\n      } else {\n        first start;\n        then assign distance_cm_effective := distance_cm_last_valid;\n      }\n    }\n    out attribute io_2 : Integer = (if ((io_1) and (((distance_cm_effective) >= (2.0))) and (((distance_cm_effective) <= (400.0)))) ? RealFunctions::floor(distance_cm_effective) else 0);\n    out attribute io_3 : Boolean = ((io_1) and (((distance_cm_effective) < (20.0))));\n    out attribute io_4 : Real = (if io_1 ? (if ((distance_cm_effective) <= (10.0)) ? 1023.0 else (if ((distance_cm_effective) >= (100.0)) ? 0.0 else (if ((distance_cm_effective) > (10.0)) ? RealFunctions::floor(((100.0 - distance_cm_effective) * 1023.0 / 90.0)) else 1023.0))) else 0.0);\n  }\n  part system : Controller;\n}\n"
+}

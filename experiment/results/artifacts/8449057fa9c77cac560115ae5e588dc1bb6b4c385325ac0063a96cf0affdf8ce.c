@@ -1,0 +1,130 @@
+#include "define.h"
+/* Code of ProgramPage1 */
+/* Global Variable define of  */
+struct ProgramPage1_state ProgramPage1_instance;
+/* Global Variable define of  */
+int sysml_state_servoAngleAccumMs = 0;
+/* Global Variable define of  */
+double sysml_state_servoAngle1 = 0.0;
+/* Global Variable define of  */
+double sysml_state_servoAngle2 = 0.0;
+/* Init function of CompositeActor named "ProgramPage1" */
+void ProgramPage1_Init(struct ProgramPage1_state* self) {
+    /* Calculate code of CompositeActor named "ProgramPage1.reset" */
+    sysml_state_servoAngleAccumMs = 0;
+    sysml_state_servoAngle1 = 0.0;
+    sysml_state_servoAngle2 = 0.0;
+}
+/* Update function of CompositeActor named "ProgramPage1" */
+void ProgramPage1(int io_8, double* io_0, double* io_1, bool* io_2, bool* io_3, bool* io_4, bool* io_5, bool* io_6, bool* io_7, bool* io_9, bool* io_10, bool* io_11, bool* io_12, bool* io_13, bool* io_14) {
+    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+    bool sysml_lazy_0 = 0;
+    bool sysml_conditional_1 = 0;
+    bool sysml_lazy_2 = 0;
+    bool sysml_conditional_3 = 0;
+    bool sysml_lazy_4 = 0;
+    bool sysml_conditional_5 = 0;
+    bool sysml_lazy_6 = 0;
+    bool sysml_conditional_7 = 0;
+    sysml_state_servoAngleAccumMs = (sysml_state_servoAngleAccumMs + io_8);
+    if ((sysml_state_servoAngleAccumMs >= 2000)) {
+        sysml_state_servoAngleAccumMs = (sysml_state_servoAngleAccumMs - 2000);
+        if ((sysml_state_servoAngle1 >= 180.0)) {
+            sysml_state_servoAngle1 = 0.0;
+            sysml_state_servoAngle2 = 0.0;
+        }
+        else {
+            sysml_state_servoAngle1 = (sysml_state_servoAngle1 + 30.0);
+            sysml_state_servoAngle2 = (sysml_state_servoAngle2 + 30.0);
+        }
+        if ((sysml_state_servoAngle1 >= 180.0)) {
+            sysml_state_servoAngle1 = 0.0;
+            sysml_state_servoAngle2 = 0.0;
+        }
+    }
+    if ((sysml_state_servoAngle1 == 0.0)) {
+        sysml_state_servoAngle2 = 0.0;
+    }
+    double sysml_value_0 = 0;
+    sysml_value_0 = sysml_state_servoAngle1;
+    double sysml_value_1 = 0;
+    sysml_value_1 = sysml_state_servoAngle2;
+    bool sysml_value_2 = 0;
+    sysml_lazy_0 = sysml_state_servoAngle1 == 0.0;
+    if (sysml_lazy_0) {
+        sysml_lazy_0 = sysml_state_servoAngle2 == 0.0;
+    }
+    if (sysml_lazy_0) {
+        sysml_conditional_1 = false;
+    }
+    else {
+        sysml_conditional_1 = true;
+    }
+    sysml_value_2 = sysml_conditional_1;
+    bool sysml_value_3 = 0;
+    sysml_value_3 = false;
+    bool sysml_value_4 = 0;
+    sysml_value_4 = false;
+    bool sysml_value_5 = 0;
+    sysml_lazy_2 = sysml_state_servoAngle1 == 0.0;
+    if (sysml_lazy_2) {
+        sysml_lazy_2 = sysml_state_servoAngle2 == 0.0;
+    }
+    if (sysml_lazy_2) {
+        sysml_conditional_3 = false;
+    }
+    else {
+        sysml_conditional_3 = true;
+    }
+    sysml_value_5 = sysml_conditional_3;
+    bool sysml_value_6 = 0;
+    sysml_value_6 = false;
+    bool sysml_value_7 = 0;
+    sysml_value_7 = true;
+    bool sysml_value_8 = 0;
+    sysml_lazy_4 = (((double)(sysml_state_servoAngle1 + sysml_state_servoAngle2)) / 2.0) >= 0.0;
+    if (sysml_lazy_4) {
+        sysml_lazy_4 = (((double)(sysml_state_servoAngle1 + sysml_state_servoAngle2)) / 2.0) <= 90.0;
+    }
+    if (sysml_lazy_4) {
+        sysml_conditional_5 = true;
+    }
+    else {
+        sysml_conditional_5 = false;
+    }
+    sysml_value_8 = sysml_conditional_5;
+    bool sysml_value_9 = 0;
+    sysml_lazy_6 = (((double)(sysml_state_servoAngle1 + sysml_state_servoAngle2)) / 2.0) > 0.0;
+    if (sysml_lazy_6) {
+        sysml_lazy_6 = (((double)(sysml_state_servoAngle1 + sysml_state_servoAngle2)) / 2.0) <= 180.0;
+    }
+    if (sysml_lazy_6) {
+        sysml_conditional_7 = true;
+    }
+    else {
+        sysml_conditional_7 = false;
+    }
+    sysml_value_9 = sysml_conditional_7;
+    bool sysml_value_10 = 0;
+    sysml_value_10 = false;
+    bool sysml_value_11 = 0;
+    sysml_value_11 = false;
+    bool sysml_value_12 = 0;
+    sysml_value_12 = false;
+    bool sysml_value_13 = 0;
+    sysml_value_13 = false;
+    *io_0 = sysml_value_0;
+    *io_1 = sysml_value_1;
+    *io_2 = sysml_value_2;
+    *io_3 = sysml_value_3;
+    *io_4 = sysml_value_4;
+    *io_5 = sysml_value_5;
+    *io_6 = sysml_value_6;
+    *io_7 = sysml_value_7;
+    *io_9 = sysml_value_8;
+    *io_10 = sysml_value_9;
+    *io_11 = sysml_value_10;
+    *io_12 = sysml_value_11;
+    *io_13 = sysml_value_12;
+    *io_14 = sysml_value_13;
+}

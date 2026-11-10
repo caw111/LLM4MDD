@@ -1,0 +1,252 @@
+[
+  {
+    "name": "new_core",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Exercises released and pressed button levels repeatedly, requires the corresponding timestamp within the authorized 250ms response bound, checks that the opposite timezone is not reported after settling, and verifies advancing RTC time across a UTC day/month/year rollover. Also checks the required input configuration, serial baud, and setup deadline. This is finite nominal-operation coverage; the disclosed bench cannot simulate RTC connection failure, and no failure-response behavior is specified.",
+      "assumptions": [
+        "The supplied circuit overrides button bench defaults: pin 2 is externally pulled LOW through 10kΩ and becomes HIGH when pressed. Explicit released LOW levels are injected.",
+        "The RTC is a DS1307 on the supplied A4/A5 I2C wiring. Host RTC initialization succeeds.",
+        "rtc_epoch_s=1735689596 is a controlled clock-input scenario corresponding to 2024-12-31T23:59:56 UTC, replacing the diagram's default sensor time without changing wiring. The sketch must read the RTC, not set it.",
+        "Timestamp matching permits surrounding labels but requires the specified YYYY-MM-DDTHH:MM:SS timestamp representation.",
+        "The public operational profile supplies the 250ms button-response bound and 500ms setup deadline. No independent serial repetition period is imposed.",
+        "Forbidden opposite-timezone observation windows start 251ms after each transition, after the allowed response boundary."
+      ],
+      "horizon_ms": 12000,
+      "rtc_epoch_s": 1735689596,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 1500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 3200,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 4500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 6200,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 7500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 9200,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 10500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "setup",
+          "id": "setup_deadline",
+          "requirement_quote": "setup() must return within 500ms",
+          "max_ms": 500
+        },
+        {
+          "kind": "pin_mode",
+          "id": "button_input",
+          "requirement_quote": "Configure the button pin as an input",
+          "pin": 2,
+          "expected": 0
+        },
+        {
+          "kind": "serial",
+          "id": "initial_utc",
+          "requirement_quote": "The UTC timestamp is printed when the button is not pressed",
+          "from_ms": 0,
+          "to_ms": 750,
+          "regex": "2024-12-31T23:59:56",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "first_press",
+          "requirement_quote": "The UTC+9 timestamp is printed when the button is pressed",
+          "from_ms": 1500,
+          "to_ms": 1750,
+          "regex": "2025-01-01T08:59:57",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "first_release",
+          "requirement_quote": "The UTC timestamp is printed when the button is not pressed",
+          "from_ms": 3200,
+          "to_ms": 3450,
+          "regex": "2024-12-31T23:59:59",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "press_after_utc_year_rollover",
+          "requirement_quote": "The UTC+9 timestamp is printed when the button is pressed",
+          "from_ms": 4500,
+          "to_ms": 4750,
+          "regex": "2025-01-01T09:00:00",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "release_after_utc_year_rollover",
+          "requirement_quote": "The UTC timestamp is printed when the button is not pressed",
+          "from_ms": 6200,
+          "to_ms": 6450,
+          "regex": "2025-01-01T00:00:02",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "third_press",
+          "requirement_quote": "The UTC+9 timestamp is printed when the button is pressed",
+          "from_ms": 7500,
+          "to_ms": 7750,
+          "regex": "2025-01-01T09:00:03",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "third_release",
+          "requirement_quote": "The UTC timestamp is printed when the button is not pressed",
+          "from_ms": 9200,
+          "to_ms": 9450,
+          "regex": "2025-01-01T00:00:05",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "fourth_press",
+          "requirement_quote": "The UTC+9 timestamp is printed when the button is pressed",
+          "from_ms": 10500,
+          "to_ms": 10750,
+          "regex": "2025-01-01T09:00:06",
+          "min_count": 1,
+          "baud": 9600
+        },
+        {
+          "kind": "serial",
+          "id": "initial_release_no_shifted_time",
+          "requirement_quote": "Print the resulting timestamp",
+          "origin": "setup_complete",
+          "from_ms": 251,
+          "to_ms": 900,
+          "regex": "2025-01-01T0[89]:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "first_press_no_utc",
+          "requirement_quote": "Print the resulting timestamp",
+          "from_ms": 1751,
+          "to_ms": 3199,
+          "regex": "2024-12-31T23:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "first_release_no_shifted_time",
+          "requirement_quote": "Print the resulting timestamp",
+          "from_ms": 3451,
+          "to_ms": 4499,
+          "regex": "2025-01-01T0[89]:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "second_press_no_utc",
+          "requirement_quote": "Print the resulting timestamp",
+          "from_ms": 4751,
+          "to_ms": 6199,
+          "regex": "2025-01-01T00:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "second_release_no_shifted_time",
+          "requirement_quote": "Print the resulting timestamp",
+          "from_ms": 6451,
+          "to_ms": 7499,
+          "regex": "2025-01-01T09:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "third_press_no_utc",
+          "requirement_quote": "Print the resulting timestamp",
+          "from_ms": 7751,
+          "to_ms": 9199,
+          "regex": "2025-01-01T00:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "third_release_no_shifted_time",
+          "requirement_quote": "Print the resulting timestamp",
+          "from_ms": 9451,
+          "to_ms": 10499,
+          "regex": "2025-01-01T09:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "fourth_press_no_utc",
+          "requirement_quote": "Print the resulting timestamp",
+          "from_ms": 10751,
+          "to_ms": 12000,
+          "regex": "2025-01-01T00:[0-5][0-9]:[0-5][0-9]",
+          "min_count": 0,
+          "max_count": 0
+        }
+      ]
+    },
+    "source": "independently_designed_before_generation",
+    "reference_result": "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\workflow_completion_20261107\\run9_independent_native\\cases\\pceval_button_RTC_timezone\\reference_0\\result.json"
+  }
+]

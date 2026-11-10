@@ -1,0 +1,34 @@
+{
+  "controller": {
+    "states": [],
+    "updates": [],
+    "calculations": [
+      {
+        "name": "minimumAngle",
+        "type": "f64",
+        "expression": "io_0 * 90.0 / 1023.0"
+      },
+      {
+        "name": "maximumAngle",
+        "type": "f64",
+        "expression": "90.0 + (io_1 * 90.0 / 1023.0)"
+      }
+    ],
+    "outputs": {
+      "io_3": "minimumAngle + ((maximumAngle - minimumAngle) * io_2 / 1023.0)"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\nTask:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1) using three slide potentiometers (pot1, pot2, pot3). The servo motor's position will be determined by the combined input from the three potentiometers. Each potentiometer will control a specific aspect of the servo's behavior: one for the minimum angle, one for the maximum angle, and one for the current position.\n\nDetail Rules:\nInitialization: Upon powering on or resetting, the servo motor (servo1) should be set to its default position (0 degrees).\nPotentiometer Interaction:\n1. The first potentiometer (pot1) determines the minimum angle of the servo motor. The value of pot1 is mapped to a range of 0 to 90 degrees.\n2. The second potentiometer (pot2) determines the maximum angle of the servo motor. The value of pot2 is mapped to a range of 90 to 180 degrees.\n3. The third potentiometer (pot3) controls the current position of the servo motor. The value of pot3 is mapped to the range defined by the minimum (pot1) and maximum (pot2) angles.\n4. The servo motor's position should be updated continuously based on the current values of the potentiometers.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -408.8, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}], \"connections\": [[\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"pot3:GND\", \"mega:GND.1\", \"black\"], [\"pot3:VCC\", \"mega:5V\", \"red\"], [\"pot3:SIG\", \"mega:A5\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace and configuration inspection",
+        "stimulus": "Verify the Mega 2560 target and unchanged circuit connections, including pot1 on A3, pot2 on A4, pot3 on A5 and servo1 on D2. Power on and reset with declared initial inputs (0,0,0). On successive control steps apply (io_0,io_1,io_2) values (1023,0,0), (0,0,1023), (0,1023,1023), (0,1023,341), (1023,1023,341), (1023,0,341), and (341,682,341). Sweep io_2 from 0 to 1023 with several fixed io_0 and io_1 values.",
+        "oracle": "The target and all supplied wiring remain unchanged. The initial command and first output with declared initial inputs are 0 degrees. Subsequent listed commands are respectively 90, 90, 180, 60, 120, 90 and 70 degrees, within floating-point tolerance. On every control step, minimumAngle = io_0 * 90 / 1023, maximumAngle = 90 + io_1 * 90 / 1023, and io_3 = minimumAngle + (maximumAngle - minimumAngle) * io_2 / 1023. Each sweep is linear between its calculated endpoints; changes to any potentiometer affect the next command without a startup dwell."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    attribute minimumAngle : Real = io_0 * 90.0 / 1023.0;\n    attribute maximumAngle : Real = 90.0 + (io_1 * 90.0 / 1023.0);\n    out attribute io_3 : Real = minimumAngle + ((maximumAngle - minimumAngle) * io_2 / 1023.0);\n  }\n  part system : Controller;\n}\n"
+}

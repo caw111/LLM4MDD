@@ -1,0 +1,357 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_1",
+      "type": "i32"
+    },
+    {
+      "name": "io_2",
+      "type": "bool"
+    },
+    {
+      "name": "io_3",
+      "type": "i32"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_deltaPhase",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 - (100 * ((int)(((double)(arg0) / 100)) - ((((double)(arg0) / 100)) < (double)((int)(((double)(arg0) / 100))) ? 1 : 0))))"
+      }
+    },
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? (arg1 + 32400) : arg1)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_3"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_deltaPhase",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "reportNow"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_0"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_1"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "reportAge",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "previousPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "previousValid",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "reportNow",
+      "type": "bool",
+      "initial": "false"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "assign",
+          "state": "reportNow",
+          "expression": "false",
+          "sources": []
+        },
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_2"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "if",
+                "condition": "((!arg0) || (arg1 != arg2))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "previousValid"
+                  },
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "previousPressed"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "reportNow",
+                      "expression": "true",
+                      "sources": []
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "reportAge",
+                      "expression": "0",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "if",
+                      "condition": "(arg0 >= (100 - arg1))",
+                      "sources": [
+                        {
+                          "kind": "input",
+                          "name": "io_3"
+                        },
+                        {
+                          "kind": "state",
+                          "name": "reportAge"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "reportNow",
+                            "expression": "true",
+                            "sources": []
+                          }
+                        ]
+                      },
+                      "else": null
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "reportAge",
+                      "expression": "(arg0 + arg1)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "reportAge"
+                        },
+                        {
+                          "kind": "node",
+                          "id": "compute_deltaPhase",
+                          "port": "result"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "if",
+                      "condition": "(arg0 >= 100)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "reportAge"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "reportAge",
+                            "expression": "(arg0 - 100)",
+                            "sources": [
+                              {
+                                "kind": "state",
+                                "name": "reportAge"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "else": null
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "reportAge",
+                "expression": "0",
+                "sources": []
+              }
+            ]
+          }
+        },
+        {
+          "kind": "assign",
+          "state": "previousValid",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_2"
+            }
+          ]
+        },
+        {
+          "kind": "assign",
+          "state": "previousPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

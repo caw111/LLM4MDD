@@ -1,0 +1,292 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Checks that any integer-valued Sensor 0–5 reports match the constant ADC stimulus, accepting zero-padded decimal representations. Also verifies the explicitly required output modes on pins 2–5. No reports are required within the observation horizon because no scan period or maximum reporting latency is specified. Silence, missing channels, malformed output, continuous scanning, baud configuration, and correct channel routing remain unverified. The host API cannot independently stimulate the six multiplexer inputs.",
+      "assumptions": [
+        "The supplied wiring is authoritative: multiplexer COM is A0, S0–S3 are digital pins 2–5, and EN is grounded.",
+        "The disclosed raw ADC host convention is used. Constant A0 stimulation represents all six sensor outputs having the same ADC value; it does not independently model I0–I5.",
+        "No lux-to-ADC transfer function is assumed.",
+        "No scan period or maximum reporting latency is specified. The 12000 ms horizon is an observation duration, not a required scan-time bound.",
+        "Serial communication uses the supplied 9600 baud setting.",
+        "The forbidden-report regex accepts decimal leading zeros and an optional plus sign for the expected positive value. Missing reports and reports outside the checked integer format are outside this partial suite.",
+        "Pin-mode checks enforce the explicit requirement to configure pins 2–5 as outputs, not an inferred programming style."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 537
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "serial",
+          "id": "no_incorrect_sensor_value",
+          "requirement_quote": "Print each sensor value to the Serial Monitor in the format: \"Sensor {channel}: {light value}\"",
+          "from_ms": 0,
+          "to_ms": 12000,
+          "regex": "^Sensor [0-5]: (?!\\+?0*537\\r?$)[+-]?[0-9]+\\r?$",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "pin_mode",
+          "id": "s0_output",
+          "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+          "pin": 2,
+          "expected": 1
+        },
+        {
+          "kind": "pin_mode",
+          "id": "s1_output",
+          "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+          "pin": 3,
+          "expected": 1
+        },
+        {
+          "kind": "pin_mode",
+          "id": "s2_output",
+          "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+          "pin": 4,
+          "expected": 1
+        },
+        {
+          "kind": "pin_mode",
+          "id": "s3_output",
+          "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+          "pin": 5,
+          "expected": 1
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t selectPins[4] = {2, 3, 4, 5};\n\nint readChannel(uint8_t channel) {\n  for (uint8_t bit = 0; bit < 4; ++bit) {\n    digitalWrite(selectPins[bit], (channel >> bit) & 1);\n  }\n  delayMicroseconds(20);\n  analogRead(A0);\n  return analogRead(A0);\n}\n\nvoid setup() {\n  for (uint8_t bit = 0; bit < 4; ++bit) {\n    pinMode(selectPins[bit], OUTPUT);\n    digitalWrite(selectPins[bit], LOW);\n  }\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  for (uint8_t channel = 0; channel < 6; ++channel) {\n    int value = readChannel(channel);\n    Serial.print(\"Sensor \");\n    Serial.print(channel);\n    Serial.print(\": \");\n    Serial.println(value);\n  }\n  delay(100);\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Checks that any integer-valued Sensor 0–5 reports match the constant ADC stimulus, accepting zero-padded decimal representations. Also verifies the explicitly required output modes on pins 2–5. No reports are required within the observation horizon because no scan period or maximum reporting latency is specified. Silence, missing channels, malformed output, continuous scanning, baud configuration, and correct channel routing remain unverified. The host API cannot independently stimulate the six multiplexer inputs.",
+      "assumptions": [
+        "The supplied wiring is authoritative: multiplexer COM is A0, S0–S3 are digital pins 2–5, and EN is grounded.",
+        "The disclosed raw ADC host convention is used. Constant A0 stimulation represents all six sensor outputs having the same ADC value; it does not independently model I0–I5.",
+        "No lux-to-ADC transfer function is assumed.",
+        "No scan period or maximum reporting latency is specified. The 12000 ms horizon is an observation duration, not a required scan-time bound.",
+        "Serial communication uses the supplied 9600 baud setting.",
+        "The forbidden-report regex accepts decimal leading zeros and an optional plus sign for the expected positive value. Missing reports and reports outside the checked integer format are outside this partial suite.",
+        "Pin-mode checks enforce the explicit requirement to configure pins 2–5 as outputs, not an inferred programming style."
+      ],
+      "horizon_ms": 3200,
+      "input_steps": [],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "serial",
+          "id": "channel_0_0",
+          "from_ms": 50,
+          "to_ms": 1400,
+          "regex": "^Sensor 0: 0$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_1_0",
+          "from_ms": 50,
+          "to_ms": 1400,
+          "regex": "^Sensor 1: 203$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_2_0",
+          "from_ms": 50,
+          "to_ms": 1400,
+          "regex": "^Sensor 2: 405$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_3_0",
+          "from_ms": 50,
+          "to_ms": 1400,
+          "regex": "^Sensor 3: 607$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_4_0",
+          "from_ms": 50,
+          "to_ms": 1400,
+          "regex": "^Sensor 4: 809$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_5_0",
+          "from_ms": 50,
+          "to_ms": 1400,
+          "regex": "^Sensor 5: 1023$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_0_1500",
+          "from_ms": 1550,
+          "to_ms": 2900,
+          "regex": "^Sensor 0: 901$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_1_1500",
+          "from_ms": 1550,
+          "to_ms": 2900,
+          "regex": "^Sensor 1: 712$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_2_1500",
+          "from_ms": 1550,
+          "to_ms": 2900,
+          "regex": "^Sensor 2: 523$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_3_1500",
+          "from_ms": 1550,
+          "to_ms": 2900,
+          "regex": "^Sensor 3: 334$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_4_1500",
+          "from_ms": 1550,
+          "to_ms": 2900,
+          "regex": "^Sensor 4: 145$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "channel_5_1500",
+          "from_ms": 1550,
+          "to_ms": 2900,
+          "regex": "^Sensor 5: 0$",
+          "min_count": 3,
+          "requirement_quote": "Read and repeatedly report the independent ADC value of each connected input channel."
+        },
+        {
+          "kind": "serial",
+          "id": "no_unwired_channels",
+          "from_ms": 0,
+          "to_ms": 3200,
+          "regex": "^Sensor (?:[6-9]|1[0-5]):",
+          "min_count": 0,
+          "max_count": 0,
+          "requirement_quote": "Only scan the wired analog multiplexer channels."
+        }
+      ],
+      "analog_multiplexers": [
+        {
+          "signal_pin": "A0",
+          "select_pins": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "samples": [
+            {
+              "at_ms": 0,
+              "channel": 0,
+              "value": 0
+            },
+            {
+              "at_ms": 0,
+              "channel": 1,
+              "value": 203
+            },
+            {
+              "at_ms": 0,
+              "channel": 2,
+              "value": 405
+            },
+            {
+              "at_ms": 0,
+              "channel": 3,
+              "value": 607
+            },
+            {
+              "at_ms": 0,
+              "channel": 4,
+              "value": 809
+            },
+            {
+              "at_ms": 0,
+              "channel": 5,
+              "value": 1023
+            },
+            {
+              "at_ms": 1500,
+              "channel": 0,
+              "value": 901
+            },
+            {
+              "at_ms": 1500,
+              "channel": 1,
+              "value": 712
+            },
+            {
+              "at_ms": 1500,
+              "channel": 2,
+              "value": 523
+            },
+            {
+              "at_ms": 1500,
+              "channel": 3,
+              "value": 334
+            },
+            {
+              "at_ms": 1500,
+              "channel": 4,
+              "value": 145
+            },
+            {
+              "at_ms": 1500,
+              "channel": 5,
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

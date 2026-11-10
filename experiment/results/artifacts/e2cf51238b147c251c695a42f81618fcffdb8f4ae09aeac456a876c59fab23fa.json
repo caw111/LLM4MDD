@@ -1,0 +1,78 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "pressedDurationS",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "running",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_0 and not previousPressed",
+        "then": [
+          {
+            "assign": "running",
+            "value": true
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "not io_0 and previousPressed",
+        "then": [
+          {
+            "assign": "running",
+            "value": false
+          },
+          {
+            "assign": "pressedDurationS",
+            "value": 0.0
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "running and io_0",
+        "then": [
+          {
+            "assign": "pressedDurationS",
+            "value": 0.0
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": "not running and previousPressed",
+      "serial_0_value_0": "pressedDurationS"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "# Button Duration\n\n## Project Description\nThis is an Arduino project that determines how long a switch is pressed\n\n## Hardware Components\n- Arduino Uno\n- 10kΩ resistor\n- Push Button\n\n## Circuit Description\nCircuit is designed to use a pull-up resistor. When the button is not pressed, the pin4 pin is connected to 5V through a 10kΩ resistor. When the button is pressed, the pin4 pin is connected to gnd2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Configure the specified button pin as INPUT\n3. Continuously monitor the button state and measure how long it is pressed\n4. Print the duration in second, in the following format: \"Button pressed duration: {duration}s\"\n\n## Success Criteria\nThe test is successful when:\n1. The pressed duration in seconds is correctly printed in the given format\n\n## Notes for Implementation\n- Include a short delay in the loop to handle switch bouncing\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the pushbutton connected to different pins.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1,\n    \"author\": \"Blind Author\",\n    \"description\": \"Manage pull up registor button input\",\n    \"config\": {\n        \"button_pin\": 4,\n        \"gnd_pin\": \"GND.2\"\n    },\n    \"editor\": \"wokwi\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -163.8,\n            \"left\": 79.8,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -92.05,\n            \"left\": 48,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"resistor1:2\",\n            \"push button1:2.r\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:1\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with io_0=false, then drive io_0=true for several consecutive control steps, then drive io_0=false for one step.",
+        "oracle": "serial_0_trigger becomes true on the step where the press ends (falling edge), and serial_0_value_0 is the reported pressed duration in seconds for that same step."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute pressedDurationS : Real := 0.0;\n    attribute running : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and not previousPressed {\n        first start;\n        then assign running := true;\n      }\n      then if not io_0 and previousPressed {\n        first start;\n        then assign running := false;\n        then assign pressedDurationS := 0.0;\n      }\n      then if running and io_0 {\n        first start;\n        then assign pressedDurationS := 0.0;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute serial_0_trigger : Boolean = not running and previousPressed;\n    out attribute serial_0_value_0 : Real = pressedDurationS;\n  }\n  part system : Controller;\n}\n"
+}

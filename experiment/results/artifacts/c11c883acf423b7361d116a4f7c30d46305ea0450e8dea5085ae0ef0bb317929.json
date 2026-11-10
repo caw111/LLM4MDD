@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Wiring preservation: D4 is connected to a pushbutton node with a 10k resistor to GND.2 (pull-down). When not pressed, D4 reads LOW; when pressed, D4 reads HIGH.",
+    "Serial framing is line_or_idle with idle_timeout_ms=20 as specified.",
+    "Use separate serial report conditions for the two business states ('Button pressed' vs 'Button not pressed'); cadence and gating are handled in the SysML model via the triggers, not by device requests.",
+    "No additional pins were provided for overrides; only D4 is configured as the button input."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Button pressed status (HIGH when pressed, LOW when not pressed)",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D4\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report gate for serial message 'Button pressed' when button reads HIGH",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Reported button pressed state",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Button pressed\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "Button pressed"
+      }
+    },
+    {
+      "name": "serial_1_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report gate for serial message 'Button not pressed' when button reads LOW",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_1_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Reported button pressed state",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Button not pressed\", \"trigger\": \"serial_1_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_1_trigger",
+        "baud": 9600,
+        "label": "Button not pressed"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Button Pulldown\n\n## Project Description\nThis is a simple Arduino project that prints whether the button is pressed.\n\n## Hardware Components\n- Arduino Uno\n- 10kΩ resistor\n- Push Button\n\n## Circuit Description\nCircuit is designed to use a pull-down resistor. When the button is not pressed, the pin4 pin is connected to gnd2 through a 10kΩ resistor. When the button is pressed, the pin4 pin is connected to 5V.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Configure the specified button pin as INPUT\n3. Continuously check the button value, and print \"Button pressed\" if the value is HIGH, or print \"Button not pressed\" if the value is LOW.\n\n## Success Criteria\nThe test is successful when:\n1. \"Button pressed\" is printed when the button is pressed\n2. \"Button not pressed\" is printed when the button is not pressed\n\n## Notes for Implementation\n- The pin number used should match the circuit diagram\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the pushbutton connected to different pins.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1,\n    \"author\": \"Blind Author\",\n    \"description\": \"Manage pull down registor button input\",\n    \"config\": {\n        \"button_pin\": 4,\n        \"gnd_pin\": \"GND.2\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -144.6,\n            \"left\": 70.2,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -63.25,\n            \"left\": 38.4,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"resistor1:2\",\n            \"push button1:2.r\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:1\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "effective_requirement": "# Button Pulldown\n\n## Project Description\nThis is a simple Arduino project that prints whether the button is pressed.\n\n## Hardware Components\n- Arduino Uno\n- 10kΩ resistor\n- Push Button\n\n## Circuit Description\nCircuit is designed to use a pull-down resistor. When the button is not pressed, the pin4 pin is connected to gnd2 through a 10kΩ resistor. When the button is pressed, the pin4 pin is connected to 5V.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Configure the specified button pin as INPUT\n3. Continuously check the button value, and print \"Button pressed\" if the value is HIGH, or print \"Button not pressed\" if the value is LOW.\n\n## Success Criteria\nThe test is successful when:\n1. \"Button pressed\" is printed when the button is pressed\n2. \"Button not pressed\" is printed when the button is not pressed\n\n## Notes for Implementation\n- The pin number used should match the circuit diagram\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the pushbutton connected to different pins.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1,\n    \"author\": \"Blind Author\",\n    \"description\": \"Manage pull down registor button input\",\n    \"config\": {\n        \"button_pin\": 4,\n        \"gnd_pin\": \"GND.2\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -144.6,\n            \"left\": 70.2,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -63.25,\n            \"left\": 38.4,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"resistor1:2\",\n            \"push button1:2.r\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:1\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Blind Author",
+        "description": "Manage pull down registor button input",
+        "config": {
+          "button_pin": 4,
+          "gnd_pin": "GND.2"
+        },
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "push button1",
+            "top": -144.6,
+            "left": 70.2,
+            "rotate": 90,
+            "attrs": {
+              "color": "green",
+              "xray": "1"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor1",
+            "top": -63.25,
+            "left": 38.4,
+            "attrs": {
+              "value": "10000"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "resistor1:2",
+            "push button1:2.r",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor1:1",
+            "arduino uno1:GND.2",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "push button1:2.l",
+            "arduino uno1:4",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "push button1:1.r",
+            "arduino uno1:5V",
+            "green",
+            [
+              "v0"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# Button Pulldown\n\n## Project Description\nThis is a simple Arduino project that prints whether the button is pressed.\n\n## Hardware Components\n- Arduino Uno\n- 10kΩ resistor\n- Push Button\n\n## Circuit Description\nCircuit is designed to use a pull-down resistor. When the button is not pressed, the pin4 pin is connected to gnd2 through a 10kΩ resistor. When the button is pressed, the pin4 pin is connected to 5V.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Configure the specified button pin as INPUT\n3. Continuously check the button value, and print \"Button pressed\" if the value is HIGH, or print \"Button not pressed\" if the value is LOW.\n\n## Success Criteria\nThe test is successful when:\n1. \"Button pressed\" is printed when the button is pressed\n2. \"Button not pressed\" is printed when the button is not pressed\n\n## Notes for Implementation\n- The pin number used should match the circuit diagram\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the pushbutton connected to different pins.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1,\n    \"author\": \"Blind Author\",\n    \"description\": \"Manage pull down registor button input\",\n    \"config\": {\n        \"button_pin\": 4,\n        \"gnd_pin\": \"GND.2\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -144.6,\n            \"left\": 70.2,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -63.25,\n            \"left\": 38.4,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"resistor1:2\",\n            \"push button1:2.r\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:1\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_value_0": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      },
+      {
+        "id": "serial_1",
+        "trigger_port": "serial_1_trigger",
+        "value_ports": [
+          "serial_1_value_0"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Checks MODE2 for nonzero, stable illumination rather than requiring maximum brightness, after both newline-terminated and idle-terminated commands and repeated mode changes. MODE1 commands are exercised, but fading and resumed fading cannot be reliably asserted using the available check schemas without imposing an unspecified fade rate or phase: fixed-time 'different' comparisons can reject a valid slow fade or sample equal phases of a periodic fade. Consequently this test does not independently verify MODE1 or claim full behavioral coverage.",
+  "assumptions": [
+    "Relies on the disclosed bench default for the D9 LED: active HIGH, with the cathode connected through a resistor to GND.",
+    "MODE2 requires steady nonzero illumination; neither full brightness nor a particular nonzero PWM duty is specified.",
+    "The authoritative serial configuration specifies 9600 baud, newline-or-idle framing, and a 20 ms idle timeout.",
+    "Startup state, MODE1 fade rate, brightness range, direction, phase, and behavior on repeated MODE1 commands are unspecified. The reference's choices for these parameters are not imposed by the checks.",
+    "PWM observations include digital HIGH as duty 255. Stability comparisons allow no change in commanded duty during the sampled MODE2 holds."
+  ],
+  "horizon_ms": 29000,
+  "input_steps": [],
+  "serial_inputs": [
+    {
+      "at_ms": 500,
+      "text": "MODE1\n"
+    },
+    {
+      "at_ms": 9500,
+      "text": "MODE2\n"
+    },
+    {
+      "at_ms": 13000,
+      "text": "MODE1\n"
+    },
+    {
+      "at_ms": 23000,
+      "text": "MODE2\n"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "id": "pwm_9_10500_0",
+      "kind": "pwm",
+      "at_ms": 10500,
+      "requirement_quote": "MODE1 使 D9 渐变，MODE2 保持常亮",
+      "min": 1,
+      "max": 255,
+      "pin": 9
+    },
+    {
+      "id": "pwm_9_12000_1",
+      "kind": "pwm",
+      "at_ms": 12000,
+      "requirement_quote": "MODE1 使 D9 渐变，MODE2 保持常亮",
+      "min": 1,
+      "max": 255,
+      "pin": 9
+    },
+    {
+      "id": "pwm_9_24500_2",
+      "kind": "pwm",
+      "at_ms": 24500,
+      "requirement_quote": "MODE1 使 D9 渐变，MODE2 保持常亮",
+      "min": 1,
+      "max": 255,
+      "pin": 9
+    },
+    {
+      "id": "pwm_9_28000_3",
+      "kind": "pwm",
+      "at_ms": 28000,
+      "requirement_quote": "MODE1 使 D9 渐变，MODE2 保持常亮",
+      "min": 1,
+      "max": 255,
+      "pin": 9
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <string.h>\n\nconst byte LED_PIN = 9;\nchar command[24];\nbyte used = 0;\nbool overflowed = false;\nunsigned long lastByte = 0;\nunsigned long lastFade = 0;\nbyte mode = 0;\nint brightness = 0;\nint direction = 1;\n\nvoid finishCommand() {\n  command[used] = '\\0';\n  if (!overflowed) {\n    if (strcmp(command, \"MODE1\") == 0) {\n      mode = 1;\n      brightness = 0;\n      direction = 1;\n      lastFade = millis();\n      analogWrite(LED_PIN, brightness);\n    } else if (strcmp(command, \"MODE2\") == 0) {\n      mode = 2;\n      analogWrite(LED_PIN, 255);\n    }\n  }\n  used = 0;\n  overflowed = false;\n}\n\nvoid setup() {\n  pinMode(LED_PIN, OUTPUT);\n  analogWrite(LED_PIN, 0);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByte = millis();\n    if (c == '\\n' || c == '\\r') {\n      finishCommand();\n    } else if (used < sizeof(command) - 1) {\n      command[used++] = c;\n    } else {\n      overflowed = true;\n    }\n  }\n  unsigned long now = millis();\n  if ((used || overflowed) && now - lastByte >= 20) {\n    finishCommand();\n  }\n  if (mode == 1 && now - lastFade >= 10) {\n    lastFade = now;\n    brightness += direction;\n    if (brightness >= 255) {\n      brightness = 255;\n      direction = -1;\n    } else if (brightness <= 0) {\n      brightness = 0;\n      direction = 1;\n    }\n    analogWrite(LED_PIN, brightness);\n  }\n}\n",
+  "core_criterion": "MODE1 使 D9 渐变，MODE2 保持常亮"
+}

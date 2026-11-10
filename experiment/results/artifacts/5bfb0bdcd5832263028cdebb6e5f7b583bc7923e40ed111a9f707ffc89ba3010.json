@@ -1,0 +1,286 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "occupied",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "overtimeActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "startMin",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "endMin",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_8_valid",
+            {
+              "==": [
+                "io_8",
+                0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "startMin",
+            "value": 0
+          },
+          {
+            "assign": "endMin",
+            "value": 0
+          },
+          {
+            "assign": "occupied",
+            "value": false
+          },
+          {
+            "assign": "overtimeActive",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_8_valid",
+            {
+              "==": [
+                "io_8",
+                1
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "startMin",
+            "value": 10
+          },
+          {
+            "assign": "endMin",
+            "value": 20
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_8_valid",
+            {
+              "==": [
+                "io_8",
+                2
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "startMin",
+            "value": 30
+          },
+          {
+            "assign": "endMin",
+            "value": 60
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "and": [
+                {
+                  "==": [
+                    "startMin",
+                    0
+                  ]
+                },
+                {
+                  "==": [
+                    "endMin",
+                    0
+                  ]
+                }
+              ]
+            },
+            false
+          ]
+        },
+        "then": []
+      },
+      {
+        "if": "io_4",
+        "then": [
+          {
+            "assign": "occupied",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "io_5"
+            },
+            "occupied"
+          ]
+        },
+        "then": [
+          {
+            "assign": "occupied",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "occupied",
+            "value": false
+          },
+          {
+            "assign": "overtimeActive",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "occupied",
+            {
+              ">": [
+                "startMin",
+                0
+              ]
+            },
+            {
+              ">": [
+                "endMin",
+                "startMin"
+              ]
+            },
+            {
+              ">=": [
+                "startMin",
+                "endMin"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "overtimeActive",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "overtimeActive",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "prevPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "occupied",
+        "then": true,
+        "else": false
+      },
+      "io_2": {
+        "if": "overtimeActive",
+        "then": 1000,
+        "else": 0
+      },
+      "io_3": {
+        "if": "occupied",
+        "then": 1,
+        "else": 0
+      },
+      "io_6": {
+        "if": {
+          "and": [
+            {
+              "not": "occupied"
+            },
+            {
+              "not": "overtimeActive"
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "io_7": {
+        "if": "occupied",
+        "then": true,
+        "else": false
+      },
+      "serial_0_trigger": {
+        "if": {
+          "and": [
+            "io_8_valid",
+            {
+              ">": [
+                "endMin",
+                0
+              ]
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": "startMin",
+      "serial_0_value_1": "endMin"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个会议室预约占用提示系统，使用 PIR 人体红外 D2、门磁 D3、TM1637（CLK=D4，DIO=D5）、LED 绿色 D12、红色 D13、蜂鸣器 D6 和串口。串口可输入预约开始和结束时间；到预约开始前 1 分钟闪烁绿灯提醒，有人进入后显示 occupied 并点亮红灯；预约结束后若仍有人在内则蜂鸣提示并输出 overtime use。按钮 D7 用于人工释放房间。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "依次：io_4=true（有人进入），保持 io_5=true；随后置 io_0 发生一次上升沿（人工释放）；观察同一控制步输出。",
+        "oracle": "进入后：io_7=true且io_1=true且io_3=1；释放上升沿步：occupied与overtimeActive清零，使 io_7=false且io_1=false且io_2=0且io_3=0。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Boolean;\n    in attribute io_8 : Integer;\n    in attribute io_8_valid : Boolean;\n    attribute occupied : Boolean := false;\n    attribute overtimeActive : Boolean := false;\n    attribute startMin : Integer := 0;\n    attribute endMin : Integer := 0;\n    attribute prevPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_8_valid) and (((io_8) == (0)))) {\n        first start;\n        then assign startMin := 0;\n        then assign endMin := 0;\n        then assign occupied := false;\n        then assign overtimeActive := false;\n      }\n      then if ((io_8_valid) and (((io_8) == (1)))) {\n        first start;\n        then assign startMin := 10;\n        then assign endMin := 20;\n      }\n      then if ((io_8_valid) and (((io_8) == (2)))) {\n        first start;\n        then assign startMin := 30;\n        then assign endMin := 60;\n      }\n      then if ((((((startMin) == (0))) and (((endMin) == (0))))) and (false)) {\n        first start;\n        then done;\n      }\n      then if io_4 {\n        first start;\n        then assign occupied := true;\n      }\n      then if (((not io_5)) and (occupied)) {\n        first start;\n        then assign occupied := false;\n      }\n      then if ((io_0) and ((not prevPressed))) {\n        first start;\n        then assign occupied := false;\n        then assign overtimeActive := false;\n      }\n      then if ((occupied) and (((startMin) > (0))) and (((endMin) > (startMin))) and (((startMin) >= (endMin)))) {\n        first start;\n        then assign overtimeActive := true;\n      } else {\n        first start;\n        then assign overtimeActive := false;\n      }\n      then assign prevPressed := io_0;\n    }\n    out attribute io_1 : Boolean = (if occupied ? true else false);\n    out attribute io_2 : Integer = (if overtimeActive ? 1000 else 0);\n    out attribute io_3 : Integer = (if occupied ? 1 else 0);\n    out attribute io_6 : Boolean = (if (((not occupied)) and ((not overtimeActive))) ? true else false);\n    out attribute io_7 : Boolean = (if occupied ? true else false);\n    out attribute serial_0_trigger : Boolean = (if ((io_8_valid) and (((endMin) > (0)))) ? true else false);\n    out attribute serial_0_value_0 : Integer = startMin;\n    out attribute serial_0_value_1 : Integer = endMin;\n  }\n  part system : Controller;\n}\n"
+}

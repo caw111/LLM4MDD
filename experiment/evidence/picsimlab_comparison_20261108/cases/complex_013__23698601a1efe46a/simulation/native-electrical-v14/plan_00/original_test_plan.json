@@ -1,0 +1,218 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests both local buttons, both serial light commands, newline and idle framing, buzzer activity, operation-count growth, and repeated counter reset. Exact counting rules, button hold/repeat behavior, buzzer frequency/duration, and initial light state are unspecified; the suite does not impose those choices.",
+  "assumptions": [
+    "Uses bench defaults: D2 and D3 buttons connect to GND and use INPUT_PULLUP; the D13 LED is active HIGH.",
+    "D6 drives a passive buzzer, consistent with the authoritative tone_output role.",
+    "COUNT_RESET resets the displayed accumulated operation count to zero. The requirement does not specify whether redundant light commands or held buttons count repeatedly, so these cases are not assigned exact expected counts.",
+    "BEEP frequency and duration are missing. Only carrier activity following the command is checked, not a particular frequency or duration.",
+    "The reference chooses one count per debounced button press or recognized non-reset command and a 200 ms, 1000 Hz beep; these choices are not required by the checks."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 3400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 3650,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4600,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 4850,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 10200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 10450,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [
+    {
+      "at_ms": 400,
+      "text": "COUNT_RESET\n"
+    },
+    {
+      "at_ms": 1000,
+      "text": "LIGHT_ON\n"
+    },
+    {
+      "at_ms": 2200,
+      "text": "LIGHT_OFF\n"
+    },
+    {
+      "at_ms": 5800,
+      "text": "LIGHT_ON"
+    },
+    {
+      "at_ms": 7000,
+      "text": "BEEP\n"
+    },
+    {
+      "at_ms": 8200,
+      "text": "LIGHT_OFF"
+    },
+    {
+      "at_ms": 9200,
+      "text": "COUNT_RESET"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "display",
+      "id": "reset_initial",
+      "requirement_quote": "COUNT_RESET",
+      "name": "tm:4:5",
+      "at_ms": 800,
+      "expected": "0",
+      "numeric": true
+    },
+    {
+      "kind": "gpio",
+      "id": "serial_on",
+      "requirement_quote": "LIGHT_ON",
+      "pin": 13,
+      "at_ms": 1600,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "serial_off",
+      "requirement_quote": "LIGHT_OFF",
+      "pin": 13,
+      "at_ms": 2800,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "local_on",
+      "requirement_quote": "D2 本地开灯",
+      "pin": 13,
+      "at_ms": 4000,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "local_off",
+      "requirement_quote": "D3 本地关灯",
+      "pin": 13,
+      "at_ms": 5200,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "operation_count_growth",
+      "requirement_quote": "数码管显示累计操作次数",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        800,
+        1600,
+        2800,
+        4000,
+        5200
+      ],
+      "relation": "increasing",
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "idle_framed_on",
+      "requirement_quote": "framing=line_or_idle; idle_timeout_ms=20",
+      "pin": 13,
+      "at_ms": 6400,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "edges",
+      "id": "beep_carrier",
+      "requirement_quote": "BEEP",
+      "pin": 6,
+      "from_ms": 7000,
+      "to_ms": 8100,
+      "min_count": 2
+    },
+    {
+      "kind": "gpio",
+      "id": "idle_framed_off",
+      "requirement_quote": "LIGHT_OFF",
+      "pin": 13,
+      "at_ms": 8800,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "display",
+      "id": "reset_again",
+      "requirement_quote": "COUNT_RESET",
+      "name": "tm:4:5",
+      "at_ms": 9800,
+      "expected": "0",
+      "numeric": true
+    },
+    {
+      "kind": "gpio",
+      "id": "local_after_reset",
+      "requirement_quote": "D2 本地开灯",
+      "pin": 13,
+      "at_ms": 11000,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "count_resumes",
+      "requirement_quote": "数码管显示累计操作次数",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        9800,
+        11000
+      ],
+      "relation": "increasing",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n#include <string.h>\n\nTM1637Display display(4, 5);\nunsigned long countOps = 0;\nchar command[48];\nuint8_t commandLen = 0;\nunsigned long lastByte = 0;\nstruct Button {\n  uint8_t pin;\n  bool raw;\n  bool stable;\n  unsigned long changed;\n};\nButton buttons[2] = {{2, HIGH, HIGH, 0}, {3, HIGH, HIGH, 0}};\n\nvoid showCount() {\n  display.showNumberDec((int)(countOps % 10000UL), false);\n}\nvoid operate(uint8_t operation) {\n  if (operation == 3) {\n    countOps = 0;\n  } else {\n    if (operation == 0) digitalWrite(13, HIGH);\n    if (operation == 1) digitalWrite(13, LOW);\n    if (operation == 2) tone(6, 1000, 200);\n    ++countOps;\n  }\n  showCount();\n}\nvoid dispatch() {\n  if (!commandLen) return;\n  command[commandLen] = '\\0';\n  if (strcmp(command, \"LIGHT_ON\") == 0) operate(0);\n  else if (strcmp(command, \"LIGHT_OFF\") == 0) operate(1);\n  else if (strcmp(command, \"BEEP\") == 0) operate(2);\n  else if (strcmp(command, \"COUNT_RESET\") == 0) operate(3);\n  commandLen = 0;\n}\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(3, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n  pinMode(6, OUTPUT);\n  digitalWrite(13, LOW);\n  digitalWrite(6, LOW);\n  Serial.begin(9600);\n  display.setBrightness(7);\n  showCount();\n}\nvoid loop() {\n  while (Serial.available()) {\n    char c = (char)Serial.read();\n    lastByte = millis();\n    if (c == '\\n' || c == '\\r') dispatch();\n    else if (commandLen < sizeof(command) - 1) command[commandLen++] = c;\n  }\n  unsigned long now = millis();\n  if (commandLen && now - lastByte >= 20) dispatch();\n  for (uint8_t i = 0; i < 2; ++i) {\n    Button &b = buttons[i];\n    bool value = digitalRead(b.pin);\n    if (value != b.raw) {\n      b.raw = value;\n      b.changed = now;\n    }\n    if (value != b.stable && now - b.changed >= 30) {\n      b.stable = value;\n      if (value == LOW) operate(i);\n    }\n  }\n}\n"
+}

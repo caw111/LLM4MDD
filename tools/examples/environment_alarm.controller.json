@@ -1,0 +1,198 @@
+{
+  "states": [
+    {
+      "name": "displayElapsed",
+      "type": "i32",
+      "initial": 0
+    },
+    {
+      "name": "showDistance",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "alarmElapsed",
+      "type": "i32",
+      "initial": 0
+    },
+    {
+      "name": "reportElapsed",
+      "type": "i32",
+      "initial": 0
+    },
+    {
+      "name": "hot",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "near",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "wasAlarm",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "previousHot",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "previousNear",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "sendReport",
+      "type": "bool",
+      "initial": false
+    }
+  ],
+  "updates": [
+    {
+      "assign": "displayElapsed",
+      "value": "displayElapsed + elapsed"
+    },
+    {
+      "if": "displayElapsed >= 2000",
+      "then": [
+        {
+          "assign": "displayElapsed",
+          "value": "displayElapsed - 2000"
+        },
+        {
+          "assign": "showDistance",
+          "value": "not showDistance"
+        }
+      ]
+    },
+    {
+      "assign": "hot",
+      "value": "temperatureValid and temperatureC > 32.0"
+    },
+    {
+      "assign": "near",
+      "value": "distanceValid and distanceCm < 15.0"
+    },
+    {
+      "assign": "sendReport",
+      "value": false
+    },
+    {
+      "if": "hot or near",
+      "then": [
+        {
+          "if": "not wasAlarm",
+          "then": [
+            {
+              "assign": "alarmElapsed",
+              "value": 0
+            },
+            {
+              "assign": "reportElapsed",
+              "value": 0
+            },
+            {
+              "assign": "sendReport",
+              "value": true
+            }
+          ],
+          "else": [
+            {
+              "assign": "alarmElapsed",
+              "value": "alarmElapsed + elapsed"
+            },
+            {
+              "assign": "reportElapsed",
+              "value": "reportElapsed + elapsed"
+            }
+          ]
+        },
+        {
+          "if": "alarmElapsed >= 1000",
+          "then": [
+            {
+              "assign": "alarmElapsed",
+              "value": "alarmElapsed - 1000"
+            }
+          ]
+        },
+        {
+          "if": "reportElapsed >= 1000",
+          "then": [
+            {
+              "assign": "reportElapsed",
+              "value": "reportElapsed - 1000"
+            },
+            {
+              "assign": "sendReport",
+              "value": true
+            }
+          ]
+        },
+        {
+          "if": "hot != previousHot or near != previousNear",
+          "then": [
+            {
+              "assign": "sendReport",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "else": [
+        {
+          "assign": "alarmElapsed",
+          "value": 0
+        },
+        {
+          "assign": "reportElapsed",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "assign": "wasAlarm",
+      "value": "hot or near"
+    },
+    {
+      "assign": "previousHot",
+      "value": "hot"
+    },
+    {
+      "assign": "previousNear",
+      "value": "near"
+    }
+  ],
+  "outputs": {
+    "displayNumber": {
+      "if": "showDistance",
+      "then": {
+        "if": "distanceValid",
+        "then": {
+          "floor": "distanceCm"
+        },
+        "else": 10000
+      },
+      "else": {
+        "if": "temperatureValid",
+        "then": {
+          "floor": "temperatureC"
+        },
+        "else": 10000
+      }
+    },
+    "alarmHz": {
+      "if": "(hot or near) and alarmElapsed < 500",
+      "then": 1000,
+      "else": 0
+    },
+    "temperatureReportDue": "sendReport and hot",
+    "distanceReportDue": "sendReport and near",
+    "temperatureReason": "hot",
+    "distanceReason": "near"
+  }
+}

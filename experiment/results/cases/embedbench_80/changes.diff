@@ -1,0 +1,45 @@
+--- original.ino
++++ repaired.ino
+@@ -155,6 +155,17 @@
+     *io_2_segment_7 = sysml_value_8;
+     *io_2_segment_8 = sysml_value_9;
+     *io_2_segment_9 = sysml_value_10;
++    *io_2_segment_0=sysml_state_digit>0;
++    *io_2_segment_1=sysml_state_digit>1;
++    *io_2_segment_2=sysml_state_digit>2;
++    *io_2_segment_3=sysml_state_digit>3;
++    *io_2_segment_4=sysml_state_digit>4;
++    *io_2_segment_5=sysml_state_digit>5;
++    *io_2_segment_6=sysml_state_digit>6;
++    *io_2_segment_7=sysml_state_digit>7;
++    *io_2_segment_8=sysml_state_digit>8;
++    *io_2_segment_9=sysml_state_digit>9;
++
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -201,6 +212,15 @@
+ static bool hw_value_io_2_segment_8 = false;
+ static bool hw_value_io_2_segment_9 = false;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+   pinMode(2, INPUT_PULLUP);
+@@ -239,7 +259,7 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(2) == LOW);
++    hw_value_io_0 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

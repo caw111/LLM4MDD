@@ -1,0 +1,289 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "heaterOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousSide",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "outsideDuration",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousAlarm",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportPulse",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "components": [
+      {
+        "kind": "edge_toggle",
+        "name": "showSetting",
+        "input": "io_7",
+        "edge": "rising",
+        "initial": false,
+        "previous_input": false
+      },
+      {
+        "kind": "periodic_pulse",
+        "name": "ventilation",
+        "delta": "io_8",
+        "enabled": "true",
+        "period_ms": 300000,
+        "pulse_ms": 30000,
+        "first_pulse": "after_period",
+        "pause": "preserve"
+      }
+    ],
+    "calculations": [
+      {
+        "name": "lowerLimit",
+        "type": "f64",
+        "expression": 37.0
+      },
+      {
+        "name": "upperLimit",
+        "type": "f64",
+        "expression": 39.0
+      },
+      {
+        "name": "targetTemperature",
+        "type": "f64",
+        "expression": 38.0
+      },
+      {
+        "name": "outsideSide",
+        "type": "i32",
+        "expression": {
+          "if": "io_1",
+          "then": {
+            "if": {
+              "<": [
+                "io_0",
+                "lowerLimit"
+              ]
+            },
+            "then": -1,
+            "else": {
+              "if": {
+                ">": [
+                  "io_0",
+                  "upperLimit"
+                ]
+              },
+              "then": 1,
+              "else": 0
+            }
+          },
+          "else": 0
+        }
+      },
+      {
+        "name": "alarmActive",
+        "type": "bool",
+        "expression": {
+          "and": [
+            "io_1",
+            {
+              "!=": [
+                "outsideSide",
+                0
+              ]
+            },
+            {
+              ">=": [
+                "outsideDuration",
+                60000
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "not": "io_1"
+        },
+        "then": [
+          {
+            "assign": "heaterOn",
+            "value": false
+          }
+        ],
+        "else": [
+          {
+            "if": {
+              "<": [
+                "io_0",
+                "lowerLimit"
+              ]
+            },
+            "then": [
+              {
+                "assign": "heaterOn",
+                "value": true
+              }
+            ],
+            "else": [
+              {
+                "if": {
+                  ">=": [
+                    "io_0",
+                    "upperLimit"
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "heaterOn",
+                    "value": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "!=": [
+                "outsideSide",
+                0
+              ]
+            },
+            {
+              "==": [
+                "outsideSide",
+                "previousSide"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": {
+              ">": [
+                "io_8",
+                0
+              ]
+            },
+            "then": [
+              {
+                "if": {
+                  ">=": [
+                    "io_8",
+                    "60000 - outsideDuration"
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "outsideDuration",
+                    "value": 60000
+                  }
+                ],
+                "else": [
+                  {
+                    "assign": "outsideDuration",
+                    "value": "outsideDuration + io_8"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "outsideDuration",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "previousSide",
+        "value": "outsideSide"
+      },
+      {
+        "assign": "reportPulse",
+        "value": {
+          "and": [
+            "alarmActive",
+            {
+              "not": "previousAlarm"
+            }
+          ]
+        }
+      },
+      {
+        "assign": "previousAlarm",
+        "value": "alarmActive"
+      }
+    ],
+    "outputs": {
+      "io_2": "heaterOn",
+      "io_3": "component_ventilation_value",
+      "io_4": {
+        "if": "alarmActive",
+        "then": 2000,
+        "else": 0
+      },
+      "io_5": {
+        "if": "component_showSetting_value",
+        "then": {
+          "floor": "targetTemperature + 0.5"
+        },
+        "else": {
+          "if": {
+            "and": [
+              "io_1",
+              {
+                ">=": [
+                  "io_0",
+                  -999.0
+                ]
+              },
+              {
+                "<": [
+                  "io_0",
+                  9999.5
+                ]
+              }
+            ]
+          },
+          "then": {
+            "floor": "io_0 + 0.5"
+          },
+          "else": 10000
+        }
+      },
+      "io_6": "alarmActive",
+      "io_9": "reportPulse"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "待确认参数采用明确的模型假设：目标38°C、下限37°C、上限39°C；低于下限开加热，达到上限关加热，中间保持；每300000 ms启动通风30000 ms，首次等待完整周期；报警持续2000 Hz，LED表示报警，每次报警开始仅报告一次。以io_8实际增量驱动：先以无效DHT启动，再依次输入有效的36、38、39、40°C；分别保持低温、高温59999和60000 ms；测试恢复范围、直接跨越上下限和无效采集；跨越多个通风周期；按钮按下、保持、释放、再次按下。",
+        "oracle": "实际接线遵循冻结合同，TM1637 DIO为重映射后的D3。启动加热器、风扇、LED关闭，蜂鸣器静音，显示空白。36°C开启加热，38°C保持，39°C关闭。严格低于37或高于39的同侧连续有效观测满60000 ms才使io_4=2000、io_6=true，并使io_9仅在报警开始的一步为true，串口输出精确文本incubation abnormal。恢复到闭区间[37,39]、变换越限方向或数据无效时清零计时并解除报警；无效时加热关闭，当前温度显示空白，但通风和按钮仍运行。风扇在300000..330000 ms及此后每300000 ms的对应窗口开启。每次按钮上升沿切换显示，保持或释放不重复切换；设定模式显示38，当前模式显示floor(io_0+0.5)。这些数值及未指定策略为待确认假设，不代表原需求已经给定。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_7 : Boolean;\n    in attribute io_8 : Integer;\n    attribute component_showSetting_value : Boolean := false;\n    attribute component_showSetting_previous : Boolean := false;\n    attribute component_ventilation_phase : Integer := 0;\n    attribute component_ventilation_started : Boolean := false;\n    attribute component_ventilation_enabled : Boolean := false;\n    attribute component_ventilation_remainder : Integer := 0;\n    attribute component_ventilation_value : Boolean := false;\n    attribute heaterOn : Boolean := false;\n    attribute previousSide : Integer := 0;\n    attribute outsideDuration : Integer := 0;\n    attribute previousAlarm : Boolean := false;\n    attribute reportPulse : Boolean := false;\n    attribute lowerLimit : Real = 37.0;\n    attribute upperLimit : Real = 39.0;\n    attribute targetTemperature : Real = 38.0;\n    attribute outsideSide : Integer = (if io_1 ? (if ((io_0) < (lowerLimit)) ? -1 else (if ((io_0) > (upperLimit)) ? 1 else 0)) else 0);\n    attribute alarmActive : Boolean = ((io_1) and (((outsideSide) != (0))) and (((outsideDuration) >= (60000))));\n    perform action tick {\n      first start;\n      then if io_7 and not component_showSetting_previous {\n        first start;\n        then assign component_showSetting_value := not component_showSetting_value;\n      }\n      then assign component_showSetting_previous := io_7;\n      then if component_ventilation_enabled and io_8 > 0 {\n        first start;\n        then if io_8 >= 300000 - component_ventilation_phase {\n          first start;\n          then assign component_ventilation_started := true;\n        }\n        then assign component_ventilation_remainder := io_8;\n        then if component_ventilation_remainder >= 1228800000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 1228800000;\n        }\n        then if component_ventilation_remainder >= 614400000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 614400000;\n        }\n        then if component_ventilation_remainder >= 307200000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 307200000;\n        }\n        then if component_ventilation_remainder >= 153600000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 153600000;\n        }\n        then if component_ventilation_remainder >= 76800000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 76800000;\n        }\n        then if component_ventilation_remainder >= 38400000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 38400000;\n        }\n        then if component_ventilation_remainder >= 19200000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 19200000;\n        }\n        then if component_ventilation_remainder >= 9600000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 9600000;\n        }\n        then if component_ventilation_remainder >= 4800000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 4800000;\n        }\n        then if component_ventilation_remainder >= 2400000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 2400000;\n        }\n        then if component_ventilation_remainder >= 1200000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 1200000;\n        }\n        then if component_ventilation_remainder >= 600000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 600000;\n        }\n        then if component_ventilation_remainder >= 300000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 300000;\n        }\n        then if component_ventilation_remainder >= 300000 - component_ventilation_phase {\n          first start;\n          then assign component_ventilation_phase := component_ventilation_remainder - (300000 - component_ventilation_phase);\n        } else {\n          first start;\n          then assign component_ventilation_phase := component_ventilation_phase + component_ventilation_remainder;\n        }\n      }\n      then assign component_ventilation_value := (true) and component_ventilation_started and component_ventilation_phase < 30000;\n      then assign component_ventilation_enabled := true;\n      then if (not io_1) {\n        first start;\n        then assign heaterOn := false;\n      } else {\n        first start;\n        then if ((io_0) < (lowerLimit)) {\n          first start;\n          then assign heaterOn := true;\n        } else {\n          first start;\n          then if ((io_0) >= (upperLimit)) {\n            first start;\n            then assign heaterOn := false;\n          }\n        }\n      }\n      then if ((((outsideSide) != (0))) and (((outsideSide) == (previousSide)))) {\n        first start;\n        then if ((io_8) > (0)) {\n          first start;\n          then if ((io_8) >= (60000 - outsideDuration)) {\n            first start;\n            then assign outsideDuration := 60000;\n          } else {\n            first start;\n            then assign outsideDuration := outsideDuration + io_8;\n          }\n        }\n      } else {\n        first start;\n        then assign outsideDuration := 0;\n      }\n      then assign previousSide := outsideSide;\n      then assign reportPulse := ((alarmActive) and ((not previousAlarm)));\n      then assign previousAlarm := alarmActive;\n    }\n    out attribute io_2 : Boolean = heaterOn;\n    out attribute io_3 : Boolean = component_ventilation_value;\n    out attribute io_4 : Integer = (if alarmActive ? 2000 else 0);\n    out attribute io_5 : Integer = (if component_showSetting_value ? RealFunctions::floor(targetTemperature + 0.5) else (if ((io_1) and (((io_0) >= (-999.0))) and (((io_0) < (9999.5)))) ? RealFunctions::floor(io_0 + 0.5) else 10000));\n    out attribute io_6 : Boolean = alarmActive;\n    out attribute io_9 : Boolean = reportPulse;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "interfaces": [
+    {
+      "name": "distanceCm",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0.0,
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "trigger_pin": 8,
+        "echo_pin": 9,
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid"
+      },
+      "sample_period_ms": 100,
+      "meaning": "distanceCm",
+      "device": "HC-SR04",
+      "hardware": "TRIG D8 ECHO D9; TM1637 CLK D4 DIO D5; LED D13"
+    },
+    {
+      "name": "distanceValid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "trigger_pin": 8,
+        "echo_pin": 9,
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid"
+      },
+      "sample_period_ms": 100,
+      "meaning": "distanceValid",
+      "device": "HC-SR04",
+      "hardware": "TRIG D8 ECHO D9; TM1637 CLK D4 DIO D5; LED D13"
+    },
+    {
+      "name": "distanceDisplay",
+      "direction": "output",
+      "type": "i32",
+      "unit": "cm",
+      "initial": 10000,
+      "binding": {
+        "kind": "tm1637_number",
+        "clk_pin": 4,
+        "dio_pin": 5,
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank"
+      },
+      "sample_period_ms": 10,
+      "meaning": "distanceDisplay",
+      "device": "tm1637_number",
+      "hardware": "TRIG D8 ECHO D9; TM1637 CLK D4 DIO D5; LED D13"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。",
+      "assertion_ids": [
+        "independent_distance_trace"
+      ]
+    }
+  ],
+  "required_dependencies": {
+    "distanceDisplay": [
+      "distanceCm",
+      "distanceValid"
+    ]
+  },
+  "required_states": []
+}

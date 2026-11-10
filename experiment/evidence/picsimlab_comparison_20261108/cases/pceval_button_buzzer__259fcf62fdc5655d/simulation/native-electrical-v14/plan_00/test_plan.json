@@ -1,0 +1,167 @@
+{
+  "supported": true,
+  "coverage": "full",
+  "coverage_explanation": "Tests released-state silence, repeated press-to-262Hz responses, sustained presses, and repeated release-to-silence responses on the circuit-specified pins. Checks the explicitly required input and output modes.",
+  "assumptions": [
+    "The supplied circuit fixes the button input at pin 3 and buzzer output at pin 9; no bench-default pin or wiring assumptions are needed.",
+    "The supplied external pull-up makes the released button HIGH and the pressed button LOW. The circuit's 1000-ohm resistor differs from the prose's 10k-ohm resistor, but both provide the specified digital polarity; the test preserves the supplied wiring.",
+    "No precise response latency is specified, so observations allow 250 ms for settling. Tone frequency is checked within 3 Hz to accommodate timer quantization."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 1000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 3500,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 5000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 6000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 7000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 10000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "pin_mode",
+      "id": "button_input",
+      "requirement_quote": "Set button pin to INPUT",
+      "pin": 3,
+      "expected": 0
+    },
+    {
+      "kind": "pin_mode",
+      "id": "buzzer_output",
+      "requirement_quote": "buzzer pin to OUTPUT",
+      "pin": 9,
+      "expected": 1
+    },
+    {
+      "kind": "tone",
+      "id": "initial_release_silent",
+      "requirement_quote": "The piezo buzzer doesn’t sound when the button is not pressed.",
+      "pin": 9,
+      "at_ms": 500,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "tone",
+      "id": "first_press",
+      "requirement_quote": "If the button is pressed, play 262Hz tone",
+      "pin": 9,
+      "at_ms": 1250,
+      "expected": 262,
+      "tolerance": 3
+    },
+    {
+      "kind": "tone",
+      "id": "first_press_sustained",
+      "requirement_quote": "If the button is pressed, play 262Hz tone",
+      "pin": 9,
+      "at_ms": 3200,
+      "expected": 262,
+      "tolerance": 3
+    },
+    {
+      "kind": "tone",
+      "id": "first_release",
+      "requirement_quote": "The piezo buzzer doesn’t sound when the button is not pressed.",
+      "pin": 9,
+      "at_ms": 3750,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "tone",
+      "id": "second_press",
+      "requirement_quote": "If the button is pressed, play 262Hz tone",
+      "pin": 9,
+      "at_ms": 5250,
+      "expected": 262,
+      "tolerance": 3
+    },
+    {
+      "kind": "tone",
+      "id": "second_release",
+      "requirement_quote": "The piezo buzzer doesn’t sound when the button is not pressed.",
+      "pin": 9,
+      "at_ms": 6250,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "tone",
+      "id": "third_press",
+      "requirement_quote": "If the button is pressed, play 262Hz tone",
+      "pin": 9,
+      "at_ms": 7250,
+      "expected": 262,
+      "tolerance": 3
+    },
+    {
+      "kind": "tone",
+      "id": "third_press_sustained",
+      "requirement_quote": "If the button is pressed, play 262Hz tone",
+      "pin": 9,
+      "at_ms": 9700,
+      "expected": 262,
+      "tolerance": 3
+    },
+    {
+      "kind": "tone",
+      "id": "final_release",
+      "requirement_quote": "The piezo buzzer doesn’t sound when the button is not pressed.",
+      "pin": 9,
+      "at_ms": 10250,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "tone",
+      "id": "final_sustained_silence",
+      "requirement_quote": "The piezo buzzer doesn’t sound when the button is not pressed.",
+      "pin": 9,
+      "at_ms": 11750,
+      "expected": 0,
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t BUTTON_PIN = 3;\nconst uint8_t BUZZER_PIN = 9;\nbool sounding = false;\n\nvoid setup() {\n  pinMode(BUTTON_PIN, INPUT);\n  pinMode(BUZZER_PIN, OUTPUT);\n  digitalWrite(BUZZER_PIN, LOW);\n}\n\nvoid loop() {\n  bool pressed = digitalRead(BUTTON_PIN) == LOW;\n  if (pressed && !sounding) {\n    tone(BUZZER_PIN, 262);\n    sounding = true;\n  } else if (!pressed && sounding) {\n    noTone(BUZZER_PIN);\n    digitalWrite(BUZZER_PIN, LOW);\n    sounding = false;\n  }\n}\n",
+  "electrical_led_pins": {}
+}

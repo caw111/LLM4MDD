@@ -1,0 +1,78 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevValid",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "assign": "prevValid",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "prevValid",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "io_3",
+        "then": false,
+        "else": true
+      },
+      "io_4": {
+        "if": "io_3",
+        "then": "RealFunctions::floor(io_1)",
+        "else": 0
+      },
+      "serial_0_trigger": {
+        "if": {
+          "and": [
+            {
+              "not": "io_3"
+            },
+            "prevValid"
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": {
+        "if": "serial_0_trigger",
+        "then": true,
+        "else": false
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个带错误提示的传感器显示系统，使用 DHT11（D7）、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。正常时轮流显示温度和湿度；若读数失败，则数码管显示 0000、LED 闪烁，并在串口输出 sensor error。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_3: false (DHT acquisition invalid). io_1/io_2 can be arbitrary.",
+        "oracle": "io_4 == 0, io_0 == true, serial_0_trigger == false, serial_0_value_0 == false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个带错误提示的传感器显示系统，使用 DHT11（D7）、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。正常时轮流显示温度和湿度；若读数失败，则数码管显示 0000、LED 闪烁，并在串口输出 sensor error。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Start with io_3 == true then set io_3 == false on the next step (prevValid rising to true then invalid).",
+        "oracle": "On the step where io_3 transitions from true to false: serial_0_trigger == true and serial_0_value_0 == true; also io_4 == 0 and io_0 == true"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute prevValid : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3 {\n        first start;\n        then assign prevValid := true;\n      } else {\n        first start;\n        then assign prevValid := false;\n      }\n    }\n    out attribute io_0 : Boolean = (if io_3 ? false else true);\n    out attribute io_4 : Integer = (if io_3 ? RealFunctions::floor(io_1) else 0);\n    out attribute serial_0_trigger : Boolean = (if (((not io_3)) and (prevValid)) ? true else false);\n    out attribute serial_0_value_0 : Boolean = (if serial_0_trigger ? true else false);\n  }\n  part system : Controller;\n}\n"
+}

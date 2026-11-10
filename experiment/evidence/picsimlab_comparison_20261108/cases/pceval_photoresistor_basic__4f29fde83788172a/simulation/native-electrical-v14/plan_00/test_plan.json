@@ -1,0 +1,154 @@
+{
+  "supported": true,
+  "coverage": "full",
+  "coverage_explanation": "Tests the wired A2 analog input at both ADC endpoints, several intermediate values, adjacent midpoint values, and a repeated input. Checks the required labeled serial values and the approximately 500 ms reporting cadence across input transitions.",
+  "assumptions": [
+    "The supplied wiring is authoritative: the sensor AO output is read on A2.",
+    "The host analog-input API supplies raw ADC values from 0 to 1023; these values, rather than lux, are the values to print. No lux-to-voltage conversion is specified or required.",
+    "Serial communication uses the supplied 9600 baud setting. Serial checks allow normal line termination.",
+    "The 500 ms delay permits small additional execution and serial transmission overhead; startup reporting phase is not constrained."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 0
+    },
+    {
+      "at_ms": 1500,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 1023
+    },
+    {
+      "at_ms": 3000,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 137
+    },
+    {
+      "at_ms": 4500,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 511
+    },
+    {
+      "at_ms": 6000,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 512
+    },
+    {
+      "at_ms": 7500,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 876
+    },
+    {
+      "at_ms": 9000,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 137
+    },
+    {
+      "at_ms": 10500,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "adc_zero_start",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 250,
+      "to_ms": 1400,
+      "regex": "^LDR Value: 0\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_full_scale",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 1750,
+      "to_ms": 2900,
+      "regex": "^LDR Value: 1023\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_low_intermediate",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 3250,
+      "to_ms": 4400,
+      "regex": "^LDR Value: 137\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_midpoint_lower",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 4750,
+      "to_ms": 5900,
+      "regex": "^LDR Value: 511\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_midpoint_upper",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 6250,
+      "to_ms": 7400,
+      "regex": "^LDR Value: 512\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_high_intermediate",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 7750,
+      "to_ms": 8900,
+      "regex": "^LDR Value: 876\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_repeated_value",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 9250,
+      "to_ms": 10400,
+      "regex": "^LDR Value: 137\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_return_zero",
+      "requirement_quote": "LDR Value: {value}",
+      "from_ms": 10750,
+      "to_ms": 11900,
+      "regex": "^LDR Value: 0\\r?$",
+      "min_count": 2
+    },
+    {
+      "kind": "interval",
+      "id": "half_second_reporting",
+      "requirement_quote": "Delay 500ms in every loop.",
+      "source": "serial",
+      "contains": "LDR Value: ",
+      "from_ms": 200,
+      "to_ms": 11900,
+      "expected_ms": 500,
+      "tolerance_ms": 60,
+      "min_count": 20
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nvoid setup() {\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int value = analogRead(A2);\n  Serial.print(\"LDR Value: \");\n  Serial.println(value);\n  delay(500);\n}\n",
+  "electrical_led_pins": {}
+}

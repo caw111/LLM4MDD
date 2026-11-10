@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_1\",\n        \"then\": [\n          {\n            \"assign\": \"previousPressed\",\n            \"value\": \"io_1\"\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"previousPressed\",\n            \"value\": \"false\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": \"io_1\",\n        \"then\": \"RealFunctions::floor(io_0 * 255.0 / 1023.0)\",\n        \"else\": 0.0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D2 按钮 + A0 电位器 + D9 LED：按钮按下时电位器控制亮度，否则 LED 关闭\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；按下时A0的0..1023线性映射到D9的PWM值0..255（取整容差1），松开时输出0。输入变化响应时间不超过20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"D2 released (io_1=false), sweep io_0 across {0, 256, 512, 768, 1023}\",\n        \"oracle\": \"Each step drives io_2=0.0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D2 按钮 + A0 电位器 + D9 LED：按钮按下时电位器控制亮度，否则 LED 关闭\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；按下时A0的0..1023线性映射到D9的PWM值0..255（取整容差1），松开时输出0。输入变化响应时间不超过20ms。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Assert button pressed (io_1=true); set io_0=0 then io_0=1023\",\n        \"oracle\": \"When io_0=0 => io_2=0.0; when io_0=1023 => io_2=255.0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D2 按钮 + A0 电位器 + D9 LED：按钮按下时电位器控制亮度，否则 LED 关闭\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；按下时A0的0..1023线性映射到D9的PWM值0..255（取整容差1），松开时输出0。输入变化响应时间不超过20ms。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With io_1=true, apply intermediate io_0 values {1, 2, 3, 4, 5, 100, 500, 999}; keep io_1 constant\",\n        \"oracle\": \"For each value, io_2 equals floor(io_0*255.0/1023.0) and stays within the specified rounding tolerance (<=1 PWM count from ideal linear mapping)\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D2 按钮 + A0 电位器 + D9 LED：按钮按下时电位器控制亮度，否则 LED 关闭\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；按下时A0的0..1023线性映射到D9的PWM值0..255（取整容差1），松开时输出0。输入变化响应时间不超过20ms。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Toggle io_1 from false->true and from true->false while holding io_0 fixed at e.g. 512\",\n        \"oracle\": \"After each io_1 change, io_2 updates to the correct steady-state value within 20ms; on release io_2 becomes 0.0 immediately at the first post-change control step\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign previousPressed := io_1;\n      } else {\n        first start;\n        then assign previousPressed := false;\n      }\n    }\n    out attribute io_2 : Real = (if io_1 ? RealFunctions::floor(io_0 * 255.0 / 1023.0) else 0.0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

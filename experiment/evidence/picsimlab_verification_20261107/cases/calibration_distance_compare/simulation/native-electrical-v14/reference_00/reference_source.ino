@@ -1,0 +1,3 @@
+#include <Arduino.h>
+void setup(){Serial.begin(9600);pinMode(3,OUTPUT);pinMode(2,INPUT);}
+void loop(){if(!Serial.available())return;String input=Serial.readStringUntil('\n');long target=input.toInt();digitalWrite(3,LOW);delayMicroseconds(2);digitalWrite(3,HIGH);delayMicroseconds(10);digitalWrite(3,LOW);long distance=pulseIn(2,HIGH,30000)/58;Serial.print("REFERENCE_DISTANCE:");Serial.println(distance);if(distance>target)Serial.println("Measured distance is greater");else if(distance==target)Serial.println("Measured distance is equal to the target");else Serial.println("Measured distance is less");}

@@ -1,0 +1,181 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"counter\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"prevIncPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDecPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"prevIncPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"counter\",\n            \"value\": {\n              \"if\": [\n                {\n                  \">=\": [\n                    \"counter\",\n                    20\n                  ]\n                },\n                20,\n                \"counter + 1\"\n              ]\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"prevDecPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"counter\",\n            \"value\": {\n              \"if\": [\n                {\n                  \"<=\": [\n                    \"counter\",\n                    0\n                  ]\n                },\n                0,\n                \"counter - 1\"\n              ]\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevIncPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevDecPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": {\n          \"or\": [\n            {\n              \"==\": [\n                \"counter\",\n                20\n              ]\n            },\n            {\n              \"==\": [\n                \"counter\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_3\": \"counter\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start at initial model values (io_0=false, io_1=false). Apply a single rising edge on io_0 (pressed then release) while io_1 remains false.\",\n        \"oracle\": \"After the press-edge control step, io_3 increases by 1 from 0; io_2 remains 0 because counter is neither 0 nor 20.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With io_0=false, apply a single rising edge on io_1 (pressed then release) from the initial state where counter is 0.\",\n        \"oracle\": \"counter stays at 0; io_3 remains 0; io_2 is nonzero (alarm) because counter==0.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply 20 successive rising edges on io_0 with io_1 kept false (between edges, release io_0 back to false).\",\n        \"oracle\": \"On reaching counter==20, io_3 shows 20 and io_2 becomes nonzero (alarm).\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"From counter==20 (achieved as in T3), apply one more rising edge on io_0 while keeping io_1 false.\",\n        \"oracle\": \"counter remains 20 (no further increase); io_3 remains 20; io_2 remains nonzero (alarm) because counter==20.\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/0/then/0/value: Unknown expression object {'if': [{'>=': ['counter', 20]}, 20, 'counter + 1']}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/updates/0/then/0/value"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/0/then/0/value: Unknown expression object {'if': [{'>=': ['counter', 20]}, 20, 'counter + 1']}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/updates/0/then/0/value"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/updates/0/then/0/value: Unknown expression object {'if': [{'>=': ['counter', 20]}, 20, 'counter + 1']}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"counter\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"prevIncPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDecPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"and[io_0,not:prevIncPressed]\",\n        \"then\": [\n          {\n            \"if\": \"counter < 20\",\n            \"then\": [\n              {\n                \"assign\": \"counter\",\n                \"value\": \"counter + 1\"\n              }\n            ],\n            \"else\": []\n          }\n        ]\n      },\n      {\n        \"if\": \"and[io_1,not:prevDecPressed]\",\n        \"then\": [\n          {\n            \"if\": \"counter > 0\",\n            \"then\": [\n              {\n                \"assign\": \"counter\",\n                \"value\": \"counter - 1\"\n              }\n            ],\n            \"else\": []\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevIncPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevDecPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"if counter == 0 or counter == 20 then 1000 else 0\",\n      \"io_3\": \"counter\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_0 held low; apply rising edges on io_0 (increment) for 21 button presses with io_1 always low; keep each button rising edge separated by at least one control step.\",\n        \"oracle\": \"io_3 counts 0..20 then remains 20 after the 21st increment edge; io_2 is 0 for counter 0<counter<20 and equals 1000 whenever counter==20.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"From reset state counter=0, apply rising edges on io_1 (decrement) for 5 presses with io_0 always low.\",\n        \"oracle\": \"io_3 stays at 0; io_2 equals 1000 whenever counter==0 and remains 1000 throughout.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Increment with io_0 rising edges until counter reaches 20; then apply additional io_0 rising edges while keeping io_1 low.\",\n        \"oracle\": \"After reaching 20, io_3 remains 20 and io_2 remains 1000; further io_0 edges do not change counter.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"From counter=20 (achieved by prior increments), apply decrement rising edges on io_1 until reaching 0, then apply one more decrement rising edge.\",\n        \"oracle\": \"io_3 decrements 20..0; io_2 equals 1000 only at counter==0 or counter==20 and equals 0 for 0<counter<20; after counter hits 0, it remains 0 and further decrement edges do not change it.\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Unsupported token in scalar expression at character 3"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Unsupported token in scalar expression at character 3"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Unsupported token in scalar expression at character 3"
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 3,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"count\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"prevInc\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDec\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_0 and (not prevInc)\",\n        \"then\": [\n          {\n            \"if\": \"count < 20\",\n            \"then\": [\n              {\n                \"assign\": \"count\",\n                \"value\": \"count + 1\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"io_1 and (not prevDec)\",\n        \"then\": [\n          {\n            \"if\": \"count > 0\",\n            \"then\": [\n              {\n                \"assign\": \"count\",\n                \"value\": \"count - 1\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevInc\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevDec\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": \"count == 0 or count == 20\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_3\": \"count\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"起始 count=0；对 io_0 产生 21 次按下上升沿（每次释放后再按），io_1 始终为 false；期间每一步采样 io_2 与 io_3。\",\n        \"oracle\": \"count 从 0 依次递增并最终在 20 停止增加；当 count==20 时 io_2 为 1000，否则为 0；io_3 始终等于当前 count，且超过 20 的加一被禁止（count 不变）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先将 count 增加到 20（如 T1 前 20 次上升沿）；随后对 io_1 产生 21 次按下上升沿（每次释放后再按），io_0 始终为 false；期间每一步采样 io_2 与 io_3。\",\n        \"oracle\": \"count 从 20 依次递减并最终在 0 停止减少；当 count==0 时 io_2 为 1000，否则为 0；io_3 始终等于当前 count，且低于 0 的减一被禁止（count 不变）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多功能计数与显示系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。D2 用于加一计数，D3 用于减一计数，数码管实时显示计数值；当计数达到上限 20 或下限 0 时蜂鸣器报警，并禁止继续越界。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 count=0；在 count==0 状态下对 io_1 产生一次按下上升沿（减一尝试），并对 io_0 产生一次按下上升沿（加一成功），按下与释放均为单次上升沿事件；期间每一步采样 io_2 与 io_3。\",\n        \"oracle\": \"在 io_1 的上升沿处 count 仍为 0（不越界），io_2 维持 1000，io_3 为 0；在随后 io_0 的上升沿处 count 变为 1，io_2 变为 0，io_3 为 1。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute count : Integer := 0;\n    attribute prevInc : Boolean := false;\n    attribute prevDec : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and (not prevInc) {\n        first start;\n        then if count < 20 {\n          first start;\n          then assign count := count + 1;\n        }\n      }\n      then if io_1 and (not prevDec) {\n        first start;\n        then if count > 0 {\n          first start;\n          then assign count := count - 1;\n        }\n      }\n      then assign prevInc := io_0;\n      then assign prevDec := io_1;\n    }\n    out attribute io_2 : Integer = (if count == 0 or count == 20 ? 1000 else 0);\n    out attribute io_3 : Integer = count;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

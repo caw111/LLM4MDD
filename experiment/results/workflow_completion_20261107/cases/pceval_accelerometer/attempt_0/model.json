@@ -1,0 +1,204 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "readySent",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "readyPulse",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportPulse",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "waitingForDelay",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "delayStartPending",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "delayAccumulated",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "readyPulse",
+        "value": false
+      },
+      {
+        "assign": "reportPulse",
+        "value": false
+      },
+      {
+        "if": {
+          "not": "readySent"
+        },
+        "then": [
+          {
+            "if": "io_3",
+            "then": [
+              {
+                "assign": "readyPulse",
+                "value": true
+              },
+              {
+                "assign": "readySent",
+                "value": true
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "if": "waitingForDelay",
+            "then": [
+              {
+                "if": "delayStartPending",
+                "then": [
+                  {
+                    "assign": "delayAccumulated",
+                    "value": 0
+                  },
+                  {
+                    "assign": "delayStartPending",
+                    "value": false
+                  }
+                ],
+                "else": [
+                  {
+                    "if": {
+                      ">=": [
+                        "io_5",
+                        "500 - delayAccumulated"
+                      ]
+                    },
+                    "then": [
+                      {
+                        "assign": "delayAccumulated",
+                        "value": 500
+                      }
+                    ],
+                    "else": [
+                      {
+                        "if": {
+                          ">": [
+                            "io_5",
+                            0
+                          ]
+                        },
+                        "then": [
+                          {
+                            "assign": "delayAccumulated",
+                            "value": "delayAccumulated + io_5"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "if": {
+                  ">=": [
+                    "delayAccumulated",
+                    500
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "waitingForDelay",
+                    "value": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "if": {
+              "and": [
+                {
+                  "not": "waitingForDelay"
+                },
+                "io_3"
+              ]
+            },
+            "then": [
+              {
+                "assign": "reportPulse",
+                "value": true
+              },
+              {
+                "assign": "waitingForDelay",
+                "value": true
+              },
+              {
+                "assign": "delayStartPending",
+                "value": true
+              },
+              {
+                "assign": "delayAccumulated",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_4": "readyPulse",
+      "serial_0_trigger": "reportPulse",
+      "serial_0_value_0": "io_0",
+      "serial_0_value_1": "io_1",
+      "serial_0_value_2": "io_2"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with acquisition invalid, then provide a valid MPU6050 frame. Continue valid sampling and subsequently introduce invalid frames.",
+        "oracle": "No readiness announcement or acceleration report occurs before validity. Successful initialization produces exactly one 'MPU6050 ready!' line. Invalid frames never trigger acceleration reports.",
+        "requirement_text": "# Accelerometer\n\n## Project Description\nThis is an Arduino project that uses MPU6050 6-axis accelerometer & gyro sensor to measure the acceleration.\n\n## Hardware Components\n- Arduino Uno\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nThe MPU6050 sensor is connected to the Arduino. The VCC pin is connected to 3.3V, the GND pin to gnd3, the SCL pin to A5, and the SDA pin to A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the MPU sensor can be initialized successfully, and print 'MPU6050 ready!' to the serial monitor\n3. Continuously read the accelerometer data from the MPU6050 sensor\n4. Print the X, Y, and Z axis acceleration values in m/s² to the serial monitor, for example: 'X: 2.45, Y: 1.96, Z: 3.43 m/s^2'\n\n## Success Criteria\nThe test is successful when:\n1. Correct X, Y, Z accelerometer result is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Adafruit_MPU6050.h, Adafruit_Sensor.h, Wire.h libraries.\n- Delay 500ms in every loop.\n- MPU6050 has I2C interface.\n\n## Variants\nThere may be variants with GND connected to different pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of MPU6050\",\n    \"config\": {\n        \"scl_pin\": \"A5\",\n        \"sda_pin\": \"A4\",\n        \"gnd_pin\": \"GND.3\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": 234.22,\n            \"left\": 117.52,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"black\",\n            [\n                \"v38.3\",\n                \"h32.7\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:3.3V\",\n            \"red\",\n            [\n                \"v-38.4\",\n                \"h-67.12\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h67.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v-38.4\",\n                \"h67.28\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Provide coherent valid acceleration frames (2.45, 1.96, 3.43), (-6.31, 4.22, 9.81), and (0.00, -2.75, 1.50) while varying gyroscope measurements independently.",
+        "oracle": "Reports use the current X, Y, and Z acceleration inputs in their respective positions, with two decimal places and the exact format 'X: 2.45, Y: 1.96, Z: 3.43 m/s^2'. Gyroscope measurements do not replace acceleration values.",
+        "requirement_text": "# Accelerometer\n\n## Project Description\nThis is an Arduino project that uses MPU6050 6-axis accelerometer & gyro sensor to measure the acceleration.\n\n## Hardware Components\n- Arduino Uno\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nThe MPU6050 sensor is connected to the Arduino. The VCC pin is connected to 3.3V, the GND pin to gnd3, the SCL pin to A5, and the SDA pin to A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the MPU sensor can be initialized successfully, and print 'MPU6050 ready!' to the serial monitor\n3. Continuously read the accelerometer data from the MPU6050 sensor\n4. Print the X, Y, and Z axis acceleration values in m/s² to the serial monitor, for example: 'X: 2.45, Y: 1.96, Z: 3.43 m/s^2'\n\n## Success Criteria\nThe test is successful when:\n1. Correct X, Y, Z accelerometer result is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Adafruit_MPU6050.h, Adafruit_Sensor.h, Wire.h libraries.\n- Delay 500ms in every loop.\n- MPU6050 has I2C interface.\n\n## Variants\nThere may be variants with GND connected to different pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of MPU6050\",\n    \"config\": {\n        \"scl_pin\": \"A5\",\n        \"sda_pin\": \"A4\",\n        \"gnd_pin\": \"GND.3\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": 234.22,\n            \"left\": 117.52,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"black\",\n            [\n                \"v38.3\",\n                \"h32.7\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:3.3V\",\n            \"red\",\n            [\n                \"v-38.4\",\n                \"h-67.12\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h67.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v-38.4\",\n                \"h67.28\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Run valid acquisition for at least 8 seconds using actual elapsed-time deltas, including reporting overhead and irregular control-step intervals.",
+        "oracle": "Each report starts a new delay after its reporting step. The interval containing that reporting work is excluded from delay accumulation; at least 500 ms is subsequently accumulated before another report. Overshoot is discarded rather than carried into the next delay. At least ten observed serial report intervals satisfy the frozen 525 ms plus or minus 30 ms check.",
+        "requirement_text": "# Accelerometer\n\n## Project Description\nThis is an Arduino project that uses MPU6050 6-axis accelerometer & gyro sensor to measure the acceleration.\n\n## Hardware Components\n- Arduino Uno\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nThe MPU6050 sensor is connected to the Arduino. The VCC pin is connected to 3.3V, the GND pin to gnd3, the SCL pin to A5, and the SDA pin to A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the MPU sensor can be initialized successfully, and print 'MPU6050 ready!' to the serial monitor\n3. Continuously read the accelerometer data from the MPU6050 sensor\n4. Print the X, Y, and Z axis acceleration values in m/s² to the serial monitor, for example: 'X: 2.45, Y: 1.96, Z: 3.43 m/s^2'\n\n## Success Criteria\nThe test is successful when:\n1. Correct X, Y, Z accelerometer result is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Adafruit_MPU6050.h, Adafruit_Sensor.h, Wire.h libraries.\n- Delay 500ms in every loop.\n- MPU6050 has I2C interface.\n\n## Variants\nThere may be variants with GND connected to different pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of MPU6050\",\n    \"config\": {\n        \"scl_pin\": \"A5\",\n        \"sda_pin\": \"A4\",\n        \"gnd_pin\": \"GND.3\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": 234.22,\n            \"left\": 117.52,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"black\",\n            [\n                \"v38.3\",\n                \"h32.7\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:3.3V\",\n            \"red\",\n            [\n                \"v-38.4\",\n                \"h-67.12\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h67.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v-38.4\",\n                \"h67.28\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T4",
+        "test_method": "integration",
+        "stimulus": "Compile and run the assembled controller with the registered native MPU6050 adapter and supplied circuit.",
+        "oracle": "Serial uses 9600 baud. Native acquisition uses Adafruit_MPU6050, Adafruit_Sensor and Wire with SDA=A4, SCL=A5, address 104, VCC=3.3V and the diagram's GND.2 connection preserved.",
+        "requirement_text": "# Accelerometer\n\n## Project Description\nThis is an Arduino project that uses MPU6050 6-axis accelerometer & gyro sensor to measure the acceleration.\n\n## Hardware Components\n- Arduino Uno\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nThe MPU6050 sensor is connected to the Arduino. The VCC pin is connected to 3.3V, the GND pin to gnd3, the SCL pin to A5, and the SDA pin to A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the MPU sensor can be initialized successfully, and print 'MPU6050 ready!' to the serial monitor\n3. Continuously read the accelerometer data from the MPU6050 sensor\n4. Print the X, Y, and Z axis acceleration values in m/s² to the serial monitor, for example: 'X: 2.45, Y: 1.96, Z: 3.43 m/s^2'\n\n## Success Criteria\nThe test is successful when:\n1. Correct X, Y, Z accelerometer result is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Adafruit_MPU6050.h, Adafruit_Sensor.h, Wire.h libraries.\n- Delay 500ms in every loop.\n- MPU6050 has I2C interface.\n\n## Variants\nThere may be variants with GND connected to different pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of MPU6050\",\n    \"config\": {\n        \"scl_pin\": \"A5\",\n        \"sda_pin\": \"A4\",\n        \"gnd_pin\": \"GND.3\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": 234.22,\n            \"left\": 117.52,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"black\",\n            [\n                \"v38.3\",\n                \"h32.7\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:3.3V\",\n            \"red\",\n            [\n                \"v-38.4\",\n                \"h-67.12\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h67.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v-38.4\",\n                \"h67.28\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_5 : Integer;\n    attribute readySent : Boolean := false;\n    attribute readyPulse : Boolean := false;\n    attribute reportPulse : Boolean := false;\n    attribute waitingForDelay : Boolean := false;\n    attribute delayStartPending : Boolean := false;\n    attribute delayAccumulated : Integer := 0;\n    perform action tick {\n      first start;\n      then assign readyPulse := false;\n      then assign reportPulse := false;\n      then if (not readySent) {\n        first start;\n        then if io_3 {\n          first start;\n          then assign readyPulse := true;\n          then assign readySent := true;\n        }\n      } else {\n        first start;\n        then if waitingForDelay {\n          first start;\n          then if delayStartPending {\n            first start;\n            then assign delayAccumulated := 0;\n            then assign delayStartPending := false;\n          } else {\n            first start;\n            then if ((io_5) >= (500 - delayAccumulated)) {\n              first start;\n              then assign delayAccumulated := 500;\n            } else {\n              first start;\n              then if ((io_5) > (0)) {\n                first start;\n                then assign delayAccumulated := delayAccumulated + io_5;\n              }\n            }\n          }\n          then if ((delayAccumulated) >= (500)) {\n            first start;\n            then assign waitingForDelay := false;\n          }\n        }\n        then if (((not waitingForDelay)) and (io_3)) {\n          first start;\n          then assign reportPulse := true;\n          then assign waitingForDelay := true;\n          then assign delayStartPending := true;\n          then assign delayAccumulated := 0;\n        }\n      }\n    }\n    out attribute io_4 : Boolean = readyPulse;\n    out attribute serial_0_trigger : Boolean = reportPulse;\n    out attribute serial_0_value_0 : Real = io_0;\n    out attribute serial_0_value_1 : Real = io_1;\n    out attribute serial_0_value_2 : Real = io_2;\n  }\n  part system : Controller;\n}\n"
+}

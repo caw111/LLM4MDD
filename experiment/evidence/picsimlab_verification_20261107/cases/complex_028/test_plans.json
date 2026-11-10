@@ -1,0 +1,119 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "This revised suite removes all cross-history PWM equality assertions: hysteresis is permitted. It tests the explicitly required transient nature of the buzzer notification by checking silence late in multiple stable-temperature plateaus, including returns to earlier inputs. It does not establish temperature-dependent fan operation, four distinct ordered duties, display correctness, or positive high-speed-entry notification. Temperature thresholds, hysteresis boundaries, PWM values, display encoding and beep timing are unspecified; the supported checks cannot condition assertions on the observed gear. Constant PWM with a silent buzzer can therefore pass this deliberately limited suite. The reference's concrete parameter choices are illustrative, not candidate acceptance criteria.",
+      "assumptions": [
+        "Use the authoritative wiring: LM35 A1, fan PWM D5, TM1637 CLK D4 and DIO D2, and buzzer D6.",
+        "Rely on the disclosed bench defaults of raw ADC readings 0..1023 with a 5 V reference. LM35 conversion is 10 mV per degree Celsius.",
+        "No LED or button defaults are needed.",
+        "Thresholds, hysteresis policy, duty values, gear display representation, sampling period and exact short-beep duration are missing. No particular values for these are required by the checks.",
+        "Interpret a short entry notification as having ended after seven seconds at an unchanged input. This is a generous practical settling allowance, not a claimed exact timing requirement.",
+        "The reference uses thresholds 25/30/35 degrees Celsius, duties 0/85/170/255, numeric gears 0..3, 100 ms sampling and a 150 ms notification as permitted implementation choices."
+      ],
+      "horizon_ms": 48000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 0
+        },
+        {
+          "at_ms": 8000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 100
+        },
+        {
+          "at_ms": 16000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 300
+        },
+        {
+          "at_ms": 24000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 100
+        },
+        {
+          "at_ms": 32000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 0
+        },
+        {
+          "at_ms": 40000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 300
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "tone",
+          "id": "initial_plateau_no_sustained_notification",
+          "requirement_quote": "进入高速档时蜂鸣器短鸣提示",
+          "pin": 6,
+          "at_ms": 7000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "warmer_plateau_no_sustained_notification",
+          "requirement_quote": "进入高速档时蜂鸣器短鸣提示",
+          "pin": 6,
+          "at_ms": 15000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "hotter_plateau_no_sustained_notification",
+          "requirement_quote": "进入高速档时蜂鸣器短鸣提示",
+          "pin": 6,
+          "at_ms": 23000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "cooling_plateau_no_sustained_notification",
+          "requirement_quote": "进入高速档时蜂鸣器短鸣提示",
+          "pin": 6,
+          "at_ms": 31000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "cold_return_no_sustained_notification",
+          "requirement_quote": "进入高速档时蜂鸣器短鸣提示",
+          "pin": 6,
+          "at_ms": 39000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "hot_return_no_sustained_notification",
+          "requirement_quote": "进入高速档时蜂鸣器短鸣提示",
+          "pin": 6,
+          "at_ms": 47000,
+          "expected": 0,
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 2);\nconst uint8_t duties[4] = {0, 85, 170, 255};\nint previousGear = -1;\nunsigned long lastSample = 0;\nbool sampled = false;\n\nint selectGear(float temperatureC) {\n  if (temperatureC < 25.0f) return 0;\n  if (temperatureC < 30.0f) return 1;\n  if (temperatureC < 35.0f) return 2;\n  return 3;\n}\n\nvoid setup() {\n  pinMode(A1, INPUT);\n  pinMode(5, OUTPUT);\n  pinMode(6, OUTPUT);\n  analogWrite(5, 0);\n  noTone(6);\n  display.setBrightness(5);\n  display.clear();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (sampled && (unsigned long)(now - lastSample) < 100UL) return;\n  sampled = true;\n  lastSample = now;\n  float temperatureC = analogRead(A1) * (500.0f / 1023.0f);\n  int gear = selectGear(temperatureC);\n  if (gear != previousGear) {\n    analogWrite(5, duties[gear]);\n    display.showNumberDec(gear, false);\n    if (gear == 3) tone(6, 2000, 150);\n    previousGear = gear;\n  }\n}\n"
+    },
+    "engine": null
+  }
+]

@@ -1,0 +1,250 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "未提供任何串口上报/接收需求；因此serial_channels为空。",
+    "阈值比较与报警周期（蜂鸣器的占空/频率/周期、LED是否在DHT无效时保持/熄灭）属于SysML业务逻辑，未在本请求中指定。",
+    "TM1637同一总线同时需要“显示当前温度与阈值”；本方案只创建一个tm1637_number输出端口，显示内容切换策略（轮询/定格/优先级）应在模型中实现。",
+    "DHT11采样周期需满足硬件约束（>=2000ms）；具体周期倍数与与控制周期的对齐由模型决定。",
+    "电位器A0的ADC标定/缩放（将ADC映射到温度阈值单位）未在需求中给出；须在模型中采用合适的标定或比例关系。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "温度报警阈值设置（电位器）",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "温度超阈值报警指示LED（常亮）",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "温度超阈值报警蜂鸣器（由模型控制周期）",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "当前温度（用于阈值比较）",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "当前湿度（未在阈值报警需求中使用）",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT11数据有效性（温度/湿度共同有效）",
+      "sample_period_ms": 2000,
+      "device": "dht_valid",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_valid",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637显示的当前温度与阈值（由模型选择显示内容）",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 4, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 4,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "analog_input": {
+      "pin": "A0"
+    },
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "实现一个温度阈值设置与报警系统，使用 DHT11（D7）、电位器 A0、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。电位器用于设置温度报警阈值，TM1637 显示当前温度与阈值；当温度超过阈值时 LED 常亮且蜂鸣器周期报警。",
+    "effective_requirement": "实现一个温度阈值设置与报警系统，使用 DHT11（D7）、电位器 A0、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。电位器用于设置温度报警阈值，TM1637 显示当前温度与阈值；当温度超过阈值时 LED 常亮且蜂鸣器周期报警。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "实现一个温度阈值设置与报警系统，使用 DHT11（D7）、电位器 A0、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。电位器用于设置温度报警阈值，TM1637 显示当前温度与阈值；当温度超过阈值时 LED 常亮且蜂鸣器周期报警。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

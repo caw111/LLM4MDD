@@ -1,0 +1,226 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "i32"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    },
+    {
+      "name": "io_2",
+      "type": "i32"
+    },
+    {
+      "name": "io_2_valid",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_differenceSeconds",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 * 1.0) - arg1)"
+      }
+    },
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 && arg1)"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_2"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_differenceSeconds",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_0"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_differenceSeconds",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_1"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_2_valid"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "reportedDays"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "reportedDays",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && arg1)",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            },
+            {
+              "kind": "input",
+              "name": "io_2_valid"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "reportedDays",
+                "expression": "((arg0 >= 0.0) ? ((int)(((double)(arg0) / 86400.0)) - ((((double)(arg0) / 86400.0)) < (double)((int)(((double)(arg0) / 86400.0))) ? 1 : 0)) : (-((int)(((double)((-arg0)) / 86400.0)) - ((((double)((-arg0)) / 86400.0)) < (double)((int)(((double)((-arg0)) / 86400.0))) ? 1 : 0))))",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "id": "compute_differenceSeconds",
+                    "port": "result"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

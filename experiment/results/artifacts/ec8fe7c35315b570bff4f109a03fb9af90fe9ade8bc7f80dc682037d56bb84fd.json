@@ -1,0 +1,144 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "menuIndex",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousD2",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "selectedIndex",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "lockedByConfirm",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousD2"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "menuIndex",
+            "value": {
+              "if": "menuIndex == 2",
+              "then": 0,
+              "else": {
+                "if": "menuIndex == 0",
+                "then": 1,
+                "else": 2
+              }
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "lockedByConfirm"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "selectedIndex",
+            "value": "menuIndex"
+          },
+          {
+            "assign": "lockedByConfirm",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "io_1"
+            },
+            "lockedByConfirm"
+          ]
+        },
+        "then": [
+          {
+            "assign": "lockedByConfirm",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "previousD2",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_6": {
+        "if": "selectedIndex == 0",
+        "then": {
+          "if": "io_5",
+          "then": {
+            "if": "io_3 <= 0.0",
+            "then": 0,
+            "else": "RealFunctions::floor(io_3)"
+          },
+          "else": {
+            "if": "io_3 <= 0.0",
+            "then": 0,
+            "else": "RealFunctions::floor(io_3)"
+          }
+        },
+        "else": {
+          "if": "selectedIndex == 1",
+          "then": {
+            "if": "io_5",
+            "then": {
+              "if": "io_4 <= 0.0",
+              "then": 0,
+              "else": "RealFunctions::floor(io_4)"
+            },
+            "else": {
+              "if": "io_4 <= 0.0",
+              "then": 0,
+              "else": "RealFunctions::floor(io_4)"
+            }
+          },
+          "else": {
+            "if": "io_2 <= 0.0",
+            "then": 0,
+            "else": "RealFunctions::floor(io_2)"
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "启动时保持 D3 未按下；D2 连续产生三次按下上升沿（每次按下后释放），在第一次按下后按下并释放 D3 完成确认；随后不再按 D3，只观察显示值在后续 D2 切换前后是否保持为已确认的温度/湿度/电位器对应项。",
+        "oracle": "完成第一次 D3 确认后，TM1637 数字显示与当时菜单项一致并持续保持；之后即使 D2 切换到其他菜单项，只要没有再次按下 D3 确认，显示仍保持为已确认项；当再次按下 D3 确认新的菜单项后，显示才更新为新项的对应值。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    attribute menuIndex : Integer := 0;\n    attribute previousD2 : Boolean := false;\n    attribute selectedIndex : Integer := 0;\n    attribute lockedByConfirm : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousD2))) {\n        first start;\n        then assign menuIndex := (if menuIndex == 2 ? 0 else (if menuIndex == 0 ? 1 else 2));\n      }\n      then if ((io_1) and ((not lockedByConfirm))) {\n        first start;\n        then assign selectedIndex := menuIndex;\n        then assign lockedByConfirm := true;\n      }\n      then if (((not io_1)) and (lockedByConfirm)) {\n        first start;\n        then assign lockedByConfirm := false;\n      }\n      then assign previousD2 := io_0;\n    }\n    out attribute io_6 : Integer = (if selectedIndex == 0 ? (if io_5 ? (if io_3 <= 0.0 ? 0 else RealFunctions::floor(io_3)) else (if io_3 <= 0.0 ? 0 else RealFunctions::floor(io_3))) else (if selectedIndex == 1 ? (if io_5 ? (if io_4 <= 0.0 ? 0 else RealFunctions::floor(io_4)) else (if io_4 <= 0.0 ? 0 else RealFunctions::floor(io_4))) else (if io_2 <= 0.0 ? 0 else RealFunctions::floor(io_2))));\n  }\n  part system : Controller;\n}\n"
+}

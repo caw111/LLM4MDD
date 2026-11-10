@@ -1,0 +1,74 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "ledOn",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "accumulatedMs",
+        "value": "accumulatedMs + io_1"
+      },
+      {
+        "if": {
+          ">=": [
+            "accumulatedMs",
+            500
+          ]
+        },
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs - 500"
+          },
+          {
+            "assign": "ledOn",
+            "value": "not ledOn"
+          }
+        ]
+      },
+      {
+        "if": {
+          ">=": [
+            "accumulatedMs",
+            500
+          ]
+        },
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs - 500"
+          },
+          {
+            "assign": "ledOn",
+            "value": "not ledOn"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": "ledOn"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "让连接在 D12 引脚的 LED 每秒闪烁一次。\n验收约定：每秒闪烁一次指完整周期为1000ms；初始熄灭，500ms时首次点亮，此后每500ms翻转。时间容差10ms。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "以控制周期5ms更新输入io_1；从系统启动开始连续提供io_1=5的delta，覆盖0ms到1200ms，采样io_0在0ms、500ms、1000ms、1500ms附近的值",
+        "oracle": "io_0初始为false；在500ms±10ms时首次变为true；之后每500ms±10ms翻转一次，形成1000ms周期"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute accumulatedMs : Integer := 0;\n    attribute ledOn : Boolean := false;\n    perform action tick {\n      first start;\n      then assign accumulatedMs := accumulatedMs + io_1;\n      then if ((accumulatedMs) >= (500)) {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 500;\n        then assign ledOn := not ledOn;\n      }\n      then if ((accumulatedMs) >= (500)) {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 500;\n        then assign ledOn := not ledOn;\n      }\n    }\n    out attribute io_0 : Boolean = ledOn;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,379 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "vacantTimeOne",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "vacantTimeTwo",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "vacantTimeThree",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousOccupiedOne",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousOccupiedTwo",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousOccupiedThree",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportedOne",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportedTwo",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportedThree",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "restockReport",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "recordsLocked",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "calculations": [
+      {
+        "name": "vacancyLimitMs",
+        "type": "i32",
+        "expression": 60000
+      },
+      {
+        "name": "resetTimers",
+        "type": "bool",
+        "expression": {
+          "and": [
+            "io_7_valid",
+            {
+              "==": [
+                "io_7",
+                2
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "allOccupied",
+        "type": "bool",
+        "expression": {
+          "and": [
+            "io_0",
+            "io_1",
+            "io_2"
+          ]
+        }
+      },
+      {
+        "name": "occupiedOneCount",
+        "type": "i32",
+        "expression": {
+          "if": "io_0",
+          "then": 1,
+          "else": 0
+        }
+      },
+      {
+        "name": "occupiedTwoCount",
+        "type": "i32",
+        "expression": {
+          "if": "io_1",
+          "then": 1,
+          "else": 0
+        }
+      },
+      {
+        "name": "occupiedThreeCount",
+        "type": "i32",
+        "expression": {
+          "if": "io_2",
+          "then": 1,
+          "else": 0
+        }
+      }
+    ],
+    "updates": [
+      {
+        "assign": "restockReport",
+        "value": false
+      },
+      {
+        "assign": "recordsLocked",
+        "value": "allOccupied"
+      },
+      {
+        "if": {
+          "or": [
+            "resetTimers",
+            "io_0",
+            "previousOccupiedOne"
+          ]
+        },
+        "then": [
+          {
+            "assign": "vacantTimeOne",
+            "value": 0
+          },
+          {
+            "assign": "reportedOne",
+            "value": false
+          }
+        ],
+        "else": [
+          {
+            "assign": "vacantTimeOne",
+            "value": {
+              "if": {
+                ">=": [
+                  "io_6",
+                  "(vacancyLimitMs + 1) - vacantTimeOne"
+                ]
+              },
+              "then": "vacancyLimitMs + 1",
+              "else": "vacantTimeOne + io_6"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "or": [
+            "resetTimers",
+            "io_1",
+            "previousOccupiedTwo"
+          ]
+        },
+        "then": [
+          {
+            "assign": "vacantTimeTwo",
+            "value": 0
+          },
+          {
+            "assign": "reportedTwo",
+            "value": false
+          }
+        ],
+        "else": [
+          {
+            "assign": "vacantTimeTwo",
+            "value": {
+              "if": {
+                ">=": [
+                  "io_6",
+                  "(vacancyLimitMs + 1) - vacantTimeTwo"
+                ]
+              },
+              "then": "vacancyLimitMs + 1",
+              "else": "vacantTimeTwo + io_6"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "or": [
+            "resetTimers",
+            "io_2",
+            "previousOccupiedThree"
+          ]
+        },
+        "then": [
+          {
+            "assign": "vacantTimeThree",
+            "value": 0
+          },
+          {
+            "assign": "reportedThree",
+            "value": false
+          }
+        ],
+        "else": [
+          {
+            "assign": "vacantTimeThree",
+            "value": {
+              "if": {
+                ">=": [
+                  "io_6",
+                  "(vacancyLimitMs + 1) - vacantTimeThree"
+                ]
+              },
+              "then": "vacancyLimitMs + 1",
+              "else": "vacantTimeThree + io_6"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">": [
+                "vacantTimeOne",
+                "vacancyLimitMs"
+              ]
+            },
+            {
+              "not": "reportedOne"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "restockReport",
+            "value": true
+          },
+          {
+            "assign": "reportedOne",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">": [
+                "vacantTimeTwo",
+                "vacancyLimitMs"
+              ]
+            },
+            {
+              "not": "reportedTwo"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "restockReport",
+            "value": true
+          },
+          {
+            "assign": "reportedTwo",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">": [
+                "vacantTimeThree",
+                "vacancyLimitMs"
+              ]
+            },
+            {
+              "not": "reportedThree"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "restockReport",
+            "value": true
+          },
+          {
+            "assign": "reportedThree",
+            "value": true
+          }
+        ]
+      },
+      {
+        "assign": "previousOccupiedOne",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousOccupiedTwo",
+        "value": "io_1"
+      },
+      {
+        "assign": "previousOccupiedThree",
+        "value": "io_2"
+      }
+    ],
+    "outputs": {
+      "io_3": "occupiedOneCount + occupiedTwoCount + occupiedThreeCount",
+      "io_4": {
+        "if": "allOccupied",
+        "then": 2000,
+        "else": 0
+      },
+      "io_5": {
+        "or": [
+          "allOccupied",
+          {
+            ">": [
+              "vacantTimeOne",
+              "vacancyLimitMs"
+            ]
+          },
+          {
+            ">": [
+              "vacantTimeTwo",
+              "vacancyLimitMs"
+            ]
+          },
+          {
+            ">": [
+              "vacantTimeThree",
+              "vacancyLimitMs"
+            ]
+          }
+        ]
+      },
+      "io_8": "restockReport",
+      "serial_0_trigger": {
+        "and": [
+          "io_7_valid",
+          {
+            "==": [
+              "io_7",
+              1
+            ]
+          }
+        ]
+      },
+      "serial_0_value_0": "io_0",
+      "serial_0_value_1": "io_1",
+      "serial_0_value_2": "io_2"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个仓储货架层级报警系统，使用三个红外对射或数字占位传感器 D2、D3、D7 表示三层货架占用状态，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统需要统计当前占用层数并显示；当某层长时间空置超过设定时间时输出 restock needed；当三层全满时蜂鸣提示并锁定新增记录。串口支持查询各层状态和重置计时。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "遍历三层占用的八种组合；分别维持每层连续空置，在累计 60000 ms、60001 ms 及其后检查输出；测试大时间步、重新占用后再次空置、多个层同时超时。发送有效 QUERY、有效 RESET，以及有效标志为 false 的保留命令值；RESET 后保持空置重新计时。检查全满及退出全满。",
+        "oracle": "显示值等于三个占用布尔值对应的整数之和，QUERY 仅在有效事件步触发并返回当前三层状态。未明确参数采用以下实现选择：各层阈值均为 60000 ms，严格超过时每次连续空置仅提醒一次；同一步多个层超时合并为一条 restock needed。占用或有效 RESET 清零并重新允许提醒，RESET 步不累计之前的时间，进入空置的转换步从零开始；无效串口事件不执行命令。全满时连续输出 2000 Hz 并置内部 recordsLocked，退出全满解除；LED 在全满或存在超时空置层时亮。初始零时间步显示 0、静音、LED 灭且无串口输出。阈值、提醒策略、蜂鸣参数、LED 条件和解锁策略原文未指定，以上为实现选择而非冻结要求。接口未提供新增记录事件或记录存储，因此内部锁标志可检查，但不能据此证明实际新增记录已被阻止。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_6 : Integer;\n    in attribute io_7 : Integer;\n    in attribute io_7_valid : Boolean;\n    attribute vacantTimeOne : Integer := 0;\n    attribute vacantTimeTwo : Integer := 0;\n    attribute vacantTimeThree : Integer := 0;\n    attribute previousOccupiedOne : Boolean := false;\n    attribute previousOccupiedTwo : Boolean := false;\n    attribute previousOccupiedThree : Boolean := false;\n    attribute reportedOne : Boolean := false;\n    attribute reportedTwo : Boolean := false;\n    attribute reportedThree : Boolean := false;\n    attribute restockReport : Boolean := false;\n    attribute recordsLocked : Boolean := false;\n    attribute vacancyLimitMs : Integer = 60000;\n    attribute resetTimers : Boolean = ((io_7_valid) and (((io_7) == (2))));\n    attribute allOccupied : Boolean = ((io_0) and (io_1) and (io_2));\n    attribute occupiedOneCount : Integer = (if io_0 ? 1 else 0);\n    attribute occupiedTwoCount : Integer = (if io_1 ? 1 else 0);\n    attribute occupiedThreeCount : Integer = (if io_2 ? 1 else 0);\n    perform action tick {\n      first start;\n      then assign restockReport := false;\n      then assign recordsLocked := allOccupied;\n      then if ((resetTimers) or (io_0) or (previousOccupiedOne)) {\n        first start;\n        then assign vacantTimeOne := 0;\n        then assign reportedOne := false;\n      } else {\n        first start;\n        then assign vacantTimeOne := (if ((io_6) >= ((vacancyLimitMs + 1) - vacantTimeOne)) ? vacancyLimitMs + 1 else vacantTimeOne + io_6);\n      }\n      then if ((resetTimers) or (io_1) or (previousOccupiedTwo)) {\n        first start;\n        then assign vacantTimeTwo := 0;\n        then assign reportedTwo := false;\n      } else {\n        first start;\n        then assign vacantTimeTwo := (if ((io_6) >= ((vacancyLimitMs + 1) - vacantTimeTwo)) ? vacancyLimitMs + 1 else vacantTimeTwo + io_6);\n      }\n      then if ((resetTimers) or (io_2) or (previousOccupiedThree)) {\n        first start;\n        then assign vacantTimeThree := 0;\n        then assign reportedThree := false;\n      } else {\n        first start;\n        then assign vacantTimeThree := (if ((io_6) >= ((vacancyLimitMs + 1) - vacantTimeThree)) ? vacancyLimitMs + 1 else vacantTimeThree + io_6);\n      }\n      then if ((((vacantTimeOne) > (vacancyLimitMs))) and ((not reportedOne))) {\n        first start;\n        then assign restockReport := true;\n        then assign reportedOne := true;\n      }\n      then if ((((vacantTimeTwo) > (vacancyLimitMs))) and ((not reportedTwo))) {\n        first start;\n        then assign restockReport := true;\n        then assign reportedTwo := true;\n      }\n      then if ((((vacantTimeThree) > (vacancyLimitMs))) and ((not reportedThree))) {\n        first start;\n        then assign restockReport := true;\n        then assign reportedThree := true;\n      }\n      then assign previousOccupiedOne := io_0;\n      then assign previousOccupiedTwo := io_1;\n      then assign previousOccupiedThree := io_2;\n    }\n    out attribute io_3 : Integer = occupiedOneCount + occupiedTwoCount + occupiedThreeCount;\n    out attribute io_4 : Integer = (if allOccupied ? 2000 else 0);\n    out attribute io_5 : Boolean = ((allOccupied) or (((vacantTimeOne) > (vacancyLimitMs))) or (((vacantTimeTwo) > (vacancyLimitMs))) or (((vacantTimeThree) > (vacancyLimitMs))));\n    out attribute io_8 : Boolean = restockReport;\n    out attribute serial_0_trigger : Boolean = ((io_7_valid) and (((io_7) == (1))));\n    out attribute serial_0_value_0 : Boolean = io_0;\n    out attribute serial_0_value_1 : Boolean = io_1;\n    out attribute serial_0_value_2 : Boolean = io_2;\n  }\n  part system : Controller;\n}\n"
+}

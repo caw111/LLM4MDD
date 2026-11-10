@@ -1,0 +1,225 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is Arduino Uno; fixed wiring: DHT11 data on D7, TM1637 CLK on D4 and DIO on D5, error LED on D13, Serial baud 9600.",
+    "DHT sampling period must be >=2000 ms for both temperature and humidity on the same physical pin (D7). Invalid reads retain the last valid measurements and set validity false; the SysML model decides when to enter the error state.",
+    "TM1637 shows alternating temperature/humidity during normal operation; on any DHT failure it must display 0000, while the LED on D13 flashes according to SysML timing (not encoded here).",
+    "Serial output 'sensor error' is required on sensor failure. Since the serial report API here supports numeric/Boolean channel values, the fixed text transmission should be modeled in SysML (do not implement dynamic text construction in code).",
+    "No explicit control-deadline was provided; control_period_ms is chosen as 10 ms for scheduling granularity."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Error LED (sensor read failure indicator)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "Measured temperature for display (invalid reads keep last valid)",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "sensor": "DHT11",
+        "pin": "D7"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "Measured humidity for display (invalid reads keep last valid)",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "sensor": "DHT11",
+        "pin": "D7"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637 displayed number: 0000 on sensor error",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "When sensor read fails: output 'sensor error' message via Serial",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "code",
+      "initial": 0,
+      "meaning": "No numeric value required; kept as placeholder per reporting API (message text is fixed elsewhere in SysML)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"sensor_error_numeric_placeholder\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "sensor_error_numeric_placeholder"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个带错误提示的传感器显示系统，使用 DHT11（D7）、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。正常时轮流显示温度和湿度；若读数失败，则数码管显示 0000、LED 闪烁，并在串口输出 sensor error。",
+    "effective_requirement": "设计一个带错误提示的传感器显示系统，使用 DHT11（D7）、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。正常时轮流显示温度和湿度；若读数失败，则数码管显示 0000、LED 闪烁，并在串口输出 sensor error。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个带错误提示的传感器显示系统，使用 DHT11（D7）、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。正常时轮流显示温度和湿度；若读数失败，则数码管显示 0000、LED 闪烁，并在串口输出 sensor error。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

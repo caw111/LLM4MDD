@@ -1,0 +1,81 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "reportedDays",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "calculations": [
+      {
+        "name": "differenceSeconds",
+        "type": "f64",
+        "expression": "(io_2 * 1.0) - io_0"
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            "io_2_valid"
+          ]
+        },
+        "then": [
+          {
+            "assign": "reportedDays",
+            "value": {
+              "if": {
+                ">=": [
+                  "differenceSeconds",
+                  0.0
+                ]
+              },
+              "then": "RealFunctions::floor(differenceSeconds / 86400.0)",
+              "else": "-RealFunctions::floor((-differenceSeconds) / 86400.0)"
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": {
+        "and": [
+          "io_1",
+          "io_2_valid"
+        ]
+      },
+      "serial_0_value_0": "reportedDays"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Initialize the RTC successfully with an independently selected setup timestamp. Send the three supplied ISO targets, then additional calendar-valid targets using CR/LF framing and 20 ms idle completion.",
+        "oracle": "Setup returns within 500 ms. Serial operates at 9600 baud. Each accepted target produces exactly one D-{days} line within 250 ms, using the single setup-time RTC acquisition and signed whole days truncated toward zero. No reports occur between accepted events.",
+        "requirement_text": "# Serial RTC sensor\n\n## Project Description\nThis is a simple Arduino project that compare RTC sensor time and serial input.\n\n## Hardware Components\n- Arduino Uno\n- ds1307 Real Time Clock module\n\n## Circuit Description\nThe RTC sensor is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the RTC module can begin\n3. Read current time once with RTC module\n4. Continuously read the serial input, which is a target datetime in ISO format\n5. Calculate how much day is left until the target time, and print to the serial monitor in the following format: \"D-{days}\"\n\n## Success Criteria\nThe test is successful when:\n1. Correct day left to the target datetime is printed in the serial monitor.\n\n## Notes for Implementation\n- Get current time with RTC sensor only once, in the setup\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\n## Variants\nThere may be variants with GND pin.\n\n## Test Inputs\nTest input values are: \"2025-04-11T09:38:00\", \"2025-06-11T09:38:00\", \"2025-03-03T09:38:00\"\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Compare RTC sensor time and serial input\",\n    \"config\": {\n        \"gnd_pin\": \"GND.2\",\n        \"vcc_pin\": \"5V\"\n    },\n    \"parts\": [\n        {\n            \"id\": \"arduino uno1\",\n            \"type\": \"wokwi-arduino-uno\",\n            \"top\": 0,\n            \"left\": 20\n        },\n        {\n            \"id\": \"rtc module1307\",\n            \"type\": \"wokwi-ds1307\",\n            \"top\": 250,\n            \"left\": 220,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"rtc module1307:GND\",\n            \"black\",\n            [\n                \"v20\",\n                \"*\",\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"rtc module1307:5V\",\n            \"red\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:A4\",\n            \"rtc module1307:SDA\",\n            \"green\",\n            [\n                \"v16\",\n                \"h0\",\n                \"*\",\n                \"h-34\"\n            ]\n        ],\n        [\n            \"arduino uno1:A5\",\n            \"rtc module1307:SCL\",\n            \"orange\",\n            [\n                \"v20\",\n                \"*\",\n                \"h-30\"\n            ]\n        ]\n    ]\n}\nDisclosed day-count convention where the source is silent: subtract the captured setup-time RTC Unix seconds from the accepted ISO target Unix seconds, divide by86400 and truncate toward zero. Use the same timezone for both. Past targets yield negative days. Capture RTC only once; do not replace it with the example timestamps."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "With a valid captured RTC timestamp, submit targets differing from it by 0, 86399, 86400, 86401, -86399, -86400 and -86401 seconds. Repeat an identical accepted target on consecutive control steps.",
+        "oracle": "Reported day values are respectively 0, 0, 1, 1, 0, -1 and -1. Each consecutive accepted event emits its own report, including identical targets. Negative values retain their sign in the registered D- format.",
+        "requirement_text": "# Serial RTC sensor\n\n## Project Description\nThis is a simple Arduino project that compare RTC sensor time and serial input.\n\n## Hardware Components\n- Arduino Uno\n- ds1307 Real Time Clock module\n\n## Circuit Description\nThe RTC sensor is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the RTC module can begin\n3. Read current time once with RTC module\n4. Continuously read the serial input, which is a target datetime in ISO format\n5. Calculate how much day is left until the target time, and print to the serial monitor in the following format: \"D-{days}\"\n\n## Success Criteria\nThe test is successful when:\n1. Correct day left to the target datetime is printed in the serial monitor.\n\n## Notes for Implementation\n- Get current time with RTC sensor only once, in the setup\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\n## Variants\nThere may be variants with GND pin.\n\n## Test Inputs\nTest input values are: \"2025-04-11T09:38:00\", \"2025-06-11T09:38:00\", \"2025-03-03T09:38:00\"\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Compare RTC sensor time and serial input\",\n    \"config\": {\n        \"gnd_pin\": \"GND.2\",\n        \"vcc_pin\": \"5V\"\n    },\n    \"parts\": [\n        {\n            \"id\": \"arduino uno1\",\n            \"type\": \"wokwi-arduino-uno\",\n            \"top\": 0,\n            \"left\": 20\n        },\n        {\n            \"id\": \"rtc module1307\",\n            \"type\": \"wokwi-ds1307\",\n            \"top\": 250,\n            \"left\": 220,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"rtc module1307:GND\",\n            \"black\",\n            [\n                \"v20\",\n                \"*\",\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"rtc module1307:5V\",\n            \"red\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:A4\",\n            \"rtc module1307:SDA\",\n            \"green\",\n            [\n                \"v16\",\n                \"h0\",\n                \"*\",\n                \"h-34\"\n            ]\n        ],\n        [\n            \"arduino uno1:A5\",\n            \"rtc module1307:SCL\",\n            \"orange\",\n            [\n                \"v20\",\n                \"*\",\n                \"h-30\"\n            ]\n        ]\n    ]\n}\nDisclosed day-count convention where the source is silent: subtract the captured setup-time RTC Unix seconds from the accepted ISO target Unix seconds, divide by86400 and truncate toward zero. Use the same timezone for both. Past targets yield negative days. Capture RTC only once; do not replace it with the example timestamps."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "integration",
+        "stimulus": "Exercise RTC initialization or acquisition failure, invalid serial frames, and valid targets after a long uptime. Inspect RTC acquisition calls and the preserved circuit connections.",
+        "oracle": "Failed RTC acquisition and invalid serial frames produce no day reports. Successful operation performs one setup-time RTC acquisition without subsequent refresh or adjustment. Later reports still use that captured timestamp. RTC wiring remains SDA=A4, SCL=A5, power=5V and ground=GND.2, with RTClib RTC_DS1307 initialization.",
+        "requirement_text": "# Serial RTC sensor\n\n## Project Description\nThis is a simple Arduino project that compare RTC sensor time and serial input.\n\n## Hardware Components\n- Arduino Uno\n- ds1307 Real Time Clock module\n\n## Circuit Description\nThe RTC sensor is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the RTC module can begin\n3. Read current time once with RTC module\n4. Continuously read the serial input, which is a target datetime in ISO format\n5. Calculate how much day is left until the target time, and print to the serial monitor in the following format: \"D-{days}\"\n\n## Success Criteria\nThe test is successful when:\n1. Correct day left to the target datetime is printed in the serial monitor.\n\n## Notes for Implementation\n- Get current time with RTC sensor only once, in the setup\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\n## Variants\nThere may be variants with GND pin.\n\n## Test Inputs\nTest input values are: \"2025-04-11T09:38:00\", \"2025-06-11T09:38:00\", \"2025-03-03T09:38:00\"\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Compare RTC sensor time and serial input\",\n    \"config\": {\n        \"gnd_pin\": \"GND.2\",\n        \"vcc_pin\": \"5V\"\n    },\n    \"parts\": [\n        {\n            \"id\": \"arduino uno1\",\n            \"type\": \"wokwi-arduino-uno\",\n            \"top\": 0,\n            \"left\": 20\n        },\n        {\n            \"id\": \"rtc module1307\",\n            \"type\": \"wokwi-ds1307\",\n            \"top\": 250,\n            \"left\": 220,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"rtc module1307:GND\",\n            \"black\",\n            [\n                \"v20\",\n                \"*\",\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"rtc module1307:5V\",\n            \"red\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:A4\",\n            \"rtc module1307:SDA\",\n            \"green\",\n            [\n                \"v16\",\n                \"h0\",\n                \"*\",\n                \"h-34\"\n            ]\n        ],\n        [\n            \"arduino uno1:A5\",\n            \"rtc module1307:SCL\",\n            \"orange\",\n            [\n                \"v20\",\n                \"*\",\n                \"h-30\"\n            ]\n        ]\n    ]\n}\nDisclosed day-count convention where the source is silent: subtract the captured setup-time RTC Unix seconds from the accepted ISO target Unix seconds, divide by86400 and truncate toward zero. Use the same timezone for both. Past targets yield negative days. Capture RTC only once; do not replace it with the example timestamps."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Integer;\n    in attribute io_2_valid : Boolean;\n    attribute reportedDays : Integer := 0;\n    attribute differenceSeconds : Real = (io_2 * 1.0) - io_0;\n    perform action tick {\n      first start;\n      then if ((io_1) and (io_2_valid)) {\n        first start;\n        then assign reportedDays := (if ((differenceSeconds) >= (0.0)) ? RealFunctions::floor(differenceSeconds / 86400.0) else -RealFunctions::floor((-differenceSeconds) / 86400.0));\n      }\n    }\n    out attribute serial_0_trigger : Boolean = ((io_1) and (io_2_valid));\n    out attribute serial_0_value_0 : Integer = reportedDays;\n  }\n  part system : Controller;\n}\n"
+}

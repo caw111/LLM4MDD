@@ -1,0 +1,36 @@
+{
+  "contract": {
+    "version": 1,
+    "control_period_ms": 10,
+    "interfaces": [
+      {"name":"exampleReset","direction":"input","type":"bool","unit":"1","sample_period_ms":10,"initial":false,"meaning":"Reset flag","device":"button","hardware":"Illustrative input","binding":{"kind":"digital_input","pin":2,"active_high":false,"pullup":true}},
+      {"name":"exampleSample","direction":"input","type":"f64","unit":"adc_count","sample_period_ms":10,"initial":0.0,"meaning":"Raw ADC","device":"ADC","hardware":"Illustrative input","binding":{"kind":"analog_input","pin":"A0"}},
+      {"name":"exampleReady","direction":"output","type":"bool","unit":"1","sample_period_ms":10,"initial":false,"meaning":"Report gate","device":"Serial","hardware":"Illustrative report control","binding":{"kind":"report_trigger"}},
+      {"name":"exampleDouble","direction":"output","type":"i32","unit":"1","sample_period_ms":10,"initial":0,"meaning":"Twice updated count","device":"Serial","hardware":"Illustrative report value","binding":{"kind":"serial_value","trigger":"exampleReady","baud":115200,"label":"Double: "}},
+      {"name":"exampleRatio","direction":"output","type":"f64","unit":"1","sample_period_ms":10,"initial":0.0,"meaning":"Normalized ADC","device":"Serial","hardware":"Illustrative report value","binding":{"kind":"serial_value","trigger":"exampleReady","baud":115200,"label":"Ratio: "}}
+    ],
+    "requirements": [
+      {"id":"ExampleR1","text":"Reset count to zero while exampleReset is true. Otherwise advance count cyclically through 0..7 each step; exampleDouble is twice the updated count.","assertion_ids":["example_order"]},
+      {"id":"ExampleR2","text":"exampleRatio is zero during reset, otherwise exampleSample divided by 1023.0.","assertion_ids":["example_ratio"]},
+      {"id":"ExampleR3","text":"exampleReady is true only when reset is false and the sampled ADC is at least 512.","assertion_ids":["example_gate"]}
+    ]
+  },
+  "controller": {
+    "states":[{"name":"exampleCount","type":"i32","initial":0},{"name":"exampleDoubled","type":"i32","initial":0}],
+    "updates":[
+      {"if":"exampleReset","then":[{"assign":"exampleCount","value":0},{"assign":"exampleDoubled","value":0}],
+       "else":[{"assign":"exampleCount","value":{"if":"exampleCount >= 7","then":0,"else":"exampleCount + 1"}},
+               {"assign":"exampleDoubled","value":"exampleCount * 2"}]}
+    ],
+    "outputs": {
+      "exampleReady":"not exampleReset and exampleSample >= 512.0",
+      "exampleDouble":"exampleDoubled",
+      "exampleRatio":{"if":"exampleReset","then":0.0,"else":"exampleSample / 1023.0"}
+    }
+  },
+  "req_test_map": {"requirements_to_testpoints":[
+    {"requirement_id":"ExampleR1","requirement_text":"Reset count to zero while exampleReset is true. Otherwise advance count cyclically through 0..7 each step; exampleDouble is twice the updated count.","test_point_id":"ExampleT1","test_method":"trace","stimulus":"Reset followed by eight non-reset steps","oracle":"Doubled values follow the updated cyclic count and return to zero"},
+    {"requirement_id":"ExampleR2","requirement_text":"exampleRatio is zero during reset, otherwise exampleSample divided by 1023.0.","test_point_id":"ExampleT2","test_method":"trace","stimulus":"Raw ADC at 0 and 1023, reset toggles","oracle":"Ratios 0.0 and 1.0, with zero throughout reset"},
+    {"requirement_id":"ExampleR3","requirement_text":"exampleReady is true only when reset is false and the sampled ADC is at least 512.","test_point_id":"ExampleT3","test_method":"trace","stimulus":"ADC below/at threshold and reset asserted","oracle":"Gate is true only at/above threshold without reset"}
+  ]}
+}

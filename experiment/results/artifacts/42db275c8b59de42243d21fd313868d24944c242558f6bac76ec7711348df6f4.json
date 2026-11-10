@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is arduino:avr:uno; wiring pins preserved exactly as given: DHT11 on D7; heater relay D10; fan D5; buzzer D6; button D2; TM1637 CLK D4 and DIO D3; status LED D13.",
+    "DHT sensor model assumed DHT11 because original requirement says DHT11; both temperature and humidity share pin D7 and have a shared validity request dht_valid on the same pin.",
+    "TM1637 display operation is represented as a single program-owned tm1637_number output; how the model encodes 'setting value view mode' and 'current value view mode' into the displayed integer is a SysML/model decision.",
+    "Serial output: requirement states '串口输出 incubation abnormal' but does not specify whether it is fixed text, a numeric/status code, and exact formatting. To avoid inventing the protocol, this proposal provides a typed boolean report gated by the abnormal condition; if fixed exact text is required, replace/augment with serial_text_output using that fixed string (format assumption otherwise cannot be guaranteed).",
+    "Button electrical polarity (active-high vs active-low) is not specified. The proposal uses the catalog default by not overriding active_high/pullup; the model should treat the boolean as 'pressed=true' according to actual hardware polarity.",
+    "Control_period_ms selected as 10ms as a reasonable scheduling granularity; actual reporting cadence, ventilation periodicity, and 1-minute threshold logic are implemented in the SysML model using elapsed_ms."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Mode/setting toggle button (pressed model=true)",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Heater relay control",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D10"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Status LED (incubation/alarm indication as driven by model)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Fan relay/driver control",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D5\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D5"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer alarm tone enable/frequency (model controls whether/how to sound)",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "DHT temperature (°C) for incubation control",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "DHT relative humidity (%RH) for monitoring",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT frame validity (true when a coherent read is valid)",
+      "sample_period_ms": 2000,
+      "device": "dht_valid",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_valid",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637 display number (mode + current/target value per model)",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 0, \"clk_pin\": \"D4\", \"dio_pin\": \"D3\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 0,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D3",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Alarm gate: incubation abnormal detected for 1 minute above high or below low",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Reported alarm condition (true when abnormal)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"incubation_abnormal\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "incubation_abnormal"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D3"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D10"
+        },
+        "resolved": {
+          "pin": "D10"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+    "effective_requirement": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D3）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"digital_output\", \"pin\": \"D5\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

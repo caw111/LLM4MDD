@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"sampleCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"sampleCount\",\n            \"value\": \"sampleCount + 1\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \"==\": [\n            \"sampleCount - 5 * RealFunctions::floor(sampleCount / 5)\",\n            0\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"serial_0_trigger\": {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_value_0\": \"io_1\",\n      \"serial_0_value_1\": \"io_2\",\n      \"serial_0_value_2\": \"sampleCount\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个按钮触发的数据采样系统，使用按钮 D2、光敏电阻 A0、LM35（A1）和串口。按下按钮后立即采集一次光照与温度数据并通过串口输出，同时将采样计数加一；每完成 5 次采样，让蜂鸣器 D6 短鸣一次提示。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Hold io_0 false initially; then create a single rising edge on io_0 (false->true) with stable io_1 and io_2; keep io_0 true for one step then release to false.\",\n        \"oracle\": \"On the step of the rising edge, serial_0_trigger==true and serial_0_value_0==io_1 (sampled), serial_0_value_1==io_2 (sampled), serial_0_value_2==1; io_3==0 unless sampleCount is a multiple of 5 at that step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个按钮触发的数据采样系统，使用按钮 D2、光敏电阻 A0、LM35（A1）和串口。按下按钮后立即采集一次光照与温度数据并通过串口输出，同时将采样计数加一；每完成 5 次采样，让蜂鸣器 D6 短鸣一次提示。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Generate 5 separate button press rising edges (io_0 false->true each time with at least one intervening false step). Keep io_1 and io_2 constant across all steps, so only the sample counter changes.\",\n        \"oracle\": \"serial_0_trigger is true exactly on each press rising-edge step; serial_0_value_2 equals the incremented count (1..5) on those steps; io_3 is nonzero only on the 5th sampling step (when count becomes 5) and 0 on the other four sampling steps.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    attribute sampleCount : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign sampleCount := sampleCount + 1;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_3 : Integer = (if ((sampleCount - 5 * RealFunctions::floor(sampleCount / 5)) == (0)) ? 1000 else 0);\n    out attribute serial_0_trigger : Boolean = (if ((io_0) and ((not previousPressed))) ? true else false);\n    out attribute serial_0_value_0 : Real = io_1;\n    out attribute serial_0_value_1 : Real = io_2;\n    out attribute serial_0_value_2 : Integer = sampleCount;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "stage",
+        "type": "i32",
+        "initial": 1
+      },
+      {
+        "name": "remainingMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "targetTempC",
+        "type": "f64",
+        "initial": 60.0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "running",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "beepActive",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "true",
+        "then": [
+          {
+            "if": "io_1 and not previousPressed",
+            "then": [
+              {
+                "assign": "running",
+                "value": true
+              }
+            ]
+          },
+          {
+            "assign": "previousPressed",
+            "value": "io_1"
+          }
+        ]
+      },
+      {
+        "if": "running",
+        "then": [
+          {
+            "assign": "remainingMs",
+            "value": "remainingMs"
+          },
+          {
+            "if": "io_0 >= targetTempC",
+            "then": [
+              {
+                "assign": "beepActive",
+                "value": true
+              }
+            ],
+            "else": [
+              {
+                "assign": "beepActive",
+                "value": false
+              }
+            ]
+          },
+          {
+            "if": "remainingMs <= 0",
+            "then": [
+              {
+                "assign": "stage",
+                "value": {
+                  "if": "stage == 1",
+                  "then": 2,
+                  "else": {
+                    "if": "stage == 2",
+                    "then": 3,
+                    "else": 3
+                  }
+                }
+              },
+              {
+                "assign": "targetTempC",
+                "value": {
+                  "if": "stage == 1",
+                  "then": 80.0,
+                  "else": {
+                    "if": "stage == 2",
+                    "then": 60.0,
+                    "else": 55.0
+                  }
+                }
+              },
+              {
+                "assign": "remainingMs",
+                "value": 30000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_4": {
+        "if": "beepActive",
+        "then": 1000,
+        "else": 0
+      },
+      "io_5": {
+        "if": "running",
+        "then": true,
+        "else": false
+      },
+      "io_6": "stage",
+      "serial_0_trigger": {
+        "if": "running",
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": "0",
+      "serial_0_value_1": "stage",
+      "serial_0_value_2": "io_0"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个三阶段烹饪辅助系统，使用温度传感器 LM35（A1）、按钮 D2、D3、D4、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和 LED D13。系统支持预热、烹饪、保温三个阶段，每个阶段可设置目标温度和持续时间；温度达到目标时蜂鸣提示，阶段结束自动切换。数码管显示当前阶段编号和剩余时间，串口输出完整流程日志。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下D2启动运行（io_1从false到true上升沿），保持io_0逐步上升并超过目标温度，再保持若干控制步",
+        "oracle": "serial_0_trigger在running=true时为true，io_5为true；当io_0>=targetTempC时io_4变为非零蜂鸣频率，否则为0；阶段由stage输出反映并在remainingMs<=0分支发生自动切换"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute stage : Integer := 1;\n    attribute remainingMs : Integer := 0;\n    attribute targetTempC : Real := 60.0;\n    attribute previousPressed : Boolean := false;\n    attribute running : Boolean := false;\n    attribute beepActive : Boolean := false;\n    perform action tick {\n      first start;\n      then if true {\n        first start;\n        then if io_1 and not previousPressed {\n          first start;\n          then assign running := true;\n        }\n        then assign previousPressed := io_1;\n      }\n      then if running {\n        first start;\n        then assign remainingMs := remainingMs;\n        then if io_0 >= targetTempC {\n          first start;\n          then assign beepActive := true;\n        } else {\n          first start;\n          then assign beepActive := false;\n        }\n        then if remainingMs <= 0 {\n          first start;\n          then assign stage := (if stage == 1 ? 2 else (if stage == 2 ? 3 else 3));\n          then assign targetTempC := (if stage == 1 ? 80.0 else (if stage == 2 ? 60.0 else 55.0));\n          then assign remainingMs := 30000;\n        }\n      }\n    }\n    out attribute io_4 : Integer = (if beepActive ? 1000 else 0);\n    out attribute io_5 : Boolean = (if running ? true else false);\n    out attribute io_6 : Integer = stage;\n    out attribute serial_0_trigger : Boolean = (if running ? true else false);\n    out attribute serial_0_value_0 : Integer = 0;\n    out attribute serial_0_value_1 : Integer = stage;\n    out attribute serial_0_value_2 : Real = io_0;\n  }\n  part system : Controller;\n}\n"
+}

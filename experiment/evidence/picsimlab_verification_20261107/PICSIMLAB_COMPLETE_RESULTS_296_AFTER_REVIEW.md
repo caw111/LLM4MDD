@@ -1,0 +1,321 @@
+# PICSimLab 296题完整结果
+
+当前历史交付代码快照：编译通过296/296；基本功能通过283/296（95.61%），不通过12题，未确认1题。通过率分母包含全部296题，未确认题未计为通过。
+
+本轮对34题复核，22题通过、12题不通过；生成代码未改，34题独立重新编译的固件与冻结版本相同。评估结合原生AVR固件仿真与需求/源码复核。此为含历史修复的交付代码快照，不能作为工作流一次自动生成的正确率。
+
+| 数据集 | 总数 | 编译通过 | 基本功能通过 | 不通过 | 未确认 | 基本功能通过率 |
+|---|---:|---:|---:|---:|---:|---:|
+| internal | 120 | 120 | 111 | 8 | 1 | 92.50% |
+| PCEval | 50 | 50 | 47 | 3 | 0 | 94.00% |
+| EmbedBench | 126 | 126 | 125 | 1 | 0 | 99.21% |
+| 总计 | 296 | 296 | 283 | 12 | 1 | 95.61% |
+
+## 判定条件
+
+基本功能通过不等于每项严格格式、时限或未覆盖场景全部满足。按钮LCD和串口LCD能显示正确内容，但仍未满足250ms响应和500ms启动限制。部分显示器按既定引脚冲突消解方案接线；串口LCD采用上电复位后RST保持HIGH的模块条件。传感器边界按实际测量值及量化误差解释。完整条件见[34题详细报告](binary_review_34_20261108/BINARY_VERDICTS_34.md)。
+
+未确认advanced_009：未观察到相关TM1637显示输出，温度视图尚缺充分仿真证据，未将其当作通过或代码功能失败。
+
+## 全部逐题结果
+
+| 题号 | 数据集 | 编译 | 基本功能 | 判定说明 |
+|---|---|---|---|---|
+| [advanced_001](cases/advanced_001/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_002](cases/advanced_002/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_003](cases/advanced_003/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_004](cases/advanced_004/source.ino) | internal | 通过 | **不通过** | 实际计时约慢20%；设定06:59后，到62秒仍显示06:59，应到07:00时未按时提醒。计时状态用AVR的32位double累加大毫秒数，发生舍入丢失。 |
+| [advanced_005](cases/advanced_005/source.ino) | internal | 通过 | **通过** | 稳定输入补测的两房间完整5秒报表及独立告警全部通过；原序列的显示轮询和按钮切换也可工作。 |
+| [advanced_006](cases/advanced_006/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_007](cases/advanced_007/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_008](cases/advanced_008/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_009](cases/advanced_009/source.ino) | internal | 通过 | **未确认** | 未观察到相关TM1637显示输出，温度显示功能仍未确认。 |
+| [advanced_010](cases/advanced_010/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_011](cases/advanced_011/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_012](cases/advanced_012/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_013](cases/advanced_013/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_014](cases/advanced_014/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_015](cases/advanced_015/source.ino) | internal | 通过 | **通过** | 定时开阀、次数统计、低水位禁止出水和报警通过；仅水位百分比的小幅测距量化偏差触发旧判据。 |
+| [advanced_016](cases/advanced_016/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_017](cases/advanced_017/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_018](cases/advanced_018/source.ino) | internal | 通过 | **通过** | 修正测试夹具的DHT初始值后，13项原场景断言全部通过，覆盖加热、显示切换及持续异常60秒报警。 |
+| [advanced_019](cases/advanced_019/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_020](cases/advanced_020/source.ino) | internal | 通过 | **不通过** | 移动剩余时间被置为1000后没有递减，电梯无法完成楼层移动；负载状态也没有从输入更新。 |
+| [advanced_021](cases/advanced_021/source.ino) | internal | 通过 | **不通过** | 各显示分支均输出0；温度输入按原始ADC使用，较高温度下仍不能正确关闭加热。核心温控和显示不成立。 |
+| [advanced_022](cases/advanced_022/source.ino) | internal | 通过 | **不通过** | 超时条件同时要求结束时间大于开始时间、开始时间不小于结束时间，逻辑不能成立；没有实际实现超时提醒。 |
+| [advanced_023](cases/advanced_023/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_024](cases/advanced_024/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_025](cases/advanced_025/source.ino) | internal | 通过 | **不通过** | 阶段倒计时没有递减；启动后直接进入第二阶段并停在那里，不能完成后续烹饪阶段。 |
+| [advanced_026](cases/advanced_026/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_027](cases/advanced_027/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [advanced_028](cases/advanced_028/source.ino) | internal | 通过 | **不通过** | 独立补测4项均失败：第二床单独呼叫显示0，后续呼叫覆盖等待最久床位，确认一次清除全部呼叫，等待时间日志始终为0。 |
+| [advanced_029](cases/advanced_029/source.ino) | internal | 通过 | **不通过** | 原始ADC值与3000等温度阈值直接比较，正常ADC量程无法触发相关控制；温度告警、风机和除霜的核心控制不正确。 |
+| [advanced_030](cases/advanced_030/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_001](cases/complex_001/source.ino) | internal | 通过 | **通过** | 温度/距离显示轮换和报警有效；名义15cm的回波被pulseIn测为略小于15cm，按实测值触发距离报警符合条件。 |
+| [complex_002](cases/complex_002/source.ino) | internal | 通过 | **通过** | 采用既定冲突消解接线后显示正常；独立补测手动电位器、自动温度调速以及非选中输入不干扰，6项实际PWM检查全部通过。 |
+| [complex_003](cases/complex_003/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_004](cases/complex_004/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_005](cases/complex_005/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_006](cases/complex_006/source.ino) | internal | 通过 | **通过** | DHT初始温度夹具修正后18项原断言全部通过，显示和阈值报警有效。 |
+| [complex_007](cases/complex_007/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_008](cases/complex_008/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_009](cases/complex_009/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_010](cases/complex_010/source.ino) | internal | 通过 | **通过** | 采用既定冲突消解接线后，温湿度显示、按钮切换和温控PWM共18项原断言全部通过。 |
+| [complex_011](cases/complex_011/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_012](cases/complex_012/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_013](cases/complex_013/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_014](cases/complex_014/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_015](cases/complex_015/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_016](cases/complex_016/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_017](cases/complex_017/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_018](cases/complex_018/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_019](cases/complex_019/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_020](cases/complex_020/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_021](cases/complex_021/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_022](cases/complex_022/source.ino) | internal | 通过 | **通过** | 常灭、常亮、呼吸模式及参数切换可工作。旧判据将题目未规定的呼吸相位固定到3个采样点，实际偏差仅约5/255。 |
+| [complex_023](cases/complex_023/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_024](cases/complex_024/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_025](cases/complex_025/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_026](cases/complex_026/source.ino) | internal | 通过 | **通过** | DHT初始温度夹具修正后14项原断言全部通过，菜单切换及按钮开关串口报告有效。 |
+| [complex_027](cases/complex_027/source.ino) | internal | 通过 | **通过** | 串口实际以约3秒周期报告，连续3次近距离检测后输出persistent object detected并点亮LED；旧正则把量化后的浮点距离限定为理想整数。 |
+| [complex_028](cases/complex_028/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_029](cases/complex_029/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [complex_030](cases/complex_030/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_0](cases/embedbench_0/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_1](cases/embedbench_1/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_10](cases/embedbench_10/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_100](cases/embedbench_100/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_101](cases/embedbench_101/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_102](cases/embedbench_102/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_103](cases/embedbench_103/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_104](cases/embedbench_104/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_105](cases/embedbench_105/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_106](cases/embedbench_106/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_107](cases/embedbench_107/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_108](cases/embedbench_108/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_109](cases/embedbench_109/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_11](cases/embedbench_11/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_110](cases/embedbench_110/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_111](cases/embedbench_111/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_112](cases/embedbench_112/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_113](cases/embedbench_113/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_114](cases/embedbench_114/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_115](cases/embedbench_115/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_116](cases/embedbench_116/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_117](cases/embedbench_117/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_118](cases/embedbench_118/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_119](cases/embedbench_119/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_12](cases/embedbench_12/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_120](cases/embedbench_120/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_121](cases/embedbench_121/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_122](cases/embedbench_122/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_123](cases/embedbench_123/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_124](cases/embedbench_124/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_125](cases/embedbench_125/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_13](cases/embedbench_13/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_14](cases/embedbench_14/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_15](cases/embedbench_15/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_16](cases/embedbench_16/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_17](cases/embedbench_17/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_18](cases/embedbench_18/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_19](cases/embedbench_19/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_2](cases/embedbench_2/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_20](cases/embedbench_20/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_21](cases/embedbench_21/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_22](cases/embedbench_22/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_23](cases/embedbench_23/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_24](cases/embedbench_24/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_25](cases/embedbench_25/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_26](cases/embedbench_26/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_27](cases/embedbench_27/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_28](cases/embedbench_28/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_29](cases/embedbench_29/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_3](cases/embedbench_3/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_30](cases/embedbench_30/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_31](cases/embedbench_31/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_32](cases/embedbench_32/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_33](cases/embedbench_33/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_34](cases/embedbench_34/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_35](cases/embedbench_35/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_36](cases/embedbench_36/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_37](cases/embedbench_37/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_38](cases/embedbench_38/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_39](cases/embedbench_39/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_4](cases/embedbench_4/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_40](cases/embedbench_40/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_41](cases/embedbench_41/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_42](cases/embedbench_42/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_43](cases/embedbench_43/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_44](cases/embedbench_44/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_45](cases/embedbench_45/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_46](cases/embedbench_46/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_47](cases/embedbench_47/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_48](cases/embedbench_48/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_49](cases/embedbench_49/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_5](cases/embedbench_5/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_50](cases/embedbench_50/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_51](cases/embedbench_51/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_52](cases/embedbench_52/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_53](cases/embedbench_53/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_54](cases/embedbench_54/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_55](cases/embedbench_55/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_56](cases/embedbench_56/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_57](cases/embedbench_57/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_58](cases/embedbench_58/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_59](cases/embedbench_59/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_6](cases/embedbench_6/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_60](cases/embedbench_60/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_61](cases/embedbench_61/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_62](cases/embedbench_62/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_63](cases/embedbench_63/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_64](cases/embedbench_64/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_65](cases/embedbench_65/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_66](cases/embedbench_66/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_67](cases/embedbench_67/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_68](cases/embedbench_68/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_69](cases/embedbench_69/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_7](cases/embedbench_7/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_70](cases/embedbench_70/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_71](cases/embedbench_71/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_72](cases/embedbench_72/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_73](cases/embedbench_73/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_74](cases/embedbench_74/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_75](cases/embedbench_75/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_76](cases/embedbench_76/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_77](cases/embedbench_77/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_78](cases/embedbench_78/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_79](cases/embedbench_79/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_8](cases/embedbench_8/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_80](cases/embedbench_80/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_81](cases/embedbench_81/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_82](cases/embedbench_82/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_83](cases/embedbench_83/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_84](cases/embedbench_84/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_85](cases/embedbench_85/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_86](cases/embedbench_86/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_87](cases/embedbench_87/source.ino) | EmbedBench | 通过 | **不通过** | RGB亮度能按32逐级变化，但条形灯未同步显示对应级数，前7次红色调节时相应灯段保持0；重放复现。完整8引脚独立参考程序40/40通过，排除该GPIO组合的通用仿真故障。 |
+| [embedbench_88](cases/embedbench_88/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_89](cases/embedbench_89/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_9](cases/embedbench_9/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_90](cases/embedbench_90/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_91](cases/embedbench_91/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_92](cases/embedbench_92/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_93](cases/embedbench_93/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_94](cases/embedbench_94/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_95](cases/embedbench_95/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_96](cases/embedbench_96/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_97](cases/embedbench_97/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_98](cases/embedbench_98/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [embedbench_99](cases/embedbench_99/source.ino) | EmbedBench | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_001](cases/medium_001/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_002](cases/medium_002/source.ino) | internal | 通过 | **通过** | 远近距离报警能正常切换。名义20cm实际略低于20cm，固件按实测值小于20报警，旧边界静音判据不成立。 |
+| [medium_003](cases/medium_003/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_004](cases/medium_004/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_005](cases/medium_005/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_006](cases/medium_006/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_007](cases/medium_007/source.ino) | internal | 通过 | **通过** | 显示随实际距离变化，400cm附近约2cm误差不改变基本测距功能；需求也没有要求超过400cm必须清屏。 |
+| [medium_008](cases/medium_008/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_009](cases/medium_009/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_010](cases/medium_010/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_011](cases/medium_011/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_012](cases/medium_012/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_013](cases/medium_013/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_014](cases/medium_014/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_015](cases/medium_015/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_016](cases/medium_016/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_017](cases/medium_017/source.ino) | internal | 通过 | **通过** | 按下期间A0改变LED亮度，释放后关闭；实际PWM60、128、200及重复输入一致性通过。题目未规定必须是按一下保持的锁存开关。 |
+| [medium_018](cases/medium_018/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_019](cases/medium_019/source.ino) | internal | 通过 | **通过** | 按钮能正确切换温度和距离；120cm显示119、77cm显示76是测距量化，不影响基本显示功能。 |
+| [medium_020](cases/medium_020/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_021](cases/medium_021/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_022](cases/medium_022/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_023](cases/medium_023/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_024](cases/medium_024/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_025](cases/medium_025/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_026](cases/medium_026/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_027](cases/medium_027/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_028](cases/medium_028/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_029](cases/medium_029/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [medium_030](cases/medium_030/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_4_digit_7_segment_display](cases/pceval_4_digit_7_segment_display/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_7_segment_display_basic](cases/pceval_7_segment_display_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_7_segment_display_counter](cases/pceval_7_segment_display_counter/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_7_segment_display_serial](cases/pceval_7_segment_display_serial/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_accelerometer](cases/pceval_accelerometer/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_alarm](cases/pceval_alarm/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_bar_led_basic](cases/pceval_bar_led_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_binary_led](cases/pceval_binary_led/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_buzzer](cases/pceval_button_buzzer/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_duration](cases/pceval_button_duration/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_LCD_display](cases/pceval_button_LCD_display/source.ino) | PCEval | 通过 | **通过** | 实际LCD像素8次按下/释放均显示对应Pressed!/Not pressed!，350ms短按也被显示；文字位置、颜色和字号正确。 |
+| [pceval_button_led](cases/pceval_button_led/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_pulldown](cases/pceval_button_pulldown/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_pullup](cases/pceval_button_pullup/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_RGB_led](cases/pceval_button_RGB_led/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_RTC_timezone](cases/pceval_button_RTC_timezone/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_button_servo_motor](cases/pceval_button_servo_motor/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_buzzer_basic](cases/pceval_buzzer_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_calendar_display](cases/pceval_calendar_display/source.ino) | PCEval | 通过 | **不通过** | 午夜前RTC原始值仍为2024-02-28，但程序已显示2024-02-29。独立RTC参考确认日期应仍为28日；Unix时间经AVR 32位double舍入提前跨日，属于日期错误。 |
+| [pceval_clock](cases/pceval_clock/source.ino) | PCEval | 通过 | **不通过** | 应显示23:59时显示00:00，时间戳转AVR 32位double后被舍入到次日零点；完整数码管引脚补采集已复现。 |
+| [pceval_dday_counter](cases/pceval_dday_counter/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_dht22_LCD_display](cases/pceval_dht22_LCD_display/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_distance_sensor](cases/pceval_distance_sensor/source.ino) | PCEval | 通过 | **通过** | 新增物理回波仿真分别进入小于、等于、大于三个分支，3/3通过；同一输入下标准Arduino pulseIn整数转换参考也3/3通过。 |
+| [pceval_distance_sensor_basic](cases/pceval_distance_sensor_basic/source.ino) | PCEval | 通过 | **通过** | 不同距离下持续输出对应厘米数，120cm附近旧±1cm判据过紧；pulseIn在实际Timer0/UART中断条件下存在小幅量化偏差。 |
+| [pceval_exercise_counter](cases/pceval_exercise_counter/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_gyroscope](cases/pceval_gyroscope/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_humidity_sensor](cases/pceval_humidity_sensor/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_humidity_sensor_basic](cases/pceval_humidity_sensor_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_LCD_display_basic](cases/pceval_LCD_display_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_led_blink_basic](cases/pceval_led_blink_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_led_RGB_basic](cases/pceval_led_RGB_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_multiplexer_photoresistor](cases/pceval_multiplexer_photoresistor/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_multiplexer_potentiometer](cases/pceval_multiplexer_potentiometer/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_multiple_timezone](cases/pceval_multiple_timezone/source.ino) | PCEval | 通过 | **不通过** | UTC基准20:48附近，UTC+9输出05:47:44、UTC+4输出00:46:56，分钟和秒均错误。大时间戳的浮点转换和运算丢失精度。 |
+| [pceval_parking_spot_monitor](cases/pceval_parking_spot_monitor/source.ino) | PCEval | 通过 | **通过** | 远近目标下红绿指示正确；名义50cm回波实测略小于50，按实测值占用符合程序阈值。 |
+| [pceval_photoresistor_bar_led](cases/pceval_photoresistor_bar_led/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_photoresistor_basic](cases/pceval_photoresistor_basic/source.ino) | PCEval | 通过 | **通过** | 实际串口正确输出0、1023、137、511、512、876并在返回输入时恢复相应读数。旧断言因冒号、空格和小数格式差异未匹配。 |
+| [pceval_piano_keyboard](cases/pceval_piano_keyboard/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_potentiometer_bar_led](cases/pceval_potentiometer_bar_led/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_potentiometer_servo_motor](cases/pceval_potentiometer_servo_motor/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_RTC_module_basic](cases/pceval_RTC_module_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_serial_bar_led](cases/pceval_serial_bar_led/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_serial_LCD_display](cases/pceval_serial_LCD_display/source.ino) | PCEval | 通过 | **通过** | 原生LCD像素可识别Hello LCD!、Split message、Idle text、After oversized等输入；串口回显正确，长内容实际换行显示。 |
+| [pceval_serial_monitor](cases/pceval_serial_monitor/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_serial_RGB_led](cases/pceval_serial_RGB_led/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_servo_motor_basic](cases/pceval_servo_motor_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_smart_led_system](cases/pceval_smart_led_system/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_temperature_sensor](cases/pceval_temperature_sensor/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_temperature_sensor_basic](cases/pceval_temperature_sensor_basic/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [pceval_traffic_light](cases/pceval_traffic_light/source.ino) | PCEval | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_001](cases/simple_001/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_002](cases/simple_002/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_003](cases/simple_003/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_004](cases/simple_004/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_005](cases/simple_005/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_006](cases/simple_006/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_007](cases/simple_007/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_008](cases/simple_008/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_009](cases/simple_009/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_010](cases/simple_010/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_011](cases/simple_011/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_012](cases/simple_012/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_013](cases/simple_013/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_014](cases/simple_014/source.ino) | internal | 通过 | **通过** | 距离变化时串口读数随之变化；36/72/18cm附近的小幅小数误差不构成测距功能失效。 |
+| [simple_015](cases/simple_015/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_016](cases/simple_016/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_017](cases/simple_017/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_018](cases/simple_018/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_019](cases/simple_019/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_020](cases/simple_020/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_021](cases/simple_021/source.ino) | internal | 通过 | **通过** | 100ms蜂鸣及1秒周期场景通过；旧判据额外要求上电100ms时先静音，而题目未规定初始相位。 |
+| [simple_022](cases/simple_022/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_023](cases/simple_023/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_024](cases/simple_024/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_025](cases/simple_025/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_026](cases/simple_026/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_027](cases/simple_027/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_028](cases/simple_028/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+| [simple_029](cases/simple_029/source.ino) | internal | 通过 | **不通过** | 原始ADC0–1023直接作1023-ADC后送入0–255 PWM，输入0、256、512、768时均满亮255，约75%输入范围不能随光照增加而变暗。局部高端确有调光，不足以判整项核心要求通过。 |
+| [simple_030](cases/simple_030/source.ino) | internal | 通过 | **通过** | 沿用已保存的基本功能通过记录；逐题证据见JSON。 |
+
+[296题机器可读记录](final_all296_cases_after_34_review.json) · [最终汇总](final_all296_summary_after_34_review.json) · [34题复核证据](binary_review_34_20261108/binary_verdicts_34.json)

@@ -1,0 +1,490 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board is Arduino Mega 2560 (arbitrary UNO text ignored) and all wiring from the provided circuit must be preserved.",
+    "7-segment display uses shift registers with shift595_number; initialization requests startup number 0 (to yield '00' with leading_zero enabled in the model).",
+    "Pot1 is wired to mega:A3 and pot2 is wired to mega:A4; both are analog inputs.",
+    "Servo1 is wired to mega:D2 (PWM capable on Mega) and servo2 is wired to mega:D3 (PWM capable on Mega).",
+    "One acquisition publishes a coherent frame is not applicable (no DHT/ultrasonic).",
+    "The detailed mapping of servo1 angle to the two displayed digits (tens/units) and smooth motion update cadence are handled in the SysML model; the device requests only expose the necessary I/O ports."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Seven-segment number shown as two digits (tens from pot1 -> servo1 angle, units from pot1 -> servo1 angle)",
+      "sample_period_ms": 5,
+      "device": "shift595_number",
+      "hardware": "{\"clock_pin\": \"A2\", \"data_pin\": \"A0\", \"invalid_policy\": \"blank\", \"kind\": \"shift595_number\", \"latch_pin\": \"A1\", \"leading_zero\": true, \"registers\": [{\"active_low\": true, \"digit\": 1, \"display\": \"sevseg1\", \"register\": \"sr1\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}, {\"active_low\": true, \"digit\": 0, \"display\": \"sevseg2\", \"register\": \"sr2\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}]}",
+      "binding": {
+        "kind": "shift595_number",
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "data_pin": "A0",
+        "clock_pin": "A2",
+        "latch_pin": "A1",
+        "registers": [
+          {
+            "register": "sr1",
+            "display": "sevseg1",
+            "digit": 1,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          },
+          {
+            "register": "sr2",
+            "display": "sevseg2",
+            "digit": 0,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Potentiometer pot1 sets servo1 target angle (0-99 deg mapped from slider)",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A3"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Potentiometer pot2 sets servo2 target angle (0-99 deg mapped from slider)",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A4"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Servo1 target angle derived from pot1 mapped to 0-99 degrees; also displayed as two-digit number",
+      "sample_period_ms": 5,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D2\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Servo2 target angle derived from pot2 mapped to 0-99 degrees",
+      "sample_period_ms": 5,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D3\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Delta elapsed since previous control step",
+      "sample_period_ms": 5,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2), two slide potentiometers (pot1, pot2), and two servo motors (servo1, servo2). The 7-segment displays will show a two-digit number, where one display represents the tens digit (pot1) and the other represents the units digit (pot2). The slide potentiometers will control the angle of the two servo motors (sr1 for servo1, sr2 for servo2), and the 7-segment displays will show the corresponding angles of servo1 in degrees (0-99). The servos should move smoothly to the angles set by the potentiometers, and the displays should update in real-time.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", and both servo motors (servo1, servo2) should be at their 0-degree position.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) controls the angle of the first servo motor (servo1). The value of pot1 is mapped to a range of 0 to 99 degrees.\n2. The second potentiometer (pot2) controls the angle of the second servo motor (servo2). The value of pot2 is also mapped to a range of 0 to 99 degrees.\nDisplay Update: The 7-segment displays should show the current angles of servo1. The tens digit should be displayed on one display (sevseg1), and the units digit should be displayed on the other display (sevseg2).\nServo Movement: The servo motors should move smoothly to the angles set by the potentiometers. The movement should be updated continuously based on the potentiometer values.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2), two slide potentiometers (pot1, pot2), and two servo motors (servo1, servo2). The 7-segment displays will show a two-digit number, where one display represents the tens digit (pot1) and the other represents the units digit (pot2). The slide potentiometers will control the angle of the two servo motors (sr1 for servo1, sr2 for servo2), and the 7-segment displays will show the corresponding angles of servo1 in degrees (0-99). The servos should move smoothly to the angles set by the potentiometers, and the displays should update in real-time.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", and both servo motors (servo1, servo2) should be at their 0-degree position.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) controls the angle of the first servo motor (servo1). The value of pot1 is mapped to a range of 0 to 99 degrees.\n2. The second potentiometer (pot2) controls the angle of the second servo motor (servo2). The value of pot2 is also mapped to a range of 0 to 99 degrees.\nDisplay Update: The 7-segment displays should show the current angles of servo1. The tens digit should be displayed on one display (sevseg1), and the units digit should be displayed on the other display (sevseg2).\nServo Movement: The servo motors should move smoothly to the angles set by the potentiometers. The movement should be updated continuously based on the potentiometer values.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg2",
+            "top": -196.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr2",
+            "top": -87.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ],
+          [
+            "sr1:SHCP",
+            "sr2:SHCP",
+            "gray"
+          ],
+          [
+            "sr1:STCP",
+            "sr2:STCP",
+            "purple"
+          ],
+          [
+            "sr1:Q7S",
+            "sr2:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:MR",
+            "red"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:VCC",
+            "red"
+          ],
+          [
+            "sr1:OE",
+            "sr2:OE",
+            "black"
+          ],
+          [
+            "sevseg1:COM.1",
+            "sevseg2:COM.1",
+            "red"
+          ],
+          [
+            "sr2:Q0",
+            "sevseg2:A",
+            "green"
+          ],
+          [
+            "sr2:Q1",
+            "sevseg2:B",
+            "green"
+          ],
+          [
+            "sr2:Q2",
+            "sevseg2:C",
+            "green"
+          ],
+          [
+            "sr2:Q3",
+            "sevseg2:D",
+            "green"
+          ],
+          [
+            "sr2:Q4",
+            "sevseg2:E",
+            "green"
+          ],
+          [
+            "sr2:Q5",
+            "sevseg2:F",
+            "green"
+          ],
+          [
+            "sr2:Q6",
+            "sevseg2:G",
+            "green"
+          ],
+          [
+            "sr1:GND",
+            "sr2:GND",
+            "black"
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black"
+          ],
+          [
+            "mega:2",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:3",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2), two slide potentiometers (pot1, pot2), and two servo motors (servo1, servo2). The 7-segment displays will show a two-digit number, where one display represents the tens digit (pot1) and the other represents the units digit (pot2). The slide potentiometers will control the angle of the two servo motors (sr1 for servo1, sr2 for servo2), and the 7-segment displays will show the corresponding angles of servo1 in degrees (0-99). The servos should move smoothly to the angles set by the potentiometers, and the displays should update in real-time.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", and both servo motors (servo1, servo2) should be at their 0-degree position.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) controls the angle of the first servo motor (servo1). The value of pot1 is mapped to a range of 0 to 99 degrees.\n2. The second potentiometer (pot2) controls the angle of the second servo motor (servo2). The value of pot2 is also mapped to a range of 0 to 99 degrees.\nDisplay Update: The 7-segment displays should show the current angles of servo1. The tens digit should be displayed on one display (sevseg1), and the units digit should be displayed on the other display (sevseg2).\nServo Movement: The servo motors should move smoothly to the angles set by the potentiometers. The movement should be updated continuously based on the potentiometer values.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"currentPositionDeg\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"directionForward\",\n        \"type\": \"bool\",\n        \"initial\": true\n      },\n      {\n        \"name\": \"moving\",\n        \"type\": \"bool\",\n        \"initial\": true\n      },\n      {\n        \"name\": \"reportPending\",\n        \"type\": \"bool\",\n        \"initial\": true\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"moving\",\n        \"then\": [\n          {\n            \"if\": \"directionForward\",\n            \"then\": [\n              {\n                \"if\": \"currentPositionDeg < 180\",\n                \"then\": [\n                  {\n                    \"assign\": \"currentPositionDeg\",\n                    \"value\": \"currentPositionDeg + 1\"\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"assign\": \"moving\",\n                    \"value\": false\n                  },\n                  {\n                    \"assign\": \"reportPending\",\n                    \"value\": true\n                  }\n                ]\n              }\n            ],\n            \"else\": [\n              {\n                \"if\": \"currentPositionDeg > 0\",\n                \"then\": [\n                  {\n                    \"assign\": \"currentPositionDeg\",\n                    \"value\": \"currentPositionDeg - 1\"\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"assign\": \"moving\",\n                    \"value\": false\n                  },\n                  {\n                    \"assign\": \"reportPending\",\n                    \"value\": true\n                  }\n                ]\n              }\n            ]\n          }\n        ],\n        \"else\": [\n          {\n            \"if\": \"reportPending\",\n            \"then\": [\n              {\n                \"assign\": \"reportPending\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"directionForward\",\n                \"value\": \"not directionForward\"\n              },\n              {\n                \"assign\": \"moving\",\n                \"value\": true\n              }\n            ],\n            \"else\": []\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_0\": \"currentPositionDeg\",\n      \"serial_0_trigger\": \"reportPending\",\n      \"serial_0_value_0\": {\n        \"if\": \"reportPending\",\n        \"then\": \"currentPositionDeg\",\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"# Servo Motor Control\\n\\n## Project Description\\nThis is a simple Arduino project that uses servo motor.\\n\\n## Hardware Components\\n- Arduino Uno\\n- Servo Motor\\n\\n## Circuit Description\\nThe servo motor is connected to the Arduino. The V+ pin is connected to 5V, the GND pin to gnd1, PWM to pin 9.\\n\\n## Expected Behavior\\nWhen the Arduino powers up, it should:\\n1. Attach servo motor to pin 9\\n2. Move the servo from 0 to 180 degrees in 1-degree steps\\n3. When the moving is finished, print the current servo position to the serial monitor by reading the servo position.\\n4. Move the servo from 180 to 0 degrees in 1-degree steps\\n5. When the moving is finished, print the current servo position to the serial monitor by reading the servo position.\\n6. Repeat 3~6 process.\\n\\n## Success Criteria\\nThe test is successful when:\\n1. The servo motor moves correctly.\\n2. Correct position is printed to the serial monitor.\\n\\n## Notes for Implementation\\n- Use Servo library to use the servo motor.\\n- Print only the number when printing the angle.\\n\\n## Variants\\nThere may be variants with GND pin, PWM pin.\\nGiven circuit (must preserve wiring):\\n{\\n    \\\"version\\\": 1.0,\\n    \\\"author\\\": \\\"Blind Author\\\",\\n    \\\"description\\\": \\\"Servo motor\\\",\\n    \\\"parts\\\": [\\n        {\\n            \\\"id\\\": \\\"arduino uno1\\\",\\n            \\\"type\\\": \\\"wokwi-arduino-uno\\\",\\n            \\\"top\\\": 200,\\n            \\\"left\\\": 20\\n        },\\n        {\\n            \\\"id\\\": \\\"servo motor1\\\",\\n            \\\"type\\\": \\\"wokwi-servo\\\",\\n            \\\"left\\\": 400,\\n            \\\"top\\\": 200,\\n            \\\"attrs\\\": {\\n                \\\"hornColor\\\": \\\"black\\\"\\n            },\\n            \\\"rotate\\\": 0\\n        }\\n    ],\\n    \\\"connections\\\": [\\n        [\\n            \\\"arduino uno1:9\\\",\\n            \\\"servo motor1:PWM\\\",\\n            \\\"orange\\\",\\n            [\\n                \\\"v-20\\\",\\n                \\\"*\\\",\\n                \\\"h0\\\",\\n                \\\"h-52\\\"\\n            ]\\n        ],\\n        [\\n            \\\"arduino uno1:5V\\\",\\n            \\\"servo motor1:V+\\\",\\n            \\\"red\\\",\\n            [\\n                \\\"v20\\\",\\n                \\\"h0\\\",\\n                \\\"*\\\",\\n                \\\"h-20\\\"\\n            ]\\n        ],\\n        [\\n            \\\"arduino uno1:GND.1\\\",\\n            \\\"servo motor1:GND\\\",\\n            \\\"black\\\",\\n            [\\n                \\\"v-28\\\",\\n                \\\"h240\\\",\\n                \\\"*\\\",\\n                \\\"h-20\\\"\\n            ]\\n        ]\\n    ]\\n}\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Observe initial steps after power-up; trace io_0 each control step until it reaches 180, then trace serial_0_trigger/serial_0_value_0 at move completion, then trace back to 0 and the next report.\",\n        \"oracle\": \"io_0 starts at 0 and increments by 1 each step until reaching 180; when reaching 180, serial_0_trigger becomes true for a step and serial_0_value_0 equals 180; then io_0 decrements by 1 each step back to 0 and again serial_0_trigger becomes true with serial_0_value_0 equal to 0; the cycle repeats.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    attribute currentPositionDeg : Integer := 0;\n    attribute directionForward : Boolean := true;\n    attribute moving : Boolean := true;\n    attribute reportPending : Boolean := true;\n    perform action tick {\n      first start;\n      then if moving {\n        first start;\n        then if directionForward {\n          first start;\n          then if currentPositionDeg < 180 {\n            first start;\n            then assign currentPositionDeg := currentPositionDeg + 1;\n          } else {\n            first start;\n            then assign moving := false;\n            then assign reportPending := true;\n          }\n        } else {\n          first start;\n          then if currentPositionDeg > 0 {\n            first start;\n            then assign currentPositionDeg := currentPositionDeg - 1;\n          } else {\n            first start;\n            then assign moving := false;\n            then assign reportPending := true;\n          }\n        }\n      } else {\n        first start;\n        then if reportPending {\n          first start;\n          then assign reportPending := false;\n          then assign directionForward := not directionForward;\n          then assign moving := true;\n        }\n      }\n    }\n    out attribute io_0 : Real = currentPositionDeg;\n    out attribute serial_0_trigger : Boolean = reportPending;\n    out attribute serial_0_value_0 : Integer = (if reportPending ? currentPositionDeg else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

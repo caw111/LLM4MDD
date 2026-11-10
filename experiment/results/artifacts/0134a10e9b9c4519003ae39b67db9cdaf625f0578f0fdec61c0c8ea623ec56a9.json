@@ -1,0 +1,119 @@
+{
+  "contract_sha256": "2ba1af860d38ee747423876cd13a9a6c81a1223c85a6e2db7e23bb872889f489",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Potentiometer value to be reported over serial (raw ADC-based model value)\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button state to be reported over serial (model true when pressed)\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step for 1 Hz serial reporting scheduling\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Gate serial output once per second (1 Hz) with the latest A0 potentiometer value and D2 button state\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"adc_count\",\n          \"initial\": 0,\n          \"meaning\": \"Reported potentiometer A0 reading (model ADC-based value)\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"Reported D2 button pressed state (model true when pressed)\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Board is arduino:avr:uno; only explicit wired pins are A0 and D2 per authoritative pin list. No other device/port objects are created.\",\n    \"The serial requirement is 'each second output A0 potentiometer value and D2 button state'. Implemented as one serial channel with a single 1 Hz trigger gating both values reported together each time.\",\n    \"Pin polarity for D2 button is unspecified in provided facts; model convention assumes 'pressed' corresponds to true with digital_input initial=false and default active_high/pullup unspecified (catalog default). No active_low inversion is applied beyond this assumption.\",\n    \"Analog input uses catalog default electrical scaling; no explicit scale/offset calibration was provided, so reported unit is assumed to be raw adc_count (f64 model value).\",\n    \"Control period is set to 10 ms to support accurate 1-second scheduling without adding business-time assumptions. SysML is responsible for computing the 1 Hz trigger using elapsed_ms.\"\n  ]\n}",
+      "error": "serial_channels[0].values: missing fields ['label']; unknown fields []; allowed fields ['initial', 'label', 'meaning', 'required_inputs', 'type', 'unit']. Configuration keys belong directly on this object, not inside optional/binding.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Potentiometer value to be reported over serial (raw ADC-based model value)\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button state to be reported over serial (model true when pressed)\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step for 1 Hz serial reporting scheduling\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Gate serial output once per second (1 Hz) with the latest A0 potentiometer value and D2 button state\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"adc_count\",\n          \"initial\": 0,\n          \"meaning\": \"Reported potentiometer A0 reading (model ADC-based value)\",\n          \"label\": \"A0_pot_value\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"Reported D2 button pressed state (model true when pressed)\",\n          \"label\": \"D2_button_pressed\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Confirmed board: arduino:avr:uno. Confirmed wired pins: A0 (analog input) and D2 (digital input). No other device/port objects are created.\",\n    \"Serial requirement is 'each second output A0 potentiometer value and D2 button state'. Implemented as one serial channel gated by a single 1 Hz boolean trigger so both values are reported together on each gate event.\",\n    \"Pin polarity for D2 button is unspecified in provided facts; model convention assumes digital_input model is true when pressed, with no extra active-low inversion applied beyond catalog defaults.\",\n    \"Analog input uses catalog default electrical scaling; no explicit scale/offset calibration was provided, so the reported unit is assumed to be raw adc_count.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "每秒串口输出 A0 电位器值 和 D2 按钮状态",
+    "effective_requirement": "每秒串口输出 A0 电位器值 和 D2 按钮状态\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

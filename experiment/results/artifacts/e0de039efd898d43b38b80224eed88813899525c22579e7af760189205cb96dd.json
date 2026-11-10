@@ -1,0 +1,199 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "peopleCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "showTempMode",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "tempHold",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "lastEntranceValid",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "lastExitValid",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_6",
+        "then": [
+          {
+            "assign": "tempHold",
+            "value": "io_4"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_9",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "showTempMode",
+            "value": {
+              "not": "showTempMode"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_9"
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "lastEntranceValid"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lastEntranceValid",
+            "value": true
+          },
+          {
+            "assign": "lastExitValid",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "not": "lastExitValid"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": "lastEntranceValid",
+            "then": [
+              {
+                "assign": "peopleCount",
+                "value": "peopleCount + 1"
+              }
+            ],
+            "else": [
+              {
+                "assign": "peopleCount",
+                "value": "peopleCount - 1"
+              }
+            ]
+          },
+          {
+            "assign": "lastExitValid",
+            "value": true
+          },
+          {
+            "assign": "lastEntranceValid",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": "io_1"
+        },
+        "then": [
+          {
+            "assign": "lastEntranceValid",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": "io_3"
+        },
+        "then": [
+          {
+            "assign": "lastExitValid",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": "peopleCount < 0",
+        "then": [
+          {
+            "assign": "peopleCount",
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_7": {
+        "if": "peopleCount == 0",
+        "then": 0.0,
+        "else": 100.0
+      },
+      "io_8": {
+        "if": "showTempMode",
+        "then": "RealFunctions::floor(tempHold)",
+        "else": "peopleCount"
+      },
+      "serial_0_trigger": "peopleCount != 0",
+      "serial_0_value_0": "peopleCount",
+      "serial_0_value_1": "tempHold"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能教室人数估计与环境调节系统，使用两个 HC-SR04，门口进入方向 Trig=D8、Echo=D9，离开方向 Trig=D10、Echo=D11，DHT11（D7）、风扇 PWM D5、TM1637（CLK=D4，DIO=D5）和串口。通过两个超声波先后触发顺序估计人数增减；根据人数和温度共同决定风扇转速；TM1637 默认显示人数，按钮 D2 可切换显示当前温度。若人数为 0 则系统进入节能模式并关闭风扇。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持 io_0/io_2 无效或不触发，同时将 io_6=false，按压按钮 D2（io_9 从 false 上升到 true 再回到 false）。",
+        "oracle": "io_8 在默认模式下等于当前 peopleCount（初始为0）；按下后切换到温度显示，io_8 等于 tempHold（在 io_6=false 时应保持为上次有效值；初始为0）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能教室人数估计与环境调节系统，使用两个 HC-SR04，门口进入方向 Trig=D8、Echo=D9，离开方向 Trig=D10、Echo=D11，DHT11（D7）、风扇 PWM D5、TM1637（CLK=D4，DIO=D5）和串口。通过两个超声波先后触发顺序估计人数增减；根据人数和温度共同决定风扇转速；TM1637 默认显示人数，按钮 D2 可切换显示当前温度。若人数为 0 则系统进入节能模式并关闭风扇。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "确保 peopleCount=0（初始即为0），任意变化 io_4/io_5 但置 io_6 任意；不按键或按键均可。",
+        "oracle": "io_7 必须为 0.0（节能并关闭风扇）；io_8 默认显示人数（若未切换则等于0）。serial_0_trigger 应为 false（因为 peopleCount==0）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能教室人数估计与环境调节系统，使用两个 HC-SR04，门口进入方向 Trig=D8、Echo=D9，离开方向 Trig=D10、Echo=D11，DHT11（D7）、风扇 PWM D5、TM1637（CLK=D4，DIO=D5）和串口。通过两个超声波先后触发顺序估计人数增减；根据人数和温度共同决定风扇转速；TM1637 默认显示人数，按钮 D2 可切换显示当前温度。若人数为 0 则系统进入节能模式并关闭风扇。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "提供一次有效温度：置 io_6=true 且 io_4=25.5，同时 peopleCount保持为0；随后置 io_6=false，改变 io_4=30.0。",
+        "oracle": "在 io_6=true 的步中，tempHold 更新为25.5；在 io_6=false 的后续步中，tempHold 保持为25.5，故 serial_0_value_1（当 serial_0_trigger=active 时）与切换到温度显示的 io_8（取 tempHold 的下取整）保持为25。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_4 : Real;\n    in attribute io_5 : Real;\n    in attribute io_6 : Boolean;\n    in attribute io_9 : Boolean;\n    attribute peopleCount : Integer := 0;\n    attribute showTempMode : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    attribute tempHold : Real := 0.0;\n    attribute lastEntranceValid : Boolean := false;\n    attribute lastExitValid : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_6 {\n        first start;\n        then assign tempHold := io_4;\n      }\n      then if ((io_9) and ((not previousPressed))) {\n        first start;\n        then assign showTempMode := (not showTempMode);\n      }\n      then assign previousPressed := io_9;\n      then if ((io_1) and ((not lastEntranceValid))) {\n        first start;\n        then assign lastEntranceValid := true;\n        then assign lastExitValid := false;\n      }\n      then if ((io_3) and ((not lastExitValid))) {\n        first start;\n        then if lastEntranceValid {\n          first start;\n          then assign peopleCount := peopleCount + 1;\n        } else {\n          first start;\n          then assign peopleCount := peopleCount - 1;\n        }\n        then assign lastExitValid := true;\n        then assign lastEntranceValid := false;\n      }\n      then if (not io_1) {\n        first start;\n        then assign lastEntranceValid := false;\n      }\n      then if (not io_3) {\n        first start;\n        then assign lastExitValid := false;\n      }\n      then if peopleCount < 0 {\n        first start;\n        then assign peopleCount := 0;\n      }\n    }\n    out attribute io_7 : Real = (if peopleCount == 0 ? 0.0 else 100.0);\n    out attribute io_8 : Integer = (if showTempMode ? RealFunctions::floor(tempHold) else peopleCount);\n    out attribute serial_0_trigger : Boolean = peopleCount != 0;\n    out attribute serial_0_value_0 : Integer = peopleCount;\n    out attribute serial_0_value_1 : Real = tempHold;\n  }\n  part system : Controller;\n}\n"
+}

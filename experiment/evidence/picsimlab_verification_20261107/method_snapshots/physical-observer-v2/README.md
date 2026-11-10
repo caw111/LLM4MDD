@@ -1,0 +1,1 @@
+Observer v2 reuses saved electrical traces and LCD observations from engine v11. The improved nonzero-offset raster alignment control was subsequently validated; it was not used to replace all historical LCD observations. All original observations remain in their case folders.

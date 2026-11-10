@@ -1,0 +1,48 @@
+#line 1 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\direct_gpt61_full_20261021\\medium_005\\direct\\attempt_0\\sketch\\sketch.ino"
+#include <Arduino.h>
+
+const uint8_t BUTTON_PIN = 3;  // Button between D3 and GND
+const uint8_t BUZZER_PIN = 6;
+const unsigned int BUZZER_FREQUENCY_HZ = 1000;
+const unsigned long STOP_DELAY_MS = 1000UL;
+
+bool buzzerOn = false;
+bool stopPending = false;
+unsigned long releaseTime = 0;
+
+#line 12 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\direct_gpt61_full_20261021\\medium_005\\direct\\attempt_0\\sketch\\sketch.ino"
+void setup();
+#line 18 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\direct_gpt61_full_20261021\\medium_005\\direct\\attempt_0\\sketch\\sketch.ino"
+void loop();
+#line 12 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\direct_gpt61_full_20261021\\medium_005\\direct\\attempt_0\\sketch\\sketch.ino"
+void setup() {
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
+void loop() {
+  const unsigned long now = millis();
+  const bool pressed = (digitalRead(BUTTON_PIN) == LOW);
+
+  if (pressed) {
+    stopPending = false;
+
+    if (!buzzerOn) {
+      tone(BUZZER_PIN, BUZZER_FREQUENCY_HZ);
+      buzzerOn = true;
+    }
+  } else if (buzzerOn) {
+    if (!stopPending) {
+      releaseTime = now;
+      stopPending = true;
+    }
+
+    if (now - releaseTime >= STOP_DELAY_MS) {
+      noTone(BUZZER_PIN);
+      digitalWrite(BUZZER_PIN, LOW);
+      buzzerOn = false;
+      stopPending = false;
+    }
+  }
+}

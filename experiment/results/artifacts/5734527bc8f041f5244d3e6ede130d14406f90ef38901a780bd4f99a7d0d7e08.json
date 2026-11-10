@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "按键确认逻辑、阶段判定阈值、长时间无振动/水位异常的具体时长与阈值、结束阶段蜂鸣与LED闪烁的时序、数码管显示编号映射（四个阶段分别显示哪些整数）均属于SysML业务逻辑，本JSON仅声明与之对应的物理I/O能力。",
+    "振动传感器与按键均未给出电平极性/上拉要求；为满足“原样保留电气布线且无反相重复”，这里采用digital_input的目录默认值（active_high/pullup未显式指定）。若实际为按下为低/上拉输入，需要在SysML中以模型约定的pressed语义进行处理。",
+    "水位传感器为模拟输入：未提供缩放/偏移校准参数；当前使用catalog默认scale/offset（不在此处杜撰标定）。",
+    "串口“wash fault”输出：未指定必须输出的固定字符串或协议格式；因此采用typed数值报告（i32 state=0）作为占位，并记录需在SysML中定义最终的具体协议内容（是否固定文本'wash fault'或数值码）。如必须固定文本，请改为serial_text_output并在interface_requests中填入要求的text。"
+  ],
+  "unsupported": [],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "洗衣流程结束确认按键",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "结束阶段LED闪烁控制",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "结束阶段蜂鸣器鸣叫控制",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "数码管显示洗衣阶段编号（进水/洗涤/甩干/结束）",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "振动传感器检测输入",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "水位传感器模拟输入",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "wash fault发生时触发串口输出",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "state",
+      "initial": 0,
+      "meaning": "故障状态码：wash fault",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"wash_fault_state\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "wash_fault_state"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+    "effective_requirement": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

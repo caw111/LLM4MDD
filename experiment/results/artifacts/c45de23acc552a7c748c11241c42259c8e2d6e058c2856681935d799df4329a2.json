@@ -1,0 +1,363 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is Arduino Uno; no PWM/Timer constraints are introduced in device requests. Model must handle compressor/relay hysteresis, temperature conversion (LM35 scale/offset), and door-open duration timing using elapsed_ms.",
+    "LM35 reading is provided via analog_input on A1; model must convert ADC to °C and compare with upper/lower bounds (not specified in prose).",
+    "Door magnet switch electrical polarity (active-high vs active-low) is not specified. digital_input uses catalog default unless circuit facts exist; to avoid double inversion, model should interpret 'pressed/closed contact' as true when the electrical level corresponds to the catalog default.",
+    "The system uses D10 for fan/compressor relay; default initial is off. Model must drive start/stop based on temperature control requirements.",
+    "Buzzer on D6 is configured as tone_output with invalid_policy silence and initial 0; model must set tone frequency and stop behavior.",
+    "TM1637 displays 'current temperature and door opened duration' but the exact display format (how to multiplex/alternate between temperature and duration on the same 4-digit display, rounding/units, decimal point use) is not specified; model must define the representation.",
+    "Serial protocol/text is not specified except baud/framing. Assumption: first serial channel emits a continuous i32 code while the critical condition holds; second channel emits temperature and door-open seconds when not critical. If a fixed text line is required by the original protocol, it must be specified and should use serial_text_output with that exact fixed text."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "LM35 temperature sensor input for refrigerator control",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Door magnet switch (pressed/closed contact state)",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Fan/compressor relay command (制冷继电器 启停)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D10"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer alarm tone for door opened too long",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637 display for current temperature and door-open duration indication",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Status LED (door-open alarm blinking and/or temperature critical indication as defined by model)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Gate: output continuous critical cooling loss when temperature is above upper limit and door is not closed",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "model_code",
+      "initial": 0,
+      "meaning": "Critical cooling loss state code (model-defined), emitted continuously while the critical condition holds",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"critical_cooling_loss\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "critical_cooling_loss"
+      }
+    },
+    {
+      "name": "serial_1_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Gate: report current temperature and door-open time while not in critical cooling loss mode",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_1_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "Current temperature to be displayed/reported (model uses LM35 conversion and thresholds)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"temperature_degC\", \"trigger\": \"serial_1_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_1_trigger",
+        "baud": 9600,
+        "label": "temperature_degC"
+      }
+    },
+    {
+      "name": "serial_1_value_1",
+      "direction": "output",
+      "type": "i32",
+      "unit": "s",
+      "initial": 0,
+      "meaning": "Door opened duration in seconds (model time accumulation)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"door_open_seconds\", \"trigger\": \"serial_1_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_1_trigger",
+        "baud": 9600,
+        "label": "door_open_seconds"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D10"
+        },
+        "resolved": {
+          "pin": "D10"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。",
+    "effective_requirement": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_1_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_1_value_1": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      },
+      {
+        "id": "serial_1",
+        "trigger_port": "serial_1_trigger",
+        "value_ports": [
+          "serial_1_value_0",
+          "serial_1_value_1"
+        ]
+      }
+    ]
+  }
+}

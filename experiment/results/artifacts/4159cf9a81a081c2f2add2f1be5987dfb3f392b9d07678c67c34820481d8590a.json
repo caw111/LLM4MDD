@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"prevMinDeg\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"prevMaxDeg\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"prevMinDeg\",\n        \"value\": {\n          \"if\": \"io_0 > 0.0\",\n          \"then\": \"((io_0 * 90.0) / 1023.0)\",\n          \"else\": 0.0\n        }\n      },\n      {\n        \"assign\": \"prevMaxDeg\",\n        \"value\": {\n          \"if\": \"io_1 > 0.0\",\n          \"then\": \"(90.0 + ((io_1 * 90.0) / 1023.0))\",\n          \"else\": 90.0\n        }\n      },\n      {\n        \"if\": \"prevMinDeg > prevMaxDeg\",\n        \"then\": [\n          {\n            \"assign\": \"prevMinDeg\",\n            \"value\": \"prevMaxDeg\"\n          },\n          {\n            \"assign\": \"prevMaxDeg\",\n            \"value\": \"prevMinDeg\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": \"prevMaxDeg > prevMinDeg\",\n        \"then\": \"(prevMinDeg + ((io_2 * (prevMaxDeg - prevMinDeg)) / 1023.0))\",\n        \"else\": \"prevMinDeg\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\\n\\n\\nTask:\\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1) using three slide potentiometers (pot1, pot2, pot3). The servo motor's position will be determined by the combined input from the three potentiometers. Each potentiometer will control a specific aspect of the servo's behavior: one for the minimum angle, one for the maximum angle, and one for the current position.\\n\\nDetail Rules:\\nInitialization: Upon powering on or resetting, the servo motor (servo1) should be set to its default position (0 degrees).\\nPotentiometer Interaction:\\n1. The first potentiometer (pot1) determines the minimum angle of the servo motor. The value of pot1 is mapped to a range of 0 to 90 degrees.\\n2. The second potentiometer (pot2) determines the maximum angle of the servo motor. The value of pot2 is mapped to a range of 90 to 180 degrees.\\n3. The third potentiometer (pot3) controls the current position of the servo motor. The value of pot3 is mapped to the range defined by the minimum (pot1) and maximum (pot2) angles.\\n4. The servo motor's position should be updated continuously based on the current values of the potentiometers.\\n\\n\\nGiven circuit (must preserve wiring):\\n{\\\"version\\\": 1, \\\"author\\\": \\\"Anonymous maker\\\", \\\"editor\\\": \\\"wokwi\\\", \\\"parts\\\": [{\\\"type\\\": \\\"wokwi-arduino-mega\\\", \\\"id\\\": \\\"mega\\\", \\\"top\\\": 0, \\\"left\\\": 0, \\\"attrs\\\": {}}, {\\\"type\\\": \\\"wokwi-slide-potentiometer\\\", \\\"id\\\": \\\"pot1\\\", \\\"top\\\": -158, \\\"left\\\": -178.4, \\\"rotate\\\": 270, \\\"attrs\\\": {\\\"travelLength\\\": \\\"30\\\"}}, {\\\"type\\\": \\\"wokwi-slide-potentiometer\\\", \\\"id\\\": \\\"pot2\\\", \\\"top\\\": -158, \\\"left\\\": -293.6, \\\"rotate\\\": 270, \\\"attrs\\\": {\\\"travelLength\\\": \\\"30\\\"}}, {\\\"type\\\": \\\"wokwi-slide-potentiometer\\\", \\\"id\\\": \\\"pot3\\\", \\\"top\\\": -158, \\\"left\\\": -408.8, \\\"rotate\\\": 270, \\\"attrs\\\": {\\\"travelLength\\\": \\\"30\\\"}}, {\\\"type\\\": \\\"wokwi-servo\\\", \\\"id\\\": \\\"servo1\\\", \\\"left\\\": -201.6, \\\"top\\\": -11.6, \\\"attrs\\\": {}}], \\\"connections\\\": [[\\\"pot1:GND\\\", \\\"mega:GND.1\\\", \\\"black\\\"], [\\\"pot1:VCC\\\", \\\"mega:5V\\\", \\\"red\\\"], [\\\"pot1:SIG\\\", \\\"mega:A3\\\", \\\"black\\\"], [\\\"pot2:GND\\\", \\\"mega:GND.1\\\", \\\"black\\\"], [\\\"pot2:VCC\\\", \\\"mega:5V\\\", \\\"red\\\"], [\\\"pot2:SIG\\\", \\\"mega:A4\\\", \\\"black\\\"], [\\\"pot3:GND\\\", \\\"mega:GND.1\\\", \\\"black\\\"], [\\\"pot3:VCC\\\", \\\"mega:5V\\\", \\\"red\\\"], [\\\"pot3:SIG\\\", \\\"mega:A5\\\", \\\"black\\\"], [\\\"mega:2\\\", \\\"servo1:PWM\\\", \\\"orange\\\"], [\\\"mega:5V\\\", \\\"servo1:V+\\\", \\\"red\\\"], [\\\"mega:GND.1\\\", \\\"servo1:GND\\\", \\\"black\\\"]], \\\"dependencies\\\": {}}\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Step 1: io_0=0, io_1=0, io_2=0. Step 2: io_0=1023, io_1=1023, io_2=1023. Then hold inputs constant for subsequent steps.\",\n        \"oracle\": \"At step 1, io_3=0 deg. After step 2, io_3 should be mapped within the computed [min,max] range and reflect continuous updates on each subsequent step (same inputs produce the same output each control step).\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    attribute prevMinDeg : Real := 0.0;\n    attribute prevMaxDeg : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign prevMinDeg := (if io_0 > 0.0 ? ((io_0 * 90.0) / 1023.0) else 0.0);\n      then assign prevMaxDeg := (if io_1 > 0.0 ? (90.0 + ((io_1 * 90.0) / 1023.0)) else 90.0);\n      then if prevMinDeg > prevMaxDeg {\n        first start;\n        then assign prevMinDeg := prevMaxDeg;\n        then assign prevMaxDeg := prevMinDeg;\n      }\n    }\n    out attribute io_3 : Real = (if prevMaxDeg > prevMinDeg ? (prevMinDeg + ((io_2 * (prevMaxDeg - prevMinDeg)) / 1023.0)) else prevMinDeg);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

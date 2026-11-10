@@ -1,0 +1,160 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"prevD2\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"cumulativeCount\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"stopCount\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"alarmActive\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"lastProductPassedElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"prevPauseMode\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"displayMode\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"prevD2\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": \"and[io_0, not prevD2]\",\n        \"then\": [\n          {\n            \"assign\": \"cumulativeCount\",\n            \"value\": \"cumulativeCount + 1\"\n          },\n          {\n            \"assign\": \"lastProductPassedElapsedMs\",\n            \"value\": \"0\"\n          },\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": \"false\"\n          }\n        ]\n      },\n      {\n        \"if\": \"not io_0\",\n        \"then\": [\n          {\n            \"assign\": \"lastProductPassedElapsedMs\",\n            \"value\": \"lastProductPassedElapsedMs + io_6\"\n          }\n        ]\n      },\n      {\n        \"if\": \">=\",\n        \"then\": []\n      },\n      {\n        \"if\": \"or[io_1, >=[lastProductPassedElapsedMs,30000]]\",\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": \"true\"\n          }\n        ]\n      },\n      {\n        \"if\": \"and[io_1, not prevPauseMode]\",\n        \"then\": [\n          {\n            \"assign\": \"stopCount\",\n            \"value\": \"stopCount + 1\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevPauseMode\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"if\": \"and[io_2, not displayMode == 0]\",\n        \"then\": []\n      },\n      {\n        \"if\": \"and[io_2, not false]\",\n        \"then\": []\n      },\n      {\n        \"if\": \"and[io_2, not false]\",\n        \"then\": [\n          {\n            \"assign\": \"displayMode\",\n            \"value\": \"(if displayMode == 0 then 1 else (if displayMode == 1 then 2 else 0))\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"alarmActive\",\n      \"io_4\": {\n        \"if\": \"alarmActive\",\n        \"then\": \"1000\",\n        \"else\": \"0\"\n      },\n      \"io_5\": {\n        \"if\": \"displayMode == 0\",\n        \"then\": \"60\",\n        \"else\": {\n          \"if\": \"displayMode == 1\",\n          \"then\": \"cumulativeCount\",\n          \"else\": \"stopCount\"\n        }\n      },\n      \"serial_0_trigger\": \"true\",\n      \"serial_0_value_0\": \"cumulativeCount\",\n      \"serial_0_value_1\": {\n        \"if\": \"60 == 0\",\n        \"then\": \"0.0\",\n        \"else\": \"cumulativeCount * 100.0 / 60.0\"\n      },\n      \"serial_0_value_2\": \"stopCount\",\n      \"serial_0_value_3\": \"alarmActive\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_0=false持续超过30000ms且io_1=false，持续递交io_6直到满足连续30秒条件\",\n        \"oracle\": \"io_3=true，io_4>0且serial_0_value_3=true，同时serial_0_value_2保持不变\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在报警条件成立前让io_0出现一次从false到true的上升沿（一次产品通过），并在下一步保持io_0=true/或随后变回false，递交一段io_6\",\n        \"oracle\": \"cumulativeCount在上升沿步+1，lastProductPassedElapsedMs清零，serial_0_value_0增加，且serial_0_value_3=false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_0不变化为false，令io_1从false到true发生一次，并保持io_1=true至少一个控制步\",\n        \"oracle\": \"serial_0_value_2在该上升沿步+1，且报警serial_0_value_3=true、io_3=true\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/3/if: Operator '>=' has no operands. Preserve the full condition/value; use a binary infix expression such as (count + 37 >= 100) or {\">=\": [\"count + 37\", 100]}.",
+          "path": "/controller/updates/3/if"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/updates/9/then/0/value",
+          "original": "(if displayMode == 0 then 1 else (if displayMode == 1 then 2 else 0))",
+          "normalized": {
+            "if": {
+              "==": [
+                "displayMode",
+                0
+              ]
+            },
+            "then": 1,
+            "else": {
+              "if": {
+                "==": [
+                  "displayMode",
+                  1
+                ]
+              },
+              "then": 2,
+              "else": 0
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/3/if: Operator '>=' has no operands. Preserve the full condition/value; use a binary infix expression such as (count + 37 >= 100) or {\">=\": [\"count + 37\", 100]}.",
+          "path": "/controller/updates/3/if"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/updates/3/if: Operator '>=' has no operands. Preserve the full condition/value; use a binary infix expression such as (count + 37 >= 100) or {\">=\": [\"count + 37\", 100]}."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousCounterInput\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"accumulatedNoProductMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"cumulativeCount\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"stopCount\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"alarmActive\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"previousStopButton\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"previousCounterInput\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousStopButton\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"stopCount\",\n            \"value\": \"stopCount + 1\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousStopButton\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"alarmActive\",\n            {\n              \"not\": \"io_1\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": \"false\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"accumulatedNoProductMs\",\n        \"value\": {\n          \"if\": {\n            \"or\": [\n              \"io_1\",\n              \"previousCounterInput\"\n            ]\n          },\n          \"then\": \"0\",\n          \"else\": \"accumulatedNoProductMs + io_6\"\n        }\n      },\n      {\n        \"if\": {\n          \"or\": [\n            \"io_1\",\n            {\n              \">=\": [\n                \"accumulatedNoProductMs\",\n                30000\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": \"true\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousCounterInput\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"cumulativeCount\",\n            \"value\": \"cumulativeCount + 1\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"alarmActive\",\n      \"io_4\": {\n        \"if\": \"alarmActive\",\n        \"then\": \"2000\",\n        \"else\": \"0\"\n      },\n      \"io_5\": {\n        \"if\": \"alarmActive\",\n        \"then\": \"0\",\n        \"else\": \"0\"\n      },\n      \"serial_0_trigger\": \"alarmActive\",\n      \"serial_0_value_0\": \"cumulativeCount\",\n      \"serial_0_value_1\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"!=\": [\n                \"0\",\n                0\n              ]\n            },\n            true\n          ]\n        },\n        \"then\": \"0.0\",\n        \"else\": \"0.0\"\n      },\n      \"serial_0_value_2\": \"stopCount\",\n      \"serial_0_value_3\": \"alarmActive\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_1=false，io_0从false到true产生一次上升沿，然后持续保持io_0=false超过30000ms（io_6累计到>=30000）；io_2任意。\",\n        \"oracle\": \"alarmActive最终为true，io_3为true，io_4为正Hz且serial_0_value_0至少为1，serial_0_value_2保持不变且serial_0_value_3为true；serial_0_trigger为true。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_1在某一步发生false->true（模拟人工停线按下），其后保持io_1=true一段时间；io_0任意且不要求连续无产品。\",\n        \"oracle\": \"stopCount在停线按下上升沿那一步（或同控制步）递增1，alarmActive为true，io_3为true，io_4为正Hz，serial_0_value_2反映递增后的停机次数，serial_0_value_3为true且serial_0_trigger为true。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_1=false；对io_0产生两个分离的上升沿（false->true->false->true），每次上升沿之间间隔至少1个控制步；其间不让连续无产品达到30000ms（确保io_6累计在无上升沿期间<30000）。\",\n        \"oracle\": \"cumulativeCount递增与上升沿次数一致（至少增加2），alarmActive保持false，io_3为false且io_4为0，serial_0_value_0反映累计产量。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_6 : Integer;\n    attribute previousCounterInput : Boolean := false;\n    attribute accumulatedNoProductMs : Integer := 0;\n    attribute cumulativeCount : Integer := 0;\n    attribute stopCount : Integer := 0;\n    attribute alarmActive : Boolean := false;\n    attribute previousStopButton : Boolean := false;\n    perform action tick {\n      first start;\n      then assign previousCounterInput := io_0;\n      then if ((io_1) and ((not previousStopButton))) {\n        first start;\n        then assign stopCount := stopCount + 1;\n      }\n      then assign previousStopButton := io_1;\n      then if ((alarmActive) and ((not io_1))) {\n        first start;\n        then assign alarmActive := false;\n      }\n      then assign accumulatedNoProductMs := (if ((io_1) or (previousCounterInput)) ? 0 else accumulatedNoProductMs + io_6);\n      then if ((io_1) or (((accumulatedNoProductMs) >= (30000)))) {\n        first start;\n        then assign alarmActive := true;\n      }\n      then if ((io_0) and ((not previousCounterInput))) {\n        first start;\n        then assign cumulativeCount := cumulativeCount + 1;\n      }\n    }\n    out attribute io_3 : Boolean = alarmActive;\n    out attribute io_4 : Integer = (if alarmActive ? 2000 else 0);\n    out attribute io_5 : Integer = (if alarmActive ? 0 else 0);\n    out attribute serial_0_trigger : Boolean = alarmActive;\n    out attribute serial_0_value_0 : Integer = cumulativeCount;\n    out attribute serial_0_value_1 : Real = (if ((((0) != (0))) and (true)) ? 0.0 else 0.0);\n    out attribute serial_0_value_2 : Integer = stopCount;\n    out attribute serial_0_value_3 : Boolean = alarmActive;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

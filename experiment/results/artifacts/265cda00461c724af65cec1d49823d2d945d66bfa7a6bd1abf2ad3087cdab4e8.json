@@ -1,0 +1,161 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeAuto",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "lowChargeAlarmed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "lowChargeStartNonCharge",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeAuto",
+            "value": {
+              "not": "modeAuto"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "modeAuto",
+            {
+              ">": [
+                "io_0",
+                "io_1"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lowChargeStartNonCharge",
+            "value": 0
+          }
+        ],
+        "else": [
+          {
+            "assign": "lowChargeStartNonCharge",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "<=": [
+            "io_2",
+            0.0
+          ]
+        },
+        "then": [
+          {
+            "assign": "lowChargeAlarmed",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "lowChargeAlarmed",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_3"
+      }
+    ],
+    "outputs": {
+      "io_4": {
+        "if": "modeAuto",
+        "then": {
+          "if": {
+            ">": [
+              "io_0",
+              "io_1"
+            ]
+          },
+          "then": 45.0,
+          "else": {
+            "if": {
+              "<": [
+                "io_0",
+                "io_1"
+              ]
+            },
+            "then": -45.0,
+            "else": 0.0
+          }
+        },
+        "else": 0.0
+      },
+      "io_5": {
+        "if": "modeAuto",
+        "then": 0,
+        "else": 1
+      },
+      "io_6": {
+        "if": "lowChargeAlarmed",
+        "then": 1000,
+        "else": 0
+      },
+      "serial_0_trigger": "lowChargeAlarmed",
+      "serial_0_value_0": "lowChargeAlarmed"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个太阳能电池板朝向与充电监测原型系统，使用两个光敏电阻 A0、A1 分别表示左右光照，舵机 D9 调节角度，电压检测 A2、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和按钮 D2。系统自动比较左右光照调整舵机使其朝向更强光一侧，并根据电压值判断充电状态；按钮可切换自动/手动校准模式。若电压长期过低则蜂鸣报警并串口输出 low charge。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "将io_2置为<=0.0（低电压），其余输入任意，观察同一控制步输出；随后将io_2置为>0.0并再次观察。",
+        "oracle": "当io_2<=0.0时：io_6输出为1000且serial_0_trigger为true且serial_0_value_0为true；当io_2>0.0时：io_6为0且serial_0_trigger与serial_0_value_0均为false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个太阳能电池板朝向与充电监测原型系统，使用两个光敏电阻 A0、A1 分别表示左右光照，舵机 D9 调节角度，电压检测 A2、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和按钮 D2。系统自动比较左右光照调整舵机使其朝向更强光一侧，并根据电压值判断充电状态；按钮可切换自动/手动校准模式。若电压长期过低则蜂鸣报警并串口输出 low charge。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "modeAuto为初始默认true时，设置io_0>io_1并观察io_4；再设置io_0<io_1并观察io_4；再设置io_0==io_1观察io_4。",
+        "oracle": "当modeAuto为true时：io_4=45.0（io_0>io_1）、io_4=-45.0（io_0<io_1）、io_4=0.0（io_0==io_1）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个太阳能电池板朝向与充电监测原型系统，使用两个光敏电阻 A0、A1 分别表示左右光照，舵机 D9 调节角度，电压检测 A2、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和按钮 D2。系统自动比较左右光照调整舵机使其朝向更强光一侧，并根据电压值判断充电状态；按钮可切换自动/手动校准模式。若电压长期过低则蜂鸣报警并串口输出 low charge。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "将io_3从false切到true（一次上升沿），观察io_5与io_4；随后再保持io_3为true一个控制步再观察；再将io_3从true切回false再上升沿一次观察。",
+        "oracle": "每次io_3上升沿会翻转modeAuto：io_5在0/1之间切换且切换后io_4在modeAuto=false时为0.0。保持按下（无新上升沿）不应再次翻转。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute modeAuto : Boolean := true;\n    attribute previousPressed : Boolean := false;\n    attribute lowChargeAlarmed : Boolean := false;\n    attribute lowChargeStartNonCharge : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_3) and ((not previousPressed))) {\n        first start;\n        then assign modeAuto := (not modeAuto);\n      }\n      then if ((modeAuto) and (((io_0) > (io_1)))) {\n        first start;\n        then assign lowChargeStartNonCharge := 0;\n      } else {\n        first start;\n        then assign lowChargeStartNonCharge := 0;\n      }\n      then if ((io_2) <= (0.0)) {\n        first start;\n        then assign lowChargeAlarmed := true;\n      } else {\n        first start;\n        then assign lowChargeAlarmed := false;\n      }\n      then assign previousPressed := io_3;\n    }\n    out attribute io_4 : Real = (if modeAuto ? (if ((io_0) > (io_1)) ? 45.0 else (if ((io_0) < (io_1)) ? -45.0 else 0.0)) else 0.0);\n    out attribute io_5 : Integer = (if modeAuto ? 0 else 1);\n    out attribute io_6 : Integer = (if lowChargeAlarmed ? 1000 else 0);\n    out attribute serial_0_trigger : Boolean = lowChargeAlarmed;\n    out attribute serial_0_value_0 : Boolean = lowChargeAlarmed;\n  }\n  part system : Controller;\n}\n"
+}

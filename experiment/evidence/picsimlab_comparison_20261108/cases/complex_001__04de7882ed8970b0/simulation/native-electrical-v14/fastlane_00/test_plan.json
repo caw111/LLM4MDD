@@ -1,0 +1,346 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises invalid startup temperature, alternating pages, strict threshold equality, separate and simultaneous alarm reasons, removal of individual reasons, invalid echo handling, recovery, and passive-buzzer carrier activity. Numeric displays allow the specified ±1 quantization tolerance. Recovery carrier activity is checked over a window rather than assuming an injection-anchored alarm phase. The suite does not establish exact buzzer envelope timing or phase preservation, sampling-start intervals, echo timeout arguments, serial baud, page-switch deadlines, or every new-reading response deadline. Distance validity endpoints, fractional thresholds, and temperature failure during an active alarm are not covered.",
+  "assumptions": [
+    "The authoritative final serial baud assignment of 9600 overrides the earlier 115200 statement.",
+    "No generic LED/button bench defaults are needed; the supplied explicit wiring identifies all tested devices.",
+    "A null temperature injection represents a failed DHT reading; a null distance injection represents no echo.",
+    "Temperature checks allow acquisition at the next scheduled DHT sample rather than requiring immediate acquisition at injection time.",
+    "Blank TM1637 output is represented by four blank characters.",
+    "The recovery carrier edge check intentionally permits sampling, response, and envelope-edge uncertainty; it does not establish the precise 500ms ON/500ms OFF envelope."
+  ],
+  "horizon_ms": 24000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "temperature",
+      "pin": 7,
+      "value": null
+    },
+    {
+      "at_ms": 0,
+      "kind": "humidity",
+      "pin": 7,
+      "value": 50
+    },
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 9,
+      "value": 100
+    },
+    {
+      "at_ms": 3200,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 32
+    },
+    {
+      "at_ms": 3200,
+      "kind": "distance",
+      "pin": 9,
+      "value": 15
+    },
+    {
+      "at_ms": 7200,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 33
+    },
+    {
+      "at_ms": 7200,
+      "kind": "distance",
+      "pin": 9,
+      "value": 100
+    },
+    {
+      "at_ms": 11200,
+      "kind": "distance",
+      "pin": 9,
+      "value": 14
+    },
+    {
+      "at_ms": 15200,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 30
+    },
+    {
+      "at_ms": 19200,
+      "kind": "distance",
+      "pin": 9,
+      "value": null
+    },
+    {
+      "at_ms": 22200,
+      "kind": "distance",
+      "pin": 9,
+      "value": 14
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [
+    {
+      "trigger_pin": 8,
+      "echo_pin": 9
+    }
+  ],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "display",
+      "id": "initial_invalid_temperature",
+      "requirement_quote": "初始温度无效须空白",
+      "name": "tm:4:5",
+      "at_ms": 1000,
+      "expected": "    ",
+      "numeric": false
+    },
+    {
+      "kind": "display",
+      "id": "first_distance_page",
+      "requirement_quote": "之后每2000ms交替显示温度和距离",
+      "name": "tm:4:5",
+      "at_ms": 2500,
+      "min": 99,
+      "max": 101,
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "temperature_recovery",
+      "requirement_quote": "设备故障恢复后继续真实测量",
+      "name": "tm:4:5",
+      "at_ms": 5500,
+      "min": 31,
+      "max": 33,
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "distance_boundary_page",
+      "requirement_quote": "显示整数且量化容差1",
+      "name": "tm:4:5",
+      "at_ms": 6500,
+      "min": 14,
+      "max": 16,
+      "numeric": true
+    },
+    {
+      "kind": "tone",
+      "id": "invalid_is_not_hot",
+      "requirement_quote": "仅有效温度严格>32℃或有效距离严格<15cm触发报警",
+      "pin": 6,
+      "at_ms": 1500,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "tone",
+      "id": "equal_thresholds_silent",
+      "requirement_quote": "仅有效温度严格>32℃或有效距离严格<15cm触发报警",
+      "pin": 6,
+      "at_ms": 6500,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "serial",
+      "id": "no_boundary_alarm",
+      "requirement_quote": "不得报告不成立原因",
+      "from_ms": 5000,
+      "to_ms": 7000,
+      "regex": "ALARM_(TEMP|DISTANCE)",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "display",
+      "id": "hot_temperature_page",
+      "requirement_quote": "显示整数且量化容差1",
+      "name": "tm:4:5",
+      "at_ms": 9500,
+      "min": 32,
+      "max": 34,
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "safe_distance_while_hot",
+      "requirement_quote": "之后每2000ms交替显示温度和距离",
+      "name": "tm:4:5",
+      "at_ms": 10800,
+      "min": 99,
+      "max": 101,
+      "numeric": true
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_alarm_report",
+      "requirement_quote": "温度原因包含ALARM_TEMP",
+      "from_ms": 9300,
+      "to_ms": 11000,
+      "contains": "ALARM_TEMP",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "no_false_distance_reason",
+      "requirement_quote": "不得报告不成立原因",
+      "from_ms": 9300,
+      "to_ms": 11000,
+      "contains": "ALARM_DISTANCE",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "distance_reason_added_promptly",
+      "requirement_quote": "原因变化后200ms内",
+      "from_ms": 11200,
+      "to_ms": 11600,
+      "contains": "ALARM_DISTANCE",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "both_reasons_temperature",
+      "requirement_quote": "报告所有当前成立原因",
+      "from_ms": 12000,
+      "to_ms": 15000,
+      "contains": "ALARM_TEMP",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "both_reasons_distance",
+      "requirement_quote": "报告所有当前成立原因",
+      "from_ms": 12000,
+      "to_ms": 15000,
+      "contains": "ALARM_DISTANCE",
+      "min_count": 2
+    },
+    {
+      "kind": "interval",
+      "id": "temperature_reporting_period",
+      "requirement_quote": "持续报警每1000ms（容差200ms）",
+      "source": "serial",
+      "contains": "ALARM_TEMP",
+      "from_ms": 12000,
+      "to_ms": 15000,
+      "expected_ms": 1000,
+      "tolerance_ms": 200,
+      "min_count": 2
+    },
+    {
+      "kind": "display",
+      "id": "near_distance_page",
+      "requirement_quote": "显示整数且量化容差1",
+      "name": "tm:4:5",
+      "at_ms": 14500,
+      "min": 13,
+      "max": 15,
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "cooled_temperature_page",
+      "requirement_quote": "设备故障恢复后继续真实测量",
+      "name": "tm:4:5",
+      "at_ms": 17800,
+      "min": 29,
+      "max": 31,
+      "numeric": true
+    },
+    {
+      "kind": "serial",
+      "id": "temperature_reason_removed",
+      "requirement_quote": "不得报告不成立原因",
+      "from_ms": 18000,
+      "to_ms": 19100,
+      "contains": "ALARM_TEMP",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "distance_reason_remains",
+      "requirement_quote": "报告所有当前成立原因",
+      "from_ms": 17800,
+      "to_ms": 19100,
+      "contains": "ALARM_DISTANCE",
+      "min_count": 1
+    },
+    {
+      "kind": "display",
+      "id": "no_echo_blank",
+      "requirement_quote": "所选测量无效时空白",
+      "name": "tm:4:5",
+      "at_ms": 19800,
+      "expected": "    ",
+      "numeric": false
+    },
+    {
+      "kind": "tone",
+      "id": "no_echo_clears_alarm",
+      "requirement_quote": "所有原因消失后200ms内静音",
+      "pin": 6,
+      "at_ms": 19800,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "serial",
+      "id": "no_invalid_distance_alarm",
+      "requirement_quote": "不得报告不成立原因",
+      "from_ms": 19800,
+      "to_ms": 22000,
+      "regex": "ALARM_(TEMP|DISTANCE)",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "display",
+      "id": "temperature_continues_during_echo_fault",
+      "requirement_quote": "不能阻塞其他设备或模型计时",
+      "name": "tm:4:5",
+      "at_ms": 21000,
+      "min": 29,
+      "max": 31,
+      "numeric": true
+    },
+    {
+      "kind": "serial",
+      "id": "recovered_distance_alarm",
+      "requirement_quote": "设备故障恢复后继续真实测量",
+      "from_ms": 22200,
+      "to_ms": 22600,
+      "contains": "ALARM_DISTANCE",
+      "min_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "recovered_passive_buzzer_carrier_activity",
+      "requirement_quote": "立即开始1000Hz鸣叫",
+      "pin": 6,
+      "from_ms": 22600,
+      "to_ms": 23900,
+      "min_count": 400,
+      "max_count": 2400
+    },
+    {
+      "kind": "display",
+      "id": "recovered_distance_display",
+      "requirement_quote": "设备故障恢复后继续真实测量",
+      "name": "tm:4:5",
+      "at_ms": 23500,
+      "min": 13,
+      "max": 15,
+      "numeric": true
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <TM1637Display.h>\n#include <math.h>\nDHT dht(7,DHT11);\nTM1637Display display(4,5);\nfloat tempValue=NAN, distanceValue=NAN;\nunsigned long epoch, nextTemp, nextDistance, alarmEpoch, lastReport;\nuint8_t previousMask=0;\nbool sounding=false;\nvoid reportReasons(uint8_t mask){\n  if(mask&1) Serial.println(\"ALARM_TEMP\");\n  if(mask&2) Serial.println(\"ALARM_DISTANCE\");\n}\nvoid setup(){\n  Serial.begin(9600);\n  pinMode(8,OUTPUT); digitalWrite(8,LOW);\n  pinMode(9,INPUT); pinMode(6,OUTPUT);\n  noTone(6); dht.begin(); display.setBrightness(7); display.clear();\n  epoch=millis(); nextTemp=epoch; nextDistance=epoch;\n}\nvoid loop(){\n  unsigned long now=millis();\n  if((long)(now-nextTemp)>=0){\n    nextTemp=now+2000;\n    tempValue=dht.readTemperature();\n  }\n  now=millis();\n  if((long)(now-nextDistance)>=0){\n    nextDistance=now+100;\n    digitalWrite(8,LOW); delayMicroseconds(2);\n    digitalWrite(8,HIGH); delayMicroseconds(10); digitalWrite(8,LOW);\n    unsigned long echo=pulseIn(9,HIGH,25000UL);\n    float cm=echo/58.0f;\n    distanceValue=(echo && cm>=2.0f && cm<=400.0f)?cm:NAN;\n  }\n  now=millis();\n  uint8_t mask=0;\n  if(!isnan(tempValue) && tempValue>32.0f) mask|=1;\n  if(!isnan(distanceValue) && distanceValue<15.0f) mask|=2;\n  if(mask && !previousMask) alarmEpoch=now;\n  if(mask && (mask!=previousMask || now-lastReport>=1000UL)){\n    reportReasons(mask); lastReport=now;\n  }\n  bool shouldSound=mask && ((now-alarmEpoch)%1000UL<500UL);\n  if(shouldSound!=sounding){\n    if(shouldSound) tone(6,1000); else noTone(6);\n    sounding=shouldSound;\n  }\n  previousMask=mask;\n  float selected=(((now-epoch)/2000UL)%2==0)?tempValue:distanceValue;\n  if(isnan(selected)) display.clear();\n  else display.showNumberDec((int)roundf(selected),false);\n}\n",
+  "electrical_led_pins": {}
+}

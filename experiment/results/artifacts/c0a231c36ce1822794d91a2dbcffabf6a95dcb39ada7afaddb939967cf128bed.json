@@ -1,0 +1,238 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "serialEnabled",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "mode",
+        "type": "i32",
+        "initial": 1
+      },
+      {
+        "name": "dispTemp",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "dispHumi",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "serialEnabled",
+            "value": {
+              "not": "serialEnabled"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      },
+      {
+        "if": "io_5_valid",
+        "then": [
+          {
+            "assign": "mode",
+            "value": "io_5"
+          }
+        ]
+      },
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "assign": "dispTemp",
+            "value": "io_1"
+          },
+          {
+            "assign": "dispHumi",
+            "value": "io_2"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_4": {
+        "if": {
+          "==": [
+            "mode",
+            2
+          ]
+        },
+        "then": {
+          "if": {
+            "and": [
+              {
+                ">=": [
+                  "dispHumi",
+                  0.0
+                ]
+              },
+              {
+                "<=": [
+                  "dispHumi",
+                  2147483647.0
+                ]
+              }
+            ]
+          },
+          "then": "RealFunctions::floor(dispHumi)",
+          "else": 0
+        },
+        "else": {
+          "if": {
+            "==": [
+              "mode",
+              3
+            ]
+          },
+          "then": {
+            "if": {
+              "and": [
+                {
+                  ">=": [
+                    "dispTemp",
+                    0.0
+                  ]
+                },
+                {
+                  "<=": [
+                    "dispTemp",
+                    2147483647.0
+                  ]
+                }
+              ]
+            },
+            "then": "RealFunctions::floor(dispTemp)",
+            "else": 0
+          },
+          "else": {
+            "if": {
+              "and": [
+                {
+                  ">=": [
+                    "dispTemp",
+                    0.0
+                  ]
+                },
+                {
+                  "<=": [
+                    "dispTemp",
+                    2147483647.0
+                  ]
+                }
+              ]
+            },
+            "then": "RealFunctions::floor(dispTemp)",
+            "else": 0
+          }
+        }
+      },
+      "serial_0_trigger": "serialEnabled",
+      "serial_0_value_0": {
+        "if": {
+          "and": [
+            "serialEnabled",
+            {
+              "==": [
+                "mode",
+                3
+              ]
+            }
+          ]
+        },
+        "then": "dispTemp",
+        "else": 0.0
+      },
+      "serial_0_value_1": {
+        "if": {
+          "and": [
+            "serialEnabled",
+            {
+              "==": [
+                "mode",
+                2
+              ]
+            }
+          ]
+        },
+        "then": "dispHumi",
+        "else": 0.0
+      },
+      "serial_0_value_2": {
+        "if": {
+          "and": [
+            "serialEnabled",
+            {
+              "==": [
+                "mode",
+                1
+              ]
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "初始 serialEnabled 为 false；将 io_0 从 false 置为 true 再置回 false（产生一次上升沿）。随后保持 io_5_valid= true 且 io_5=3(TEMP)，并令 io_3=true，io_1=25.0, io_2=60.0。",
+        "oracle": "serial_0_trigger 在该步输出为 true；serial_0_value_0=25.0，serial_0_value_1=0.0，serial_0_value_2=false；io_4 等于 RealFunctions::floor(dispTemp)=25"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "在 serialEnabled 已为 true 的情况下（保持），令 io_5_valid=true 且 io_5=2(HUMI)，并令 io_3=true，io_1=30.0, io_2=55.0。",
+        "oracle": "serial_0_trigger 为 true；serial_0_value_0=0.0，serial_0_value_1=55.0，serial_0_value_2=false；io_4 等于 RealFunctions::floor(dispHumi)=55"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在 serialEnabled 已为 true 的情况下，令 io_5_valid=true 且 io_5=1(BOTH)，并令 io_3=true，io_1=22.0, io_2=44.0。",
+        "oracle": "serial_0_trigger 为 true；serial_0_value_0=0.0，serial_0_value_1=0.0，serial_0_value_2=true；io_4 按当前实现为 RealFunctions::floor(dispTemp)=22"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "先通过一次 io_3=true 设置 dispTemp=28.0, dispHumi=70.0；随后保持 io_3=false，同时保持 io_5_valid=false 且 serialEnabled 为 true，令 io_1=10.0, io_2=20.0（但无效）。",
+        "oracle": "dispTemp/dispHumi 保持上一有效值；若 mode=TEMP，则 serial_0_value_0 仍为28.0且不随无效输入变化"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_5 : Integer;\n    in attribute io_5_valid : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute serialEnabled : Boolean := false;\n    attribute mode : Integer := 1;\n    attribute dispTemp : Real := 0.0;\n    attribute dispHumi : Real := 0.0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign serialEnabled := (not serialEnabled);\n      }\n      then assign previousPressed := io_0;\n      then if io_5_valid {\n        first start;\n        then assign mode := io_5;\n      }\n      then if io_3 {\n        first start;\n        then assign dispTemp := io_1;\n        then assign dispHumi := io_2;\n      }\n    }\n    out attribute io_4 : Integer = (if ((mode) == (2)) ? (if ((((dispHumi) >= (0.0))) and (((dispHumi) <= (2147483647.0)))) ? RealFunctions::floor(dispHumi) else 0) else (if ((mode) == (3)) ? (if ((((dispTemp) >= (0.0))) and (((dispTemp) <= (2147483647.0)))) ? RealFunctions::floor(dispTemp) else 0) else (if ((((dispTemp) >= (0.0))) and (((dispTemp) <= (2147483647.0)))) ? RealFunctions::floor(dispTemp) else 0)));\n    out attribute serial_0_trigger : Boolean = serialEnabled;\n    out attribute serial_0_value_0 : Real = (if ((serialEnabled) and (((mode) == (3)))) ? dispTemp else 0.0);\n    out attribute serial_0_value_1 : Real = (if ((serialEnabled) and (((mode) == (2)))) ? dispHumi else 0.0);\n    out attribute serial_0_value_2 : Boolean = (if ((serialEnabled) and (((mode) == (1)))) ? true else false);\n  }\n  part system : Controller;\n}\n"
+}

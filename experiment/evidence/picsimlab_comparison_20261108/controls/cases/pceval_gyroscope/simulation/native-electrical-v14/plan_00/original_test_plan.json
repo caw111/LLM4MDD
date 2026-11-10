@@ -1,0 +1,109 @@
+{
+  "supported": false,
+  "coverage": "targeted_core_regression",
+  "coverage_explanation": "The requirement specifies serial output text patterns ('MPU6050 ready!' and lines containing X/Y/Z rad/s) but does not define exact numeric values, update cadence beyond 'Delay 500ms in every loop', sensor motion inputs, or how the host should induce deterministic gyroscope readings. Without controlling MPU6050 physical state or mocking the sensor, the test can only verify presence/format of messages and approximate periodicity, not 'correct X, Y, Z gyroscope result' in a deterministic way. Therefore full executable behavioral coverage is not reliable.",
+  "assumptions": [
+    "MPU6050 is physically present on I2C at the address expected by Adafruit_MPU6050 default wiring/library behavior (commonly 0x68). No address override is specified in the requirement.",
+    "Serial is configured to 9600 baud as stated, and messages are line-oriented such that each printed gyroscope sample ends with a newline (the requirement says 'line_or_idle').",
+    "The 'Delay 500ms in every loop' means at least one gyroscope line is emitted roughly every 500ms after successful initialization (allowing tolerance).",
+    "The test environment can only observe serial output; it cannot force or guarantee specific MPU6050 rotational values, so numeric correctness is not verifiable deterministically."
+  ],
+  "horizon_ms": 12500,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "ready",
+      "from_ms": 0,
+      "to_ms": 500,
+      "regex": "^MPU6050 ready!$",
+      "min_count": 1,
+      "requirement_quote": "Observe the live input and the task-specific response."
+    },
+    {
+      "kind": "serial",
+      "id": "axes_0",
+      "from_ms": 100,
+      "to_ms": 1500,
+      "regex": "^X: 1\\.13, Y: 2\\.97, Z: -2\\.01 rad/s$",
+      "min_count": 2,
+      "requirement_quote": "Observe the live input and the task-specific response."
+    },
+    {
+      "kind": "serial",
+      "id": "axes_2000",
+      "from_ms": 2100,
+      "to_ms": 3500,
+      "regex": "^X: -0\\.25, Y: 0\\.32, Z: 3\\.14 rad/s$",
+      "min_count": 2,
+      "requirement_quote": "Observe the live input and the task-specific response."
+    },
+    {
+      "kind": "serial",
+      "id": "axes_4000",
+      "from_ms": 4100,
+      "to_ms": 5500,
+      "regex": "^X: 2\\.25, Y: -1\\.11, Z: 0\\.00 rad/s$",
+      "min_count": 2,
+      "requirement_quote": "Observe the live input and the task-specific response."
+    },
+    {
+      "kind": "interval",
+      "id": "half_second_reports",
+      "source": "serial",
+      "regex": "^X:",
+      "expected_ms": 525,
+      "tolerance_ms": 30,
+      "min_count": 10,
+      "from_ms": 0,
+      "to_ms": 8000,
+      "requirement_quote": "Use the required 500 ms loop delay with up to 55 ms for the serial frame and loop overhead."
+    }
+  ],
+  "imu_samples": [
+    {
+      "at_ms": 0,
+      "acceleration": [
+        2.45,
+        1.96,
+        3.43
+      ],
+      "gyro": [
+        1.13,
+        2.97,
+        -2.01
+      ]
+    },
+    {
+      "at_ms": 2000,
+      "acceleration": [
+        -6.31,
+        4.22,
+        9.81
+      ],
+      "gyro": [
+        -0.25,
+        0.32,
+        3.14
+      ]
+    },
+    {
+      "at_ms": 4000,
+      "acceleration": [
+        0.0,
+        -2.75,
+        1.5
+      ],
+      "gyro": [
+        2.25,
+        -1.11,
+        0.0
+      ]
+    }
+  ],
+  "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+}

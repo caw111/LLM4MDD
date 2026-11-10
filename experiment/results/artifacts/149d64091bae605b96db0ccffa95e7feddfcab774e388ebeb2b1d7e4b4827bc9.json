@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"autoMode\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevIo2\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevIo3\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"curAnglePct\",\n        \"type\": \"i32\",\n        \"initial\": 50\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_2 and not prevIo2\",\n        \"then\": [\n          {\n            \"assign\": \"autoMode\",\n            \"value\": {\n              \"if\": \"autoMode\",\n              \"then\": false,\n              \"else\": true\n            }\n          }\n        ]\n      },\n      {\n        \"if\": \"not autoMode and io_3 and not prevIo3\",\n        \"then\": [\n          {\n            \"assign\": \"curAnglePct\",\n            \"value\": {\n              \"if\": \"curAnglePct >= 100\",\n              \"then\": 0,\n              \"else\": \"curAnglePct + 10\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": \"autoMode\",\n        \"then\": [\n          {\n            \"assign\": \"curAnglePct\",\n            \"value\": {\n              \"if\": {\n                \"and\": [\n                  {\n                    \">=\": [\n                      \"io_0\",\n                      700.0\n                    ]\n                  },\n                  {\n                    \"and\": [\n                      {\n                        \">\": [\n                          \"io_1\",\n                          30.0\n                        ]\n                      },\n                      true\n                    ]\n                  }\n                ]\n              },\n              \"then\": 0,\n              \"else\": {\n                \"if\": {\n                  \">\": [\n                    \"io_1\",\n                    30.0\n                  ]\n                },\n                \"then\": 0,\n                \"else\": {\n                  \"if\": {\n                    \"<=\": [\n                      \"io_0\",\n                      300.0\n                    ]\n                  },\n                  \"then\": 100,\n                  \"else\": 0\n                }\n              }\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevIo2\",\n        \"value\": \"io_2\"\n      },\n      {\n        \"assign\": \"prevIo3\",\n        \"value\": \"io_3\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": \"autoMode\",\n        \"then\": {\n          \"and\": [\n            {\n              \"<=\": [\n                \"io_0\",\n                300.0\n              ]\n            },\n            {\n              \"<=\": [\n                \"io_1\",\n                30.0\n              ]\n            }\n          ]\n        },\n        \"else\": false\n      },\n      \"io_5\": \"RealFunctions::floor(curAnglePct * 1.0)\",\n      \"io_6\": \"curAnglePct\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_2 rising edge to enter autoMode; then apply io_0=800.0, io_1=20.0\",\n        \"oracle\": \"io_5 commanded angle corresponds to curAnglePct=0 and io_4 becomes false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Enter autoMode; apply io_0=200.0, io_1=25.0\",\n        \"oracle\": \"io_5 commanded angle corresponds to curAnglePct=100 and io_4 becomes true\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Enter autoMode; apply io_0=200.0, io_1=35.0\",\n        \"oracle\": \"Temperature high has priority: io_5 commanded angle corresponds to curAnglePct=0 and io_4 becomes false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Use io_2 rising edge to ensure autoMode=false; then create two rising edges on io_3 while keeping io_0/io_1 arbitrary\",\n        \"oracle\": \"In manual mode, io_6 (TM1637 value) increments curAnglePct by 10 per io_3 press-edge and wraps at >=100; io_4 stays false\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute autoMode : Boolean := false;\n    attribute prevIo2 : Boolean := false;\n    attribute prevIo3 : Boolean := false;\n    attribute curAnglePct : Integer := 50;\n    perform action tick {\n      first start;\n      then if io_2 and not prevIo2 {\n        first start;\n        then assign autoMode := (if autoMode ? false else true);\n      }\n      then if not autoMode and io_3 and not prevIo3 {\n        first start;\n        then assign curAnglePct := (if curAnglePct >= 100 ? 0 else curAnglePct + 10);\n      }\n      then if autoMode {\n        first start;\n        then assign curAnglePct := (if ((((io_0) >= (700.0))) and (((((io_1) > (30.0))) and (true)))) ? 0 else (if ((io_1) > (30.0)) ? 0 else (if ((io_0) <= (300.0)) ? 100 else 0)));\n      }\n      then assign prevIo2 := io_2;\n      then assign prevIo3 := io_3;\n    }\n    out attribute io_4 : Boolean = (if autoMode ? ((((io_0) <= (300.0))) and (((io_1) <= (30.0)))) else false);\n    out attribute io_5 : Real = RealFunctions::floor(curAnglePct * 1.0);\n    out attribute io_6 : Integer = curAnglePct;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

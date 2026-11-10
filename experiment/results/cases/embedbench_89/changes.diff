@@ -1,0 +1,52 @@
+--- original.ino
++++ repaired.ino
+@@ -235,6 +235,14 @@
+     *io_7 = sysml_value_4;
+     *io_8 = sysml_value_5;
+     *io_9 = sysml_value_6;
++    int n=sysml_state_count;
++    *io_9=n%10;
++    *io_3=n>0&&(n<5||n>=10) ? 255 : 0;
++    *io_4=n>=5&&n<10 ? 255 : 0;
++    *io_5=n>=10 ? 255 : 0;
++    *io_6=n>=5&&n<10 ? 255 : 0;
++    *io_7=n>=5 ? 255 : 0;
++    *io_8=n>0&&(n<5||n>=10) ? 255 : 0;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -283,6 +291,15 @@
+ }
+ static int32_t hw_shift595_previous_io_9 = INT32_MIN;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+   pinMode(2, INPUT_PULLUP);
+@@ -315,15 +332,15 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(2) == LOW);
++    hw_value_io_0 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   if (!hw_attempted_io_1 || (uint32_t)(hw_now - hw_sampled_io_1) >= 5UL) {
+     hw_attempted_io_1 = true; hw_sampled_io_1 = hw_now;
+-    hw_value_io_1 = (digitalRead(3) == LOW);
++    hw_value_io_1 = manual_debounce_input((digitalRead(3) == LOW), 1);
+   }
+   if (!hw_attempted_io_2 || (uint32_t)(hw_now - hw_sampled_io_2) >= 5UL) {
+     hw_attempted_io_2 = true; hw_sampled_io_2 = hw_now;
+-    hw_value_io_2 = (digitalRead(4) == LOW);
++    hw_value_io_2 = manual_debounce_input((digitalRead(4) == LOW), 2);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

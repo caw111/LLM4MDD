@@ -1,0 +1,407 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Business logic for state classification (normal/overload/overheat/mechanical abnormality), thresholds, and how current/temperature/vibration map to state_code and fault_code are not specified in the prompt and must be implemented in the SysML model.",
+    "Current sensor conversion from A0 ADC counts to amperes requires electrical calibration parameters (scale/offset) that are not provided; model should apply calibration and report in A.",
+    "LM35 conversion from A1 ADC counts to degC requires scale/offset parameters that are not provided; model should apply conversion and report in degC.",
+    "D2 vibration switch polarity: the prompt does not state active level or pullup wiring; a conservative assumption active_high=true and pullup=false is used in the digital_input request. If the hardware is active-low, invert in the model or adjust request.",
+    "Fan PWM D5: PWM enable strategy (e.g., continuous when overheat, or duty proportional to temperature) is not specified; PWM output is provided and SysML determines its duty.",
+    "TM1637 display rotation timing (\"轮流显示\" cadence among current, temperature, and state number) and mapping to displayed integers are model responsibilities; TM1637 port supports an integer value only.",
+    "Serial protocol details (exact message format/text or fixed line requirements) are not specified; therefore this interface proposal uses typed numeric reports under one periodic gate. If a fixed exact text line is required, replace/add with serial_text_output entries at the same baud."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Motor current sensor output",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Motor temperature sensor (LM35) output",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Vibration switch signal",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Fan cooling PWM (enabled during overheat)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0, \"pin\": \"D5\", \"scale\": 1}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1,
+        "offset": 0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer alarm (fault/overheat/mechanical exception)",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Status LED (state indicator)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Rotating display: motor current, temperature, and state ID",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D3\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D3",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Serial report gate for periodic state monitoring output",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "A",
+      "initial": 0,
+      "meaning": "Motor load current (converted from A0)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"current_A\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "current_A"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "Motor temperature (converted from LM35 A1)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"temp_C\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "temp_C"
+      }
+    },
+    {
+      "name": "serial_0_value_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Vibration detection (from D2)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"vibration_fault\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "vibration_fault"
+      }
+    },
+    {
+      "name": "serial_0_value_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Current motor state code: normal/overload/overheat/mechanical fault",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"state_code\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "state_code"
+      }
+    },
+    {
+      "name": "serial_0_value_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Fault code (nonzero when mechanical abnormality exists)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"fault_code\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "fault_code"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D3"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。",
+    "effective_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_4": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2",
+          "serial_0_value_3",
+          "serial_0_value_4"
+        ]
+      }
+    ]
+  }
+}

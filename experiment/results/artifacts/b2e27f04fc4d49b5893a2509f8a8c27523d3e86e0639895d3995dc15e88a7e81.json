@@ -1,0 +1,336 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "使用UNO：D0/D1未参与串口收发，D2/D3近距离传感器检测投递口；D8/D9用于HC-SR04测距；D4/D5用于TM1637；D6蜂鸣器；D13 LED；D7复位按钮。",
+    "TM1637用于显示“两类投递总次数”，不单独显示两类细分计数（细分计数逻辑在SysML中实现）。",
+    "超声波valid与distance采集绑定为同一采样周期的成对请求；若超声测量超时/越界则valid=false，distance保持上次有效值。",
+    "串口按题意需要输出固定提示“empty bin needed”：由于本提案仅允许用serial_text_output做固定文本输出，此处用串口触发门控占位，实际固定文本输出应在serial_text_output中实现（否则将被视为不支持）。",
+    "串口接收命令未在原始需求中给出，本提案不新增串口接收接口。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "近距离传感器1：可回收垃圾投递口检测",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "近距离传感器2：其他垃圾投递口检测",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "超声波高度/满载程度距离(cm)，用于满载高度阈值判断",
+      "sample_period_ms": 250,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D8",
+        "echo_pin": "D9"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "超声波测距有效性",
+      "sample_period_ms": 250,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D8",
+        "echo_pin": "D9"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637显示：两类投递总次数",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "蜂鸣器报警（满载超过阈值时报警）",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED：满载报警指示",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "复位按钮：清空后复位并允许重新计数",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "当桶满载超过阈值并进入报警/停止计数后，输出 empty bin needed 提示",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "model",
+      "initial": false,
+      "meaning": "提示门控：触发时输出空桶需求提示（内容由固定文本实现）",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"empty bin needed\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "empty bin needed"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。",
+    "effective_requirement": "构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D7\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

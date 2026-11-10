@@ -1,0 +1,125 @@
+{
+  "contract_sha256": "ce618ad6264aef0e196125f9b176b18eb06a1d24c19df5dab4214dcd83cc8865",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"光敏电阻环境亮度用于节能判定（暗则触发自动点亮）\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D3\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"人体接近距离（cm），用于自动点亮判定\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D3\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"超声测距数据有效性\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D9\",\n      \"initial\": 0,\n      \"meaning\": \"照明PWM输出（节能照明LED）\",\n      \"scale\": 1,\n      \"offset\": 0\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"按钮输入：用于强制常亮模式与自动模式切换\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"状态指示LED（用于显示系统当前模式/自动触发状态）\",\n      \"active_high\": true\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"分辨硬件：Arduino Uno。A0为光敏电阻模拟输入；D8/D3为HC-SR04超声模块触发/回波；D9为照明PWM；D2为按钮；D13为状态指示输出（原始部分清单包含D13作为digital_output，故保留为物理接线功能）。\",\n    \"按钮电平极性未在题述给出；为避免程序二次反相，本提案采用数字输入active_high=true，并把模型按“按下=真(true)”处理；若实际为上拉/下拉反相按钮，需要在SysML中处理相应逻辑。\",\n    \"超声timeout_us选择30000（落在25000..60000范围内）；样本周期为控制周期的整数倍并保证>=ceil((timeout_us+12)/1000)，该采样调度细节由系统自动按约束选择。\",\n    \"串口需求未在原始要求中出现；serial_channels为空。\",\n    \"节能判定阈值、接近距离阈值、PWM占空比/亮度策略、以及按钮切换的具体状态机与报告逻辑均属于SysML业务参数，未在题述中给出，故不写入unsupported。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D9"
+        },
+        "resolved": {
+          "pin": "D9"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {},
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D3"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+    "effective_requirement": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D3）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D9\"}, {\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D3\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [
+      {
+        "device": "digital_output",
+        "field": "pin",
+        "original": null,
+        "resolved": "D13",
+        "reason": "unspecified wiring"
+      },
+      {
+        "device": "ultrasonic",
+        "field": "echo_pin",
+        "original": "D9",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

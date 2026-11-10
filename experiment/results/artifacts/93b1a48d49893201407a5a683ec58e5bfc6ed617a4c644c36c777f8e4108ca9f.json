@@ -1,0 +1,98 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousStartPausePressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousResetPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"seconds\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"beepRemainingSeconds\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_1\",\n        \"then\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"not\": \"previousResetPressed\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"seconds\",\n                \"value\": 0\n              },\n              {\n                \"assign\": \"beepRemainingSeconds\",\n                \"value\": 0\n              },\n              {\n                \"assign\": \"running\",\n                \"value\": false\n              }\n            ],\n            \"else\": []\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": \"io_0\",\n        \"then\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_0\",\n                {\n                  \"not\": \"previousStartPausePressed\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"running\",\n                \"value\": {\n                  \"if\": \"running ? false : true\",\n                  \"then\": false,\n                  \"else\": true\n                }\n              }\n            ],\n            \"else\": []\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"running\",\n            {\n              \"==\": [\n                \"beepRemainingSeconds\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"seconds\",\n            \"value\": \"seconds + 1\"\n          },\n          {\n            \"if\": {\n              \"==\": [\n                \"seconds\",\n                60\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"beepRemainingSeconds\",\n                \"value\": 1\n              }\n            ],\n            \"else\": []\n          }\n        ],\n        \"else\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"running\",\n                {\n                  \">\": [\n                    \"beepRemainingSeconds\",\n                    0\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"beepRemainingSeconds\",\n                \"value\": \"beepRemainingSeconds - 1\"\n              },\n              {\n                \"assign\": \"seconds\",\n                \"value\": \"seconds + 1\"\n              },\n              {\n                \"if\": {\n                  \"==\": [\n                    \"seconds\",\n                    60\n                  ]\n                },\n                \"then\": [\n                  {\n                    \"assign\": \"beepRemainingSeconds\",\n                    \"value\": 1\n                  }\n                ],\n                \"else\": []\n              }\n            ],\n            \"else\": []\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousStartPausePressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"previousResetPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": {\n          \"and\": [\n            \"running\",\n            {\n              \">\": [\n                \"beepRemainingSeconds\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_3\": \"seconds\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0 rising edge to start, then keep io_0 and io_1 false for 60 control steps, then hold running true for 1 more step\",\n        \"oracle\": \"io_3 increments from 0 up to 60 and when seconds reaches 60, io_2 becomes nonzero for exactly 1 step then returns to 0 while counting continues\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0 rising edge to start, run for 10 control steps, then io_0 rising edge again to pause and keep it held false afterwards for 5 steps\",\n        \"oracle\": \"io_3 stops incrementing while paused and io_2 remains 0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"start via io_0 rising edge, run for 20 control steps, then apply io_1 rising edge while keeping io_0 false\",\n        \"oracle\": \"seconds resets to 0 immediately on reset edge, io_3 reads 0, io_2 is 0, and counting is not running until the next start/pause edge\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/updates/1/then/0/then/0/value/if",
+          "original": "running ? false : true",
+          "normalized": {
+            "if": "running",
+            "then": false,
+            "else": true
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute running : Boolean := false;\n    attribute previousStartPausePressed : Boolean := false;\n    attribute previousResetPressed : Boolean := false;\n    attribute seconds : Integer := 0;\n    attribute beepRemainingSeconds : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then if ((io_1) and ((not previousResetPressed))) {\n          first start;\n          then assign seconds := 0;\n          then assign beepRemainingSeconds := 0;\n          then assign running := false;\n        }\n      }\n      then if io_0 {\n        first start;\n        then if ((io_0) and ((not previousStartPausePressed))) {\n          first start;\n          then assign running := (if (if running ? false else true) ? false else true);\n        }\n      }\n      then if ((running) and (((beepRemainingSeconds) == (0)))) {\n        first start;\n        then assign seconds := seconds + 1;\n        then if ((seconds) == (60)) {\n          first start;\n          then assign beepRemainingSeconds := 1;\n        }\n      } else {\n        first start;\n        then if ((running) and (((beepRemainingSeconds) > (0)))) {\n          first start;\n          then assign beepRemainingSeconds := beepRemainingSeconds - 1;\n          then assign seconds := seconds + 1;\n          then if ((seconds) == (60)) {\n            first start;\n            then assign beepRemainingSeconds := 1;\n          }\n        }\n      }\n      then assign previousStartPausePressed := io_0;\n      then assign previousResetPressed := io_1;\n    }\n    out attribute io_2 : Integer = (if ((running) and (((beepRemainingSeconds) > (0)))) ? 1000 else 0);\n    out attribute io_3 : Integer = seconds;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

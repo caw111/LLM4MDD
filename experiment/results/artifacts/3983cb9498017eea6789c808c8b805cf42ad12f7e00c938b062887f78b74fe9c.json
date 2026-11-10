@@ -1,0 +1,188 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "f64"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "true"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "lastValue"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "serialTick",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "initialized",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "lastValue",
+      "type": "f64",
+      "initial": "0.0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(!arg0)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "initialized"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "initialized",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "serialTick",
+                "expression": "0",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "lastValue",
+                "expression": "arg0",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "serialTick",
+          "expression": "(arg0 + 1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "serialTick"
+            }
+          ]
+        },
+        {
+          "kind": "if",
+          "condition": "true",
+          "sources": [],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "lastValue",
+                "expression": "arg0",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

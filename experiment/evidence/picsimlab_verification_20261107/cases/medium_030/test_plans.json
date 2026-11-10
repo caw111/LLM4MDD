@@ -1,0 +1,171 @@
+[
+  {
+    "name": "baseline",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests one-second counting, two button-triggered resets, continued counting after each reset, and released-button behavior. The requirement does not specify the initial count, whether reset restarts the one-second phase, or overflow behavior. Post-reset numeric ranges accommodate either a retained or restarted clock phase; exact initial value and overflow are not tested.",
+      "assumptions": [
+        "The authoritative TM1637 connections are CLK=D4 and DIO=D5; the reset button is D2.",
+        "Relies on the disclosed bench default: the button connects D2 to GND, uses INPUT_PULLUP, and is pressed LOW.",
+        "The displayed timer is a numeric count incremented once per second.",
+        "Initial count, reset clock-phase policy, held-button repetition policy, and overflow behavior are unspecified. Tests use short, separated presses and avoid requiring a particular clock-phase policy.",
+        "The reference chooses an initial count of zero, edge-triggered reset with debounce, a restarted clock phase on reset, and wraparound after 9999."
+      ],
+      "horizon_ms": 11000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 3400,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 3520,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 6800,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 6920,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "relation",
+          "id": "released_timer_advances",
+          "requirement_quote": "每秒递增",
+          "source": "display",
+          "name": "tm:4:5",
+          "at_ms": [
+            450,
+            1450,
+            2450
+          ],
+          "relation": "increasing",
+          "tolerance": 0
+        },
+        {
+          "kind": "display",
+          "id": "first_reset_low_count",
+          "requirement_quote": "按钮（D2）清零",
+          "name": "tm:4:5",
+          "at_ms": 3750,
+          "min": 0,
+          "max": 1,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "first_reset_one_second",
+          "requirement_quote": "每秒递增",
+          "name": "tm:4:5",
+          "at_ms": 4750,
+          "min": 1,
+          "max": 2,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "first_reset_two_seconds",
+          "requirement_quote": "每秒递增",
+          "name": "tm:4:5",
+          "at_ms": 5750,
+          "min": 2,
+          "max": 3,
+          "numeric": true
+        },
+        {
+          "kind": "relation",
+          "id": "first_reset_resumes",
+          "requirement_quote": "每秒递增",
+          "source": "display",
+          "name": "tm:4:5",
+          "at_ms": [
+            3750,
+            4750,
+            5750
+          ],
+          "relation": "increasing",
+          "tolerance": 0
+        },
+        {
+          "kind": "display",
+          "id": "second_reset_low_count",
+          "requirement_quote": "按钮（D2）清零",
+          "name": "tm:4:5",
+          "at_ms": 7150,
+          "min": 0,
+          "max": 1,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "second_reset_one_second",
+          "requirement_quote": "每秒递增",
+          "name": "tm:4:5",
+          "at_ms": 8150,
+          "min": 1,
+          "max": 2,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "second_reset_two_seconds",
+          "requirement_quote": "每秒递增",
+          "name": "tm:4:5",
+          "at_ms": 9150,
+          "min": 2,
+          "max": 3,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "second_reset_three_seconds",
+          "requirement_quote": "每秒递增",
+          "name": "tm:4:5",
+          "at_ms": 10150,
+          "min": 3,
+          "max": 4,
+          "numeric": true
+        },
+        {
+          "kind": "relation",
+          "id": "second_reset_resumes",
+          "requirement_quote": "每秒递增",
+          "source": "display",
+          "name": "tm:4:5",
+          "at_ms": [
+            7150,
+            8150,
+            9150,
+            10150
+          ],
+          "relation": "increasing",
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nunsigned int count = 0;\nunsigned long tickAt = 0;\nunsigned long changedAt = 0;\nint lastRaw = HIGH;\nint stableButton = HIGH;\n\nvoid showCount() {\n  display.showNumberDec(count, false);\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  display.setBrightness(7);\n  showCount();\n  tickAt = millis();\n  changedAt = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  int raw = digitalRead(2);\n  if (raw != lastRaw) {\n    lastRaw = raw;\n    changedAt = now;\n  }\n  if (raw != stableButton && now - changedAt >= 25UL) {\n    stableButton = raw;\n    if (stableButton == LOW) {\n      count = 0;\n      tickAt = now;\n      showCount();\n    }\n  }\n  while (now - tickAt >= 1000UL) {\n    tickAt += 1000UL;\n    count = (count + 1) % 10000;\n    showCount();\n  }\n}\n"
+    },
+    "engine": "host"
+  }
+]

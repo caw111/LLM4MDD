@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "interfaces": [
+    {
+      "name": "buttonPauseToggle",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "meaning": "Button model: true when pressed (active-low wiring with INPUT_PULLUP), false when released.",
+      "sample_period_ms": 10,
+      "initial": false,
+      "device": "button",
+      "hardware": "D2 wired to a momentary button to GND with INPUT_PULLUP; active-low: LOW=pressed, HIGH=released.",
+      "binding": {
+        "kind": "digital_input",
+        "pin": 2,
+        "pullup": true,
+        "active_high": false
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "elapsedMilliseconds",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "meaning": "Actual delta since previous control step (first step delta is 0). The SysML model accumulates this delta over time.",
+      "sample_period_ms": 10,
+      "initial": 0,
+      "device": "clock",
+      "hardware": "Use Arduino millis() to compute delta time since the previous control step.",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    },
+    {
+      "name": "buzzerToneHz",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "meaning": "Buzzer tone frequency command for a passive buzzer. 0 means silence; otherwise set pitch in Hz.",
+      "sample_period_ms": 10,
+      "initial": 0,
+      "device": "buzzer",
+      "hardware": "D6 connected to a passive buzzer; tone is driven using Arduino tone(). Initial state is silent.",
+      "binding": {
+        "kind": "tone_output",
+        "pin": 6,
+        "invalid_policy": "silence"
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。",
+      "assertion_ids": [
+        "expected_behavior_buzzer_interval_pause_resume"
+      ]
+    }
+  ],
+  "required_dependencies": {
+    "buzzerToneHz": [
+      "buttonPauseToggle",
+      "elapsedMilliseconds"
+    ]
+  },
+  "required_states": [],
+  "planning_notes": [
+    "选择控制周期 control_period_ms=10ms，以满足鸣叫持续时间100ms与3000ms间隔的20ms容差要求，同时保证按钮沿采样及时响应。",
+    "buzzer输出使用 tone_output（无源蜂鸣器），模型侧在暂停时将频率置为0以立即静音，并在恢复后继续剩余鸣叫时间与计时进度。",
+    "按钮为D2 INPUT_PULLUP的主动低信号；模型语义采用 pressed=true（物理LOW时为true），并仅在按下沿（从未按到按下的边沿）发生暂停/恢复切换。"
+  ],
+  "startup_checks": [
+    {
+      "output": "buzzerToneHz",
+      "expected": 0,
+      "evidence": "初始运行且静音"
+    }
+  ],
+  "pause_checks": [
+    {
+      "input": "buttonPauseToggle",
+      "delta": "elapsedMilliseconds",
+      "output": "buzzerToneHz",
+      "initial_running": true,
+      "expected": 0,
+      "evidence": "初始运行; 按下沿切换暂停/恢复; 暂停立即静音",
+      "response_tolerance_ms": 20
+    }
+  ],
+  "periodic_checks": [
+    {
+      "delta": "elapsedMilliseconds",
+      "output": "buzzerToneHz",
+      "period_ms": 3000,
+      "pulse_ms": 100,
+      "first_pulse": "after_period",
+      "active_value": 1000,
+      "inactive_value": 0,
+      "tolerance_ms": 20,
+      "evidence": "此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长",
+      "pause_input": "buttonPauseToggle",
+      "initial_running": true,
+      "pause_policy": "preserve"
+    }
+  ]
+}

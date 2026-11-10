@@ -1,0 +1,357 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [],
+  "outputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    },
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? arg1 : 0)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "currentPositionDeg"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "reportPending"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "reportPending"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "currentPositionDeg"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "currentPositionDeg",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "directionForward",
+      "type": "bool",
+      "initial": "true"
+    },
+    {
+      "name": "moving",
+      "type": "bool",
+      "initial": "true"
+    },
+    {
+      "name": "reportPending",
+      "type": "bool",
+      "initial": "true"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "moving"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "if",
+                "condition": "arg0",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "directionForward"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "if",
+                      "condition": "(arg0 < 180)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "currentPositionDeg"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "currentPositionDeg",
+                            "expression": "(arg0 + 1)",
+                            "sources": [
+                              {
+                                "kind": "state",
+                                "name": "currentPositionDeg"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "else": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "moving",
+                            "expression": "false",
+                            "sources": []
+                          },
+                          {
+                            "kind": "assign",
+                            "state": "reportPending",
+                            "expression": "true",
+                            "sources": []
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "else": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "if",
+                      "condition": "(arg0 > 0)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "currentPositionDeg"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "currentPositionDeg",
+                            "expression": "(arg0 - 1)",
+                            "sources": [
+                              {
+                                "kind": "state",
+                                "name": "currentPositionDeg"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "else": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "moving",
+                            "expression": "false",
+                            "sources": []
+                          },
+                          {
+                            "kind": "assign",
+                            "state": "reportPending",
+                            "expression": "true",
+                            "sources": []
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "if",
+                "condition": "arg0",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "reportPending"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "reportPending",
+                      "expression": "false",
+                      "sources": []
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "directionForward",
+                      "expression": "(!arg0)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "directionForward"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "moving",
+                      "expression": "true",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

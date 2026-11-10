@@ -1,0 +1,395 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "按键为数字输入；未给出上拉/下拉与按键电平极性细节，假设使用内部上拉且按下为高，因此 active_high=true、pullup=true，模型按下态为真。",
+    "串口设备配置仅包含发送端口的报告通道与网关触发；固定文本与命令解析属于模型逻辑，不在本提案中为其生成额外端口对象。",
+    "控制周期选为 5ms；按键去抖、长按判定、补货管理员模式与库存/显示逻辑均放在 SysML 模型中。",
+    "TM1637 显示的起始值设为 0；具体在选择/确认/错误时显示商品编号与价格/错误代码的规则由模型决定。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "商品选择键1（按下时为真）",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "商品选择键2（按下时为真）",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "商品选择键3（按下时为真）",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D4\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "确认键/管理员模式长按键（按下时为真）",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "状态LED（用于报警/提示，模型决定何时点亮）",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "蜂鸣器提示音（模型控制提示时序与频率）",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637显示：商品编号与价格/错误代码",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D8\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D8",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "当用户确认且库存充足时，允许输出 dispense:itemX",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "item_index",
+      "initial": 0,
+      "meaning": "当前待发放商品编号（由模型根据选择计算）",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"itemX\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "itemX"
+      }
+    },
+    {
+      "name": "serial_1_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "当用户确认但库存不足时，允许输出报警信息与错误代码",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_1_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "error_code",
+      "initial": 0,
+      "meaning": "错误代码（由模型根据不足原因映射）",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"error_code\", \"trigger\": \"serial_1_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_1_trigger",
+        "baud": 9600,
+        "label": "error_code"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D8",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D4"
+        },
+        "resolved": {
+          "pin": "D4"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D8",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个自动售货机简化控制系统，使用按钮 D2、D3、D4 作为三种商品选择键，按钮 D7 作为确认键，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统维护商品价格和库存，用户按键选择商品后在数码管显示商品编号和价格；确认后若库存充足则串口输出 dispense:itemX，库存减一并蜂鸣提示，若库存不足则报警并显示错误代码。长按 D7 进入管理员模式，通过串口补货。",
+    "effective_requirement": "设计一个自动售货机简化控制系统，使用按钮 D2、D3、D4 作为三种商品选择键，按钮 D7 作为确认键，TM1637（CLK=D8，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统维护商品价格和库存，用户按键选择商品后在数码管显示商品编号和价格；确认后若库存充足则串口输出 dispense:itemX，库存减一并蜂鸣提示，若库存不足则报警并显示错误代码。长按 D7 进入管理员模式，通过串口补货。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_input\", \"pin\": \"D4\"}, {\"device_role\": \"digital_input\", \"pin\": \"D7\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D8\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "clk_pin",
+        "original": "D4",
+        "resolved": "D8",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个自动售货机简化控制系统，使用按钮 D2、D3、D4 作为三种商品选择键，按钮 D7 作为确认键，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统维护商品价格和库存，用户按键选择商品后在数码管显示商品编号和价格；确认后若库存充足则串口输出 dispense:itemX，库存减一并蜂鸣提示，若库存不足则报警并显示错误代码。长按 D7 进入管理员模式，通过串口补货。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_1_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      },
+      {
+        "id": "serial_1",
+        "trigger_port": "serial_1_trigger",
+        "value_ports": [
+          "serial_1_value_0"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,308 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is Arduino UNO with authoritative pins A0, A1, A2, D2, D4, D5, D6, D9 preserved as wired in the prose (no rewiring).",
+    "A0/A1 are declared as analog inputs for left/right light sensors; A2 is declared as an analog input for battery voltage used by the model to decide charging state.",
+    "D9 is declared as a servo_angle output for automatic comparison of light sensors and orientation control (all steering logic is in SysML; this request only provides the actuator command port).",
+    "TM1637 is declared on CLK=D4 and DIO=D5 as tm1637_number; display content selection and scaling are handled in SysML.",
+    "D6 is declared as a tone_output buzzer for low-charge alarm; duration/pause logic is handled in SysML using elapsed_ms.",
+    "D2 is declared as a digital_input for the auto/manual mode button; whether it uses pullup/active-low is not specified, so pull mode/active polarity is left to the catalog default.",
+    "Serial requirement in prose says '串口输出 low charge'; since exact fixed-text tokenization is not represented here, SysML must emit the low-charge message via the numeric code gate defined by this serial value.",
+    "Control period is chosen as 10 ms as a reasonable scheduling granularity; exact sampling/report cadences belong in the SysML model via elapsed_ms."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Left light-dependent resistor (photo) ADC",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Right light-dependent resistor (photo) ADC",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Battery/solar panel voltage ADC for charging state detection",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A2"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Solar panel orientation servo angle command",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D9\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D9"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Charging/orientation status display number",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Beeeper alarm (buzzer) for low charge",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Mode button for toggling auto vs manual calibration",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Business report gate: when charging state is low, output 'low charge' over serial",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "code",
+      "initial": 0,
+      "meaning": "Fixed numeric code to indicate low charge condition",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"low_charge_code\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "low_charge_code"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "servo_angle",
+        "original": {
+          "pin": "D9"
+        },
+        "resolved": {
+          "pin": "D9"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个太阳能电池板朝向与充电监测原型系统，使用两个光敏电阻 A0、A1 分别表示左右光照，舵机 D9 调节角度，电压检测 A2、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和按钮 D2。系统自动比较左右光照调整舵机使其朝向更强光一侧，并根据电压值判断充电状态；按钮可切换自动/手动校准模式。若电压长期过低则蜂鸣报警并串口输出 low charge。",
+    "effective_requirement": "构建一个太阳能电池板朝向与充电监测原型系统，使用两个光敏电阻 A0、A1 分别表示左右光照，舵机 D9 调节角度，电压检测 A2、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和按钮 D2。系统自动比较左右光照调整舵机使其朝向更强光一侧，并根据电压值判断充电状态；按钮可切换自动/手动校准模式。若电压长期过低则蜂鸣报警并串口输出 low charge。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"servo_angle\", \"pin\": \"D9\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "构建一个太阳能电池板朝向与充电监测原型系统，使用两个光敏电阻 A0、A1 分别表示左右光照，舵机 D9 调节角度，电压检测 A2、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和按钮 D2。系统自动比较左右光照调整舵机使其朝向更强光一侧，并根据电压值判断充电状态；按钮可切换自动/手动校准模式。若电压长期过低则蜂鸣报警并串口输出 low charge。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

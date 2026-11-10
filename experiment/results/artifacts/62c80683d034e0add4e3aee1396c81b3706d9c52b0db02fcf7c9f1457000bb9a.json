@@ -1,0 +1,135 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"stage\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"inFault\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevVib\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevButton\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"silenceRun\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"faultLatched\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"endArmed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"faultCode\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"prevVib\",\n        \"value\": \"io_4\"\n      },\n      {\n        \"assign\": \"prevButton\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": \"inFault\",\n        \"then\": [\n          {\n            \"assign\": \"stage\",\n            \"value\": 1\n          },\n          {\n            \"assign\": \"endArmed\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"silenceRun\",\n            \"value\": 0\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"silenceRun\",\n            \"value\": {\n              \"if\": \"io_4\",\n              \"then\": 0,\n              \"else\": \"silenceRun + 1\"\n            }\n          },\n          {\n            \"assign\": \"faultLatched\",\n            \"value\": {\n              \"if\": {\n                \"and\": [\n                  {\n                    \">=\": [\n                      \"silenceRun\",\n                      50\n                    ]\n                  },\n                  {\n                    \"or\": [\n                      {\n                        \"<\": [\n                          \"io_5\",\n                          10.0\n                        ]\n                      },\n                      {\n                        \">\": [\n                          \"io_5\",\n                          950.0\n                        ]\n                      }\n                    ]\n                  }\n                ]\n              },\n              \"then\": true,\n              \"else\": \"faultLatched\"\n            }\n          },\n          {\n            \"assign\": \"inFault\",\n            \"value\": {\n              \"if\": \"faultLatched\",\n              \"then\": true,\n              \"else\": false\n            }\n          },\n          {\n            \"if\": {\n              \"and\": [\n                {\n                  \">=\": [\n                    \"io_5\",\n                    10.0\n                  ]\n                },\n                {\n                  \"<=\": [\n                    \"io_5\",\n                    950.0\n                  ]\n                },\n                {\n                  \">=\": [\n                    \"silenceRun\",\n                    20\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"stage\",\n                \"value\": 4\n              },\n              {\n                \"assign\": \"endArmed\",\n                \"value\": true\n              }\n            ]\n          },\n          {\n            \"if\": {\n              \"and\": [\n                {\n                  \"not\": \"endArmed\"\n                },\n                {\n                  \"not\": {\n                    \"==\": [\n                      \"stage\",\n                      4\n                    ]\n                  }\n                },\n                {\n                  \"<\": [\n                    \"io_5\",\n                    10.0\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"stage\",\n                \"value\": 1\n              }\n            ]\n          },\n          {\n            \"if\": {\n              \"and\": [\n                {\n                  \"not\": \"endArmed\"\n                },\n                {\n                  \"not\": {\n                    \"==\": [\n                      \"stage\",\n                      4\n                    ]\n                  }\n                },\n                {\n                  \">=\": [\n                    \"io_5\",\n                    10.0\n                  ]\n                },\n                {\n                  \"<=\": [\n                    \"io_5\",\n                    950.0\n                  ]\n                },\n                {\n                  \">\": [\n                    \"io_4\",\n                    false\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"stage\",\n                \"value\": 2\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"stage\",\n                \"value\": {\n                  \"if\": \"endArmed\",\n                  \"then\": 4,\n                  \"else\": {\n                    \"if\": {\n                      \">=\": [\n                        \"silenceRun\",\n                        20\n                      ]\n                    },\n                    \"then\": 3,\n                    \"else\": \"stage\"\n                  }\n                }\n              }\n            ]\n          },\n          {\n            \"if\": {\n              \"and\": [\n                {\n                  \"==\": [\n                    \"stage\",\n                    4\n                  ]\n                },\n                \"endArmed\",\n                {\n                  \"and\": [\n                    \"io_0\",\n                    {\n                      \"not\": \"prevButton\"\n                    }\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"endArmed\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"stage\",\n                \"value\": 1\n              },\n              {\n                \"assign\": \"faultLatched\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"inFault\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"silenceRun\",\n                \"value\": 0\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"==\": [\n                \"stage\",\n                4\n              ]\n            },\n            \"endArmed\"\n          ]\n        },\n        \"then\": {\n          \"if\": {\n            \"==\": [\n              {\n                \"mod\": [\n                  \"silenceRun\",\n                  2\n                ]\n              },\n              0\n            ]\n          },\n          \"then\": true,\n          \"else\": false\n        },\n        \"else\": false\n      },\n      \"io_2\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"==\": [\n                \"stage\",\n                4\n              ]\n            },\n            \"endArmed\"\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_3\": \"stage\",\n      \"serial_0_trigger\": \"inFault\",\n      \"serial_0_value_0\": \"faultCode\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_5在10.0..950.0，先让io_4为false并持续足够多的控制步以触发endArmed形成stage=4，再在stage=4期间保持io_0为false，随后将io_0从false变为true一次\",\n        \"oracle\": \"在stage=4且endArmed为true期间io_1周期性闪烁、io_2为非零蜂鸣；按下确认后endArmed清除、stage回到1，io_1为false且io_2为0，且io_3显示1\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_4保持为false，并在io_5取值为异常(小于10.0或大于950.0)的同时持续足够多控制步\",\n        \"oracle\": \"serial_0_trigger置为true，serial_0_value_0输出wash fault code；同时stage被拉回到进水(1)\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_1: Unsupported executable remainder object {'mod': ['silenceRun', 2]}. For integer parity, use \"n == 2 * RealFunctions::floor(n / 2)\" for even, or \"n != 2 * RealFunctions::floor(n / 2)\" for odd. For nonnegative integer n and positive integer d, the remainder is \"n - d * RealFunctions::floor(n / d)\". Preserve the original operands and domain; this floor formula is not C remainder for negative dividends. Do not add a timer or state for stateless arithmetic. Keep required timing/state for temporal behavior. These are repair examples, not automatic rewrites; complete validation remains required.",
+          "path": "/controller/outputs/io_1"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_1: Unsupported executable remainder object {'mod': ['silenceRun', 2]}. For integer parity, use \"n == 2 * RealFunctions::floor(n / 2)\" for even, or \"n != 2 * RealFunctions::floor(n / 2)\" for odd. For nonnegative integer n and positive integer d, the remainder is \"n - d * RealFunctions::floor(n / d)\". Preserve the original operands and domain; this floor formula is not C remainder for negative dividends. Do not add a timer or state for stateless arithmetic. Keep required timing/state for temporal behavior. These are repair examples, not automatic rewrites; complete validation remains required.",
+          "path": "/controller/outputs/io_1"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/outputs/io_1: Unsupported executable remainder object {'mod': ['silenceRun', 2]}. For integer parity, use \"n == 2 * RealFunctions::floor(n / 2)\" for even, or \"n != 2 * RealFunctions::floor(n / 2)\" for odd. For nonnegative integer n and positive integer d, the remainder is \"n - d * RealFunctions::floor(n / d)\". Preserve the original operands and domain; this floor formula is not C remainder for negative dividends. Do not add a timer or state for stateless arithmetic. Keep required timing/state for temporal behavior. These are repair examples, not automatic rewrites; complete validation remains required."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"stage\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"inFault\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevButton\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"silenceRun\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"faultLatched\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"prevButton\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": \"inFault\",\n        \"then\": [\n          {\n            \"assign\": \"stage\",\n            \"value\": 1\n          },\n          {\n            \"assign\": \"inFault\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"faultLatched\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"silenceRun\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"silenceRun\",\n                50\n              ]\n            },\n            {\n              \"or\": [\n                {\n                  \"<\": [\n                    \"io_5\",\n                    10.0\n                  ]\n                },\n                {\n                  \">\": [\n                    \"io_5\",\n                    950.0\n                  ]\n                }\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"faultLatched\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"inFault\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"stage\",\n            \"value\": 1\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"faultLatched\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"assign\": \"silenceRun\",\n        \"value\": {\n          \"if\": {\n            \"not\": \"io_4\"\n          },\n          \"then\": \"silenceRun + 1\",\n          \"else\": 0\n        }\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"io_5\",\n                10.0\n              ]\n            },\n            {\n              \"<=\": [\n                \"io_5\",\n                950.0\n              ]\n            },\n            {\n              \">=\": [\n                \"silenceRun\",\n                20\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"stage\",\n            \"value\": 4\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": {\n                \"==\": [\n                  \"stage\",\n                  4\n                ]\n              }\n            },\n            {\n              \"<\": [\n                \"io_5\",\n                10.0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"stage\",\n            \"value\": 1\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": {\n                \"==\": [\n                  \"stage\",\n                  4\n                ]\n              }\n            },\n            {\n              \">=\": [\n                \"io_5\",\n                10.0\n              ]\n            },\n            {\n              \"<=\": [\n                \"io_5\",\n                950.0\n              ]\n            },\n            {\n              \"not\": \"io_4\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"stage\",\n            \"value\": 2\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"stage\",\n            \"value\": {\n              \"if\": {\n                \"not\": {\n                  \"==\": [\n                    \"stage\",\n                    4\n                  ]\n                }\n              },\n              \"then\": {\n                \"if\": {\n                  \">=\": [\n                    \"silenceRun\",\n                    20\n                  ]\n                },\n                \"then\": 3,\n                \"else\": \"stage\"\n              },\n              \"else\": \"stage\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"==\": [\n                \"stage\",\n                4\n              ]\n            },\n            \"io_0\",\n            {\n              \"not\": \"prevButton\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"stage\",\n            \"value\": 1\n          },\n          {\n            \"assign\": \"faultLatched\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"inFault\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"silenceRun\",\n            \"value\": 0\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"==\": [\n                \"stage\",\n                4\n              ]\n            },\n            {\n              \"not\": \"faultLatched\"\n            }\n          ]\n        },\n        \"then\": {\n          \"if\": {\n            \"==\": [\n              \"silenceRun - 2 * RealFunctions::floor(silenceRun / 2)\",\n              0\n            ]\n          },\n          \"then\": true,\n          \"else\": false\n        },\n        \"else\": false\n      },\n      \"io_2\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"==\": [\n                \"stage\",\n                4\n              ]\n            },\n            {\n              \"not\": \"faultLatched\"\n            }\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_3\": \"stage\",\n      \"serial_0_trigger\": \"inFault\",\n      \"serial_0_value_0\": {\n        \"if\": \"inFault\",\n        \"then\": 1,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_5在10.0..950.0，先让io_4为false并持续足够多的控制步以触发stage=4，再在stage=4期间保持io_0为false，随后将io_0从false变为true一次\",\n        \"oracle\": \"在stage=4期间io_1周期性闪烁、io_2为非零蜂鸣；按下确认后stage回到1，io_1为false且io_2为0，且io_3显示1\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_4保持为false，并在io_5取值为异常(小于10.0或大于950.0)的同时持续足够多控制步\",\n        \"oracle\": \"serial_0_trigger置为true，serial_0_value_0输出wash fault code；同时stage被拉回到进水(1)\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Real;\n    attribute stage : Integer := 1;\n    attribute inFault : Boolean := false;\n    attribute prevButton : Boolean := false;\n    attribute silenceRun : Integer := 0;\n    attribute faultLatched : Boolean := false;\n    perform action tick {\n      first start;\n      then assign prevButton := io_0;\n      then if inFault {\n        first start;\n        then assign stage := 1;\n        then assign inFault := false;\n        then assign faultLatched := false;\n        then assign silenceRun := 0;\n      }\n      then if ((((silenceRun) >= (50))) and (((((io_5) < (10.0))) or (((io_5) > (950.0)))))) {\n        first start;\n        then assign faultLatched := true;\n        then assign inFault := true;\n        then assign stage := 1;\n      } else {\n        first start;\n        then assign faultLatched := false;\n      }\n      then assign silenceRun := (if (not io_4) ? silenceRun + 1 else 0);\n      then if ((((io_5) >= (10.0))) and (((io_5) <= (950.0))) and (((silenceRun) >= (20)))) {\n        first start;\n        then assign stage := 4;\n      }\n      then if (((not ((stage) == (4)))) and (((io_5) < (10.0)))) {\n        first start;\n        then assign stage := 1;\n      }\n      then if (((not ((stage) == (4)))) and (((io_5) >= (10.0))) and (((io_5) <= (950.0))) and ((not io_4))) {\n        first start;\n        then assign stage := 2;\n      } else {\n        first start;\n        then assign stage := (if (not ((stage) == (4))) ? (if ((silenceRun) >= (20)) ? 3 else stage) else stage);\n      }\n      then if ((((stage) == (4))) and (io_0) and ((not prevButton))) {\n        first start;\n        then assign stage := 1;\n        then assign faultLatched := false;\n        then assign inFault := false;\n        then assign silenceRun := 0;\n      }\n    }\n    out attribute io_1 : Boolean = (if ((((stage) == (4))) and ((not faultLatched))) ? (if ((silenceRun - 2 * RealFunctions::floor(silenceRun / 2)) == (0)) ? true else false) else false);\n    out attribute io_2 : Integer = (if ((((stage) == (4))) and ((not faultLatched))) ? 1000 else 0);\n    out attribute io_3 : Integer = stage;\n    out attribute serial_0_trigger : Boolean = inFault;\n    out attribute serial_0_value_0 : Integer = (if inFault ? 1 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "displayValue",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_0 and (not previousPressed)",
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "0"
+          },
+          {
+            "assign": "displayValue",
+            "value": "0"
+          }
+        ],
+        "else": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs + io_2"
+          },
+          {
+            "if": "accumulatedMs >= 1000",
+            "then": [
+              {
+                "assign": "accumulatedMs",
+                "value": "accumulatedMs - 1000"
+              },
+              {
+                "assign": "displayValue",
+                "value": "displayValue + 1"
+              }
+            ],
+            "else": []
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": "displayValue"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "TM1637 显示计时器（CLK=D4,DIO=D5）：每秒递增，按钮（D2）清零",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持按钮不按（io_0=false），连续注入若干个控制周期的elapsed_delta io_2，使得累计io_2达到>=1000ms后继续推进到累计约2000ms",
+        "oracle": "io_1 从初始0开始，每当累计经过1秒（1000ms）时增加1；在未满1秒的阶段io_1保持不变"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "TM1637 显示计时器（CLK=D4,DIO=D5）：每秒递增，按钮（D2）清零",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "先让计时器推进到非零（io_0=false并累计>=1000ms），随后在某个控制周期将io_0从false变为true（模拟按钮按下的上升沿），之后继续让io_2推进",
+        "oracle": "在按钮按下的上升沿同一控制步之后，io_1立即变为0；随后计时器在再次累计达到1秒后从0开始再次每秒递增"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_2 : Integer;\n    attribute accumulatedMs : Integer := 0;\n    attribute displayValue : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and (not previousPressed) {\n        first start;\n        then assign accumulatedMs := 0;\n        then assign displayValue := 0;\n      } else {\n        first start;\n        then assign accumulatedMs := accumulatedMs + io_2;\n        then if accumulatedMs >= 1000 {\n          first start;\n          then assign accumulatedMs := accumulatedMs - 1000;\n          then assign displayValue := displayValue + 1;\n        }\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Integer = displayValue;\n  }\n  part system : Controller;\n}\n"
+}

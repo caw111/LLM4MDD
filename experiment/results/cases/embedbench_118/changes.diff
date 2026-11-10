@@ -1,0 +1,148 @@
+--- original.ino
++++ repaired.ino
+@@ -62,108 +62,18 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_1, bool io_2, bool* io_0, double* io_3) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    double sysml_conditional_1 = 0;
+-    double sysml_conditional_2 = 0;
+-    bool sysml_conditional_3 = 0;
+-    int32_t sysml_conditional_4 = 0;
+-    bool sysml_lazy_5 = 0;
+-    double sysml_conditional_6 = 0;
+-    double sysml_conditional_7 = 0;
+-    bool sysml_conditional_8 = 0;
+-    int32_t sysml_conditional_9 = 0;
+-    bool sysml_lazy_10 = 0;
+-    sysml_state_previousBtn1 = io_1;
+-    sysml_state_previousBtn2 = io_2;
+-    sysml_state_movingLed = false;
+-    sysml_state_movingHoldActive = sysml_state_movingHoldActive;
+-    sysml_lazy_0 = io_1;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = !sysml_state_previousBtn1;
+-    }
+-    if (sysml_lazy_0) {
+-        if (sysml_state_servoAngle <= 150.0) {
+-            sysml_conditional_1 = sysml_state_servoAngle + 30.0;
+-        }
+-        else {
+-            sysml_conditional_1 = sysml_state_servoAngle;
+-        }
+-        sysml_state_servoAngle = sysml_conditional_1;
+-        if (sysml_state_servoAngle <= 150.0) {
+-            sysml_conditional_2 = sysml_state_servoAngle + 30.0;
+-        }
+-        else {
+-            sysml_conditional_2 = sysml_state_servoAngle;
+-        }
+-        sysml_state_movingUntilAngle = sysml_conditional_2;
+-        if (sysml_state_servoAngle <= 150.0) {
+-            sysml_conditional_3 = true;
+-        }
+-        else {
+-            sysml_conditional_3 = false;
+-        }
+-        sysml_state_movingHoldActive = sysml_conditional_3;
+-        if (sysml_state_servoAngle <= 150.0) {
+-            sysml_conditional_4 = 2000;
+-        }
+-        else {
+-            sysml_conditional_4 = 0;
+-        }
+-        sysml_state_movingHoldMsRemaining = sysml_conditional_4;
+-    }
+-    sysml_lazy_5 = io_2;
+-    if (sysml_lazy_5) {
+-        sysml_lazy_5 = !sysml_state_previousBtn2;
+-    }
+-    if (sysml_lazy_5) {
+-        if (sysml_state_servoAngle >= 30.0) {
+-            sysml_conditional_6 = sysml_state_servoAngle - 30.0;
+-        }
+-        else {
+-            sysml_conditional_6 = sysml_state_servoAngle;
+-        }
+-        sysml_state_servoAngle = sysml_conditional_6;
+-        if (sysml_state_servoAngle >= 30.0) {
+-            sysml_conditional_7 = sysml_state_servoAngle - 30.0;
+-        }
+-        else {
+-            sysml_conditional_7 = sysml_state_servoAngle;
+-        }
+-        sysml_state_movingUntilAngle = sysml_conditional_7;
+-        if (sysml_state_servoAngle >= 30.0) {
+-            sysml_conditional_8 = true;
+-        }
+-        else {
+-            sysml_conditional_8 = false;
+-        }
+-        sysml_state_movingHoldActive = sysml_conditional_8;
+-        if (sysml_state_servoAngle >= 30.0) {
+-            sysml_conditional_9 = 2000;
+-        }
+-        else {
+-            sysml_conditional_9 = 0;
+-        }
+-        sysml_state_movingHoldMsRemaining = sysml_conditional_9;
+-    }
+-    if (sysml_state_movingHoldActive) {
+-        sysml_state_movingLed = true;
+-    }
+-    sysml_lazy_10 = sysml_state_movingHoldActive;
+-    if (sysml_lazy_10) {
+-        sysml_lazy_10 = sysml_state_servoAngle == sysml_state_movingUntilAngle;
+-    }
+-    if (sysml_lazy_10) {
+-        sysml_state_movingLed = false;
+-        sysml_state_movingHoldActive = false;
+-        sysml_state_movingHoldMsRemaining = 0;
+-    }
+-    bool sysml_value_0 = 0;
+-    sysml_value_0 = sysml_state_movingLed;
+-    double sysml_value_1 = 0;
+-    sysml_value_1 = sysml_state_servoAngle;
+-    *io_0 = sysml_value_0;
+-    *io_3 = sysml_value_1;
++    static double target=90,start=90,current=90;
++    static unsigned long began=0;
++    static bool moving=false;
++    bool up=io_1&&!sysml_state_previousBtn1,down=io_2&&!sysml_state_previousBtn2;
++    double next=target;
++    if(up && target<180) next=target+30;
++    if(down && target>0) next=target-30;
++    if(next!=target) {start=current;target=next;began=millis();moving=true;}
++    unsigned long elapsed=millis()-began;
++    if(moving) {if(elapsed>=2000) {current=target;moving=false;} else current=start+(target-start)*elapsed/2000.0;}
++    *io_0=moving;*io_3=current;
++    sysml_state_previousBtn1=io_1;sysml_state_previousBtn2=io_2;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -191,8 +101,8 @@
+   ProgramPage1_Init(&ProgramPage1_instance);
+   pinMode(2, OUTPUT);
+   digitalWrite(2, hw_value_io_0 ? HIGH : LOW);
+-  pinMode(3, INPUT);
+-  pinMode(4, INPUT);
++  pinMode(3, INPUT_PULLUP);
++  pinMode(4, INPUT_PULLUP);
+   hw_servo_io_3.attach(5);
+   if (isfinite((double)hw_value_io_3) && hw_value_io_3 >= 0 && hw_value_io_3 <= 180) {
+     int command = (int)hw_value_io_3;
+@@ -209,11 +119,11 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_1 || (uint32_t)(hw_now - hw_sampled_io_1) >= 5UL) {
+     hw_attempted_io_1 = true; hw_sampled_io_1 = hw_now;
+-    hw_value_io_1 = (digitalRead(3) == HIGH);
++    hw_value_io_1 = (digitalRead(3) == LOW);
+   }
+   if (!hw_attempted_io_2 || (uint32_t)(hw_now - hw_sampled_io_2) >= 5UL) {
+     hw_attempted_io_2 = true; hw_sampled_io_2 = hw_now;
+-    hw_value_io_2 = (digitalRead(4) == HIGH);
++    hw_value_io_2 = (digitalRead(4) == LOW);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

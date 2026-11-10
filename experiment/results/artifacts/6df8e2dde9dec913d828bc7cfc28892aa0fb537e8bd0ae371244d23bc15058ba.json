@@ -1,0 +1,160 @@
+{
+  "contract_sha256": "a082a09ae0492a7c08270820a7a8c98438c811ae33978b98c0cf46bd0362df0c",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Light-dependent resistor (LDR) illumination ADC\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button press (toggles display page: light -> temperature -> humidity)\"\n    },\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"Temperature value from DHT11\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"Humidity value from DHT11\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display number (current page selected by button)\",\n      \"leading_zero\": false\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Every 2 seconds, report three complete environment items (light, temperature, humidity); also allow exception message when light is low and temperature is high\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"adc_count\",\n          \"initial\": 0,\n          \"meaning\": \"Reported illumination reading (as scaled f64/ADC units per model)\",\n          \"label\": \"illumination\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"Reported temperature value\",\n          \"label\": \"temperature\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"%RH\",\n          \"initial\": 0,\n          \"meaning\": \"Reported humidity value\",\n          \"label\": \"humidity\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Board is forced to arduino:avr:uno; wiring preserved: LDR->A0, button->D2, DHT11->D7, TM1637 CLK->D4 and DIO->D5, Serial uses baud 9600 with line_or_idle framing and 20ms idle timeout (as given).\",\n    \"Button electrical polarity (active-high vs active-low) is not specified in the input; the digital_input is modeled as active when the model value is true at D2 HIGH; any inversion needed must be handled in the SysML model if the actual wiring uses active-low.\",\n    \"DHT sensor model is declared as DHT11 (per requirement). Temperature/humidity initial values are set to 0 because no startup measurement requirement is specified.\",\n    \"TM1637 displays the currently selected page number; the model controls which measurement is mapped into the tm1637_number output after each button press (light/temperature/humidity toggle).\",\n    \"Serial output cadence (every 2 seconds) and the exception condition (illumination too low AND temperature too high) are implemented as SysML gating using elapsed_ms; the device layer only provides ports and does not encode timers/conditions.\",\n    \"Illumination is provided as analog_input ADC-derived f64 in the model (conversion/scaling to physical lux is not specified and must be handled in SysML, without requesting extra calibration ports).\"\n  ]\n}",
+      "error": "Mixed-device control requires a dht_valid input for each DHT sensor. Share its pin, sensor, sample period and hold_last_valid policy; use bool, unit 1, initial false. The model must handle invalid data without stopping unrelated devices.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Light-dependent resistor (LDR) illumination ADC\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button press (toggles display page: light -> temperature -> humidity)\"\n    },\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"Temperature value from DHT11\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"Humidity value from DHT11\"\n    },\n    {\n      \"kind\": \"dht_valid\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": false,\n      \"meaning\": \"DHT11 validity for temperature/humidity frame; invalid reads hold_last_valid\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display number (current page selected by button)\",\n      \"leading_zero\": false\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Every 2 seconds, report three complete environment items (light, temperature, humidity); also allow exception message when light is low and temperature is high\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"adc_count\",\n          \"initial\": 0,\n          \"meaning\": \"Reported illumination reading (as scaled f64/ADC units per model)\",\n          \"label\": \"illumination\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"Reported temperature value\",\n          \"label\": \"temperature\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"%RH\",\n          \"initial\": 0,\n          \"meaning\": \"Reported humidity value\",\n          \"label\": \"humidity\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Target board is arduino:avr:uno; wiring preserved exactly as stated: LDR->A0, button->D2, DHT11 data->D7, TM1637 CLK->D4 and DIO->D5, and Serial uses baud 9600 with framing=line_or_idle and idle_timeout_ms=20.\",\n    \"Added required DHT validity input: declare a single dht_valid on the same physical pin D7 and sensor DHT11. Temperature/humidity and validity share the same acquisition pin and frame coherence; model must use validity false to handle invalid data without stopping unrelated devices.\",\n    \"No explicit button polarity is provided; the digital_input model is true at D2 HIGH. If the real wiring is active-low, inversion must be handled in the SysML model (device request stays unchanged).\",\n    \"TM1637 displays the currently selected page; the model maps which measurement is written to tm1637_number after each button press.\",\n    \"Serial reporting cadence (every 2 seconds) and exception behavior (illumination low AND temperature high) are implemented in SysML using elapsed_ms; the device layer only provides ports.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。",
+    "effective_requirement": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

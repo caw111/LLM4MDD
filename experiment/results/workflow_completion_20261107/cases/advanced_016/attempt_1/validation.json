@@ -1,0 +1,1457 @@
+{
+  "status": "passed",
+  "contract_revisions": 0,
+  "rounds": [
+    {
+      "revision": 0,
+      "contract": {
+        "version": 1,
+        "board": "arduino:avr:uno",
+        "control_period_ms": 5,
+        "planning_notes": [
+          "Preserve all supplied wiring. No source component IDs were supplied, so device identifiers are omitted.",
+          "D2 uses the disclosed GND-switch semantics: INPUT_PULLUP and active LOW. Its normalized model input is true when active; do not invert it again.",
+          "Keep ADC inputs raw and perform the disclosed current and LM35 calibrations in the SysML model using floating-point arithmetic and the 5 V ADC reference.",
+          "Compute status on every control step: 3 for active vibration, otherwise 2 for temperature > 60 C, otherwise 1 for current > 7 A, otherwise 0. Recompute on release as well as activation; faults are not latched.",
+          "Control the fan independently of status priority: PWM 255 whenever temperature > 60 C, and 0 otherwise, including during mechanical faults.",
+          "Alarm cadence and frequency are unspecified. Assume a continuous 1000 Hz tone and steady illuminated LED during mechanical faults, both off otherwise.",
+          "Serial fault-message text and repetition cadence are unspecified. Assume an unprefixed integer line containing 3 on every mechanical-fault entry, not only the first entry. No normal-state reporting or serial receiver is required.",
+          "Rotate current, temperature, and status pages every 2000 ms using actual elapsed deltas. Assume current is the initial page and truncate nonnegative measurements to integers for display only; threshold comparisons use unrounded measurements.",
+          "Refresh the selected display page from current model values each step without resetting page timing when inputs change. Do not retain a stale fault status after vibration clears.",
+          "Initialize outputs off and display command zero, then evaluate available inputs immediately. Meet the 250 ms reaction bound and return from setup within 500 ms without blocking display or alarm delays."
+        ],
+        "interfaces": [
+          {
+            "name": "io_0",
+            "direction": "input",
+            "type": "f64",
+            "unit": "adc_count",
+            "initial": 0,
+            "meaning": "Motor current sensor raw ADC reading; model converts to amperes using ADC * 10 / 1023.",
+            "sample_period_ms": 5,
+            "device": "analog_input",
+            "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+            "binding": {
+              "kind": "analog_input",
+              "scale": 1.0,
+              "offset": 0.0,
+              "pin": "A0"
+            }
+          },
+          {
+            "name": "io_1",
+            "direction": "input",
+            "type": "f64",
+            "unit": "adc_count",
+            "initial": 0,
+            "meaning": "LM35 raw ADC reading with 5 V ADC reference; model converts to Celsius using ADC * 500 / 1023.",
+            "sample_period_ms": 5,
+            "device": "analog_input",
+            "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+            "binding": {
+              "kind": "analog_input",
+              "scale": 1.0,
+              "offset": 0.0,
+              "pin": "A1"
+            }
+          },
+          {
+            "name": "io_2",
+            "direction": "input",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Vibration switch active; normalized true when the switch connects D2 to GND.",
+            "sample_period_ms": 5,
+            "device": "digital_input",
+            "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+            "binding": {
+              "kind": "digital_input",
+              "active_high": false,
+              "pullup": true,
+              "pin": "D2"
+            },
+            "model_semantics": {
+              "kind": "digital_boolean",
+              "true_level": "LOW",
+              "false_level": "HIGH"
+            }
+          },
+          {
+            "name": "io_3",
+            "direction": "output",
+            "type": "f64",
+            "unit": "pwm_count",
+            "initial": 0,
+            "meaning": "Cooling fan PWM command in counts from 0 to 255.",
+            "sample_period_ms": 5,
+            "device": "pwm_output",
+            "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+            "binding": {
+              "kind": "pwm_output",
+              "scale": 1.0,
+              "offset": 0.0,
+              "pin": "D5"
+            }
+          },
+          {
+            "name": "io_4",
+            "direction": "output",
+            "type": "i32",
+            "unit": "Hz",
+            "initial": 0,
+            "meaning": "Mechanical-fault audible alarm frequency in Hz; zero silences the buzzer.",
+            "sample_period_ms": 5,
+            "device": "tone_output",
+            "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+            "binding": {
+              "kind": "tone_output",
+              "invalid_policy": "silence",
+              "pin": "D6"
+            }
+          },
+          {
+            "name": "io_5",
+            "direction": "output",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Mechanical-fault LED alarm.",
+            "sample_period_ms": 5,
+            "device": "digital_output",
+            "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+            "binding": {
+              "kind": "digital_output",
+              "active_high": true,
+              "pin": "D13"
+            },
+            "model_semantics": {
+              "kind": "digital_boolean",
+              "true_level": "HIGH",
+              "false_level": "LOW"
+            }
+          },
+          {
+            "name": "io_6",
+            "direction": "output",
+            "type": "i32",
+            "unit": "1",
+            "initial": 0,
+            "meaning": "Whole integer selected by the model from current in amperes, temperature in Celsius, or status code.",
+            "sample_period_ms": 5,
+            "device": "tm1637_number",
+            "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D3\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+            "binding": {
+              "kind": "tm1637_number",
+              "brightness": 7,
+              "leading_zero": false,
+              "invalid_policy": "blank",
+              "dio_pin": "D3",
+              "clk_pin": "D4"
+            }
+          },
+          {
+            "name": "io_7",
+            "direction": "input",
+            "type": "i32",
+            "unit": "ms",
+            "initial": 0,
+            "meaning": "Actual elapsed milliseconds since the previous control step, with first delta zero, for display page timing.",
+            "sample_period_ms": 5,
+            "device": "elapsed_ms",
+            "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+            "binding": {
+              "kind": "elapsed_ms",
+              "semantics": "delta_since_previous_step"
+            }
+          },
+          {
+            "name": "serial_0_trigger",
+            "direction": "output",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Report once on each entry into mechanical-fault status, including a fault active at the first evaluated step.",
+            "sample_period_ms": 5,
+            "device": "Serial report control",
+            "hardware": "{\"kind\": \"report_trigger\"}",
+            "binding": {
+              "kind": "report_trigger"
+            }
+          },
+          {
+            "name": "serial_0_value_0",
+            "direction": "output",
+            "type": "i32",
+            "unit": "1",
+            "initial": 0,
+            "meaning": "Mechanical fault code; the model supplies 3 whenever the report is triggered.",
+            "sample_period_ms": 5,
+            "device": "Serial value",
+            "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"\", \"trigger\": \"serial_0_trigger\"}",
+            "binding": {
+              "kind": "serial_value",
+              "trigger": "serial_0_trigger",
+              "baud": 9600,
+              "label": ""
+            }
+          }
+        ],
+        "required_dependencies": {},
+        "wiring_snapshot": {
+          "tm1637_number": {
+            "clk_pin": "D4",
+            "dio_pin": "D3"
+          }
+        },
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "devices": [
+            {
+              "kind": "pwm_output",
+              "original": {
+                "pin": "D5"
+              },
+              "resolved": {
+                "pin": "D5"
+              }
+            },
+            {
+              "kind": "analog_input",
+              "original": {
+                "pin": "A1"
+              },
+              "resolved": {
+                "pin": "A1"
+              }
+            },
+            {
+              "kind": "digital_output",
+              "original": {
+                "pin": "D13"
+              },
+              "resolved": {
+                "pin": "D13"
+              }
+            },
+            {
+              "kind": "tone_output",
+              "original": {
+                "pin": "D6"
+              },
+              "resolved": {
+                "pin": "D6"
+              }
+            },
+            {
+              "kind": "tm1637_number",
+              "original": {
+                "clk_pin": "D4",
+                "dio_pin": "D5"
+              },
+              "resolved": {
+                "clk_pin": "D4",
+                "dio_pin": "D3"
+              }
+            }
+          ],
+          "serial": {
+            "baud": 9600,
+            "framing": "line_or_idle",
+            "idle_timeout_ms": 20
+          },
+          "original_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.",
+          "effective_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "changes": [
+            {
+              "field": "serial.baud",
+              "original": null,
+              "resolved": 9600,
+              "reason": "unspecified transport configuration"
+            },
+            {
+              "device": "tm1637_number",
+              "field": "dio_pin",
+              "original": "D5",
+              "resolved": "D3",
+              "reason": "conflict or incompatible pin"
+            }
+          ],
+          "circuit_preserved": false
+        },
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.",
+            "assertion_ids": [
+              "source_requirement_R1"
+            ]
+          }
+        ],
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_2": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_3": {
+              "direction": "output",
+              "type": "f64"
+            },
+            "io_4": {
+              "direction": "output",
+              "type": "i32"
+            },
+            "io_5": {
+              "direction": "output",
+              "type": "bool"
+            },
+            "io_6": {
+              "direction": "output",
+              "type": "i32"
+            },
+            "io_7": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "serial_0_trigger": {
+              "direction": "output",
+              "type": "bool"
+            },
+            "serial_0_value_0": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": [
+            {
+              "id": "serial_0",
+              "trigger_port": "serial_0_trigger",
+              "value_ports": [
+                "serial_0_value_0"
+              ]
+            }
+          ]
+        }
+      },
+      "planning": {
+        "contract_sha256": "1aab162d26965a2bc33f96356edadde0b11cdd0531974a50978aebdddcf9ec27",
+        "provenance": "program_assembled",
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_2": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_3": {
+              "direction": "output",
+              "type": "f64"
+            },
+            "io_4": {
+              "direction": "output",
+              "type": "i32"
+            },
+            "io_5": {
+              "direction": "output",
+              "type": "bool"
+            },
+            "io_6": {
+              "direction": "output",
+              "type": "i32"
+            },
+            "io_7": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "serial_0_trigger": {
+              "direction": "output",
+              "type": "bool"
+            },
+            "serial_0_value_0": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": [
+            {
+              "id": "serial_0",
+              "trigger_port": "serial_0_trigger",
+              "value_ports": [
+                "serial_0_value_0"
+              ]
+            }
+          ]
+        },
+        "registered_relationships": "verified",
+        "functional_status": "unverified",
+        "attempts": [
+          {
+            "ok": true,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Motor current sensor raw ADC reading; model converts to amperes using ADC * 10 / 1023.\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A1\",\n      \"initial\": 0,\n      \"meaning\": \"LM35 raw ADC reading with 5 V ADC reference; model converts to Celsius using ADC * 500 / 1023.\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"active_high\": false,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"Vibration switch active; normalized true when the switch connects D2 to GND.\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"Cooling fan PWM command in counts from 0 to 255.\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"invalid_policy\": \"silence\",\n      \"initial\": 0,\n      \"meaning\": \"Mechanical-fault audible alarm frequency in Hz; zero silences the buzzer.\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"active_high\": true,\n      \"initial\": false,\n      \"meaning\": \"Mechanical-fault LED alarm.\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D3\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\",\n      \"initial\": 0,\n      \"meaning\": \"Whole integer selected by the model from current in amperes, temperature in Celsius, or status code.\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"semantics\": \"delta_since_previous_step\",\n      \"initial\": 0,\n      \"meaning\": \"Actual elapsed milliseconds since the previous control step, with first delta zero, for display page timing.\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Report once on each entry into mechanical-fault status, including a fault active at the first evaluated step.\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"1\",\n          \"initial\": 0,\n          \"meaning\": \"Mechanical fault code; the model supplies 3 whenever the report is triggered.\",\n          \"label\": \"\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Preserve all supplied wiring. No source component IDs were supplied, so device identifiers are omitted.\",\n    \"D2 uses the disclosed GND-switch semantics: INPUT_PULLUP and active LOW. Its normalized model input is true when active; do not invert it again.\",\n    \"Keep ADC inputs raw and perform the disclosed current and LM35 calibrations in the SysML model using floating-point arithmetic and the 5 V ADC reference.\",\n    \"Compute status on every control step: 3 for active vibration, otherwise 2 for temperature > 60 C, otherwise 1 for current > 7 A, otherwise 0. Recompute on release as well as activation; faults are not latched.\",\n    \"Control the fan independently of status priority: PWM 255 whenever temperature > 60 C, and 0 otherwise, including during mechanical faults.\",\n    \"Alarm cadence and frequency are unspecified. Assume a continuous 1000 Hz tone and steady illuminated LED during mechanical faults, both off otherwise.\",\n    \"Serial fault-message text and repetition cadence are unspecified. Assume an unprefixed integer line containing 3 on every mechanical-fault entry, not only the first entry. No normal-state reporting or serial receiver is required.\",\n    \"Rotate current, temperature, and status pages every 2000 ms using actual elapsed deltas. Assume current is the initial page and truncate nonnegative measurements to integers for display only; threshold comparisons use unrounded measurements.\",\n    \"Refresh the selected display page from current model values each step without resetting page timing when inputs change. Do not retain a stale fault status after vibration clears.\",\n    \"Initialize outputs off and display command zero, then evaluate available inputs immediately. Meet the 250 ms reaction bound and return from setup within 500 ms without blocking display or alarm delays.\"\n  ]\n}",
+            "construction": [
+              "catalog_interfaces_and_serial_channels_assembled"
+            ],
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            }
+          }
+        ],
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "devices": [
+            {
+              "kind": "pwm_output",
+              "original": {
+                "pin": "D5"
+              },
+              "resolved": {
+                "pin": "D5"
+              }
+            },
+            {
+              "kind": "analog_input",
+              "original": {
+                "pin": "A1"
+              },
+              "resolved": {
+                "pin": "A1"
+              }
+            },
+            {
+              "kind": "digital_output",
+              "original": {
+                "pin": "D13"
+              },
+              "resolved": {
+                "pin": "D13"
+              }
+            },
+            {
+              "kind": "tone_output",
+              "original": {
+                "pin": "D6"
+              },
+              "resolved": {
+                "pin": "D6"
+              }
+            },
+            {
+              "kind": "tm1637_number",
+              "original": {
+                "clk_pin": "D4",
+                "dio_pin": "D5"
+              },
+              "resolved": {
+                "clk_pin": "D4",
+                "dio_pin": "D3"
+              }
+            }
+          ],
+          "serial": {
+            "baud": 9600,
+            "framing": "line_or_idle",
+            "idle_timeout_ms": 20
+          },
+          "original_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.",
+          "effective_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "changes": [
+            {
+              "field": "serial.baud",
+              "original": null,
+              "resolved": 9600,
+              "reason": "unspecified transport configuration"
+            },
+            {
+              "device": "tm1637_number",
+              "field": "dio_pin",
+              "original": "D5",
+              "resolved": "D3",
+              "reason": "conflict or incompatible pin"
+            }
+          ],
+          "circuit_preserved": false
+        }
+      },
+      "validation": {
+        "validator_version": "2026-08 / 0.62.0",
+        "attempts": [
+          {
+            "attempt": 1,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"displayCycleMs\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"previousVibration\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"faultEntry\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"calculations\": [\n      {\n        \"name\": \"currentAmperes\",\n        \"type\": \"f64\",\n        \"expression\": \"io_0 * 10.0 / 1023.0\"\n      },\n      {\n        \"name\": \"temperatureCelsius\",\n        \"type\": \"f64\",\n        \"expression\": \"io_1 * 500.0 / 1023.0\"\n      },\n      {\n        \"name\": \"motorStatus\",\n        \"type\": \"i32\",\n        \"expression\": {\n          \"if\": \"io_2\",\n          \"then\": 3,\n          \"else\": {\n            \"if\": {\n              \">\": [\n                \"temperatureCelsius\",\n                60.0\n              ]\n            },\n            \"then\": 2,\n            \"else\": {\n              \"if\": {\n                \">\": [\n                  \"currentAmperes\",\n                  7.0\n                ]\n              },\n              \"then\": 1,\n              \"else\": 0\n            }\n          }\n        }\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"faultEntry\",\n        \"value\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"not\": \"previousVibration\"\n            }\n          ]\n        }\n      },\n      {\n        \"assign\": \"displayCycleMs\",\n        \"value\": \"displayCycleMs + io_7\"\n      },\n      {\n        \"assign\": \"displayCycleMs\",\n        \"value\": \"displayCycleMs - 6000.0 * RealFunctions::floor(displayCycleMs / 6000.0)\"\n      },\n      {\n        \"assign\": \"previousVibration\",\n        \"value\": \"io_2\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \">\": [\n            \"temperatureCelsius\",\n            60.0\n          ]\n        },\n        \"then\": 255.0,\n        \"else\": 0.0\n      },\n      \"io_4\": {\n        \"if\": \"io_2\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_5\": \"io_2\",\n      \"io_6\": {\n        \"if\": {\n          \"<\": [\n            \"displayCycleMs\",\n            2000.0\n          ]\n        },\n        \"then\": \"RealFunctions::floor(currentAmperes)\",\n        \"else\": {\n          \"if\": {\n            \"<\": [\n              \"displayCycleMs\",\n              4000.0\n            ]\n          },\n          \"then\": \"RealFunctions::floor(temperatureCelsius)\",\n          \"else\": \"motorStatus\"\n        }\n      },\n      \"serial_0_trigger\": \"faultEntry\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_2\",\n        \"then\": 3,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply current ADC values 716 and 717 and temperature ADC values 122 and 123. Exercise each combination with vibration inactive, then active, then released. Observe the status display page.\",\n        \"oracle\": \"Calibrations are ADC*10/1023 amperes and ADC*500/1023 Celsius. Status is 3 during vibration, otherwise 2 above 60 Celsius, otherwise 1 above 7 amperes, otherwise 0. Release immediately recomputes status without latching.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Change temperature ADC between 122 and 123 with both vibration states and both low and high current.\",\n        \"oracle\": \"Fan command is respectively 0 and 255, independent of current and mechanical-fault priority, and changes within 250 ms.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with vibration active; hold, release, reactivate, hold, and release again. Also repeat starting inactive. Drive physical D2 LOW for active and HIGH for inactive.\",\n        \"oracle\": \"Each fault entry, including an initially active first sample, emits exactly one unprefixed integer line 3 at 9600 baud. Held faults do not repeat reports. Active faults command a continuous 1000 Hz tone and illuminated LED; release silences the tone and extinguishes the LED within 250 ms.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply distinct current, temperature, and status values. Advance io_7 across 2000, 4000, and 6000 ms boundaries and through multiple complete cycles, including a delta spanning several pages. Change sensor inputs and release vibration within a selected page.\",\n        \"oracle\": \"Display begins with floored current amperes, switches to floored Celsius at 2000 ms, and to current status at 4000 ms; the cycle repeats every 6000 ms with residual elapsed time preserved. Selected values refresh each step without resetting rotation. TM1637 uses the resolved D4 clock and D3 data wiring.\"\n      }\n    ]\n  }\n}",
+            "issues": [],
+            "ok": true,
+            "usage": {
+              "completion_tokens": 1398,
+              "prompt_tokens": 15650,
+              "total_tokens": 17048,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 124,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 15647,
+                "video_tokens": 0
+              },
+              "cost": 0.0531035,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0531035,
+                "upstream_inference_prompt_cost": 0.0391235,
+                "upstream_inference_completions_cost": 0.01398
+              }
+            },
+            "structural_validation_passed": true,
+            "deterministic_behavior_passed": true,
+            "final_compile_passed": true,
+            "semantic_review": {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract binds these inputs to A0, A1 and D2, and the model's fan, tone and LED outputs to D5, D6 and D13 respectively. Serial reporting is also connected. Raw ADC acquisition has unit scale and zero offset. D2 is normalized active LOW with INPUT_PULLUP; the model uses the normalized Boolean directly. The LED binding is active HIGH. All requested roles are present.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\",\n      \"reason\": \"The registered acquisition supplies raw 10-bit ADC counts without preconversion. Both real-valued formulas therefore implement the specified calibrations exactly, without double scaling or integer division. The contract identifies the LM35 conversion as using the specified 5 V reference.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Status is recomputed from current inputs with mechanical fault first, overheat second, overload third and normal otherwise. The comparisons implement the separately supplied strict thresholds current >7 A and temperature >60 C using unrounded measurements. For example, current ADC 716 versus 717 straddles overload, and temperature ADC 122 versus 123 straddles overheat. Releasing vibration immediately restores the applicable nonmechanical status; no fault status is latched.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Fan PWM255 above60C and0 otherwise.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Real = (if ((temperatureCelsius) > (60.0)) ? 255.0 else 0.0);\",\n      \"reason\": \"The fan depends directly on unrounded temperature, independently of status priority or vibration. The registered PWM mapping has scale 1 and offset 0, so commands 255 and 0 produce the required electrical duties. Temperature at or below 60 C selects zero.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_4 : Integer = (if io_2 ? 1000 else 0);\\n    out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"Active vibration commands a 1000 Hz audible alarm and an illuminated active-HIGH LED; release silences and extinguishes them. The tone contract specifies frequency in Hz and zero as silence. The supplied requirement does not prescribe another alarm frequency or cadence.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign faultEntry := ((io_2) and ((not previousVibration)));\",\n      \"reason\": \"previousVibration starts false. Under ordered updates, faultEntry captures activation before previousVibration is replaced by the current input. Outputs subsequently use faultEntry as the report gate and supply code 3 while active. Thus an initially active first sample and every later inactive-to-active transition each emit a report. A held fault does not repeatedly emit. The registered level-sensitive gate and empty serial label produce an integer line containing 3. The requirement specifies neither periodic fault repetition nor additional message text.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The selected pages are current, temperature and status in order. For the nonnegative registered ADC range, floor supplies whole-number current and temperature values. The timer starts at zero, adds actual elapsed milliseconds from io_7, then reduces modulo 6000 before output evaluation. Consequently the pages change at 2000 and 4000 ms and return to current at 6000 ms, retaining residual time even for multicycle deltas. Selected values use current measurements rather than retained snapshots. The first elapsed delta is contractually zero.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The scalar display output is bound to the native TM1637 number interface with CLK D4 and DIO D3. This is the authoritative resolved wiring, explicitly superseding the original R1 DIO D5 assignment. It also leaves D5 assigned to the required fan PWM.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = faultEntry;\\n    out attribute serial_0_value_0 : Integer = (if io_2 ? 3 else 0);\",\n      \"reason\": \"The contract serial configuration has baud 9600, line_or_idle framing and 20 ms idle timeout. The registered transmit adapter initializes at 9600 baud and emits newline-terminated reports. No receive command behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When unspecified, a counter starts at zero and an LED starts OFF.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"The display timer starts at zero, and the contract initializes the LED OFF. Fan and tone also initialize to zero. Sampling occurs before the first controller step, so an initially active vibration input is correctly recognized rather than suppressed by synthetic input initialization.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"The contract samples inputs and schedules control at 5 ms. Fan, alarm and fault reporting respond on the next applicable step without model delays or blocking state machines. This is consistent with the 250 ms bound. The selected display value is likewise refreshed each step; page selection follows the explicit two-second rotation, which overrides the default display period. The conditional continuous Boolean serial reporting and DHT defaults do not apply to this system.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"part system : Controller;\",\n      \"reason\": \"Neither the model nor the supplied contract prescribes a warmup, blocking startup sequence or delay contradicting the 500 ms setup bound. At this model-boundary gate, actual generated setup duration remains an execution obligation rather than a demonstrated runtime result.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"These checks establish model-boundary consistency, not runtime or final code acceptance. The model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution and setup completion within 500 ms.\",\n    \"Verify generated scheduling and adapter execution preserve the specified sampling, ordered updates, output application and elapsed-time semantics, including runtime reaction deadlines and two-second display rotation.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 2199,
+                    "prompt_tokens": 11339,
+                    "total_tokens": 13538,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 72,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 11336,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.050336,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.050336,
+                      "upstream_inference_prompt_cost": 0.028346,
+                      "upstream_inference_completions_cost": 0.02199
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1053,
+                    "prompt_tokens": 13546,
+                    "total_tokens": 14599,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 62,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 13543,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0443935,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0443935,
+                      "upstream_inference_prompt_cost": 0.0338635,
+                      "upstream_inference_completions_cost": 0.01053
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 1053,
+                "prompt_tokens": 13546,
+                "total_tokens": 14599,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 62,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 13543,
+                  "video_tokens": 0
+                },
+                "cost": 0.0443935,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0443935,
+                  "upstream_inference_prompt_cost": 0.0338635,
+                  "upstream_inference_completions_cost": 0.01053
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。",
+                    "status": "satisfied",
+                    "model_quote": "attribute displayCycleMs : Real := 0.0;\n    attribute previousVibration : Boolean := false;\n    attribute faultEntry : Boolean := false;",
+                    "reason": "All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.",
+                    "status": "satisfied",
+                    "model_quote": "attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));",
+                    "reason": "Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.",
+                  "After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.",
+                  "Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532"
+              }
+            },
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            },
+            "normalizations": [
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id"
+            ],
+            "generation_mode": "contract_assembly",
+            "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_7 : Integer;\n    attribute displayCycleMs : Real := 0.0;\n    attribute previousVibration : Boolean := false;\n    attribute faultEntry : Boolean := false;\n    attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\n    perform action tick {\n      first start;\n      then assign faultEntry := ((io_2) and ((not previousVibration)));\n      then assign displayCycleMs := displayCycleMs + io_7;\n      then assign displayCycleMs := displayCycleMs - 6000.0 * RealFunctions::floor(displayCycleMs / 6000.0);\n      then assign previousVibration := io_2;\n    }\n    out attribute io_3 : Real = (if ((temperatureCelsius) > (60.0)) ? 255.0 else 0.0);\n    out attribute io_4 : Integer = (if io_2 ? 1000 else 0);\n    out attribute io_5 : Boolean = io_2;\n    out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\n    out attribute serial_0_trigger : Boolean = faultEntry;\n    out attribute serial_0_value_0 : Integer = (if io_2 ? 3 else 0);\n  }\n  part system : Controller;\n}\n",
+            "stages": {
+              "sysml_generation": true,
+              "sysml_to_ir": true,
+              "ir_to_il": true
+            },
+            "focus_issues": [],
+            "coverage": {
+              "status": "structural_pass",
+              "issues": [],
+              "functional_status": "unverified",
+              "startup": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+              },
+              "pause": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+              },
+              "periodic": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+              },
+              "numeric": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+              },
+              "source_behavior": {
+                "status": "not_requested",
+                "checked": 0,
+                "traces": [],
+                "scope": "Only the exact source-derived scenarios; not full functionality proof"
+              },
+              "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+            },
+            "diagnostic_fingerprint": [],
+            "no_progress": false,
+            "failed_obligation_keys": [],
+            "repeated_requirement": false,
+            "repair_locations": [],
+            "repair_example": null,
+            "failure_stage": null
+          }
+        ],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "semantic_review": {
+          "enabled": true,
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "review_calls": 2,
+          "max_review_calls": 6,
+          "repair_count": 0,
+          "rounds": [
+            {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract binds these inputs to A0, A1 and D2, and the model's fan, tone and LED outputs to D5, D6 and D13 respectively. Serial reporting is also connected. Raw ADC acquisition has unit scale and zero offset. D2 is normalized active LOW with INPUT_PULLUP; the model uses the normalized Boolean directly. The LED binding is active HIGH. All requested roles are present.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\",\n      \"reason\": \"The registered acquisition supplies raw 10-bit ADC counts without preconversion. Both real-valued formulas therefore implement the specified calibrations exactly, without double scaling or integer division. The contract identifies the LM35 conversion as using the specified 5 V reference.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Status is recomputed from current inputs with mechanical fault first, overheat second, overload third and normal otherwise. The comparisons implement the separately supplied strict thresholds current >7 A and temperature >60 C using unrounded measurements. For example, current ADC 716 versus 717 straddles overload, and temperature ADC 122 versus 123 straddles overheat. Releasing vibration immediately restores the applicable nonmechanical status; no fault status is latched.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Fan PWM255 above60C and0 otherwise.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Real = (if ((temperatureCelsius) > (60.0)) ? 255.0 else 0.0);\",\n      \"reason\": \"The fan depends directly on unrounded temperature, independently of status priority or vibration. The registered PWM mapping has scale 1 and offset 0, so commands 255 and 0 produce the required electrical duties. Temperature at or below 60 C selects zero.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_4 : Integer = (if io_2 ? 1000 else 0);\\n    out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"Active vibration commands a 1000 Hz audible alarm and an illuminated active-HIGH LED; release silences and extinguishes them. The tone contract specifies frequency in Hz and zero as silence. The supplied requirement does not prescribe another alarm frequency or cadence.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign faultEntry := ((io_2) and ((not previousVibration)));\",\n      \"reason\": \"previousVibration starts false. Under ordered updates, faultEntry captures activation before previousVibration is replaced by the current input. Outputs subsequently use faultEntry as the report gate and supply code 3 while active. Thus an initially active first sample and every later inactive-to-active transition each emit a report. A held fault does not repeatedly emit. The registered level-sensitive gate and empty serial label produce an integer line containing 3. The requirement specifies neither periodic fault repetition nor additional message text.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The selected pages are current, temperature and status in order. For the nonnegative registered ADC range, floor supplies whole-number current and temperature values. The timer starts at zero, adds actual elapsed milliseconds from io_7, then reduces modulo 6000 before output evaluation. Consequently the pages change at 2000 and 4000 ms and return to current at 6000 ms, retaining residual time even for multicycle deltas. Selected values use current measurements rather than retained snapshots. The first elapsed delta is contractually zero.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The scalar display output is bound to the native TM1637 number interface with CLK D4 and DIO D3. This is the authoritative resolved wiring, explicitly superseding the original R1 DIO D5 assignment. It also leaves D5 assigned to the required fan PWM.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = faultEntry;\\n    out attribute serial_0_value_0 : Integer = (if io_2 ? 3 else 0);\",\n      \"reason\": \"The contract serial configuration has baud 9600, line_or_idle framing and 20 ms idle timeout. The registered transmit adapter initializes at 9600 baud and emits newline-terminated reports. No receive command behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When unspecified, a counter starts at zero and an LED starts OFF.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"The display timer starts at zero, and the contract initializes the LED OFF. Fan and tone also initialize to zero. Sampling occurs before the first controller step, so an initially active vibration input is correctly recognized rather than suppressed by synthetic input initialization.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"The contract samples inputs and schedules control at 5 ms. Fan, alarm and fault reporting respond on the next applicable step without model delays or blocking state machines. This is consistent with the 250 ms bound. The selected display value is likewise refreshed each step; page selection follows the explicit two-second rotation, which overrides the default display period. The conditional continuous Boolean serial reporting and DHT defaults do not apply to this system.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"part system : Controller;\",\n      \"reason\": \"Neither the model nor the supplied contract prescribes a warmup, blocking startup sequence or delay contradicting the 500 ms setup bound. At this model-boundary gate, actual generated setup duration remains an execution obligation rather than a demonstrated runtime result.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"These checks establish model-boundary consistency, not runtime or final code acceptance. The model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution and setup completion within 500 ms.\",\n    \"Verify generated scheduling and adapter execution preserve the specified sampling, ordered updates, output application and elapsed-time semantics, including runtime reaction deadlines and two-second display rotation.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 2199,
+                    "prompt_tokens": 11339,
+                    "total_tokens": 13538,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 72,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 11336,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.050336,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.050336,
+                      "upstream_inference_prompt_cost": 0.028346,
+                      "upstream_inference_completions_cost": 0.02199
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1053,
+                    "prompt_tokens": 13546,
+                    "total_tokens": 14599,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 62,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 13543,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0443935,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0443935,
+                      "upstream_inference_prompt_cost": 0.0338635,
+                      "upstream_inference_completions_cost": 0.01053
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 1053,
+                "prompt_tokens": 13546,
+                "total_tokens": 14599,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 62,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 13543,
+                  "video_tokens": 0
+                },
+                "cost": 0.0443935,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0443935,
+                  "upstream_inference_prompt_cost": 0.0338635,
+                  "upstream_inference_completions_cost": 0.01053
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。",
+                    "status": "satisfied",
+                    "model_quote": "attribute displayCycleMs : Real := 0.0;\n    attribute previousVibration : Boolean := false;\n    attribute faultEntry : Boolean := false;",
+                    "reason": "All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.",
+                    "status": "satisfied",
+                    "model_quote": "attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));",
+                    "reason": "Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.",
+                  "After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.",
+                  "Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532"
+              }
+            }
+          ],
+          "final_status": "passed",
+          "failure_category": null
+        },
+        "call_counts": {
+          "generation_and_repair": 1,
+          "semantic_review": 2
+        },
+        "usage": {
+          "generation_and_repair": [
+            {
+              "completion_tokens": 1398,
+              "prompt_tokens": 15650,
+              "total_tokens": 17048,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 124,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 15647,
+                "video_tokens": 0
+              },
+              "cost": 0.0531035,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0531035,
+                "upstream_inference_prompt_cost": 0.0391235,
+                "upstream_inference_completions_cost": 0.01398
+              }
+            }
+          ],
+          "semantic_review": [
+            {
+              "completion_tokens": 1053,
+              "prompt_tokens": 13546,
+              "total_tokens": 14599,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 62,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 13543,
+                "video_tokens": 0
+              },
+              "cost": 0.0443935,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0443935,
+                "upstream_inference_prompt_cost": 0.0338635,
+                "upstream_inference_completions_cost": 0.01053
+              }
+            }
+          ]
+        },
+        "final_status": "accepted"
+      },
+      "status": "passed"
+    }
+  ],
+  "validation": {
+    "validator_version": "2026-08 / 0.62.0",
+    "attempts": [
+      {
+        "attempt": 1,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"displayCycleMs\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"previousVibration\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"faultEntry\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"calculations\": [\n      {\n        \"name\": \"currentAmperes\",\n        \"type\": \"f64\",\n        \"expression\": \"io_0 * 10.0 / 1023.0\"\n      },\n      {\n        \"name\": \"temperatureCelsius\",\n        \"type\": \"f64\",\n        \"expression\": \"io_1 * 500.0 / 1023.0\"\n      },\n      {\n        \"name\": \"motorStatus\",\n        \"type\": \"i32\",\n        \"expression\": {\n          \"if\": \"io_2\",\n          \"then\": 3,\n          \"else\": {\n            \"if\": {\n              \">\": [\n                \"temperatureCelsius\",\n                60.0\n              ]\n            },\n            \"then\": 2,\n            \"else\": {\n              \"if\": {\n                \">\": [\n                  \"currentAmperes\",\n                  7.0\n                ]\n              },\n              \"then\": 1,\n              \"else\": 0\n            }\n          }\n        }\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"faultEntry\",\n        \"value\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"not\": \"previousVibration\"\n            }\n          ]\n        }\n      },\n      {\n        \"assign\": \"displayCycleMs\",\n        \"value\": \"displayCycleMs + io_7\"\n      },\n      {\n        \"assign\": \"displayCycleMs\",\n        \"value\": \"displayCycleMs - 6000.0 * RealFunctions::floor(displayCycleMs / 6000.0)\"\n      },\n      {\n        \"assign\": \"previousVibration\",\n        \"value\": \"io_2\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \">\": [\n            \"temperatureCelsius\",\n            60.0\n          ]\n        },\n        \"then\": 255.0,\n        \"else\": 0.0\n      },\n      \"io_4\": {\n        \"if\": \"io_2\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_5\": \"io_2\",\n      \"io_6\": {\n        \"if\": {\n          \"<\": [\n            \"displayCycleMs\",\n            2000.0\n          ]\n        },\n        \"then\": \"RealFunctions::floor(currentAmperes)\",\n        \"else\": {\n          \"if\": {\n            \"<\": [\n              \"displayCycleMs\",\n              4000.0\n            ]\n          },\n          \"then\": \"RealFunctions::floor(temperatureCelsius)\",\n          \"else\": \"motorStatus\"\n        }\n      },\n      \"serial_0_trigger\": \"faultEntry\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_2\",\n        \"then\": 3,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply current ADC values 716 and 717 and temperature ADC values 122 and 123. Exercise each combination with vibration inactive, then active, then released. Observe the status display page.\",\n        \"oracle\": \"Calibrations are ADC*10/1023 amperes and ADC*500/1023 Celsius. Status is 3 during vibration, otherwise 2 above 60 Celsius, otherwise 1 above 7 amperes, otherwise 0. Release immediately recomputes status without latching.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Change temperature ADC between 122 and 123 with both vibration states and both low and high current.\",\n        \"oracle\": \"Fan command is respectively 0 and 255, independent of current and mechanical-fault priority, and changes within 250 ms.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with vibration active; hold, release, reactivate, hold, and release again. Also repeat starting inactive. Drive physical D2 LOW for active and HIGH for inactive.\",\n        \"oracle\": \"Each fault entry, including an initially active first sample, emits exactly one unprefixed integer line 3 at 9600 baud. Held faults do not repeat reports. Active faults command a continuous 1000 Hz tone and illuminated LED; release silences the tone and extinguishes the LED within 250 ms.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply distinct current, temperature, and status values. Advance io_7 across 2000, 4000, and 6000 ms boundaries and through multiple complete cycles, including a delta spanning several pages. Change sensor inputs and release vibration within a selected page.\",\n        \"oracle\": \"Display begins with floored current amperes, switches to floored Celsius at 2000 ms, and to current status at 4000 ms; the cycle repeats every 6000 ms with residual elapsed time preserved. Selected values refresh each step without resetting rotation. TM1637 uses the resolved D4 clock and D3 data wiring.\"\n      }\n    ]\n  }\n}",
+        "issues": [],
+        "ok": true,
+        "usage": {
+          "completion_tokens": 1398,
+          "prompt_tokens": 15650,
+          "total_tokens": 17048,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 124,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 15647,
+            "video_tokens": 0
+          },
+          "cost": 0.0531035,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0531035,
+            "upstream_inference_prompt_cost": 0.0391235,
+            "upstream_inference_completions_cost": 0.01398
+          }
+        },
+        "structural_validation_passed": true,
+        "deterministic_behavior_passed": true,
+        "final_compile_passed": true,
+        "semantic_review": {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract binds these inputs to A0, A1 and D2, and the model's fan, tone and LED outputs to D5, D6 and D13 respectively. Serial reporting is also connected. Raw ADC acquisition has unit scale and zero offset. D2 is normalized active LOW with INPUT_PULLUP; the model uses the normalized Boolean directly. The LED binding is active HIGH. All requested roles are present.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\",\n      \"reason\": \"The registered acquisition supplies raw 10-bit ADC counts without preconversion. Both real-valued formulas therefore implement the specified calibrations exactly, without double scaling or integer division. The contract identifies the LM35 conversion as using the specified 5 V reference.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Status is recomputed from current inputs with mechanical fault first, overheat second, overload third and normal otherwise. The comparisons implement the separately supplied strict thresholds current >7 A and temperature >60 C using unrounded measurements. For example, current ADC 716 versus 717 straddles overload, and temperature ADC 122 versus 123 straddles overheat. Releasing vibration immediately restores the applicable nonmechanical status; no fault status is latched.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Fan PWM255 above60C and0 otherwise.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Real = (if ((temperatureCelsius) > (60.0)) ? 255.0 else 0.0);\",\n      \"reason\": \"The fan depends directly on unrounded temperature, independently of status priority or vibration. The registered PWM mapping has scale 1 and offset 0, so commands 255 and 0 produce the required electrical duties. Temperature at or below 60 C selects zero.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_4 : Integer = (if io_2 ? 1000 else 0);\\n    out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"Active vibration commands a 1000 Hz audible alarm and an illuminated active-HIGH LED; release silences and extinguishes them. The tone contract specifies frequency in Hz and zero as silence. The supplied requirement does not prescribe another alarm frequency or cadence.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign faultEntry := ((io_2) and ((not previousVibration)));\",\n      \"reason\": \"previousVibration starts false. Under ordered updates, faultEntry captures activation before previousVibration is replaced by the current input. Outputs subsequently use faultEntry as the report gate and supply code 3 while active. Thus an initially active first sample and every later inactive-to-active transition each emit a report. A held fault does not repeatedly emit. The registered level-sensitive gate and empty serial label produce an integer line containing 3. The requirement specifies neither periodic fault repetition nor additional message text.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The selected pages are current, temperature and status in order. For the nonnegative registered ADC range, floor supplies whole-number current and temperature values. The timer starts at zero, adds actual elapsed milliseconds from io_7, then reduces modulo 6000 before output evaluation. Consequently the pages change at 2000 and 4000 ms and return to current at 6000 ms, retaining residual time even for multicycle deltas. Selected values use current measurements rather than retained snapshots. The first elapsed delta is contractually zero.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The scalar display output is bound to the native TM1637 number interface with CLK D4 and DIO D3. This is the authoritative resolved wiring, explicitly superseding the original R1 DIO D5 assignment. It also leaves D5 assigned to the required fan PWM.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = faultEntry;\\n    out attribute serial_0_value_0 : Integer = (if io_2 ? 3 else 0);\",\n      \"reason\": \"The contract serial configuration has baud 9600, line_or_idle framing and 20 ms idle timeout. The registered transmit adapter initializes at 9600 baud and emits newline-terminated reports. No receive command behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When unspecified, a counter starts at zero and an LED starts OFF.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"The display timer starts at zero, and the contract initializes the LED OFF. Fan and tone also initialize to zero. Sampling occurs before the first controller step, so an initially active vibration input is correctly recognized rather than suppressed by synthetic input initialization.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"The contract samples inputs and schedules control at 5 ms. Fan, alarm and fault reporting respond on the next applicable step without model delays or blocking state machines. This is consistent with the 250 ms bound. The selected display value is likewise refreshed each step; page selection follows the explicit two-second rotation, which overrides the default display period. The conditional continuous Boolean serial reporting and DHT defaults do not apply to this system.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"part system : Controller;\",\n      \"reason\": \"Neither the model nor the supplied contract prescribes a warmup, blocking startup sequence or delay contradicting the 500 ms setup bound. At this model-boundary gate, actual generated setup duration remains an execution obligation rather than a demonstrated runtime result.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"These checks establish model-boundary consistency, not runtime or final code acceptance. The model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution and setup completion within 500 ms.\",\n    \"Verify generated scheduling and adapter execution preserve the specified sampling, ordered updates, output application and elapsed-time semantics, including runtime reaction deadlines and two-second display rotation.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 2199,
+                "prompt_tokens": 11339,
+                "total_tokens": 13538,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 72,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 11336,
+                  "video_tokens": 0
+                },
+                "cost": 0.050336,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.050336,
+                  "upstream_inference_prompt_cost": 0.028346,
+                  "upstream_inference_completions_cost": 0.02199
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1053,
+                "prompt_tokens": 13546,
+                "total_tokens": 14599,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 62,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 13543,
+                  "video_tokens": 0
+                },
+                "cost": 0.0443935,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0443935,
+                  "upstream_inference_prompt_cost": 0.0338635,
+                  "upstream_inference_completions_cost": 0.01053
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 1053,
+            "prompt_tokens": 13546,
+            "total_tokens": 14599,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 62,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 13543,
+              "video_tokens": 0
+            },
+            "cost": 0.0443935,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0443935,
+              "upstream_inference_prompt_cost": 0.0338635,
+              "upstream_inference_completions_cost": 0.01053
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。",
+                "status": "satisfied",
+                "model_quote": "attribute displayCycleMs : Real := 0.0;\n    attribute previousVibration : Boolean := false;\n    attribute faultEntry : Boolean := false;",
+                "reason": "All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.",
+                "status": "satisfied",
+                "model_quote": "attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));",
+                "reason": "Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.",
+              "After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.",
+              "Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532"
+          }
+        },
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "normalizations": [
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id"
+        ],
+        "generation_mode": "contract_assembly",
+        "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_7 : Integer;\n    attribute displayCycleMs : Real := 0.0;\n    attribute previousVibration : Boolean := false;\n    attribute faultEntry : Boolean := false;\n    attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\n    perform action tick {\n      first start;\n      then assign faultEntry := ((io_2) and ((not previousVibration)));\n      then assign displayCycleMs := displayCycleMs + io_7;\n      then assign displayCycleMs := displayCycleMs - 6000.0 * RealFunctions::floor(displayCycleMs / 6000.0);\n      then assign previousVibration := io_2;\n    }\n    out attribute io_3 : Real = (if ((temperatureCelsius) > (60.0)) ? 255.0 else 0.0);\n    out attribute io_4 : Integer = (if io_2 ? 1000 else 0);\n    out attribute io_5 : Boolean = io_2;\n    out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\n    out attribute serial_0_trigger : Boolean = faultEntry;\n    out attribute serial_0_value_0 : Integer = (if io_2 ? 3 else 0);\n  }\n  part system : Controller;\n}\n",
+        "stages": {
+          "sysml_generation": true,
+          "sysml_to_ir": true,
+          "ir_to_il": true
+        },
+        "focus_issues": [],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "diagnostic_fingerprint": [],
+        "no_progress": false,
+        "failed_obligation_keys": [],
+        "repeated_requirement": false,
+        "repair_locations": [],
+        "repair_example": null,
+        "failure_stage": null
+      }
+    ],
+    "coverage": {
+      "status": "structural_pass",
+      "issues": [],
+      "functional_status": "unverified",
+      "startup": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+      },
+      "pause": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+      },
+      "periodic": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+      },
+      "numeric": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+      },
+      "source_behavior": {
+        "status": "not_requested",
+        "checked": 0,
+        "traces": [],
+        "scope": "Only the exact source-derived scenarios; not full functionality proof"
+      },
+      "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+    },
+    "semantic_review": {
+      "enabled": true,
+      "policy_version": "sysml-semantic-review-v2-native-boundaries",
+      "review_calls": 2,
+      "max_review_calls": 6,
+      "repair_count": 0,
+      "rounds": [
+        {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract binds these inputs to A0, A1 and D2, and the model's fan, tone and LED outputs to D5, D6 and D13 respectively. Serial reporting is also connected. Raw ADC acquisition has unit scale and zero offset. D2 is normalized active LOW with INPUT_PULLUP; the model uses the normalized Boolean directly. The LED binding is active HIGH. All requested roles are present.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\",\n      \"reason\": \"The registered acquisition supplies raw 10-bit ADC counts without preconversion. Both real-valued formulas therefore implement the specified calibrations exactly, without double scaling or integer division. The contract identifies the LM35 conversion as using the specified 5 V reference.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Status is recomputed from current inputs with mechanical fault first, overheat second, overload third and normal otherwise. The comparisons implement the separately supplied strict thresholds current >7 A and temperature >60 C using unrounded measurements. For example, current ADC 716 versus 717 straddles overload, and temperature ADC 122 versus 123 straddles overheat. Releasing vibration immediately restores the applicable nonmechanical status; no fault status is latched.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Fan PWM255 above60C and0 otherwise.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Real = (if ((temperatureCelsius) > (60.0)) ? 255.0 else 0.0);\",\n      \"reason\": \"The fan depends directly on unrounded temperature, independently of status priority or vibration. The registered PWM mapping has scale 1 and offset 0, so commands 255 and 0 produce the required electrical duties. Temperature at or below 60 C selects zero.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_4 : Integer = (if io_2 ? 1000 else 0);\\n    out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"Active vibration commands a 1000 Hz audible alarm and an illuminated active-HIGH LED; release silences and extinguishes them. The tone contract specifies frequency in Hz and zero as silence. The supplied requirement does not prescribe another alarm frequency or cadence.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Mechanical fault drives audible/LED alarm and Serial fault code3.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign faultEntry := ((io_2) and ((not previousVibration)));\",\n      \"reason\": \"previousVibration starts false. Under ordered updates, faultEntry captures activation before previousVibration is replaced by the current input. Outputs subsequently use faultEntry as the report gate and supply code 3 while active. Thus an initially active first sample and every later inactive-to-active transition each emit a report. A held fault does not repeatedly emit. The registered level-sensitive gate and empty serial label produce an integer line containing 3. The requirement specifies neither periodic fault repetition nor additional message text.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The selected pages are current, temperature and status in order. For the nonnegative registered ADC range, floor supplies whole-number current and temperature values. The timer starts at zero, adds actual elapsed milliseconds from io_7, then reduces modulo 6000 before output evaluation. Consequently the pages change at 2000 and 4000 ms and return to current at 6000 ms, retaining residual time even for multicycle deltas. Selected values use current measurements rather than retained snapshots. The first elapsed delta is contractually zero.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\",\n      \"reason\": \"The scalar display output is bound to the native TM1637 number interface with CLK D4 and DIO D3. This is the authoritative resolved wiring, explicitly superseding the original R1 DIO D5 assignment. It also leaves D5 assigned to the required fan PWM.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = faultEntry;\\n    out attribute serial_0_value_0 : Integer = (if io_2 ? 3 else 0);\",\n      \"reason\": \"The contract serial configuration has baud 9600, line_or_idle framing and 20 ms idle timeout. The registered transmit adapter initializes at 9600 baud and emits newline-terminated reports. No receive command behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When unspecified, a counter starts at zero and an LED starts OFF.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"The display timer starts at zero, and the contract initializes the LED OFF. Fan and tone also initialize to zero. Sampling occurs before the first controller step, so an initially active vibration input is correctly recognized rather than suppressed by synthetic input initialization.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_5 : Boolean = io_2;\",\n      \"reason\": \"The contract samples inputs and schedules control at 5 ms. Fan, alarm and fault reporting respond on the next applicable step without model delays or blocking state machines. This is consistent with the 250 ms bound. The selected display value is likewise refreshed each step; page selection follows the explicit two-second rotation, which overrides the default display period. The conditional continuous Boolean serial reporting and DHT defaults do not apply to this system.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"part system : Controller;\",\n      \"reason\": \"Neither the model nor the supplied contract prescribes a warmup, blocking startup sequence or delay contradicting the 500 ms setup bound. At this model-boundary gate, actual generated setup duration remains an execution obligation rather than a demonstrated runtime result.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"These checks establish model-boundary consistency, not runtime or final code acceptance. The model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution and setup completion within 500 ms.\",\n    \"Verify generated scheduling and adapter execution preserve the specified sampling, ordered updates, output application and elapsed-time semantics, including runtime reaction deadlines and two-second display rotation.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 2199,
+                "prompt_tokens": 11339,
+                "total_tokens": 13538,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 72,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 11336,
+                  "video_tokens": 0
+                },
+                "cost": 0.050336,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.050336,
+                  "upstream_inference_prompt_cost": 0.028346,
+                  "upstream_inference_completions_cost": 0.02199
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1053,
+                "prompt_tokens": 13546,
+                "total_tokens": 14599,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 62,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 13543,
+                  "video_tokens": 0
+                },
+                "cost": 0.0443935,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0443935,
+                  "upstream_inference_prompt_cost": 0.0338635,
+                  "upstream_inference_completions_cost": 0.01053
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute displayCycleMs : Real := 0.0;\\n    attribute previousVibration : Boolean := false;\\n    attribute faultEntry : Boolean := false;\",\n      \"reason\": \"All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\",\n      \"reason\": \"Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.\",\n    \"Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 1053,
+            "prompt_tokens": 13546,
+            "total_tokens": 14599,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 62,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 13543,
+              "video_tokens": 0
+            },
+            "cost": 0.0443935,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0443935,
+              "upstream_inference_prompt_cost": 0.0338635,
+              "upstream_inference_completions_cost": 0.01053
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。",
+                "status": "satisfied",
+                "model_quote": "attribute displayCycleMs : Real := 0.0;\n    attribute previousVibration : Boolean := false;\n    attribute faultEntry : Boolean := false;",
+                "reason": "All functional clauses are consistent with the implementation as detailed in the R1 check. The contract preserves A0 current acquisition, A1 LM35 acquisition, D2 vibration, D5 fan PWM, D6 tone, D13 LED and Serial. Its TM1637 binding uses the authoritative resolved CLK D4 and DIO D3 assignment, superseding the original DIO D5 assignment. D2 uses INPUT_PULLUP with LOW normalized to true; the model consumes that Boolean without another inversion. The LED is active HIGH and initially OFF. Timer and edge-history states start at zero/false. The serial configuration specifies 9600 baud, line_or_idle framing and a 20 ms idle timeout; the registered adapter initializes at 9600 baud. Five-millisecond sampling and control scheduling, with no model-imposed reaction delay, are consistent with the 250 ms command-response bound. Selected display values refresh each step while page selection follows the explicit two-second period. Neither model nor contract prescribes startup blocking that contradicts the 500 ms setup bound. Continuous Boolean streaming and DHT-specific defaults are inapplicable. These findings establish model-boundary consistency, not measured execution timing."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat.",
+                "status": "satisfied",
+                "model_quote": "attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));",
+                "reason": "Registered analog acquisition supplies raw 0–1023 ADC counts with unit scale and zero offset, so the real-valued formulas implement both required calibrations without double scaling or integer division. Status uses strict, unrounded current >7 A and temperature >60 C comparisons, prioritizing mechanical fault, then overheat, then overload. ADC current values 716/717 and temperature values 122/123 fall on opposite sides of their respective thresholds. Status is recomputed on release rather than latched. Fan output io_3 independently selects 255 above 60 C and zero otherwise; the registered PWM mapping preserves those electrical commands even during mechanical faults. Active vibration commands io_4=1000 Hz and io_5=true, with zero/false on release. The ordered faultEntry update captures io_2 AND NOT previousVibration before updating previousVibration. Consequently an initially active first sample and each later activation produce a one-step report gate; held faults do not repeat. The serial value is 3 whenever that gate is true, and the registered empty label yields an unprefixed numeric line. No alternative alarm frequency or report repetition interval is required. The display timer adds actual elapsed milliseconds through io_7 and then reduces modulo 6000 before outputs are evaluated. Output io_6 selects floored current below 2000 ms, floored temperature below 4000 ms, and current status otherwise. This preserves residual elapsed time, handles multicycle deltas, refreshes the selected measurement without resetting rotation, and starts on current because the first delta is zero. Flooring is consistent with integer display of these nonnegative measurements. All requested interfaces are present; the explicitly authorized DIO remapping to D3 supersedes R1's original D5 display wiring."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is a model-boundary consistency review, not runtime success or final code acceptance. Model-authored test descriptions were not treated as executed evidence.",
+              "After code generation, verify Serial.begin at 9600 baud, required peripheral/library initialization, actual peripheral execution, and setup completion within 500 ms.",
+              "Verify generated execution preserves sampling, ordered updates, output application and actual elapsed-time semantics, including reaction deadlines and two-second display rotation."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "6e776bbe786794f1beba0a890ba9163b6e888ebdb7bb9088779efe885af09532"
+          }
+        }
+      ],
+      "final_status": "passed",
+      "failure_category": null
+    },
+    "call_counts": {
+      "generation_and_repair": 1,
+      "semantic_review": 2
+    },
+    "usage": {
+      "generation_and_repair": [
+        {
+          "completion_tokens": 1398,
+          "prompt_tokens": 15650,
+          "total_tokens": 17048,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 124,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 15647,
+            "video_tokens": 0
+          },
+          "cost": 0.0531035,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0531035,
+            "upstream_inference_prompt_cost": 0.0391235,
+            "upstream_inference_completions_cost": 0.01398
+          }
+        }
+      ],
+      "semantic_review": [
+        {
+          "completion_tokens": 1053,
+          "prompt_tokens": 13546,
+          "total_tokens": 14599,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 62,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 13543,
+            "video_tokens": 0
+          },
+          "cost": 0.0443935,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0443935,
+            "upstream_inference_prompt_cost": 0.0338635,
+            "upstream_inference_completions_cost": 0.01053
+          }
+        }
+      ]
+    },
+    "final_status": "accepted"
+  }
+}

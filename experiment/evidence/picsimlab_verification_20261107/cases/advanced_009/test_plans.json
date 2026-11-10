@@ -1,0 +1,160 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests temperature-view selection after a complete button press/release cycle, live updates for three stable temperatures, and selection again after two further complete cycles. Checks occur after release and therefore do not require either press-edge or release-edge switching. Passage thresholds, passage timing, initial population, and the fan-control mapping are unspecified, so population counting, default population values, and fan regulation are not independently asserted. Serial message content is unspecified.",
+      "assumptions": [
+        "D2 uses the disclosed bench default: a button to GND with INPUT_PULLUP, released HIGH and pressed LOW.",
+        "Switching the display is interpreted as a persistent toggle between population and current temperature. Each complete, debounced press/release cycle switches once; the activation edge is not prescribed.",
+        "Temperature inputs are integral Celsius values and remain stable for at least three seconds to accommodate the cached two-second DHT API.",
+        "Initial population, ultrasonic detection threshold, passage timeout, fan-control mapping, and serial message content are missing parameters. The reference chooses illustrative policies for these; the assertions do not mandate those choices.",
+        "No ultrasonic echoes are supplied during this display-focused suite. No initial population value is assumed by the checks."
+      ],
+      "horizon_ms": 19000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 0,
+          "kind": "distance",
+          "pin": 9,
+          "value": null
+        },
+        {
+          "at_ms": 0,
+          "kind": "distance",
+          "pin": 11,
+          "value": null
+        },
+        {
+          "at_ms": 0,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 23
+        },
+        {
+          "at_ms": 0,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 50
+        },
+        {
+          "at_ms": 3500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 4000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 7000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 31
+        },
+        {
+          "at_ms": 11000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 18
+        },
+        {
+          "at_ms": 15000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 15500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 16500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 17000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [
+        {
+          "trigger_pin": 8,
+          "echo_pin": 9
+        },
+        {
+          "trigger_pin": 10,
+          "echo_pin": 11
+        }
+      ],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "display",
+          "id": "complete_activation_selects_temperature",
+          "requirement_quote": "按钮 D2 可切换显示当前温度",
+          "name": "tm:4:3",
+          "at_ms": 4500,
+          "expected": "23",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "temperature_view_persists_after_release",
+          "requirement_quote": "按钮 D2 可切换显示当前温度",
+          "name": "tm:4:3",
+          "at_ms": 6000,
+          "expected": "23",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "temperature_updates_upward",
+          "requirement_quote": "显示当前温度",
+          "name": "tm:4:3",
+          "at_ms": 10000,
+          "expected": "31",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "temperature_updates_downward",
+          "requirement_quote": "显示当前温度",
+          "name": "tm:4:3",
+          "at_ms": 14000,
+          "expected": "18",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "temperature_reselected_after_two_more_cycles",
+          "requirement_quote": "按钮 D2 可切换显示当前温度",
+          "name": "tm:4:3",
+          "at_ms": 18000,
+          "expected": "18",
+          "numeric": true
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <TM1637Display.h>\n#include <math.h>\n\nDHT dht(7, DHT11);\nTM1637Display display(4, 3);\nint people = 0;\nfloat temperatureC = 25;\nbool showTemperature = false;\nbool previousA = false, previousB = false;\nint firstSensor = 0;\nunsigned long sequenceStarted = 0;\nunsigned long lastSensors = 0, lastDht = 0;\nbool rawButton = HIGH, stableButton = HIGH;\nunsigned long buttonChanged = 0;\n\nbool nearSensor(uint8_t trigger, uint8_t echo) {\n  digitalWrite(trigger, LOW);\n  delayMicroseconds(2);\n  digitalWrite(trigger, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(trigger, LOW);\n  unsigned long duration = pulseIn(echo, HIGH, 25000UL);\n  return duration != 0 && duration * 0.0343f / 2.0f < 30.0f;\n}\n\nvoid passageEdge(int sensor, unsigned long now) {\n  if (firstSensor == 0) {\n    firstSensor = sensor;\n    sequenceStarted = now;\n  } else if (firstSensor != sensor) {\n    if (firstSensor == 1) {\n      if (people < 9999) ++people;\n    } else if (people > 0) {\n      --people;\n    }\n    firstSensor = 0;\n    Serial.print(\"Population: \");\n    Serial.println(people);\n  }\n}\n\nvoid setup() {\n  pinMode(8, OUTPUT);\n  pinMode(9, INPUT);\n  pinMode(10, OUTPUT);\n  pinMode(11, INPUT);\n  pinMode(2, INPUT_PULLUP);\n  pinMode(5, OUTPUT);\n  analogWrite(5, 0);\n  Serial.begin(9600);\n  dht.begin();\n  display.setBrightness(7);\n  display.showNumberDec(people);\n  lastDht = millis() - 2000UL;\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  bool button = digitalRead(2);\n  if (button != rawButton) {\n    rawButton = button;\n    buttonChanged = now;\n  }\n  if (now - buttonChanged >= 40 && stableButton != rawButton) {\n    stableButton = rawButton;\n    if (stableButton == LOW) showTemperature = !showTemperature;\n  }\n  if (now - lastDht >= 2000) {\n    lastDht = now;\n    float t = dht.readTemperature();\n    if (!isnan(t)) temperatureC = t;\n  }\n  if (firstSensor != 0 && now - sequenceStarted > 2000) firstSensor = 0;\n  if (now - lastSensors >= 80) {\n    lastSensors = now;\n    bool a = nearSensor(8, 9);\n    bool b = nearSensor(10, 11);\n    if (a && !previousA) passageEdge(1, now);\n    if (b && !previousB) passageEdge(2, now);\n    previousA = a;\n    previousB = b;\n  }\n  int pwm = 0;\n  if (people > 0) {\n    pwm = constrain((int)(temperatureC - 18) * 8 + people * 12, 0, 255);\n  }\n  analogWrite(5, pwm);\n  display.showNumberDec(showTemperature ? (int)round(temperatureC) : people);\n  delay(5);\n}\n"
+    },
+    "engine": null
+  }
+]

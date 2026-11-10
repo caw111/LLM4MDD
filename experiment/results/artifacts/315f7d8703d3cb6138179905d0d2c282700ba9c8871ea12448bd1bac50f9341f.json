@@ -1,0 +1,264 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "mode",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "brightness",
+        "type": "i32",
+        "initial": 255
+      },
+      {
+        "name": "breathSpeed",
+        "type": "i32",
+        "initial": 2000
+      },
+      {
+        "name": "accumMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevModeBtnPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevParamBtnPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "accumMs",
+        "value": "accumMs + io_5"
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevModeBtnPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "mode",
+            "value": {
+              "if": "mode == 2",
+              "then": 0,
+              "else": "mode + 1"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevParamBtnPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": "mode == 1",
+            "then": [
+              {
+                "assign": "brightness",
+                "value": {
+                  "if": "brightness == 255",
+                  "then": 16,
+                  "else": "brightness + 16"
+                }
+              }
+            ]
+          },
+          {
+            "if": "mode == 2",
+            "then": [
+              {
+                "assign": "breathSpeed",
+                "value": {
+                  "if": "breathSpeed == 5000",
+                  "then": 500,
+                  "else": "breathSpeed + 500"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "prevModeBtnPressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevParamBtnPressed",
+        "value": "io_1"
+      },
+      {
+        "if": "mode != 2",
+        "then": [
+          {
+            "assign": "accumMs",
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "mode == 0",
+        "then": 0.0,
+        "else": {
+          "if": "mode == 1",
+          "then": {
+            "if": {
+              "and": [
+                {
+                  ">=": [
+                    "brightness",
+                    0
+                  ]
+                },
+                {
+                  "<=": [
+                    "brightness",
+                    255
+                  ]
+                }
+              ]
+            },
+            "then": "brightness * 1.0",
+            "else": "0.0"
+          },
+          "else": {
+            "if": "breathSpeed <= 0",
+            "then": 0.0,
+            "else": {
+              "if": {
+                "<": [
+                  "accumMs",
+                  {
+                    "*": [
+                      "breathSpeed",
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "if": "breathSpeed == 0",
+                "then": 0.0,
+                "else": {
+                  "/": [
+                    {
+                      "*": [
+                        "brightness * 1.0",
+                        "accumMs * 1.0"
+                      ]
+                    },
+                    {
+                      "*": [
+                        "breathSpeed * 1.0",
+                        0.5
+                      ]
+                    }
+                  ]
+                }
+              },
+              "else": {
+                "if": "breathSpeed == 0",
+                "then": 0.0,
+                "else": {
+                  "/": [
+                    {
+                      "*": [
+                        "brightness * 1.0",
+                        {
+                          "-": [
+                            {
+                              "*": [
+                                "breathSpeed * 1.0",
+                                1.0
+                              ]
+                            },
+                            "accumMs * 1.0"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "*": [
+                        "breathSpeed * 1.0",
+                        0.5
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "io_3": {
+        "if": "mode == 0",
+        "then": 0,
+        "else": {
+          "if": "mode == 1",
+          "then": "brightness",
+          "else": "breathSpeed"
+        }
+      },
+      "io_4": {
+        "if": "mode == 0",
+        "then": false,
+        "else": true
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "D2 按下一次（D2: 由未按下到按下的上升沿），保持 D3 不按；io_5 任意>0",
+        "oracle": "TM1637 显示模式编号从 0 变为 1；PWM 输出 io_2 从 0.0 变为非零（等于当前 brightness * 1.0）；状态/aux LED io_4 为 true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "在 mode==1（常亮）时，D3 触发一次上升沿（按一下参数键）；io_5 任意>0",
+        "oracle": "brightness 发生离散变化（255->16 或其它 -> brightness+16）；TM1637 显示 io_3 变为新的 brightness；PWM io_2 同步变为新的 brightness * 1.0"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "先通过连续按 D2 三次切到 mode==2（呼吸灯），然后在 mode==2 时触发一次 D3 上升沿；io_5 连续累加若干控制周期",
+        "oracle": "TM1637 显示 io_3 从原 breathSpeed 变为新的 breathSpeed；PWM io_2 随 accumMs 在呼吸区间内出现上升/下降变化（不恒为常亮值）；aux LED io_4 为 true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "从 mode==0（常灭）保持 D3 不按、并让 io_5 变化；随后按 D2 上升沿一次进入 mode==1；再按 D2 上升沿一次进入 mode==2",
+        "oracle": "mode==0 时 PWM io_2 恒为 0.0 且 io_4 为 false；进入 mode==1 后 io_4 变为 true 且 io_2 变为 brightness；进入 mode==2 后 io_3 显示 breathSpeed 并 PWM 随时间呈呼吸变化"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_5 : Integer;\n    attribute mode : Integer := 0;\n    attribute brightness : Integer := 255;\n    attribute breathSpeed : Integer := 2000;\n    attribute accumMs : Integer := 0;\n    attribute prevModeBtnPressed : Boolean := false;\n    attribute prevParamBtnPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then assign accumMs := accumMs + io_5;\n      then if ((io_0) and ((not prevModeBtnPressed))) {\n        first start;\n        then assign mode := (if mode == 2 ? 0 else mode + 1);\n      }\n      then if ((io_1) and ((not prevParamBtnPressed))) {\n        first start;\n        then if mode == 1 {\n          first start;\n          then assign brightness := (if brightness == 255 ? 16 else brightness + 16);\n        }\n        then if mode == 2 {\n          first start;\n          then assign breathSpeed := (if breathSpeed == 5000 ? 500 else breathSpeed + 500);\n        }\n      }\n      then assign prevModeBtnPressed := io_0;\n      then assign prevParamBtnPressed := io_1;\n      then if mode != 2 {\n        first start;\n        then assign accumMs := 0;\n      }\n    }\n    out attribute io_2 : Real = (if mode == 0 ? 0.0 else (if mode == 1 ? (if ((((brightness) >= (0))) and (((brightness) <= (255)))) ? brightness * 1.0 else 0.0) else (if breathSpeed <= 0 ? 0.0 else (if ((accumMs) < (((breathSpeed) * (0.5)))) ? (if breathSpeed == 0 ? 0.0 else ((((brightness * 1.0) * (accumMs * 1.0))) / (((breathSpeed * 1.0) * (0.5))))) else (if breathSpeed == 0 ? 0.0 else ((((brightness * 1.0) * (((((breathSpeed * 1.0) * (1.0))) - (accumMs * 1.0))))) / (((breathSpeed * 1.0) * (0.5)))))))));\n    out attribute io_3 : Integer = (if mode == 0 ? 0 else (if mode == 1 ? brightness else breathSpeed));\n    out attribute io_4 : Boolean = (if mode == 0 ? false else true);\n  }\n  part system : Controller;\n}\n"
+}

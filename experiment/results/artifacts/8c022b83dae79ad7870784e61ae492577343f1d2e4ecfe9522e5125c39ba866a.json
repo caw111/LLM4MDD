@@ -1,0 +1,293 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Wiring preserved from the supplied circuit: led1->D2 via the red anode connection to mega:2, led2->D3 via the red anode connection to mega:3, servo1 PWM->D4 via mega:4, servo2 PWM->D5 via mega:5, servo3 PWM->D6 via mega:6. Common ground uses mega:GND.1 and +5V uses mega:5V exactly as provided.",
+    "LEDs start OFF (led1=false, led2=false). Model enforces alternating blink at a 2000 ms period using the required elapsedMilliseconds delta updates.",
+    "Servos start at their initial angles (servo1=0°, servo2=0°, servo3=0°). Model drives the synchronized 2-second two-state sequence: (0/90/180) for 2s then (180/0/90) for 2s, repeating continuously.",
+    "Control period set to 10 ms to support 2000 ms LED blink timing and 2 s servo dwell timing with fine scheduling granularity."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "led1 indicator (alternating with led2)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D2\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "led2 indicator (alternating with led1)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D3\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo1 angle command",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D4\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D4"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo2 angle command",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D5\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo3 angle command",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual delta since previous control step",
+      "sample_period_ms": 10,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two LEDs (led1, led2) and three servo motors (servo1, servo2, servo3). The LEDs will act as indicators, and the servos will rotate in a synchronized pattern. The LEDs will blink alternately, and the servos will move in a sequence: servo1 to 0°, servo2 to 90°, and servo3 to 180°, then reverse the sequence. The LEDs and servos should operate in a continuous loop.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both LEDs (led1, led2) should be off, and all servos (servo1, servo2, servo3) should be at their initial positions (0°).\nLED Behavior: The LEDs should blink alternately every 2000 milliseconds. When led1 is on, led2 should be off, and vice versa.\nServo Behavior: The servos should move in the following sequence:\n1. servo1 moves to 0°, servo2 moves to 90°, and servo3 moves to 180°. This state should be maintained for 2 seconds.\n2. servo1 moves to 180°, servo2 moves to 0°, and servo3 moves to 90°. This state should be maintained for 2 seconds.\n3. The sequence should repeat continuously.\nSynchronization: The LED blinking and servo movements should be synchronized, with the LEDs blinking continuously while the servos move through their sequence.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:4\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:5\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:6\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two LEDs (led1, led2) and three servo motors (servo1, servo2, servo3). The LEDs will act as indicators, and the servos will rotate in a synchronized pattern. The LEDs will blink alternately, and the servos will move in a sequence: servo1 to 0°, servo2 to 90°, and servo3 to 180°, then reverse the sequence. The LEDs and servos should operate in a continuous loop.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both LEDs (led1, led2) should be off, and all servos (servo1, servo2, servo3) should be at their initial positions (0°).\nLED Behavior: The LEDs should blink alternately every 2000 milliseconds. When led1 is on, led2 should be off, and vice versa.\nServo Behavior: The servos should move in the following sequence:\n1. servo1 moves to 0°, servo2 moves to 90°, and servo3 moves to 180°. This state should be maintained for 2 seconds.\n2. servo1 moves to 180°, servo2 moves to 0°, and servo3 moves to 90°. This state should be maintained for 2 seconds.\n3. The sequence should repeat continuously.\nSynchronization: The LED blinking and servo movements should be synchronized, with the LEDs blinking continuously while the servos move through their sequence.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:4\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:5\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:6\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led1",
+            "top": -70.8,
+            "left": 13.4,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led2",
+            "top": -70.8,
+            "left": 71.0,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo3",
+            "left": -201.6,
+            "top": 170.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "led1:C",
+            "black"
+          ],
+          [
+            "led1:A",
+            "mega:2",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "led2:C",
+            "black"
+          ],
+          [
+            "led2:A",
+            "mega:3",
+            "red"
+          ],
+          [
+            "mega:4",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:5",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:6",
+            "servo3:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo3:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo3:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two LEDs (led1, led2) and three servo motors (servo1, servo2, servo3). The LEDs will act as indicators, and the servos will rotate in a synchronized pattern. The LEDs will blink alternately, and the servos will move in a sequence: servo1 to 0°, servo2 to 90°, and servo3 to 180°, then reverse the sequence. The LEDs and servos should operate in a continuous loop.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both LEDs (led1, led2) should be off, and all servos (servo1, servo2, servo3) should be at their initial positions (0°).\nLED Behavior: The LEDs should blink alternately every 2000 milliseconds. When led1 is on, led2 should be off, and vice versa.\nServo Behavior: The servos should move in the following sequence:\n1. servo1 moves to 0°, servo2 moves to 90°, and servo3 moves to 180°. This state should be maintained for 2 seconds.\n2. servo1 moves to 180°, servo2 moves to 0°, and servo3 moves to 90°. This state should be maintained for 2 seconds.\n3. The sequence should repeat continuously.\nSynchronization: The LED blinking and servo movements should be synchronized, with the LEDs blinking continuously while the servos move through their sequence.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:4\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:5\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:6\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

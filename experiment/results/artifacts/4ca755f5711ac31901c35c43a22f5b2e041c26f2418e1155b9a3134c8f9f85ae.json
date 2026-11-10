@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"mode\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"blinkState\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"mode\",\n            \"value\": {\n              \"if\": {\n                \"==\": [\n                  \"mode\",\n                  0\n                ]\n              },\n              \"then\": 1,\n              \"else\": {\n                \"if\": {\n                  \"==\": [\n                    \"mode\",\n                    1\n                  ]\n                },\n                \"then\": 2,\n                \"else\": 0\n              }\n            }\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"mode\",\n            1\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"blinkState\",\n            \"value\": {\n              \"not\": \"blinkState\"\n            }\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"blinkState\",\n            \"value\": false\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": {\n          \"==\": [\n            \"mode\",\n            0\n          ]\n        },\n        \"then\": false,\n        \"else\": {\n          \"if\": {\n            \"==\": [\n              \"mode\",\n              1\n            ]\n          },\n          \"then\": \"blinkState\",\n          \"else\": true\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）切换模式：LED（D13）闪烁/常亮/关闭\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Initial: io_0=false. Step1: press D2 rising edge (io_0: false->true) once, then release (true->false). Repeat press once more, then once more; no further presses during verification steps.\",\n        \"oracle\": \"LED io_1 cycles exactly through: initial mode off (false), then blinking mode (io_1 toggles each subsequent model step while in this mode), then steady on (true), then off again after the third press.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute mode : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute blinkState : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign mode := (if ((mode) == (0)) ? 1 else (if ((mode) == (1)) ? 2 else 0));\n      }\n      then assign previousPressed := io_0;\n      then if ((mode) == (1)) {\n        first start;\n        then assign blinkState := (not blinkState);\n      } else {\n        first start;\n        then assign blinkState := false;\n      }\n    }\n    out attribute io_1 : Boolean = (if ((mode) == (0)) ? false else (if ((mode) == (1)) ? blinkState else true));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

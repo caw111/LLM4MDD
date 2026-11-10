@@ -1,0 +1,56 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "displayNumber",
+        "type": "i32",
+        "initial": "0"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "accumulatedMs",
+        "value": "accumulatedMs + io_0"
+      },
+      {
+        "if": {
+          ">=": [
+            "accumulatedMs",
+            1000
+          ]
+        },
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs - 1000"
+          },
+          {
+            "assign": "displayNumber",
+            "value": "displayNumber + 1"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_1": "displayNumber"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "在 TM1637 四位数码管上每秒递增显示一个数字，模块引脚为 CLK=D4，DIO=D5。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Apply io_0 deltas summing to 0ms, then 1000ms (e.g., 10 steps of 100ms or any sequence whose total equals 1000ms), then another 1000ms with the same total-per-interval property.",
+        "oracle": "io_1 initial is 0; after the first 1000ms worth of accumulated io_0, io_1 becomes 1; after the next 1000ms, io_1 becomes 2. Increment occurs once per elapsed full 1s accumulated interval."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    attribute accumulatedMs : Integer := 0;\n    attribute displayNumber : Integer := 0;\n    perform action tick {\n      first start;\n      then assign accumulatedMs := accumulatedMs + io_0;\n      then if ((accumulatedMs) >= (1000)) {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 1000;\n        then assign displayNumber := displayNumber + 1;\n      }\n    }\n    out attribute io_1 : Integer = displayNumber;\n  }\n  part system : Controller;\n}\n"
+}

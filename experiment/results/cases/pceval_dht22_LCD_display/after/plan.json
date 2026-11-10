@@ -1,0 +1,160 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests the explicitly required LCD text and sensor-to-display updates at startup, after humidity-only and temperature-only changes, at zero-valued readings, and after returning to earlier readings. The host LCD text checks cannot verify rotation, cursor coordinates, text color, text size, black-background clearing, or the exact loop delay. Thus the graphics-specific success criteria are not fully covered.",
+  "assumptions": [
+    "The supplied wiring is authoritative: DHT22 data pin 2; LCD RST 8, D/C 9, CS 10, MOSI 11, MISO 12, SCK 13. No bench wiring defaults are needed.",
+    "Temperature is interpreted in degrees Celsius, consistent with the supplied temperature input API and the default DHT library readTemperature() behavior.",
+    "The requirement does not specify decimal precision. Text checks use integer-valued stimuli and accept the required label and integer prefix, including ordinary decimal renderings such as 40.00.",
+    "Each input state lasts four seconds to accommodate the DHT API's two-second cached sampling interval.",
+    "Invalid-reading behavior is unspecified and is not tested."
+  ],
+  "horizon_ms": 20000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 40
+    },
+    {
+      "at_ms": 0,
+      "kind": "temperature",
+      "pin": 2,
+      "value": 21
+    },
+    {
+      "at_ms": 4000,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 75
+    },
+    {
+      "at_ms": 8000,
+      "kind": "temperature",
+      "pin": 2,
+      "value": 32
+    },
+    {
+      "at_ms": 12000,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 12000,
+      "kind": "temperature",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 16000,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 40
+    },
+    {
+      "at_ms": 16000,
+      "kind": "temperature",
+      "pin": 2,
+      "value": 21
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "lcd",
+      "id": "startup_humidity",
+      "requirement_quote": "Humidity: {humidity}",
+      "from_ms": 0,
+      "to_ms": 3900,
+      "contains": "Humidity: 40",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "startup_temperature",
+      "requirement_quote": "Temperature: {temperature}",
+      "from_ms": 0,
+      "to_ms": 3900,
+      "contains": "Temperature: 21",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "humidity_only_change",
+      "requirement_quote": "Humidity: {humidity}",
+      "from_ms": 4000,
+      "to_ms": 7900,
+      "contains": "Humidity: 75",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "temperature_preserved_on_humidity_change",
+      "requirement_quote": "Temperature: {temperature}",
+      "from_ms": 4000,
+      "to_ms": 7900,
+      "contains": "Temperature: 21",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "temperature_only_change",
+      "requirement_quote": "Temperature: {temperature}",
+      "from_ms": 8000,
+      "to_ms": 11900,
+      "contains": "Temperature: 32",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "humidity_preserved_on_temperature_change",
+      "requirement_quote": "Humidity: {humidity}",
+      "from_ms": 8000,
+      "to_ms": 11900,
+      "contains": "Humidity: 75",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "zero_humidity",
+      "requirement_quote": "Humidity: {humidity}",
+      "from_ms": 12000,
+      "to_ms": 15900,
+      "contains": "Humidity: 0",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "zero_temperature",
+      "requirement_quote": "Temperature: {temperature}",
+      "from_ms": 12000,
+      "to_ms": 15900,
+      "contains": "Temperature: 0",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "return_humidity",
+      "requirement_quote": "Humidity: {humidity}",
+      "from_ms": 16000,
+      "to_ms": 19900,
+      "contains": "Humidity: 40",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "return_temperature",
+      "requirement_quote": "Temperature: {temperature}",
+      "from_ms": 16000,
+      "to_ms": 19900,
+      "contains": "Temperature: 21",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <SPI.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_ILI9341.h>\n#include <DHT.h>\n#include <math.h>\n\nAdafruit_ILI9341 display(10, 9, 8);\nDHT dht(2, DHT22);\nbool haveReading = false;\nfloat lastHumidity = 0;\nfloat lastTemperature = 0;\n\nvoid setup() {\n  display.begin();\n  display.setRotation(1);\n  display.setTextColor(ILI9341_WHITE);\n  display.setTextSize(2);\n  dht.begin();\n}\n\nvoid loop() {\n  float humidity = dht.readHumidity();\n  float temperature = dht.readTemperature();\n  if (!isnan(humidity) && !isnan(temperature)) {\n    if (!haveReading || humidity != lastHumidity || temperature != lastTemperature) {\n      display.fillScreen(ILI9341_BLACK);\n      display.setCursor(0, 0);\n      display.print(\"Humidity: \");\n      display.println(humidity);\n      display.setCursor(0, 100);\n      display.print(\"Temperature: \");\n      display.println(temperature);\n      lastHumidity = humidity;\n      lastTemperature = temperature;\n      haveReading = true;\n    }\n  }\n  delay(100);\n}\n"
+}

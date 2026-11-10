@@ -1,0 +1,339 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Wiring preserved per provided circuit: led1 common cathode to GND.1; led1 R/G/B mapped to D2/D3/D4 respectively; k1/k2/k3 inputs mapped to D5/D6/D7 with internal pullups and active-low press detection (model true when pressed).",
+    "RGB cycling and the 2-second per-color dwell and immediate transitions are implemented in SysML using elapsed_ms; electrical interfaces only define pins and startup initials.",
+    "Initial requested electrical state uses PWM outputs starting at 0; model will immediately begin cycling through red/green/blue after startup."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB led1 red intensity",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB led1 green intensity",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB led1 blue intensity",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D4"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Button k1 (btn1) stop cycling; active on press",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D5\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D5"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Button k2 (btn2) resume cycling; active on press",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D6\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D6"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Button k3 (btn3) turn RGB led1 off; active on press",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (led1) using three push buttons (k1, k2, k3). The RGB LED should cycle through red, green, and blue colors upon startup, and the buttons should allow the user to control the LED's behavior.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the RGB LED (led1) should start cycling through red, green, and blue colors, with each color displayed for 2 seconds.\n\nButton Interaction:\n1. Pressing btn1 (k1) should stop the color cycling and keep the LED displaying the current color.\n2. Pressing btn2 (k2) should resume the color cycling from the point it was stopped.\n3. Pressing btn3 (k3) should turn off the RGB LED (led1), making it completely dark.\n\nState Transitions:\n- **Cycling Mode**: The LED cycles through red, green, and blue, each for 2 seconds.\n- **Hold Mode**: The LED stops cycling and remains on the last color displayed before btn1 was pressed.\n- **Off Mode**: The LED turns off completely.\n\nThe system should respond to button presses immediately and transition between these states as described.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"led1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r1\", \"left\": 460.8, \"top\": -14.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r2\", \"left\": 460.8, \"top\": 4.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r3\", \"left\": 460.8, \"top\": 23.8, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r4\", \"left\": 460.8, \"top\": 43.0, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r5\", \"left\": 460.8, \"top\": 62.2, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r6\", \"left\": 460.8, \"top\": 81.4, \"attrs\": {\"value\": \"1000\"}}], \"connections\": [[\"mega:GND.1\", \"led1:COM\", \"black\"], [\"mega:2\", \"led1:R\", \"red\"], [\"mega:3\", \"led1:G\", \"green\"], [\"mega:4\", \"led1:B\", \"blue\"], [\"mega:GND.1\", \"k1:2.r\", \"black\"], [\"mega:5\", \"k1:1.l\", \"green\"], [\"mega:GND.1\", \"k2:2.r\", \"black\"], [\"mega:6\", \"k2:1.l\", \"green\"], [\"mega:GND.1\", \"k3:2.r\", \"black\"], [\"mega:7\", \"k3:1.l\", \"green\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (led1) using three push buttons (k1, k2, k3). The RGB LED should cycle through red, green, and blue colors upon startup, and the buttons should allow the user to control the LED's behavior.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the RGB LED (led1) should start cycling through red, green, and blue colors, with each color displayed for 2 seconds.\n\nButton Interaction:\n1. Pressing btn1 (k1) should stop the color cycling and keep the LED displaying the current color.\n2. Pressing btn2 (k2) should resume the color cycling from the point it was stopped.\n3. Pressing btn3 (k3) should turn off the RGB LED (led1), making it completely dark.\n\nState Transitions:\n- **Cycling Mode**: The LED cycles through red, green, and blue, each for 2 seconds.\n- **Hold Mode**: The LED stops cycling and remains on the last color displayed before btn1 was pressed.\n- **Off Mode**: The LED turns off completely.\n\nThe system should respond to button presses immediately and transition between these states as described.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"led1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r1\", \"left\": 460.8, \"top\": -14.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r2\", \"left\": 460.8, \"top\": 4.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r3\", \"left\": 460.8, \"top\": 23.8, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r4\", \"left\": 460.8, \"top\": 43.0, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r5\", \"left\": 460.8, \"top\": 62.2, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r6\", \"left\": 460.8, \"top\": 81.4, \"attrs\": {\"value\": \"1000\"}}], \"connections\": [[\"mega:GND.1\", \"led1:COM\", \"black\"], [\"mega:2\", \"led1:R\", \"red\"], [\"mega:3\", \"led1:G\", \"green\"], [\"mega:4\", \"led1:B\", \"blue\"], [\"mega:GND.1\", \"k1:2.r\", \"black\"], [\"mega:5\", \"k1:1.l\", \"green\"], [\"mega:GND.1\", \"k2:2.r\", \"black\"], [\"mega:6\", \"k2:1.l\", \"green\"], [\"mega:GND.1\", \"k3:2.r\", \"black\"], [\"mega:7\", \"k3:1.l\", \"green\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "led1",
+            "top": -130.4,
+            "left": 39.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "r1",
+            "left": 460.8,
+            "top": -14.6,
+            "attrs": {
+              "value": "1000"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "r2",
+            "left": 460.8,
+            "top": 4.6,
+            "attrs": {
+              "value": "1000"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "r3",
+            "left": 460.8,
+            "top": 23.8,
+            "attrs": {
+              "value": "1000"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "k1",
+            "top": -195.4,
+            "left": 19.2,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "k2",
+            "top": -195.4,
+            "left": 105.0,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "k3",
+            "top": -195.4,
+            "left": 190.8,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "r4",
+            "left": 460.8,
+            "top": 43.0,
+            "attrs": {
+              "value": "1000"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "r5",
+            "left": 460.8,
+            "top": 62.2,
+            "attrs": {
+              "value": "1000"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "r6",
+            "left": 460.8,
+            "top": 81.4,
+            "attrs": {
+              "value": "1000"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "led1:COM",
+            "black"
+          ],
+          [
+            "mega:2",
+            "led1:R",
+            "red"
+          ],
+          [
+            "mega:3",
+            "led1:G",
+            "green"
+          ],
+          [
+            "mega:4",
+            "led1:B",
+            "blue"
+          ],
+          [
+            "mega:GND.1",
+            "k1:2.r",
+            "black"
+          ],
+          [
+            "mega:5",
+            "k1:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "k2:2.r",
+            "black"
+          ],
+          [
+            "mega:6",
+            "k2:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "k3:2.r",
+            "black"
+          ],
+          [
+            "mega:7",
+            "k3:1.l",
+            "green"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (led1) using three push buttons (k1, k2, k3). The RGB LED should cycle through red, green, and blue colors upon startup, and the buttons should allow the user to control the LED's behavior.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the RGB LED (led1) should start cycling through red, green, and blue colors, with each color displayed for 2 seconds.\n\nButton Interaction:\n1. Pressing btn1 (k1) should stop the color cycling and keep the LED displaying the current color.\n2. Pressing btn2 (k2) should resume the color cycling from the point it was stopped.\n3. Pressing btn3 (k3) should turn off the RGB LED (led1), making it completely dark.\n\nState Transitions:\n- **Cycling Mode**: The LED cycles through red, green, and blue, each for 2 seconds.\n- **Hold Mode**: The LED stops cycling and remains on the last color displayed before btn1 was pressed.\n- **Off Mode**: The LED turns off completely.\n\nThe system should respond to button presses immediately and transition between these states as described.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"led1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r1\", \"left\": 460.8, \"top\": -14.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r2\", \"left\": 460.8, \"top\": 4.6, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r3\", \"left\": 460.8, \"top\": 23.8, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"k3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r4\", \"left\": 460.8, \"top\": 43.0, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r5\", \"left\": 460.8, \"top\": 62.2, \"attrs\": {\"value\": \"1000\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"r6\", \"left\": 460.8, \"top\": 81.4, \"attrs\": {\"value\": \"1000\"}}], \"connections\": [[\"mega:GND.1\", \"led1:COM\", \"black\"], [\"mega:2\", \"led1:R\", \"red\"], [\"mega:3\", \"led1:G\", \"green\"], [\"mega:4\", \"led1:B\", \"blue\"], [\"mega:GND.1\", \"k1:2.r\", \"black\"], [\"mega:5\", \"k1:1.l\", \"green\"], [\"mega:GND.1\", \"k2:2.r\", \"black\"], [\"mega:6\", \"k2:1.l\", \"green\"], [\"mega:GND.1\", \"k3:2.r\", \"black\"], [\"mega:7\", \"k3:1.l\", \"green\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  }
+}

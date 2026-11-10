@@ -1,0 +1,522 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests the explicitly required steady green indication when neither target, or only one target, is detected, including repeated transitions between vehicle-only and pedestrian-only detection. No echo represents absence of a detected target. Simultaneous-danger activation, red flashing, alarm, danger-level values, and event-duration reporting cannot be independently specified without the missing proximity criteria, danger-level mapping, and reporting timing/units.",
+      "assumptions": [
+        "Bench defaults apply to the individual LEDs: D12 and D13 are active HIGH.",
+        "A null ultrasonic distance produces no echo and therefore no detected approaching target; absence on either sensor prevents simultaneous vehicle-and-pedestrian detection.",
+        "Proximity thresholds and any approach-rate interpretation are unspecified. The tests do not require any particular finite distance to qualify as approaching.",
+        "Danger-level mapping, flash period, alarm frequency, and serial duration units/report timing are unspecified. The reference selects illustrative values without imposing them through checks.",
+        "The authoritative inventory names D2 only as an output role without defining its behavior; no behavioral expectation is imposed on D2."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "distance",
+          "pin": 9,
+          "value": null
+        },
+        {
+          "at_ms": 0,
+          "kind": "distance",
+          "pin": 11,
+          "value": null
+        },
+        {
+          "at_ms": 1800,
+          "kind": "distance",
+          "pin": 9,
+          "value": 20
+        },
+        {
+          "at_ms": 4000,
+          "kind": "distance",
+          "pin": 9,
+          "value": null
+        },
+        {
+          "at_ms": 4000,
+          "kind": "distance",
+          "pin": 11,
+          "value": 20
+        },
+        {
+          "at_ms": 6500,
+          "kind": "distance",
+          "pin": 11,
+          "value": null
+        },
+        {
+          "at_ms": 8000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 5
+        },
+        {
+          "at_ms": 10000,
+          "kind": "distance",
+          "pin": 9,
+          "value": null
+        },
+        {
+          "at_ms": 10000,
+          "kind": "distance",
+          "pin": 11,
+          "value": 5
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [
+        {
+          "trigger_pin": 8,
+          "echo_pin": 9
+        },
+        {
+          "trigger_pin": 10,
+          "echo_pin": 11
+        }
+      ],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "gpio",
+          "id": "no_targets_green",
+          "requirement_quote": "无危险时绿灯常亮",
+          "pin": 13,
+          "at_ms": 1200,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "vehicle_only_green",
+          "requirement_quote": "无危险时绿灯常亮",
+          "pin": 13,
+          "at_ms": 3200,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "pedestrian_only_green",
+          "requirement_quote": "无危险时绿灯常亮",
+          "pin": 13,
+          "at_ms": 5500,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "returned_absence_green",
+          "requirement_quote": "无危险时绿灯常亮",
+          "pin": 13,
+          "at_ms": 7500,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "closer_vehicle_only_green",
+          "requirement_quote": "无危险时绿灯常亮",
+          "pin": 13,
+          "at_ms": 9400,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "closer_pedestrian_only_green",
+          "requirement_quote": "无危险时绿灯常亮",
+          "pin": 13,
+          "at_ms": 11400,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "edges",
+          "id": "green_stays_on_without_simultaneous_detection",
+          "requirement_quote": "无危险时绿灯常亮",
+          "pin": 13,
+          "from_ms": 1000,
+          "to_ms": 11900,
+          "min_count": 0,
+          "max_count": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nconst float nearCm = 100.0f;\nbool dangerActive = false;\nunsigned long eventStart = 0;\nunsigned long lastSample = 0;\n\nfloat readDistance(uint8_t trig, uint8_t echo) {\n  digitalWrite(trig, LOW);\n  delayMicroseconds(2);\n  digitalWrite(trig, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(trig, LOW);\n  unsigned long us = pulseIn(echo, HIGH, 30000UL);\n  return us ? us * 0.0343f / 2.0f : -1.0f;\n}\n\nvoid setup() {\n  pinMode(8, OUTPUT);\n  pinMode(9, INPUT);\n  pinMode(10, OUTPUT);\n  pinMode(11, INPUT);\n  pinMode(12, OUTPUT);\n  pinMode(13, OUTPUT);\n  pinMode(6, OUTPUT);\n  pinMode(2, OUTPUT);\n  digitalWrite(2, LOW);\n  digitalWrite(8, LOW);\n  digitalWrite(10, LOW);\n  digitalWrite(12, LOW);\n  digitalWrite(13, HIGH);\n  noTone(6);\n  Serial.begin(9600);\n  display.setBrightness(7);\n  display.showNumberDec(0);\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (now - lastSample >= 100UL) {\n    lastSample = now;\n    float vehicle = readDistance(8, 9);\n    delay(3);\n    float pedestrian = readDistance(10, 11);\n    now = millis();\n    bool danger = vehicle > 0 && vehicle < nearCm &&\n                  pedestrian > 0 && pedestrian < nearCm;\n    if (danger && !dangerActive) eventStart = now;\n    if (!danger && dangerActive) {\n      Serial.print(\"Last danger duration ms: \");\n      Serial.println(now - eventStart);\n    }\n    dangerActive = danger;\n    if (danger) {\n      float nearest = vehicle < pedestrian ? vehicle : pedestrian;\n      int level = nearest < 25 ? 3 : (nearest < 60 ? 2 : 1);\n      display.showNumberDec(level);\n      digitalWrite(13, LOW);\n      tone(6, 1500);\n    } else {\n      display.showNumberDec(0);\n      digitalWrite(13, HIGH);\n      digitalWrite(12, LOW);\n      noTone(6);\n    }\n  }\n  if (dangerActive) {\n    digitalWrite(12, ((millis() - eventStart) / 250UL) % 2 == 0 ? HIGH : LOW);\n  }\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Tests the explicitly required steady green indication when neither target, or only one target, is detected, including repeated transitions between vehicle-only and pedestrian-only detection. No echo represents absence of a detected target. Simultaneous-danger activation, red flashing, alarm, danger-level values, and event-duration reporting cannot be independently specified without the missing proximity criteria, danger-level mapping, and reporting timing/units.",
+      "assumptions": [
+        "Bench defaults apply to the individual LEDs: D12 and D13 are active HIGH.",
+        "A null ultrasonic distance produces no echo and therefore no detected approaching target; absence on either sensor prevents simultaneous vehicle-and-pedestrian detection.",
+        "Proximity thresholds and any approach-rate interpretation are unspecified. The tests do not require any particular finite distance to qualify as approaching.",
+        "Danger-level mapping, flash period, alarm frequency, and serial duration units/report timing are unspecified. The reference selects illustrative values without imposing them through checks.",
+        "The authoritative inventory names D2 only as an output role without defining its behavior; no behavioral expectation is imposed on D2."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 0,
+          "value": 100
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 1100,
+          "value": 38
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 4800,
+          "value": 20
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 7100,
+          "value": null
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 9500,
+          "value": 65
+        },
+        {
+          "kind": "distance",
+          "pin": 11,
+          "at_ms": 0,
+          "value": 100
+        },
+        {
+          "kind": "distance",
+          "pin": 11,
+          "at_ms": 3000,
+          "value": 25
+        },
+        {
+          "kind": "distance",
+          "pin": 11,
+          "at_ms": 4800,
+          "value": 12
+        },
+        {
+          "kind": "distance",
+          "pin": 11,
+          "at_ms": 9500,
+          "value": 90
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [
+        {
+          "trigger_pin": 8,
+          "echo_pin": 9
+        },
+        {
+          "trigger_pin": 10,
+          "echo_pin": 11
+        }
+      ],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_250",
+          "at_ms": 250,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_250",
+          "at_ms": 250,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_1450",
+          "at_ms": 1450,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_1450",
+          "at_ms": 1450,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_1450",
+          "at_ms": 1450,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_1450",
+          "at_ms": 1450,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_3300",
+          "at_ms": 3300,
+          "expected": "1",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_3300",
+          "at_ms": 3300,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_3300",
+          "at_ms": 3300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_3300",
+          "at_ms": 3300,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_3750",
+          "at_ms": 3750,
+          "expected": "1",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_3750",
+          "at_ms": 3750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_3750",
+          "at_ms": 3750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_3750",
+          "at_ms": 3750,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_5300",
+          "at_ms": 5300,
+          "expected": "2",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_5300",
+          "at_ms": 5300,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_5300",
+          "at_ms": 5300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_5300",
+          "at_ms": 5300,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_5700",
+          "at_ms": 5700,
+          "expected": "2",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_5700",
+          "at_ms": 5700,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_5700",
+          "at_ms": 5700,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_5700",
+          "at_ms": 5700,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_7550",
+          "at_ms": 7550,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_7550",
+          "at_ms": 7550,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_7550",
+          "at_ms": 7550,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_7550",
+          "at_ms": 7550,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_10000",
+          "at_ms": 10000,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_12_10000",
+          "at_ms": 10000,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 12
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_10000",
+          "at_ms": 10000,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_10000",
+          "at_ms": 10000,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "serial",
+          "id": "event_duration",
+          "prefix": "danger_event_duration_ms",
+          "expected": 4100,
+          "tolerance": 250,
+          "from_ms": 7100,
+          "to_ms": 7500,
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Report the most recent hazard duration when the event ends."
+        },
+        {
+          "kind": "serial",
+          "id": "no_second_event",
+          "from_ms": 7600,
+          "to_ms": 12000,
+          "regex": "^danger_event_duration_ms",
+          "min_count": 0,
+          "max_count": 0,
+          "requirement_quote": "Required serial output for the scenario"
+        }
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

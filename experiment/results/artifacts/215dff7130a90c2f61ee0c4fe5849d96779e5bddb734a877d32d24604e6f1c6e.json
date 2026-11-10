@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"peopleCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousEntryPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"displayTemperature\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_9\",\n            {\n              \"not\": \"previousEntryPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"displayTemperature\",\n            \"value\": {\n              \"not\": \"displayTemperature\"\n            }\n          },\n          {\n            \"assign\": \"previousEntryPressed\",\n            \"value\": \"io_9\"\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"previousEntryPressed\",\n            \"value\": \"io_9\"\n          }\n        ]\n      },\n      {\n        \"if\": \"io_1\",\n        \"then\": [\n          {\n            \"if\": \"io_3\",\n            \"then\": [\n              {\n                \"assign\": \"peopleCount\",\n                \"value\": {\n                  \"if\": \"io_0 <= 0.0\",\n                  \"then\": 0,\n                  \"else\": 0\n                }\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"peopleCount\",\n                \"value\": {\n                  \"if\": \"io_0 <= 0.0\",\n                  \"then\": 0,\n                  \"else\": 0\n                }\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"not\": \"io_1\"\n        },\n        \"then\": [\n          {\n            \"if\": \"io_3\",\n            \"then\": [\n              {\n                \"assign\": \"peopleCount\",\n                \"value\": 0\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"peopleCount\",\n                \"value\": 0\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"not\": \"io_6\"\n        },\n        \"then\": [],\n        \"else\": []\n      }\n    ],\n    \"outputs\": {\n      \"io_7\": {\n        \"if\": {\n          \"==\": [\n            \"peopleCount\",\n            0\n          ]\n        },\n        \"then\": 0.0,\n        \"else\": {\n          \"if\": \"io_4 > 30.0\",\n          \"then\": 255.0,\n          \"else\": {\n            \"if\": \"io_4 > 25.0\",\n            \"then\": 180.0,\n            \"else\": {\n              \"if\": \"io_4 > 20.0\",\n              \"then\": 120.0,\n              \"else\": 60.0\n            }\n          }\n        }\n      },\n      \"io_8\": {\n        \"if\": \"displayTemperature\",\n        \"then\": {\n          \"if\": \"io_6\",\n          \"then\": \"RealFunctions::floor(io_4)\",\n          \"else\": 0\n        },\n        \"else\": \"peopleCount\"\n      },\n      \"serial_0_trigger\": true,\n      \"serial_0_value_0\": \"peopleCount\",\n      \"serial_0_value_1\": {\n        \"if\": \"io_6\",\n        \"then\": \"io_4\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_2\": {\n        \"==\": [\n          \"peopleCount\",\n          0\n        ]\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能教室人数估计与环境调节系统，使用两个 HC-SR04，门口进入方向 Trig=D8、Echo=D9，离开方向 Trig=D10、Echo=D11，DHT11（D7）、风扇 PWM D5、TM1637（CLK=D4，DIO=D5）和串口。通过两个超声波先后触发顺序估计人数增减；根据人数和温度共同决定风扇转速；TM1637 默认显示人数，按钮 D2 可切换显示当前温度。若人数为 0 则系统进入节能模式并关闭风扇。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始化后，保持 io_1/io_3 任意取值，令 peopleCount 进入 0 情况，检查节能输出；再将按钮 io_9 产生一次上升沿，检查 TM1637 显示切换到温度（io_6=true 时）并保持串口温度值随 io_6 变化。\",\n        \"oracle\": \"当 peopleCount==0 时 io_7==0.0 且 serial_0_value_2 为 true；TM1637 io_8 默认等于 peopleCount，按钮上升沿后 io_8 切换为温度（io_6=true 时为 floor(io_4)，否则为 0），同时 serial_0_value_1 也随 io_6=true/false 选择温度或 0.0。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_4 : Real;\n    in attribute io_5 : Real;\n    in attribute io_6 : Boolean;\n    in attribute io_9 : Boolean;\n    attribute peopleCount : Integer := 0;\n    attribute previousEntryPressed : Boolean := false;\n    attribute displayTemperature : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_9) and ((not previousEntryPressed))) {\n        first start;\n        then assign displayTemperature := (not displayTemperature);\n        then assign previousEntryPressed := io_9;\n      } else {\n        first start;\n        then assign previousEntryPressed := io_9;\n      }\n      then if io_1 {\n        first start;\n        then if io_3 {\n          first start;\n          then assign peopleCount := (if io_0 <= 0.0 ? 0 else 0);\n        } else {\n          first start;\n          then assign peopleCount := (if io_0 <= 0.0 ? 0 else 0);\n        }\n      }\n      then if (not io_1) {\n        first start;\n        then if io_3 {\n          first start;\n          then assign peopleCount := 0;\n        } else {\n          first start;\n          then assign peopleCount := 0;\n        }\n      }\n      then if (not io_6) {\n        first start;\n        then done;\n      }\n    }\n    out attribute io_7 : Real = (if ((peopleCount) == (0)) ? 0.0 else (if io_4 > 30.0 ? 255.0 else (if io_4 > 25.0 ? 180.0 else (if io_4 > 20.0 ? 120.0 else 60.0))));\n    out attribute io_8 : Integer = (if displayTemperature ? (if io_6 ? RealFunctions::floor(io_4) else 0) else peopleCount);\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Integer = peopleCount;\n    out attribute serial_0_value_1 : Real = (if io_6 ? io_4 else 0.0);\n    out attribute serial_0_value_2 : Boolean = ((peopleCount) == (0));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

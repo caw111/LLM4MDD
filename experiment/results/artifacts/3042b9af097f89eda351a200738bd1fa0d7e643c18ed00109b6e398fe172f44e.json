@@ -1,0 +1,146 @@
+{
+  "contract_sha256": "3798b9cabb540c8263387e0fa1afd7e444bf797f5ef09a4fe79e06ad04553896",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"initial\": false,\n      \"meaning\": \"Button D2 sample trigger (pressed event gate in model)\",\n      \"pin\": \"D2\",\n      \"active_high\": false,\n      \"pullup\": true\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"initial\": 0,\n      \"meaning\": \"LDR light intensity measurement (A0)\",\n      \"pin\": \"A0\"\n    },\n    {\n      \"kind\": \"dht_temperature\",\n      \"initial\": 0,\n      \"meaning\": \"LM35 temperature measurement (A1)\",\n      \"pin\": \"A1\",\n      \"sensor\": \"DHT11\",\n      \"sample_period_ms\": 2000,\n      \"invalid_policy\": \"hold_last_valid\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"initial\": 0,\n      \"meaning\": \"Buzzer D6 short beep every 5 samples (model-controlled duration using elapsed_ms)\",\n      \"pin\": \"D6\",\n      \"invalid_policy\": \"silence\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Serialize one-shot sample frame immediately after the button-triggered acquisition\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"adc_count\",\n          \"initial\": 0,\n          \"meaning\": \"Reported light intensity from A0\"\n          ,\n          \"label\": \"light\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"Reported temperature from A1 (LM35)\",\n          \"label\": \"temp\"\n        },\n        {\n          \"type\": \"i32\",\n          \"unit\": \"count\",\n          \"initial\": 0,\n          \"meaning\": \"Total sample count, incremented each time after acquisition\",\n          \"label\": \"count\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"按钮触发：D2 为被动按下（active_high=false）且启用 pullup（若电路相反需在 SysML/模型中调整触发条件）。首次采样立即在按钮按下的同一控制步触发串口一次。\",\n    \"串口：所有数值在同一 report condition 下作为一次固定帧输出（model 在触发后立即更新值并置触发为 true 若需要）。\",\n    \"LM35 接到了 A1，但目录中没有可直接配置 LM35 的原生器件；本提案暂用 dht_temperature 占位接口以保留 A1 物理引脚并声明有效性策略。若必须真实采样 LM35，应改用 analog_input（含单位换算）并在 SysML 做标定与异常处理。\",\n    \"蜂鸣器 D6：tone_output 只提供频率/静音，持续时间与“短鸣一次（每5次采样）”逻辑必须放在 SysML 中，并用 elapsed_ms 作为时序依据。\"\n  ]\n}",
+      "error": "Mixed-device control requires a dht_valid input for each DHT sensor. Share its pin, sensor, sample period and hold_last_valid policy; use bool, unit 1, initial false. The model must handle invalid data without stopping unrelated devices.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\"version\":1,\"board\":\"arduino:avr:uno\",\"control_period_ms\":5,\"interface_requests\":[{\"kind\":\"digital_input\",\"pin\":\"D2\",\"initial\":false,\"meaning\":\"Button D2 sample trigger (pressed event gate in model)\",\"active_high\":false,\"pullup\":true},{\"kind\":\"analog_input\",\"pin\":\"A0\",\"initial\":0,\"meaning\":\"LDR light intensity measurement (A0)\"},{\"kind\":\"analog_input\",\"pin\":\"A1\",\"initial\":0,\"meaning\":\"LM35 temperature measurement (A1)\"},{\"kind\":\"digital_output\",\"pin\":\"D6\",\"initial\":false,\"meaning\":\"Buzzer D6 short beep every 5 samples (model-controlled using elapsed_ms)\",\"active_high\":true}],\"serial_channels\":[{\"baud\":9600,\"trigger\":{\"initial\":false,\"meaning\":\"Serialize one-shot sample frame immediately after the button-triggered acquisition\"},\"values\":[{\"type\":\"f64\",\"unit\":\"adc_count\",\"initial\":0,\"meaning\":\"Reported light intensity from A0\",\"label\":\"light\"},{\"type\":\"f64\",\"unit\":\"degC\",\"initial\":0,\"meaning\":\"Reported temperature from A1 (LM35)\",\"label\":\"temp\"},{\"type\":\"i32\",\"unit\":\"count\",\"initial\":0,\"meaning\":\"Total sample count, incremented each time after acquisition\",\"label\":\"count\"}]}],\"planning_notes\":[\"按钮触发：D2 为被动按下（active_high=false）且启用 pullup（pressed 条件以模型处理）。首次采样立即在按钮按下的同一控制步触发串口输出一次。\",\"串口：当触发条件满足时，同一 report condition 下输出 light/temp/count 三个数值作为一次固定帧。\",\"LM35：A1 作为 analog_input 进行采样；LM35 的电压到摄氏度换算与异常处理放在 SysML 模型中。\",\"蜂鸣器：D6 作为数字输出由模型使用 elapsed_ms 控制“每完成5次采样蜂鸣一次”的短鸣持续与静音时序。\",\"原合约中将 A1 误用为 dht_temperature（DHT11/22）并且未声明对应的 dht_valid；本修复按未丢失“LM35(A1)温度采样”的要求改为 analog_input，并将蜂鸣器改为数字输出以避免 tone_output 仅频率/静音而缺少时长逻辑的问题。\"]}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个按钮触发的数据采样系统，使用按钮 D2、光敏电阻 A0、LM35（A1）和串口。按下按钮后立即采集一次光照与温度数据并通过串口输出，同时将采样计数加一；每完成 5 次采样，让蜂鸣器 D6 短鸣一次提示。",
+    "effective_requirement": "实现一个按钮触发的数据采样系统，使用按钮 D2、光敏电阻 A0、LM35（A1）和串口。按下按钮后立即采集一次光照与温度数据并通过串口输出，同时将采样计数加一；每完成 5 次采样，让蜂鸣器 D6 短鸣一次提示。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Checks suppression outside 20 cm at both ADC endpoints, then requires alarm reporting and LED/buzzer activity over a combined near-object interval containing both endpoints. The combined interval does not assign a darkness polarity or threshold: either endpoint may produce the required activity. This rejects a no-output implementation. Coverage remains partial because the unspecified light classification and timing prevent independent assertions of the light gate, exact distance boundary, blink cadence, and intermittent buzzer pauses.",
+  "assumptions": [
+    "Relies on the bench default that the D13 LED is active HIGH; A0 uses raw ADC values.",
+    "The light-divider polarity and darkness threshold are unspecified. The endpoint exercise assumes a meaningful light-sensitive classification: the full ADC range includes a dark condition, with at least one endpoint classified dark. No particular endpoint or intermediate threshold is required.",
+    "D6 is a passive tone output, consistent with the authoritative tone_output role.",
+    "Six seconds at each near-object endpoint allows practical sensor acquisition and observable alarm activity. No precise sampling interval, blink period, tone frequency, or reporting repetition rate is required.",
+    "No alarm-cancellation deadline is imposed: all outside-range checks precede potentially alarming inputs.",
+    "The reference chooses ADC below 500 as dark, 70 ms sampling, 250 ms alarm phases, and a 2000 Hz tone. These are implementation choices, not candidate expectations.",
+    "Serial alarm reporting may occur only on entry; the positive reporting window includes both near-object endpoint states."
+  ],
+  "horizon_ms": 19000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    },
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 9,
+      "value": 21
+    },
+    {
+      "at_ms": 3000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 1023
+    },
+    {
+      "at_ms": 6000,
+      "kind": "distance",
+      "pin": 9,
+      "value": 10
+    },
+    {
+      "at_ms": 12000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [
+    {
+      "trigger_pin": 8,
+      "echo_pin": 9
+    }
+  ],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "outside_distance_no_report",
+      "requirement_quote": "只有在环境较暗且检测到 20cm 内物体时才触发安防报警",
+      "from_ms": 500,
+      "to_ms": 5800,
+      "contains": "alarm",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "edges",
+      "id": "outside_distance_no_flashing",
+      "requirement_quote": "只有在环境较暗且检测到 20cm 内物体时才触发安防报警",
+      "pin": 13,
+      "from_ms": 500,
+      "to_ms": 5800,
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "tone",
+      "id": "outside_distance_low_adc_silent",
+      "requirement_quote": "只有在环境较暗且检测到 20cm 内物体时才触发安防报警",
+      "pin": 6,
+      "at_ms": 2500,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "tone",
+      "id": "outside_distance_high_adc_silent",
+      "requirement_quote": "只有在环境较暗且检测到 20cm 内物体时才触发安防报警",
+      "pin": 6,
+      "at_ms": 5500,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "serial",
+      "id": "near_object_endpoint_pair_reports",
+      "requirement_quote": "并通过串口输出 alarm",
+      "from_ms": 6000,
+      "to_ms": 18500,
+      "contains": "alarm",
+      "min_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "near_object_endpoint_pair_led_changes",
+      "requirement_quote": "报警时 LED 闪烁",
+      "pin": 13,
+      "from_ms": 6000,
+      "to_ms": 18500,
+      "min_count": 2
+    },
+    {
+      "kind": "edges",
+      "id": "near_object_endpoint_pair_buzzer_activity",
+      "requirement_quote": "蜂鸣器间歇鸣叫",
+      "pin": 6,
+      "from_ms": 6000,
+      "to_ms": 18500,
+      "min_count": 4
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t TRIG = 8;\nconst uint8_t ECHO = 9;\nconst uint8_t BUZZER = 6;\nconst uint8_t LED = 13;\nconst int DARK_THRESHOLD = 500;\nbool alarming = false;\nbool firstSample = true;\nbool soundOn = false;\nunsigned long lastSample = 0;\nunsigned long alarmStart = 0;\n\nfloat readDistanceCm() {\n  digitalWrite(TRIG, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG, LOW);\n  unsigned long duration = pulseIn(ECHO, HIGH, 30000UL);\n  if (duration == 0) return -1.0f;\n  return duration * 0.0343f / 2.0f;\n}\n\nvoid setup() {\n  pinMode(A0, INPUT);\n  pinMode(TRIG, OUTPUT);\n  pinMode(ECHO, INPUT);\n  pinMode(BUZZER, OUTPUT);\n  pinMode(LED, OUTPUT);\n  digitalWrite(TRIG, LOW);\n  digitalWrite(LED, LOW);\n  noTone(BUZZER);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (firstSample || now - lastSample >= 70UL) {\n    firstSample = false;\n    lastSample = now;\n    int light = analogRead(A0);\n    float distance = readDistanceCm();\n    bool nextAlarm = light < DARK_THRESHOLD && distance > 0.0f && distance <= 20.0f;\n    if (nextAlarm && !alarming) {\n      alarmStart = millis();\n      Serial.println(\"alarm\");\n    }\n    alarming = nextAlarm;\n  }\n  now = millis();\n  bool activePhase = alarming && ((now - alarmStart) % 500UL < 250UL);\n  digitalWrite(LED, activePhase ? HIGH : LOW);\n  if (activePhase != soundOn) {\n    soundOn = activePhase;\n    if (soundOn) tone(BUZZER, 2000);\n    else noTone(BUZZER);\n  }\n}\n",
+  "electrical_led_pins": {}
+}

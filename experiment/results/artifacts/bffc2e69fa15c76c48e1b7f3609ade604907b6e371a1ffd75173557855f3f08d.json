@@ -1,0 +1,196 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "count",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "alarmLocked",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevD2Pressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevD3Pressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevD3Pressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmLocked",
+            "value": false
+          },
+          {
+            "assign": "count",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": "alarmLocked"
+        },
+        "then": [
+          {
+            "if": {
+              "and": [
+                "io_0",
+                {
+                  "not": "prevD2Pressed"
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "count",
+                "value": {
+                  "if": {
+                    "==": [
+                      "count",
+                      15
+                    ]
+                  },
+                  "then": 0,
+                  "else": "count + 1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "==": [
+                "count",
+                15
+              ]
+            },
+            {
+              "not": "alarmLocked"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmLocked",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevD3Pressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": {
+              "not": "alarmLocked"
+            },
+            "then": [
+              {
+                "assign": "count",
+                "value": {
+                  "if": {
+                    "==": [
+                      "count",
+                      0
+                    ]
+                  },
+                  "then": 15,
+                  "else": "count - 1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "prevD2Pressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevD3Pressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "==": [
+          "count",
+          {
+            "*": [
+              2,
+              {
+                "RealFunctions::floor": {
+                  "/": [
+                    "count",
+                    2
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "io_3": {
+        "if": "alarmLocked",
+        "then": 440,
+        "else": 0
+      },
+      "io_4": "count"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下并释放io_0（D2）从初始状态连续触发16次；期间不按io_1（D3）。",
+        "oracle": "count按D2上升沿依次循环0..15显示到TM1637；当count首次到15后alarmLocked变为true，蜂鸣器频率io_3为报警频率且不再变化；后续按D2不再改变count（仍保持15），LED在count=15时为OFF（奇数）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "当系统已因D2使count到15并锁定后，按住io_1（D3）触发一次上升沿（从未按到按下）并保持按住至少一个控制步，再释放。",
+        "oracle": "在D3的上升沿后alarmLocked复位为false且count回到0；蜂鸣器io_3在该步及之后为0；TM1637显示0；LED在count=0为ON（偶数）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "从复位后的count=0开始，在未进入alarmLocked时按下并释放io_1（D3）触发一次上升沿，再按下并释放io_0（D2）触发一次上升沿。",
+        "oracle": "D3上升沿使count从0减到15且不触发锁定（若随后立即D2再加一则按一拍更新）；D2上升沿使count回到0；LED与count奇偶一致（count=15为OFF，count=0为ON）；蜂鸣器io_3仅在count到15并锁定时为报警频率，未锁定时为0。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_5 : Integer;\n    attribute count : Integer := 0;\n    attribute alarmLocked : Boolean := false;\n    attribute prevD2Pressed : Boolean := false;\n    attribute prevD3Pressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not prevD3Pressed))) {\n        first start;\n        then assign alarmLocked := false;\n        then assign count := 0;\n      }\n      then if (not alarmLocked) {\n        first start;\n        then if ((io_0) and ((not prevD2Pressed))) {\n          first start;\n          then assign count := (if ((count) == (15)) ? 0 else count + 1);\n        }\n      }\n      then if ((((count) == (15))) and ((not alarmLocked))) {\n        first start;\n        then assign alarmLocked := true;\n      }\n      then if ((io_1) and ((not prevD3Pressed))) {\n        first start;\n        then if (not alarmLocked) {\n          first start;\n          then assign count := (if ((count) == (0)) ? 15 else count - 1);\n        }\n      }\n      then assign prevD2Pressed := io_0;\n      then assign prevD3Pressed := io_1;\n    }\n    out attribute io_2 : Boolean = ((count) == (((2) * (RealFunctions::floor(((count) / (2)))))));\n    out attribute io_3 : Integer = (if alarmLocked ? 440 else 0);\n    out attribute io_4 : Integer = count;\n  }\n  part system : Controller;\n}\n"
+}

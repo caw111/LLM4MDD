@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"currentFloor\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"targetFloor\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"pendingMove\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"moveRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousMoveRequest\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"movementCompletePulse\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressedAny\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"loadPercent\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"or\": [\n                \"io_0\",\n                \"io_1\",\n                \"io_2\"\n              ]\n            },\n            {\n              \"not\": \"previousPressedAny\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"movementCompletePulse\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"pendingMove\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"previousMoveRequest\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"targetFloor\",\n            \"value\": {\n              \"if\": \"io_0\",\n              \"then\": 1,\n              \"else\": {\n                \"if\": \"io_1\",\n                \"then\": 2,\n                \"else\": 3\n              }\n            }\n          },\n          {\n            \"assign\": \"moveRemainingMs\",\n            \"value\": 1000\n          }\n        ],\n        \"else\": [\n          {\n            \"if\": \"pendingMove\",\n            \"then\": [\n              {\n                \"assign\": \"movementCompletePulse\",\n                \"value\": false\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"pendingMove\",\n        \"then\": [\n          {\n            \"assign\": \"pendingMove\",\n            \"value\": {\n              \"if\": \"moveRemainingMs <= 0\",\n              \"then\": false,\n              \"else\": true\n            }\n          },\n          {\n            \"assign\": \"currentFloor\",\n            \"value\": {\n              \"if\": \"moveRemainingMs <= 0\",\n              \"then\": \"targetFloor\",\n              \"else\": \"currentFloor\"\n            }\n          },\n          {\n            \"assign\": \"movementCompletePulse\",\n            \"value\": {\n              \"if\": \"moveRemainingMs <= 0\",\n              \"then\": true,\n              \"else\": false\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"not\": {\n            \"or\": [\n              \"io_0\",\n              \"io_1\",\n              \"io_2\"\n            ]\n          }\n        },\n        \"then\": [\n          {\n            \"assign\": \"previousMoveRequest\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressedAny\",\n        \"value\": {\n          \"or\": [\n            \"io_0\",\n            \"io_1\",\n            \"io_2\"\n          ]\n        }\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": \"loadPercent > 80\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_5\": {\n        \"if\": \"loadPercent > 80\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_6\": \"currentFloor\",\n      \"serial_0_trigger\": \"movementCompletePulse\",\n      \"serial_0_value_0\": \"targetFloor\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简化电梯楼层与载荷监控系统，使用按钮 D2、D3、D4 表示到达 1 到 3 层，重量传感器 A0 表示载荷，蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和 LED D13。系统显示当前楼层和载荷百分比；若载荷超限则蜂鸣报警并阻止楼层变化。按钮触发楼层切换时需要模拟移动延时，并在串口输出 movement complete。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下io_0（到达1层）为一次按键脉冲；保持io_3为低载荷（未超限）\",\n        \"oracle\": \"在movement complete触发时serial_0_value_0等于1，且io_6在移动完成后更新为1，且io_4为0、io_5为false\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Real;\n    attribute currentFloor : Integer := 1;\n    attribute targetFloor : Integer := 1;\n    attribute pendingMove : Boolean := false;\n    attribute moveRemainingMs : Integer := 0;\n    attribute previousMoveRequest : Boolean := false;\n    attribute movementCompletePulse : Boolean := false;\n    attribute previousPressedAny : Boolean := false;\n    attribute loadPercent : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((((io_0) or (io_1) or (io_2))) and ((not previousPressedAny))) {\n        first start;\n        then assign movementCompletePulse := false;\n        then assign pendingMove := true;\n        then assign previousMoveRequest := true;\n        then assign targetFloor := (if io_0 ? 1 else (if io_1 ? 2 else 3));\n        then assign moveRemainingMs := 1000;\n      } else {\n        first start;\n        then if pendingMove {\n          first start;\n          then assign movementCompletePulse := false;\n        }\n      }\n      then if pendingMove {\n        first start;\n        then assign pendingMove := (if moveRemainingMs <= 0 ? false else true);\n        then assign currentFloor := (if moveRemainingMs <= 0 ? targetFloor else currentFloor);\n        then assign movementCompletePulse := (if moveRemainingMs <= 0 ? true else false);\n      }\n      then if (not ((io_0) or (io_1) or (io_2))) {\n        first start;\n        then assign previousMoveRequest := false;\n      }\n      then assign previousPressedAny := ((io_0) or (io_1) or (io_2));\n    }\n    out attribute io_4 : Integer = (if loadPercent > 80 ? 1000 else 0);\n    out attribute io_5 : Boolean = (if loadPercent > 80 ? true else false);\n    out attribute io_6 : Integer = currentFloor;\n    out attribute serial_0_trigger : Boolean = movementCompletePulse;\n    out attribute serial_0_value_0 : Integer = targetFloor;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

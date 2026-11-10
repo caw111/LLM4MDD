@@ -1,0 +1,529 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Target board: arduino:avr:mega (Mega 2560). Wiring must be preserved: sr1 uses A0/ A2/ A1 (DS/SHCP/STCP), sr2 shares SHCP/STCP and uses DS via sr2 Q0..Q6 lines already connected to sevseg2 segments.",
+    "Parity rule: even -> led1 PWM on D2 from pot1 (A3) mapped to 0..255; D3 forced 0. odd -> led2 PWM on D3 from pot2 (A4) mapped to 0..255; D2 forced 0. Initial after reset: displayed '00' and both PWM outputs 0 (leds off).",
+    "pot3 mapping to displayed integer: display_value = floor(ADC*99/1023), range 0..99. Model handles mapping and digit extraction; shift595_number invalid_policy blank is used for out-of-range command handling (business logic should keep within 0..99).",
+    "Seven-segment behavior: shift595_number config preserves leading zeros (so '00' is shown for value 0). Active_low=true for segments A..G is copied exactly from wiring facts for both sr1 and sr2.",
+    "Control/sampling: choose control_period_ms=10ms; SysML should update PWM outputs and shift-register number at each control step based on latest analog samples. Requirement tolerates <50ms response to changes; 10ms control period satisfies it.",
+    "No serial interface requirements were provided; serial_channels left empty."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "led1 brightness (PWM), even numbers only",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "led2 brightness (PWM), odd numbers only",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot1 brightness command ADC mapped to PWM 0..255 for led1/led2 depending on parity",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A3"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot2 brightness command ADC mapped to PWM 0..255 for led1/led2 depending on parity",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A4"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot3 display number ADC mapped to integer 0..99 (sevseg tens/units through shift registers)",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A5"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "sevseg two-digit number via sr1=ten digit and sr2=unit digit (leading zeros preserved)",
+      "sample_period_ms": 10,
+      "device": "shift595_number",
+      "hardware": "{\"clock_pin\": \"A2\", \"data_pin\": \"A0\", \"invalid_policy\": \"blank\", \"kind\": \"shift595_number\", \"latch_pin\": \"A1\", \"leading_zero\": true, \"registers\": [{\"active_low\": true, \"digit\": 0, \"display\": \"sevseg1\", \"register\": \"sr1\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}, {\"active_low\": true, \"digit\": 1, \"display\": \"sevseg2\", \"register\": \"sr2\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}]}",
+      "binding": {
+        "kind": "shift595_number",
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "clock_pin": "A2",
+        "data_pin": "A0",
+        "registers": [
+          {
+            "register": "sr1",
+            "display": "sevseg1",
+            "digit": 0,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          },
+          {
+            "register": "sr2",
+            "display": "sevseg2",
+            "digit": 1,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          }
+        ],
+        "latch_pin": "A1"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2), two LEDs (led1, led2), and three slide potentiometers (pot1, pot2, pot3). The 7-segment displays will show a two-digit number, where one display represents the tens digit and the other represents the units digit. The potentiometers will control the brightness of the LEDs and the displayed number. The LEDs will indicate whether the displayed number is even or odd.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", and both LEDs should be off.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) controls the brightness of the first LED (led1). The value of pot1 is mapped to a PWM range (0-255) to adjust the LED's brightness.\n2. The second potentiometer (pot2) controls the brightness of the second LED (led2). The value of pot2 is mapped to a PWM range (0-255) to adjust the LED's brightness.\n3. The third potentiometer (pot3) controls the displayed number on the 7-segment displays. The value of pot3 is mapped to a range of 0-99, with the tens digit displayed on the first 7-segment display (sevseg1) and the units digit displayed on the second 7-segment display (sevseg2).\nLED Indication:\n1. If the displayed number is even, the first LED (led1) should be on, and the second LED (led2) should be off.\n2. If the displayed number is odd, the first LED (led1) should be off, and the second LED (led2) should be on.\nDisplay Update: The 7-segment displays and LEDs should update continuously based on the current values of the potentiometers.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -408.8, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"pot3:GND\", \"mega:GND.1\", \"black\"], [\"pot3:VCC\", \"mega:5V\", \"red\"], [\"pot3:SIG\", \"mega:A5\", \"black\"]], \"dependencies\": {}}\n验收约定：目标板Mega2560；A3、A4分别控制D2、D3的PWM，原始ADC0..1023线性映射0..255，容差1计数；A5映射floor(ADC*99/1023)得到显示整数0..99。偶数只允许D2按A3设定亮度输出，D3为0；奇数相反，D2为0、D3按A4亮度输出，亮度设为0时允许熄灭。初始显示00且两个LED熄灭，之后连续响应真实采样值，变化50ms内反映。sr1十位、sr2个位，保留前导零，遵守原接线及共阳极。",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2), two LEDs (led1, led2), and three slide potentiometers (pot1, pot2, pot3). The 7-segment displays will show a two-digit number, where one display represents the tens digit and the other represents the units digit. The potentiometers will control the brightness of the LEDs and the displayed number. The LEDs will indicate whether the displayed number is even or odd.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", and both LEDs should be off.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) controls the brightness of the first LED (led1). The value of pot1 is mapped to a PWM range (0-255) to adjust the LED's brightness.\n2. The second potentiometer (pot2) controls the brightness of the second LED (led2). The value of pot2 is mapped to a PWM range (0-255) to adjust the LED's brightness.\n3. The third potentiometer (pot3) controls the displayed number on the 7-segment displays. The value of pot3 is mapped to a range of 0-99, with the tens digit displayed on the first 7-segment display (sevseg1) and the units digit displayed on the second 7-segment display (sevseg2).\nLED Indication:\n1. If the displayed number is even, the first LED (led1) should be on, and the second LED (led2) should be off.\n2. If the displayed number is odd, the first LED (led1) should be off, and the second LED (led2) should be on.\nDisplay Update: The 7-segment displays and LEDs should update continuously based on the current values of the potentiometers.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -408.8, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"pot3:GND\", \"mega:GND.1\", \"black\"], [\"pot3:VCC\", \"mega:5V\", \"red\"], [\"pot3:SIG\", \"mega:A5\", \"black\"]], \"dependencies\": {}}\n验收约定：目标板Mega2560；A3、A4分别控制D2、D3的PWM，原始ADC0..1023线性映射0..255，容差1计数；A5映射floor(ADC*99/1023)得到显示整数0..99。偶数只允许D2按A3设定亮度输出，D3为0；奇数相反，D2为0、D3按A4亮度输出，亮度设为0时允许熄灭。初始显示00且两个LED熄灭，之后连续响应真实采样值，变化50ms内反映。sr1十位、sr2个位，保留前导零，遵守原接线及共阳极。",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led1",
+            "top": -70.8,
+            "left": 13.4,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led2",
+            "top": -70.8,
+            "left": 71.0,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg2",
+            "top": -196.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr2",
+            "top": -87.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot3",
+            "top": -158,
+            "left": -408.8,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "led1:C",
+            "black"
+          ],
+          [
+            "led1:A",
+            "mega:2",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "led2:C",
+            "black"
+          ],
+          [
+            "led2:A",
+            "mega:3",
+            "red"
+          ],
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ],
+          [
+            "sr1:SHCP",
+            "sr2:SHCP",
+            "gray"
+          ],
+          [
+            "sr1:STCP",
+            "sr2:STCP",
+            "purple"
+          ],
+          [
+            "sr1:Q7S",
+            "sr2:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:MR",
+            "red"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:VCC",
+            "red"
+          ],
+          [
+            "sr1:OE",
+            "sr2:OE",
+            "black"
+          ],
+          [
+            "sevseg1:COM.1",
+            "sevseg2:COM.1",
+            "red"
+          ],
+          [
+            "sr2:Q0",
+            "sevseg2:A",
+            "green"
+          ],
+          [
+            "sr2:Q1",
+            "sevseg2:B",
+            "green"
+          ],
+          [
+            "sr2:Q2",
+            "sevseg2:C",
+            "green"
+          ],
+          [
+            "sr2:Q3",
+            "sevseg2:D",
+            "green"
+          ],
+          [
+            "sr2:Q4",
+            "sevseg2:E",
+            "green"
+          ],
+          [
+            "sr2:Q5",
+            "sevseg2:F",
+            "green"
+          ],
+          [
+            "sr2:Q6",
+            "sevseg2:G",
+            "green"
+          ],
+          [
+            "sr1:GND",
+            "sr2:GND",
+            "black"
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black"
+          ],
+          [
+            "pot3:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot3:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot3:SIG",
+            "mega:A5",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2), two LEDs (led1, led2), and three slide potentiometers (pot1, pot2, pot3). The 7-segment displays will show a two-digit number, where one display represents the tens digit and the other represents the units digit. The potentiometers will control the brightness of the LEDs and the displayed number. The LEDs will indicate whether the displayed number is even or odd.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", and both LEDs should be off.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) controls the brightness of the first LED (led1). The value of pot1 is mapped to a PWM range (0-255) to adjust the LED's brightness.\n2. The second potentiometer (pot2) controls the brightness of the second LED (led2). The value of pot2 is mapped to a PWM range (0-255) to adjust the LED's brightness.\n3. The third potentiometer (pot3) controls the displayed number on the 7-segment displays. The value of pot3 is mapped to a range of 0-99, with the tens digit displayed on the first 7-segment display (sevseg1) and the units digit displayed on the second 7-segment display (sevseg2).\nLED Indication:\n1. If the displayed number is even, the first LED (led1) should be on, and the second LED (led2) should be off.\n2. If the displayed number is odd, the first LED (led1) should be off, and the second LED (led2) should be on.\nDisplay Update: The 7-segment displays and LEDs should update continuously based on the current values of the potentiometers.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -408.8, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"pot3:GND\", \"mega:GND.1\", \"black\"], [\"pot3:VCC\", \"mega:5V\", \"red\"], [\"pot3:SIG\", \"mega:A5\", \"black\"]], \"dependencies\": {}}\n验收约定：目标板Mega2560；A3、A4分别控制D2、D3的PWM，原始ADC0..1023线性映射0..255，容差1计数；A5映射floor(ADC*99/1023)得到显示整数0..99。偶数只允许D2按A3设定亮度输出，D3为0；奇数相反，D2为0、D3按A4亮度输出，亮度设为0时允许熄灭。初始显示00且两个LED熄灭，之后连续响应真实采样值，变化50ms内反映。sr1十位、sr2个位，保留前导零，遵守原接线及共阳极。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "numeric_checks": [
+    {
+      "kind": "mapped_parity",
+      "output": "io_5",
+      "input": "io_4",
+      "even_input": "io_2",
+      "odd_input": "io_3",
+      "even_output": "io_0",
+      "odd_output": "io_1",
+      "adc_max": 1023,
+      "display_max": 99,
+      "pwm_max": 255,
+      "pwm_tolerance": 1,
+      "response_ms": 50,
+      "evidence": "A5映射floor(ADC*99/1023)得到显示整数0..99; A3、A4分别控制D2、D3的PWM，原始ADC0..1023线性映射0..255，容差1计数; 偶数只允许D2按A3设定亮度输出，D3为0；奇数相反，D2为0、D3按A4亮度输出; 变化50ms内反映"
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

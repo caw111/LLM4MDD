@@ -1,0 +1,259 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "led1Brightness",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "led2Brightness",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "led3Brightness",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "btn1StableUntil",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "btn2StableUntil",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "btn3StableUntil",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "stableTimer",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousBtn1Pressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousBtn2Pressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousBtn3Pressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "stableTimer == 0",
+        "then": [
+          {
+            "assign": "led1Brightness",
+            "value": 0.0
+          },
+          {
+            "assign": "led2Brightness",
+            "value": 0.0
+          },
+          {
+            "assign": "led3Brightness",
+            "value": 0.0
+          },
+          {
+            "assign": "btn1StableUntil",
+            "value": 0
+          },
+          {
+            "assign": "btn2StableUntil",
+            "value": 0
+          },
+          {
+            "assign": "btn3StableUntil",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "stableTimer",
+        "value": "stableTimer + 1"
+      },
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "not": "previousBtn1Pressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "led1Brightness",
+            "value": "io_6 * 255.0 / 1023.0"
+          },
+          {
+            "assign": "btn1StableUntil",
+            "value": "stableTimer + 200"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_4",
+            {
+              "not": "previousBtn2Pressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "led2Brightness",
+            "value": "io_7 * 255.0 / 1023.0"
+          },
+          {
+            "assign": "btn2StableUntil",
+            "value": "stableTimer + 200"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_5",
+            {
+              "not": "previousBtn3Pressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "led3Brightness",
+            "value": "io_8 * 255.0 / 1023.0"
+          },
+          {
+            "assign": "btn3StableUntil",
+            "value": "stableTimer + 200"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "not": {
+                "and": [
+                  {
+                    ">=": [
+                      "stableTimer",
+                      "btn1StableUntil"
+                    ]
+                  },
+                  true
+                ]
+              }
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "led1Brightness",
+            "value": "led1Brightness"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_4",
+            {
+              "not": {
+                "and": [
+                  {
+                    ">=": [
+                      "stableTimer",
+                      "btn2StableUntil"
+                    ]
+                  },
+                  true
+                ]
+              }
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "led2Brightness",
+            "value": "led2Brightness"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_5",
+            {
+              "not": {
+                "and": [
+                  {
+                    ">=": [
+                      "stableTimer",
+                      "btn3StableUntil"
+                    ]
+                  },
+                  true
+                ]
+              }
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "led3Brightness",
+            "value": "led3Brightness"
+          }
+        ]
+      },
+      {
+        "assign": "previousBtn1Pressed",
+        "value": "io_3"
+      },
+      {
+        "assign": "previousBtn2Pressed",
+        "value": "io_4"
+      },
+      {
+        "assign": "previousBtn3Pressed",
+        "value": "io_5"
+      }
+    ],
+    "outputs": {
+      "io_0": "led1Brightness",
+      "io_1": "led2Brightness",
+      "io_2": "led3Brightness"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three LEDs (led1, led2, led3) using three push buttons (btn1, btn2, btn3) and three slide potentiometers (pot1, pot2, pot3). Each LED corresponds to a specific button and potentiometer. When a button is pressed, the corresponding LED's brightness will be set based on the value of its associated potentiometer. The brightness of each LED should remain stable for at least 2 seconds after a button press to allow for verification.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, all LEDs (led1, led2, led3) should be off.\nButton and Potentiometer Interaction:\n1. Each button (btn1, btn2, btn3) is associated with a specific LED (led1, led2, led3) and potentiometer (pot1, pot2, pot3).\n2. When a button is pressed, the corresponding LED's brightness should be set to a value proportional to the potentiometer's position. The potentiometer value ranges from 0 to 1023, and the LED brightness should range from 0 to 255.\n3. The brightness of the LED should remain stable for at least 2 seconds after the button is pressed.\n4. If no button is pressed, the LEDs should maintain their current brightness levels.\n5. Each button press should only affect its corresponding LED, leaving the other LEDs unchanged.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led3\", \"top\": -70.8, \"left\": 128.6, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -408.8, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"led3:C\", \"black\"], [\"led3:A\", \"mega:4\", \"red\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:5\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:6\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"btn3:2.r\", \"black\"], [\"mega:7\", \"btn3:1.l\", \"green\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"pot3:GND\", \"mega:GND.1\", \"black\"], [\"pot3:VCC\", \"mega:5V\", \"red\"], [\"pot3:SIG\", \"mega:A5\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with all inputs unpressed (io_3=false, io_4=false, io_5=false) and pot values fixed; then apply a rising press on io_3 (btn1) with fixed io_6 while holding io_4=false and io_5=false; keep pots constant for >=200 control steps and observe io_0 stability throughout.",
+        "oracle": "On initialization, io_0/io_1/io_2 are 0. On btn1 press, io_0 becomes io_6*255/1023 and remains unchanged for the subsequent >=2s equivalent interval; io_1 and io_2 remain unchanged."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_3 : Boolean;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Boolean;\n    in attribute io_6 : Real;\n    in attribute io_7 : Real;\n    in attribute io_8 : Real;\n    attribute led1Brightness : Real := 0.0;\n    attribute led2Brightness : Real := 0.0;\n    attribute led3Brightness : Real := 0.0;\n    attribute btn1StableUntil : Integer := 0;\n    attribute btn2StableUntil : Integer := 0;\n    attribute btn3StableUntil : Integer := 0;\n    attribute stableTimer : Integer := 0;\n    attribute previousBtn1Pressed : Boolean := false;\n    attribute previousBtn2Pressed : Boolean := false;\n    attribute previousBtn3Pressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if stableTimer == 0 {\n        first start;\n        then assign led1Brightness := 0.0;\n        then assign led2Brightness := 0.0;\n        then assign led3Brightness := 0.0;\n        then assign btn1StableUntil := 0;\n        then assign btn2StableUntil := 0;\n        then assign btn3StableUntil := 0;\n      }\n      then assign stableTimer := stableTimer + 1;\n      then if ((io_3) and ((not previousBtn1Pressed))) {\n        first start;\n        then assign led1Brightness := io_6 * 255.0 / 1023.0;\n        then assign btn1StableUntil := stableTimer + 200;\n      }\n      then if ((io_4) and ((not previousBtn2Pressed))) {\n        first start;\n        then assign led2Brightness := io_7 * 255.0 / 1023.0;\n        then assign btn2StableUntil := stableTimer + 200;\n      }\n      then if ((io_5) and ((not previousBtn3Pressed))) {\n        first start;\n        then assign led3Brightness := io_8 * 255.0 / 1023.0;\n        then assign btn3StableUntil := stableTimer + 200;\n      }\n      then if ((io_3) and ((not ((((stableTimer) >= (btn1StableUntil))) and (true))))) {\n        first start;\n        then assign led1Brightness := led1Brightness;\n      }\n      then if ((io_4) and ((not ((((stableTimer) >= (btn2StableUntil))) and (true))))) {\n        first start;\n        then assign led2Brightness := led2Brightness;\n      }\n      then if ((io_5) and ((not ((((stableTimer) >= (btn3StableUntil))) and (true))))) {\n        first start;\n        then assign led3Brightness := led3Brightness;\n      }\n      then assign previousBtn1Pressed := io_3;\n      then assign previousBtn2Pressed := io_4;\n      then assign previousBtn3Pressed := io_5;\n    }\n    out attribute io_0 : Real = led1Brightness;\n    out attribute io_1 : Real = led2Brightness;\n    out attribute io_2 : Real = led3Brightness;\n  }\n  part system : Controller;\n}\n"
+}

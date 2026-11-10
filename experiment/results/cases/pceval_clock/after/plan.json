@@ -1,0 +1,133 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests the explicitly required active-LOW colon illumination at several settled times and OUTPUT configuration of every pin from 2 through 13. Correct multiplexed HH:MM rendering and RTC-driven updates remain untested: the supplied seven-segment definition schema has no digit-enable mapping, and the input schema has no RTC control. These are unresolved limitations of the disclosed test interface, not claims about an undisclosed host implementation. The reference implements DS1307 initialization, continuous time retrieval, and the supplied multiplexed display wiring.",
+  "assumptions": [
+    "The supplied circuit overrides bench defaults; no bench-default wiring is used.",
+    "Segments A through G on pins 6 through 12 and the colon on pin 13 are active LOW. Digit enables on pins 2 through 5 are active HIGH.",
+    "The DS1307 is connected through Wire on Uno A4/A5. Its supplied circuit initial time is 2024-11-24T04:48:57; no RTC input injection is available in the disclosed schema.",
+    "The colon is independent of the digit-enable pins in the supplied wiring. Its settled commanded level is checked as LOW, implementing the explicit instruction to turn it on.",
+    "No startup deadline is specified. Checks begin after a one-second settling allowance.",
+    "The reference preserves a running RTC's time. If the RTC is stopped, it starts it without selecting a new date or time."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "gpio",
+      "id": "colon_on_early",
+      "requirement_quote": "Turn on the colon led",
+      "pin": 13,
+      "at_ms": 1000,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "colon_on_middle",
+      "requirement_quote": "Turn on the colon led",
+      "pin": 13,
+      "at_ms": 5500,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "colon_on_late",
+      "requirement_quote": "Turn on the colon led",
+      "pin": 13,
+      "at_ms": 11000,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_2",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 2,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_3",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 3,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_4",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 4,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_5",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 5,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_6",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 6,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_7",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 7,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_8",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 8,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_9",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 9,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_10",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 10,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_11",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 11,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_12",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 12,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "output_13",
+      "requirement_quote": "Set pin 2 ~ 13 mode as OUTPUT",
+      "pin": 13,
+      "expected": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <Wire.h>\n#include <RTClib.h>\n\nRTC_DS1307 rtc;\nbool rtcReady = false;\nconst uint8_t numeral[10] = {\n  0x3f, 0x06, 0x5b, 0x4f, 0x66,\n  0x6d, 0x7d, 0x07, 0x7f, 0x6f\n};\n\nvoid disableDigits() {\n  for (uint8_t p = 2; p <= 5; ++p) digitalWrite(p, LOW);\n}\n\nvoid showDigit(uint8_t position, uint8_t value) {\n  disableDigits();\n  uint8_t mask = numeral[value];\n  for (uint8_t s = 0; s < 7; ++s) {\n    digitalWrite(6 + s, (mask & (1U << s)) ? LOW : HIGH);\n  }\n  digitalWrite(2 + position, HIGH);\n  delay(2);\n  digitalWrite(2 + position, LOW);\n}\n\nvoid startRtc() {\n  rtcReady = rtc.begin();\n  if (rtcReady && !rtc.isrunning()) {\n    Wire.beginTransmission(0x68);\n    Wire.write((uint8_t)0);\n    if (Wire.endTransmission() == 0) {\n      Wire.requestFrom((uint8_t)0x68, (uint8_t)1);\n      if (Wire.available()) {\n        uint8_t seconds = (uint8_t)Wire.read() & 0x7f;\n        Wire.beginTransmission(0x68);\n        Wire.write((uint8_t)0);\n        Wire.write(seconds);\n        Wire.endTransmission();\n      }\n    }\n  }\n}\n\nvoid setup() {\n  Wire.begin();\n  startRtc();\n  for (uint8_t p = 2; p <= 13; ++p) {\n    digitalWrite(p, p >= 6 ? HIGH : LOW);\n    pinMode(p, OUTPUT);\n  }\n  digitalWrite(13, LOW);\n}\n\nvoid loop() {\n  if (!rtcReady) {\n    disableDigits();\n    startRtc();\n    delay(20);\n    return;\n  }\n  DateTime now = rtc.now();\n  uint8_t digits[4] = {\n    (uint8_t)(now.hour() / 10), (uint8_t)(now.hour() % 10),\n    (uint8_t)(now.minute() / 10), (uint8_t)(now.minute() % 10)\n  };\n  for (uint8_t i = 0; i < 4; ++i) showDigit(i, digits[i]);\n}\n"
+}

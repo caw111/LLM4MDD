@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"accumulatedMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"lastValidTemp\",\n        \"type\": \"f64\",\n        \"initial\": \"0.0\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_2\",\n        \"then\": [\n          {\n            \"assign\": \"lastValidTemp\",\n            \"value\": \"io_1\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"accumulatedMs\",\n        \"value\": \"accumulatedMs + io_0\"\n      },\n      {\n        \"if\": \"accumulatedMs >= 5000\",\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs - 5000\"\n          }\n        ],\n        \"else\": []\n      }\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"accumulatedMs >= 5000\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_2\",\n        \"then\": \"io_1\",\n        \"else\": \"lastValidTemp\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"每 5 秒读取 DHT11（D7）温度并串口输出\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Drive io_0 with 5ms deltas for 5000ms total (first value 0 then 999 more steps), set io_2=true and io_1 to a fixed degC value during each acquisition, keep io_2=true at every step for a coherent sample.\",\n        \"oracle\": \"serial_0_trigger becomes true exactly on the control step where accumulatedMs reaches 5000ms, and serial_0_value_0 equals the DHT temperature used for that reporting step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"每 5 秒读取 DHT11（D7）温度并串口输出\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Run time to 5000ms as in T1, but set io_2=false for a failed DHT read at the reporting step while last valid was earlier (set io_2=true with io_1=Vold before the failure).\",\n        \"oracle\": \"serial_0_trigger asserts at the 5-second boundary, while serial_0_value_0 retains the most recent last valid temperature (Vold) when io_2=false.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"每 5 秒读取 DHT11（D7）温度并串口输出\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Run for 10000ms total (two 5-second windows) with io_0 5ms deltas; alternate DHT validity by setting io_2=true for the first window (io_1=V1) and io_2=false for the second window at its reporting boundary (io_1=V2 but invalid).\",\n        \"oracle\": \"serial_0_trigger asserts at both 5000ms and 10000ms boundaries; serial_0_value_0 equals V1 at the first boundary and retains the last valid temperature from the first window at the second boundary.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    attribute accumulatedMs : Integer := 0;\n    attribute lastValidTemp : Real := 0.0;\n    perform action tick {\n      first start;\n      then if io_2 {\n        first start;\n        then assign lastValidTemp := io_1;\n      }\n      then assign accumulatedMs := accumulatedMs + io_0;\n      then if accumulatedMs >= 5000 {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 5000;\n      }\n    }\n    out attribute serial_0_trigger : Boolean = accumulatedMs >= 5000;\n    out attribute serial_0_value_0 : Real = (if io_2 ? io_1 else lastValidTemp);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board is authoritative: arduino:avr:uno. Wiring is preserved to D8/D9 (entrance HC-SR04), D10/D11 (exit HC-SR04), D7 (DHT11), D5 (fan PWM), D4/D3 (TM1637), and D2 (toggle button).",
+    "Control period (5 ms) is scheduling granularity only; ultrasonic acquisition and validity capture are sampled at 75 ms (rounded to a multiple of the control period while meeting HC-SR04 timeout constraints).",
+    "Ultrasonic invalid/out-of-range reads keep the last valid distance and set the corresponding *_valid flag false; invalid handling is done in SysML using validity.",
+    "DHT temperature/humidity/validity are declared for the same physical pin D7 and sensor type DHT11; initial temperature/humidity are 0 and validity is false until first valid read (invalid_policy hold_last_valid).",
+    "TM1637 number initial is 0 (default people count at startup); the D2 button semantics and display switching behavior are implemented in SysML, not by this request.",
+    "Fan PWM initial is 0 so the system starts in the closed/energy-saving state until model logic opens it (thresholds and transitions belong in SysML).",
+    "Serial uses baud 9600 with framing line_or_idle and idle_timeout_ms=20; exact report cadence and the business condition that drives the serial trigger are handled in SysML."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Entrance direction distance for counting people delta estimation",
+      "sample_period_ms": 75,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D8",
+        "echo_pin": "D9"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Entrance ultrasonic measurement validity",
+      "sample_period_ms": 75,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D8",
+        "echo_pin": "D9"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Exit direction distance for counting people delta estimation",
+      "sample_period_ms": 75,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D11\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D10\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D10",
+        "echo_pin": "D11"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Exit ultrasonic measurement validity",
+      "sample_period_ms": 75,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D11\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D10\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "trigger_pin": "D10",
+        "echo_pin": "D11"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "Room temperature from DHT11",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "Room humidity from DHT11",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT11 data validity",
+      "sample_period_ms": 2000,
+      "device": "dht_valid",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_valid",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Fan speed command (PWM) driven by occupancy and temperature",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637 display number (default shows people count); button D2 toggles to temperature in SysML",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D3\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D3"
+      }
+    },
+    {
+      "name": "io_9",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Display toggle button (press to switch TM1637 between people count and current temperature)",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Business reporting gate (occupancy/environment state report condition)",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "people",
+      "initial": 0,
+      "meaning": "Estimated number of people",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"people\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "people"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "Current temperature",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"temperature\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "temperature"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D3"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个智能教室人数估计与环境调节系统，使用两个 HC-SR04，门口进入方向 Trig=D8、Echo=D9，离开方向 Trig=D10、Echo=D11，DHT11（D7）、风扇 PWM D5、TM1637（CLK=D4，DIO=D5）和串口。通过两个超声波先后触发顺序估计人数增减；根据人数和温度共同决定风扇转速；TM1637 默认显示人数，按钮 D2 可切换显示当前温度。若人数为 0 则系统进入节能模式并关闭风扇。",
+    "effective_requirement": "构建一个智能教室人数估计与环境调节系统，使用两个 HC-SR04，门口进入方向 Trig=D8、Echo=D9，离开方向 Trig=D10、Echo=D11，DHT11（D7）、风扇 PWM D5、TM1637（CLK=D4，DIO=D3）和串口。通过两个超声波先后触发顺序估计人数增减；根据人数和温度共同决定风扇转速；TM1637 默认显示人数，按钮 D2 可切换显示当前温度。若人数为 0 则系统进入节能模式并关闭风扇。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "构建一个智能教室人数估计与环境调节系统，使用两个 HC-SR04，门口进入方向 Trig=D8、Echo=D9，离开方向 Trig=D10、Echo=D11，DHT11（D7）、风扇 PWM D5、TM1637（CLK=D4，DIO=D5）和串口。通过两个超声波先后触发顺序估计人数增减；根据人数和温度共同决定风扇转速；TM1637 默认显示人数，按钮 D2 可切换显示当前温度。若人数为 0 则系统进入节能模式并关闭风扇。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_9": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      }
+    ]
+  }
+}

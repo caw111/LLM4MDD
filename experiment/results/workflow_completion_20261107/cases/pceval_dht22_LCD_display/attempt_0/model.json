@@ -1,0 +1,124 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "loopWaitRemaining",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "displayedHumidity",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "displayedTemperature",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "loopWaitRemaining",
+        "value": {
+          "if": {
+            ">=": [
+              "io_5",
+              "loopWaitRemaining"
+            ]
+          },
+          "then": 0,
+          "else": "loopWaitRemaining - io_5"
+        }
+      },
+      {
+        "if": {
+          "==": [
+            "loopWaitRemaining",
+            0
+          ]
+        },
+        "then": [
+          {
+            "if": {
+              "and": [
+                "io_2",
+                {
+                  "or": [
+                    {
+                      "!=": [
+                        "io_1",
+                        "displayedHumidity"
+                      ]
+                    },
+                    {
+                      "!=": [
+                        "io_0",
+                        "displayedTemperature"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "displayedHumidity",
+                "value": "io_1"
+              },
+              {
+                "assign": "displayedTemperature",
+                "value": "io_0"
+              }
+            ]
+          },
+          {
+            "assign": "loopWaitRemaining",
+            "value": 100
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_3": "displayedHumidity",
+      "io_4": "displayedTemperature"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with io_2=false and io_5=0. Supply coherent valid temperature and humidity pairs, changing each quantity independently across successive acquisitions.",
+        "oracle": "Initial invalid inputs are not accepted. At the next paced iteration, io_3 equals valid io_1 and io_4 equals valid io_0. A change in either measurement updates the accepted pair; unchanged measurements leave the display values unchanged.",
+        "requirement_text": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "After accepting a valid pair, supply failed acquisitions with io_2=false and different numeric inputs, then restore validity with a new pair.",
+        "oracle": "Both displayed values retain the last accepted measurements throughout invalid acquisitions. The new valid pair is accepted at the next paced iteration.",
+        "requirement_text": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Run the first step with io_5=0, then provide changing valid inputs with elapsed deltas of 30, 30, 39 and 1 milliseconds. Continue over multiple 100 ms intervals.",
+        "oracle": "The first iteration executes immediately. Subsequent acceptance occurs only after the full 100 ms wait, including exactly at its boundary. Timing continues during invalid readings and uses actual io_5 deltas rather than the control-step count.",
+        "requirement_text": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T4",
+        "test_method": "integration",
+        "stimulus": "Boot the assembled application on the supplied circuit and apply changing DHT22 humidity and temperature measurements.",
+        "oracle": "Setup returns within 500 ms without waiting for an acquisition. The registered adapters preserve all wiring, initialize DHT22 and the SPI/Adafruit display libraries, and use coherent DHT22 acquisitions at least 2000 ms apart. The LCD uses rotation 1, white size-2 text and a black background. Changed values cause a shared-screen clear and redraw of Humidity at (0,0) and Temperature at (0,100), with the exact registered labels and two decimal places.",
+        "requirement_text": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_5 : Integer;\n    attribute loopWaitRemaining : Integer := 0;\n    attribute displayedHumidity : Real := 0.0;\n    attribute displayedTemperature : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\n      then if ((loopWaitRemaining) == (0)) {\n        first start;\n        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\n          first start;\n          then assign displayedHumidity := io_1;\n          then assign displayedTemperature := io_0;\n        }\n        then assign loopWaitRemaining := 100;\n      }\n    }\n    out attribute io_3 : Real = displayedHumidity;\n    out attribute io_4 : Real = displayedTemperature;\n  }\n  part system : Controller;\n}\n"
+}

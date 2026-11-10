@@ -1,0 +1,133 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\"controller\":{\"states\":[{\"name\":\"thresholdC\",\"type\":\"f64\",\"initial\":30.0},{\"name\":\"fanMinPwm\",\"type\":\"f64\",\"initial\":0.0},{\"name\":\"autoMode\",\"type\":\"bool\",\"initial\":false},{\"name\":\"prevAck\",\"type\":\"bool\",\"initial\":false},{\"name\":\"overheatLatched\",\"type\":\"bool\",\"initial\":false},{\"name\":\"overheatConditionPrev\",\"type\":\"bool\",\"initial\":false}],\"updates\":[{\"if\":{\"and\":[\"io_3_valid\",{\"==\":[\"io_3\",10]}]},\"then\":[{\"assign\":\"thresholdC\",\"value\":30.0},{\"assign\":\"fanMinPwm\",\"value\":0.0},{\"assign\":\"autoMode\",\"value\":false},{\"assign\":\"overheatLatched\",\"value\":false},{\"assign\":\"prevAck\",\"value\":false},{\"assign\":\"overheatConditionPrev\",\"value\":false}]},{\"if\":{\"and\":[\"io_3_valid\",{\"==\":[\"io_3\",7]}]},\"then\":[{\"assign\":\"thresholdC\",\"value\":\"io_3\"}]},{\"if\":{\"and\":[\"io_3_valid\",{\"==\":[\"io_3\",8]}]},\"then\":[{\"assign\":\"fanMinPwm\",\"value\":\"io_3\"}]},{\"if\":{\"and\":[\"io_3_valid\",{\"==\":[\"io_3\",11]}]},\"then\":[{\"assign\":\"autoMode\",\"value\":true}]},{\"if\":{\"and\":[\"io_3_valid\",{\"==\":[\"io_3\",12]}]},\"then\":[{\"assign\":\"autoMode\",\"value\":false}]},{\"if\":{\"and\":[\"io_3_valid\",{\"==\":[\"io_3\",25]}]},\"then\":[{\"assign\":\"prevAck\",\"value\":true},{\"assign\":\"overheatLatched\",\"value\":false}]},{\"if\":\"not io_3_valid\",\"then\":[{\"assign\":\"prevAck\",\"value\":false}]},{\"assign\":\"overheatConditionPrev\",\"value\":{\"if\":\"overheatConditionPrev\",\"then\":\"overheatConditionPrev\",\"else\":{\"if\":\"overheatLatched\",\"then\":true,\"else\":\"overheatConditionPrev\"}}}],\"outputs\":{\"io_1\":\"autoMode ? (if (io_0 >= (thresholdC + 5.0)) then fanMinPwm else (if (io_0 >= thresholdC) then fanMinPwm else 0.0)) : 0.0\",\"io_2\":\"(autoMode and (io_0 >= (thresholdC + 5.0)) ) or overheatLatched\",\"serial_0_trigger\":\"autoMode and (io_0 >= (thresholdC + 5.0)) and not overheatConditionPrev\",\"serial_0_value_0\":\"io_0\"}},\"req_test_map\":{\"requirements_to_testpoints\":[{\"requirement_id\":\"R1\",\"requirement_text\":\"实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。\",\"test_point_id\":\"T1\",\"test_method\":\"trace\",\"stimulus\":\"1) io_3_valid=true with io_3=7 then io_3_valid=true with io_3=8 (set thresholdC and fanMinPwm); 2) io_3_valid=true with io_3=11 (AUTO_ON); 3) Drive io_0 to thresholdC-0.1 then keep stable for several steps; 4) Drive io_0 to thresholdC+4.9 then keep stable; 5) Drive io_0 to thresholdC+5.0 and hold; 6) Drive io_0 back below thresholdC+5.0.\",\"oracle\":\"io_2 must be false before reaching thresholdC+5.0, become true once io_0 >= thresholdC+5.0, and serial_0_trigger should pulse true on the first step when the overheat condition becomes true; io_1 must be 0 when io_0 < thresholdC and must be at least fanMinPwm when io_0 >= thresholdC while autoMode is true.\"}]}}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Expected ?, got then"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Expected ?, got then"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Expected ?, got then"
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"thresholdC\",\n        \"type\": \"f64\",\n        \"initial\": 30.0\n      },\n      {\n        \"name\": \"fanMinPwm\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"autoMode\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevOverheatCond\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_3_valid and (io_3 == 10)\",\n        \"then\": [\n          {\n            \"assign\": \"thresholdC\",\n            \"value\": 30.0\n          },\n          {\n            \"assign\": \"fanMinPwm\",\n            \"value\": 0.0\n          },\n          {\n            \"assign\": \"autoMode\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"prevOverheatCond\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": \"io_3_valid and (io_3 == 7)\",\n        \"then\": [\n          {\n            \"assign\": \"thresholdC\",\n            \"value\": 0.0\n          }\n        ]\n      },\n      {\n        \"if\": \"io_3_valid and (io_3 == 8)\",\n        \"then\": [\n          {\n            \"assign\": \"fanMinPwm\",\n            \"value\": 0.0\n          }\n        ]\n      },\n      {\n        \"if\": \"io_3_valid and (io_3 == 11)\",\n        \"then\": [\n          {\n            \"assign\": \"autoMode\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": \"io_3_valid and (io_3 == 12)\",\n        \"then\": [\n          {\n            \"assign\": \"autoMode\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevOverheatCond\",\n        \"value\": {\n          \"if\": \"io_0 >= (thresholdC + 5.0)\",\n          \"then\": true,\n          \"else\": false\n        }\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"autoMode\",\n        \"then\": {\n          \"if\": \"io_0 >= thresholdC\",\n          \"then\": {\n            \"if\": \"io_0 >= (thresholdC + 5.0)\",\n            \"then\": \"fanMinPwm\",\n            \"else\": \"fanMinPwm\"\n          },\n          \"else\": 0.0\n        },\n        \"else\": 0.0\n      },\n      \"io_2\": {\n        \"if\": \"autoMode and (io_0 >= (thresholdC + 5.0))\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_trigger\": {\n        \"if\": \"autoMode and (io_0 >= (thresholdC + 5.0)) and (not prevOverheatCond)\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_value_0\": \"io_0\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"1) io_3_valid=true with io_3=7 then io_3_valid=true with io_3=8 (configure thresholdC and fanMinPwm); 2) io_3_valid=true with io_3=11 (AUTO_ON); 3) Sweep io_0 from below (thresholdC+5.0) to thresholdC+4.9 and hold for several steps; 4) Sweep io_0 to thresholdC+5.0 and hold; 5) Then sweep io_0 back below thresholdC+5.0.\",\n        \"oracle\": \"When io_0 < thresholdC+5.0, io_2 must be false and serial_0_trigger must be false. On the first control step when io_0 >= thresholdC+5.0 after being below, io_2 must become true and serial_0_trigger must be true exactly for that step (edge). When io_0 falls back below thresholdC+5.0, io_2 must return to false and subsequent steps must not keep serial_0_trigger asserted.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"1) io_3_valid=true with io_3=7 then io_3_valid=true with io_3=8; 2) io_3_valid=true with io_3=12 (AUTO_OFF); 3) Drive io_0 to values both below thresholdC and above thresholdC and (thresholdC+5.0).\",\n        \"oracle\": \"While autoMode is off (after AUTO_OFF), io_1 must remain 0.0 regardless of io_0 and io_2 must remain false, and serial_0_trigger must remain false.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_3 : Integer;\n    in attribute io_3_valid : Boolean;\n    attribute thresholdC : Real := 30.0;\n    attribute fanMinPwm : Real := 0.0;\n    attribute autoMode : Boolean := false;\n    attribute prevOverheatCond : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3_valid and (io_3 == 10) {\n        first start;\n        then assign thresholdC := 30.0;\n        then assign fanMinPwm := 0.0;\n        then assign autoMode := false;\n        then assign prevOverheatCond := false;\n      }\n      then if io_3_valid and (io_3 == 7) {\n        first start;\n        then assign thresholdC := 0.0;\n      }\n      then if io_3_valid and (io_3 == 8) {\n        first start;\n        then assign fanMinPwm := 0.0;\n      }\n      then if io_3_valid and (io_3 == 11) {\n        first start;\n        then assign autoMode := true;\n      }\n      then if io_3_valid and (io_3 == 12) {\n        first start;\n        then assign autoMode := false;\n      }\n      then assign prevOverheatCond := (if io_0 >= (thresholdC + 5.0) ? true else false);\n    }\n    out attribute io_1 : Real = (if autoMode ? (if io_0 >= thresholdC ? (if io_0 >= (thresholdC + 5.0) ? fanMinPwm else fanMinPwm) else 0.0) else 0.0);\n    out attribute io_2 : Boolean = (if autoMode and (io_0 >= (thresholdC + 5.0)) ? true else false);\n    out attribute serial_0_trigger : Boolean = (if autoMode and (io_0 >= (thresholdC + 5.0)) and (not prevOverheatCond) ? true else false);\n    out attribute serial_0_value_0 : Real = io_0;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

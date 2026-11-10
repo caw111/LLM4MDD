@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"serialEnabled\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"mode\",\n        \"type\": \"i32\",\n        \"initial\": 1\n      },\n      {\n        \"name\": \"dispTemp\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"dispHumi\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"serialEnabled\",\n            \"value\": {\n              \"not\": \"serialEnabled\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": \"io_5_valid\",\n        \"then\": [\n          {\n            \"assign\": \"mode\",\n            \"value\": \"io_5\"\n          }\n        ]\n      },\n      {\n        \"if\": \"io_3\",\n        \"then\": [\n          {\n            \"assign\": \"dispTemp\",\n            \"value\": \"io_1\"\n          },\n          {\n            \"assign\": \"dispHumi\",\n            \"value\": \"io_2\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": {\n          \"==\": [\n            \"mode\",\n            2\n          ]\n        },\n        \"then\": {\n          \"if\": {\n            \"and\": [\n              {\n                \">=\": [\n                  \"dispHumi\",\n                  0.0\n                ]\n              },\n              {\n                \"<=\": [\n                  \"dispHumi\",\n                  2147483647.0\n                ]\n              }\n            ]\n          },\n          \"then\": \"RealFunctions::floor(dispHumi)\",\n          \"else\": 0\n        },\n        \"else\": {\n          \"if\": {\n            \"==\": [\n              \"mode\",\n              3\n            ]\n          },\n          \"then\": {\n            \"if\": {\n              \"and\": [\n                {\n                  \">=\": [\n                    \"dispTemp\",\n                    0.0\n                  ]\n                },\n                {\n                  \"<=\": [\n                    \"dispTemp\",\n                    2147483647.0\n                  ]\n                }\n              ]\n            },\n            \"then\": \"RealFunctions::floor(dispTemp)\",\n            \"else\": 0\n          },\n          \"else\": {\n            \"if\": {\n              \"and\": [\n                {\n                  \">=\": [\n                    \"dispTemp\",\n                    0.0\n                  ]\n                },\n                {\n                  \"<=\": [\n                    \"dispTemp\",\n                    2147483647.0\n                  ]\n                }\n              ]\n            },\n            \"then\": \"RealFunctions::floor(dispTemp)\",\n            \"else\": 0\n          }\n        }\n      },\n      \"serial_0_trigger\": \"serialEnabled\",\n      \"serial_0_value_0\": {\n        \"if\": {\n          \"and\": [\n            \"serialEnabled\",\n            {\n              \"==\": [\n                \"mode\",\n                3\n              ]\n            }\n          ]\n        },\n        \"then\": \"dispTemp\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_1\": {\n        \"if\": {\n          \"and\": [\n            \"serialEnabled\",\n            {\n              \"==\": [\n                \"mode\",\n                2\n              ]\n            }\n          ]\n        },\n        \"then\": \"dispHumi\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_2\": {\n        \"if\": {\n          \"and\": [\n            \"serialEnabled\",\n            {\n              \"==\": [\n                \"mode\",\n                1\n              ]\n            }\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 serialEnabled 为 false；将 io_0 从 false 置为 true 再置回 false（产生一次上升沿）。随后保持 io_5_valid= true 且 io_5=3(TEMP)，并令 io_3=true，io_1=25.0, io_2=60.0。\",\n        \"oracle\": \"serial_0_trigger 在该步输出为 true；serial_0_value_0=25.0，serial_0_value_1=0.0，serial_0_value_2=false；io_4 等于 RealFunctions::floor(dispTemp)=25\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在 serialEnabled 已为 true 的情况下（保持），令 io_5_valid=true 且 io_5=2(HUMI)，并令 io_3=true，io_1=30.0, io_2=55.0。\",\n        \"oracle\": \"serial_0_trigger 为 true；serial_0_value_0=0.0，serial_0_value_1=55.0，serial_0_value_2=false；io_4 等于 RealFunctions::floor(dispHumi)=55\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在 serialEnabled 已为 true 的情况下，令 io_5_valid=true 且 io_5=1(BOTH)，并令 io_3=true，io_1=22.0, io_2=44.0。\",\n        \"oracle\": \"serial_0_trigger 为 true；serial_0_value_0=0.0，serial_0_value_1=0.0，serial_0_value_2=true；io_4 按当前实现为 RealFunctions::floor(dispTemp)=22\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个串口菜单与本地显示结合的系统，使用串口、TM1637（CLK=D4，DIO=D5）、按钮 D2 和 DHT11（D7）。串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示；按钮 D2 用于切换串口输出开关状态。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先通过一次 io_3=true 设置 dispTemp=28.0, dispHumi=70.0；随后保持 io_3=false，同时保持 io_5_valid=false 且 serialEnabled 为 true，令 io_1=10.0, io_2=20.0（但无效）。\",\n        \"oracle\": \"dispTemp/dispHumi 保持上一有效值；若 mode=TEMP，则 serial_0_value_0 仍为28.0且不随无效输入变化\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_5 : Integer;\n    in attribute io_5_valid : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute serialEnabled : Boolean := false;\n    attribute mode : Integer := 1;\n    attribute dispTemp : Real := 0.0;\n    attribute dispHumi : Real := 0.0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign serialEnabled := (not serialEnabled);\n      }\n      then assign previousPressed := io_0;\n      then if io_5_valid {\n        first start;\n        then assign mode := io_5;\n      }\n      then if io_3 {\n        first start;\n        then assign dispTemp := io_1;\n        then assign dispHumi := io_2;\n      }\n    }\n    out attribute io_4 : Integer = (if ((mode) == (2)) ? (if ((((dispHumi) >= (0.0))) and (((dispHumi) <= (2147483647.0)))) ? RealFunctions::floor(dispHumi) else 0) else (if ((mode) == (3)) ? (if ((((dispTemp) >= (0.0))) and (((dispTemp) <= (2147483647.0)))) ? RealFunctions::floor(dispTemp) else 0) else (if ((((dispTemp) >= (0.0))) and (((dispTemp) <= (2147483647.0)))) ? RealFunctions::floor(dispTemp) else 0)));\n    out attribute serial_0_trigger : Boolean = serialEnabled;\n    out attribute serial_0_value_0 : Real = (if ((serialEnabled) and (((mode) == (3)))) ? dispTemp else 0.0);\n    out attribute serial_0_value_1 : Real = (if ((serialEnabled) and (((mode) == (2)))) ? dispHumi else 0.0);\n    out attribute serial_0_value_2 : Boolean = (if ((serialEnabled) and (((mode) == (1)))) ? true else false);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

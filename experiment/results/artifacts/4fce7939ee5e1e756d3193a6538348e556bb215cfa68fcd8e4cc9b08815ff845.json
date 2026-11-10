@@ -1,0 +1,120 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeAuto",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "manualLevel",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "autoSpeed",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "temperatureC",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "temperatureC",
+        "value": "io_0 * 100.0 / 1023.0"
+      },
+      {
+        "assign": "manualLevel",
+        "value": "io_1 * 255.0 / 1023.0"
+      },
+      {
+        "assign": "autoSpeed",
+        "value": {
+          "if": "temperatureC <= 20.0",
+          "then": 0.0,
+          "else": {
+            "if": "temperatureC >= 50.0",
+            "then": 255.0,
+            "else": "(temperatureC - 20.0) * 255.0 / 30.0"
+          }
+        }
+      },
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeAuto",
+            "value": {
+              "not": "modeAuto"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_3"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "modeAuto",
+        "then": "autoSpeed",
+        "else": "manualLevel"
+      },
+      "io_4": {
+        "if": "modeAuto",
+        "then": {
+          "floor": "temperatureC"
+        },
+        "else": {
+          "floor": "manualLevel / 10.0"
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个带手动/自动模式的风扇控制系统，使用 LM35 温度传感器（A1）、电位器（A0）、风扇 PWM 控制引脚 D5、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。按下按钮切换模式：自动模式下根据温度调节风扇转速，手动模式下由电位器调节；数码管显示当前温度或手动档位。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_3 按键上升沿：初始 modeAuto=自动，先保持不按再按一次；期间保持 io_0=30，io_1=500。",
+        "oracle": "第一次按键上升沿后 modeAuto 取反，io_2 从基于温度的 autoSpeed 切换为基于电位器的 manualLevel，io_4 由 floor(temperatureC) 切换为 floor(manualLevel/10)。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个带手动/自动模式的风扇控制系统，使用 LM35 温度传感器（A1）、电位器（A0）、风扇 PWM 控制引脚 D5、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。按下按钮切换模式：自动模式下根据温度调节风扇转速，手动模式下由电位器调节；数码管显示当前温度或手动档位。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "置 modeAuto=自动（通过按键触发一次切换即可），扫描 io_0 对应温度：io_0= (20/100)*1023、(35/100)*1023、(50/100)*1023；每一步保持 io_1=任意固定且不按键（io_3=false）。",
+        "oracle": "在温度<=20时 io_2=0；温度>=50时 io_2=255；温度为中间值时 io_2 随温度线性变化；io_4 始终为 floor(temperatureC)。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个带手动/自动模式的风扇控制系统，使用 LM35 温度传感器（A1）、电位器（A0）、风扇 PWM 控制引脚 D5、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。按下按钮切换模式：自动模式下根据温度调节风扇转速，手动模式下由电位器调节；数码管显示当前温度或手动档位。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "置 modeAuto=手动（通过按键触发一次切换即可），固定 io_0=任意，扫描 io_1：io_1=0、255、1023；每一步保持 io_3=false。",
+        "oracle": "io_2 等于 manualLevel=io_1*255/1023；io_4 等于 floor(manualLevel/10) 且与 io_0 无关。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_5 : Real;\n    attribute modeAuto : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    attribute manualLevel : Real := 0.0;\n    attribute autoSpeed : Real := 0.0;\n    attribute temperatureC : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign temperatureC := io_0 * 100.0 / 1023.0;\n      then assign manualLevel := io_1 * 255.0 / 1023.0;\n      then assign autoSpeed := (if temperatureC <= 20.0 ? 0.0 else (if temperatureC >= 50.0 ? 255.0 else (temperatureC - 20.0) * 255.0 / 30.0));\n      then if ((io_3) and ((not previousPressed))) {\n        first start;\n        then assign modeAuto := (not modeAuto);\n      }\n      then assign previousPressed := io_3;\n    }\n    out attribute io_2 : Real = (if modeAuto ? autoSpeed else manualLevel);\n    out attribute io_4 : Integer = (if modeAuto ? RealFunctions::floor(temperatureC) else RealFunctions::floor(manualLevel / 10.0));\n  }\n  part system : Controller;\n}\n"
+}

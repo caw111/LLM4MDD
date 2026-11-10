@@ -1,0 +1,123 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "missedDoseCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "alarmActive",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_6_valid",
+        "then": [
+          {
+            "assign": "alarmActive",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "alarmActive",
+            {
+              "and": [
+                "io_0",
+                {
+                  "not": "previousPressed"
+                }
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmActive",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "and": [
+                "io_0",
+                {
+                  "not": "previousPressed"
+                }
+              ]
+            },
+            {
+              "not": "alarmActive"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmActive",
+            "value": true
+          },
+          {
+            "assign": "missedDoseCount",
+            "value": "missedDoseCount"
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_3": "alarmActive",
+      "io_4": 0,
+      "io_5": 0,
+      "serial_0_trigger": "false",
+      "serial_0_value_0": "missedDoseCount"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "在未收到有效 io_6_valid 且 io_0 初始为 false 的情况下，将 io_0 从 false 变为 true（一次上升沿）。",
+        "oracle": "io_3 变为 true，serial_0_trigger 为 false，serial_0_value_0 保持不变。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持 alarmActive（先触发一次 io_0 上升沿使其为 true），然后将 io_0 从 true 变为 false，再从 false 变为 true（再次上升沿）。",
+        "oracle": "第二次上升沿后 io_3 变为 false，serial_0_trigger 为 false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "将 io_6_valid 置为 true 且保持 io_0 任意值（例如 io_0=false）。",
+        "oracle": "在该控制步结束后 io_3 为 false，serial_0_trigger 为 false。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_6 : Integer;\n    in attribute io_6_valid : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute missedDoseCount : Integer := 0;\n    attribute alarmActive : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_6_valid {\n        first start;\n        then assign alarmActive := false;\n      }\n      then if ((alarmActive) and (((io_0) and ((not previousPressed))))) {\n        first start;\n        then assign alarmActive := false;\n      }\n      then if ((((io_0) and ((not previousPressed)))) and ((not alarmActive))) {\n        first start;\n        then assign alarmActive := true;\n        then assign missedDoseCount := missedDoseCount;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_3 : Boolean = alarmActive;\n    out attribute io_4 : Integer = 0;\n    out attribute io_5 : Integer = 0;\n    out attribute serial_0_trigger : Boolean = false;\n    out attribute serial_0_value_0 : Integer = missedDoseCount;\n  }\n  part system : Controller;\n}\n"
+}

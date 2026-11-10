@@ -1,0 +1,45 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Checks that an explicitly released button on pin 4 never produces the pressed message, and that pin 4 is configured as INPUT. This detects inverted polarity and unconditional printing of both messages without imposing an unspecified response or reporting deadline. Mandatory positive report counts have been removed. Coverage is partial: silence cannot establish serial initialization or continuous reporting, HIGH-state behavior is not exercised, and the supported check API cannot independently verify baud rate. Transitions are omitted because no maximum polling delay is specified, so a report following a transition could legitimately reflect an earlier sample.",
+  "assumptions": [
+    "The supplied circuit overrides bench defaults: pin 4 is externally pulled LOW through a 10kΩ resistor when released and connected to 5V when pressed. No active-LOW or INPUT_PULLUP bench default is used.",
+    "The button is explicitly released from startup and remains released for this run.",
+    "Serial uses the supplied 9600-baud configuration with line-or-idle framing and a 20 ms idle timeout.",
+    "No maximum polling interval, reporting interval, or startup delay is specified. Consequently, absence of a required report within the finite horizon is inconclusive and is not asserted as failure.",
+    "The serial assertion checks only the forbidden pressed message under a continuously LOW input; it does not require particular extra labels, whitespace, or line endings."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 4,
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "pin_mode",
+      "id": "external_pulldown_input",
+      "requirement_quote": "Configure the specified button pin as INPUT",
+      "pin": 4,
+      "expected": 0
+    },
+    {
+      "kind": "serial",
+      "id": "released_button_must_not_report_pressed",
+      "requirement_quote": "print \"Button pressed\" if the value is HIGH, or print \"Button not pressed\" if the value is LOW.",
+      "from_ms": 0,
+      "to_ms": 12000,
+      "contains": "Button pressed",
+      "min_count": 0,
+      "max_count": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(4, INPUT);\n}\n\nvoid loop() {\n  const int buttonValue = digitalRead(4);\n  if (buttonValue == HIGH) {\n    Serial.println(\"Button pressed\");\n  } else {\n    Serial.println(\"Button not pressed\");\n  }\n  delay(50);\n}\n"
+}

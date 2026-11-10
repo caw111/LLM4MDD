@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"tMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"tMs\",\n        \"value\": {\n          \"if\": {\n            \">=\": [\n              {\n                \"+\": [\n                  \"tMs\",\n                  \"io_1\"\n                ]\n              },\n              2000\n            ]\n          },\n          \"then\": {\n            \"-\": [\n              {\n                \"+\": [\n                  \"tMs\",\n                  \"io_1\"\n                ]\n              },\n              2000\n            ]\n          },\n          \"else\": {\n            \"+\": [\n              \"tMs\",\n              \"io_1\"\n            ]\n          }\n        }\n      }\n    ],\n    \"outputs\": {\n      \"io_0\": {\n        \"if\": {\n          \"<\": [\n            \"tMs\",\n            1000\n          ]\n        },\n        \"then\": {\n          \"*\": [\n            {\n              \"/\": [\n                \"tMs\",\n                1000.0\n              ]\n            },\n            255.0\n          ]\n        },\n        \"else\": {\n          \"*\": [\n            {\n              \"/\": [\n                {\n                  \"-\": [\n                    2000,\n                    \"tMs\"\n                  ]\n                },\n                1000.0\n              ]\n            },\n            255.0\n          ]\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"控制 D5 PWM LED 实现渐亮渐灭循环效果。\\n验收约定：初始亮度0，采用线性三角波；1000ms从0渐亮至255，再用1000ms渐暗至0，完整周期2000ms并持续循环。亮度容差5个PWM计数，更新间隔不超过20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_1 stepped by 10ms for 200 consecutive control steps (covering 0..2000ms and continuing into next cycle), starting with initial state tMs=0.\",\n        \"oracle\": \"io_0 is 0 at t=0; it increases linearly to approximately 255 (within ±5) at t≈1000ms; then decreases linearly back to approximately 0 (within ±5) at t≈2000ms; pattern repeats with period 2000ms; consecutive updates occur every step and each step is ≤20ms apart.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"控制 D5 PWM LED 实现渐亮渐灭循环效果。\\n验收约定：初始亮度0，采用线性三角波；1000ms从0渐亮至255，再用1000ms渐暗至0，完整周期2000ms并持续循环。亮度容差5个PWM计数，更新间隔不超过20ms。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Use varying io_1 deltas that always keep step intervals ≤20ms (e.g., alternating 7ms and 13ms) for at least 2500ms total simulated time, starting from initial state tMs=0.\",\n        \"oracle\": \"Despite variable io_1, io_0 follows the same linear triangle wave versus accumulated time: near t≈1000ms io_0≈255±5, near t≈2000ms io_0≈0±5, and repeats every 2000ms; no output discontinuity violates the ±5 PWM count tolerance at expected phase times.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute tMs : Integer := 0;\n    perform action tick {\n      first start;\n      then assign tMs := (if ((((tMs) + (io_1))) >= (2000)) ? ((((tMs) + (io_1))) - (2000)) else ((tMs) + (io_1)));\n    }\n    out attribute io_0 : Real = (if ((tMs) < (1000)) ? ((((tMs) / (1000.0))) * (255.0)) else ((((((2000) - (tMs))) / (1000.0))) * (255.0)));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

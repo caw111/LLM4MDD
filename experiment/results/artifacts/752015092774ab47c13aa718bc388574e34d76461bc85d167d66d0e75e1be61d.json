@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"reportParity\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"pendingReport\",\n        \"type\": \"bool\",\n        \"initial\": true\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"not\": \"pendingReport\"\n        },\n        \"then\": [],\n        \"else\": [\n          {\n            \"assign\": \"pendingReport\",\n            \"value\": {\n              \"if\": \"reportParity\",\n              \"then\": false,\n              \"else\": true\n            }\n          },\n          {\n            \"assign\": \"reportParity\",\n            \"value\": {\n              \"not\": \"reportParity\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"pendingReport\",\n            {\n              \"not\": \"reportParity\"\n            }\n          ]\n        },\n        \"then\": [],\n        \"else\": []\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"and\": [\n          \"pendingReport\",\n          \"reportParity\"\n        ]\n      },\n      \"serial_0_trigger\": {\n        \"and\": [\n          \"pendingReport\",\n          \"reportParity\"\n        ]\n      },\n      \"serial_0_value_0\": \"io_0\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"# Photoresistor\\n\\n## Project Description\\nThis is a simple Arduino project that uses 4 pin photoresistoer sensor module to sense the light.\\n\\n## Hardware Components\\n- Arduino Uno\\n- Photoresistor sensor module\\n\\n## Circuit Description\\nThe photoresistor sensor module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd2, and the AO pin to a2.\\n\\n## Expected Behavior\\nWhen the Arduino powers up, it should:\\n1. Initialize serial communication\\n2. Continuously read the photoresistor sensor module, and print the value in the format: \\\"LDR Value: {value}\\\".\\n\\n## Success Criteria\\nThe test is successful when:\\n1. Correct LDR value is printed in the serial monitor.\\n\\n## Notes for Implementation\\n- In the loop function, read the photoresistor, and print it to the serial monitor.\\n- Delay 500ms in every loop.\\n\\n## Variants\\nThere may be variants with init lux value and pin number.\\nGiven circuit (must preserve wiring):\\n{\\\"version\\\": 1.0, \\\"author\\\": \\\"Blind Author\\\", \\\"description\\\": \\\"Read value of photoresistor\\\", \\\"config\\\": {\\\"photoresistor_pin\\\": \\\"A2\\\", \\\"lux\\\": \\\"500\\\", \\\"gnd_pin\\\": \\\"GND.2\\\"}, \\\"parts\\\": [{\\\"type\\\": \\\"wokwi-arduino-uno\\\", \\\"id\\\": \\\"arduino uno1\\\", \\\"top\\\": 87, \\\"left\\\": 47.4, \\\"attrs\\\": {}}, {\\\"type\\\": \\\"wokwi-photoresistor-sensor\\\", \\\"id\\\": \\\"photoresistor1\\\", \\\"top\\\": 3.2, \\\"left\\\": 96.8, \\\"attrs\\\": {\\\"lux\\\": \\\"500\\\"}}], \\\"connections\\\": [[\\\"photoresistor1:VCC\\\", \\\"arduino uno1:5V\\\", \\\"red\\\", [\\\"h76.8\\\", \\\"v115.2\\\"]], [\\\"photoresistor1:GND\\\", \\\"arduino uno1:GND.2\\\", \\\"black\\\", [\\\"h0\\\"]], [\\\"photoresistor1:AO\\\", \\\"arduino uno1:A2\\\", \\\"green\\\", [\\\"h0\\\"]]], \\\"dependencies\\\": {}}\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply io_0=0.0 initially, then step to io_0=123.0; observe serial report gating and reported value when triggers are asserted.\",\n        \"oracle\": \"Whenever serial_0_trigger (and io_1 text gate) are asserted in the trace, serial_0_value_0 must equal the current io_0 sampled at that control step.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    attribute reportParity : Boolean := false;\n    attribute pendingReport : Boolean := true;\n    perform action tick {\n      first start;\n      then if (not pendingReport) {\n        first start;\n        then done;\n      } else {\n        first start;\n        then assign pendingReport := (if reportParity ? false else true);\n        then assign reportParity := (not reportParity);\n      }\n      then if ((pendingReport) and ((not reportParity))) {\n        first start;\n        then done;\n      }\n    }\n    out attribute io_1 : Boolean = ((pendingReport) and (reportParity));\n    out attribute serial_0_trigger : Boolean = ((pendingReport) and (reportParity));\n    out attribute serial_0_value_0 : Real = io_0;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

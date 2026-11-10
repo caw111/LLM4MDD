@@ -1,0 +1,66 @@
+[
+  {
+    "name": "baseline",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Checks the required serial label and correct Celsius measurement using a constant negative fractional temperature distinct from humidity. The input remains unchanged throughout the entire observation horizon, and the check accepts a report anywhere in that horizon, eliminating transition-specific deadlines and phase assumptions. Dynamic tracking and reporting cadence are not independently checked because the requirement specifies neither a maximum reporting interval nor a response latency. As with any finite executable observation, an implementation producing no report within the horizon cannot be verified by this test; the horizon is not asserted to be a requirement-defined deadline.",
+      "assumptions": [
+        "The supplied circuit is authoritative: the DHT22 data pin is digital pin 2, with 5V power and common ground. No LED, button, or analog bench defaults are used.",
+        "Serial communication uses the supplied 9600 baud setting.",
+        "No reporting interval, startup deadline, or decimal precision is specified. The test therefore holds the temperature constant and searches the full observation horizon rather than requiring reports within phase-specific windows.",
+        "Numeric serial comparison allows equivalent decimal representations with 0.1 degree tolerance.",
+        "Invalid-reading behavior is unspecified and is not tested."
+      ],
+      "horizon_ms": 11000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "temperature",
+          "pin": 2,
+          "value": -10.5
+        },
+        {
+          "at_ms": 0,
+          "kind": "humidity",
+          "pin": 2,
+          "value": 64.5
+        },
+        {
+          "at_ms": 5000,
+          "kind": "temperature",
+          "pin": 2,
+          "value": 23.5
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "serial",
+          "id": "temperature_0",
+          "requirement_quote": "Measure temperature and report its value",
+          "from_ms": 1000,
+          "to_ms": 4500,
+          "expected": -10.5,
+          "tolerance": 0.1,
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_1",
+          "requirement_quote": "Measure temperature and report its value",
+          "from_ms": 8000,
+          "to_ms": 10900,
+          "expected": 23.5,
+          "tolerance": 0.1,
+          "min_count": 1
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <math.h>\n\nDHT sensor(2, DHT22);\nunsigned long lastRead = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  sensor.begin();\n  lastRead = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (now - lastRead >= 2000UL) {\n    lastRead = now;\n    float temperature = sensor.readTemperature();\n    if (!isnan(temperature)) {\n      Serial.print(\"Current temperature: \");\n      Serial.println(temperature);\n    }\n  }\n}\n"
+    },
+    "engine": "host"
+  }
+]

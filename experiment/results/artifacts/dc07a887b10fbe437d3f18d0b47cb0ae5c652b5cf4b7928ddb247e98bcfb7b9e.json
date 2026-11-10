@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "No Serial I/O requirements were provided; therefore no serial_channels are defined.",
+    "Control period chosen as 10 ms as scheduling granularity; sensor sampling period and acquisition-to-display latency enforcement are handled in SysML using elapsed_ms.",
+    "Per requirement, TRIG=D8, ECHO=D9, TM1637 CLK=D4, DIO=D5 are preserved.",
+    "Ultrasonic timeout must be 25000us for each measurement attempt; exact timeout_us is configured as 25000 to satisfy the constraint.",
+    "Distance-to-display quantization (integer cm, 1cm tolerance) and blanking on timeout/out-of-range are handled in the model; hardware ports only provide raw distance and validity plus the TM1637 number request.",
+    "TM1637 initial blank: tm1637_number startup uses out-of-display-range initial command 10000 so the catalog can blank at startup; model later outputs either integer cm or blank via the same tm1637_number command."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Distance measurement in cm; derived from echo microseconds / 58",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Validity flag for ultrasonic distance (true when echo within 2..400cm and not timed out)",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 10000,
+      "meaning": "TM1637 distance display request; 10000 requests startup blank (quantized integer cm shown by model)",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "使用 TM1637 + HC-SR04（D8/D9）：显示距离\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。",
+    "effective_requirement": "使用 TM1637 + HC-SR04（D8/D9）：显示距离\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "使用 TM1637 + HC-SR04（D8/D9）：显示距离\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

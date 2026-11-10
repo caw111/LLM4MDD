@@ -1,0 +1,92 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises A0 at both endpoints, an intermediate value, and a repeated endpoint. Counts only rising edges of D13 over long settled windows, thereby bounding complete blink-cycle rates without imposing a duty cycle or a minimum ON-pulse duration. The accepted rate envelope accommodates both complete-cycle and per-toggle interpretations of 0.2–2 seconds. Coverage is partial: the requirement does not specify mapping direction or shape, and the supported assertion schema cannot compare measured cycle rates across input plateaus. Thus these checks do not establish A0-dependent rate changes or attainment of both timing endpoints; a fixed-rate blinker within the envelope can pass.",
+  "assumptions": [
+    "Uses the disclosed bench default: D13 drives an active-HIGH LED, with its cathode connected through a resistor to GND.",
+    "A0 is a raw ADC input from 0 through 1023 using the default 5 V reference.",
+    "Startup phase, initial LED state, duty cycle, ADC-to-time mapping direction, and mapping shape are unspecified.",
+    "The wording does not resolve whether 0.2–2 seconds describes a complete blink cycle or each toggle interval. The checks conservatively accommodate complete cycles from 200 through 4000 ms, without constraining individual pulse widths.",
+    "Settled observation windows exclude 4.5 seconds after each input change, allowing a previous cycle to finish.",
+    "The reference chooses a linear increasing ADC-to-toggle-interval mapping of 200–2000 ms and equal ON/OFF durations. These are permitted reference choices, not additional candidate requirements."
+  ],
+  "horizon_ms": 60000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    },
+    {
+      "at_ms": 15000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 1023
+    },
+    {
+      "at_ms": 30000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 512
+    },
+    {
+      "at_ms": 45000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "edges",
+      "id": "complete_cycle_rate_adc_zero",
+      "requirement_quote": "LED（D13）闪烁频率由 A0 控制（0.2~2 秒）",
+      "pin": 13,
+      "edge": "rising",
+      "from_ms": 4500,
+      "to_ms": 14900,
+      "min_count": 2,
+      "max_count": 54
+    },
+    {
+      "kind": "edges",
+      "id": "complete_cycle_rate_adc_full_scale",
+      "requirement_quote": "LED（D13）闪烁频率由 A0 控制（0.2~2 秒）",
+      "pin": 13,
+      "edge": "rising",
+      "from_ms": 19500,
+      "to_ms": 29900,
+      "min_count": 2,
+      "max_count": 54
+    },
+    {
+      "kind": "edges",
+      "id": "complete_cycle_rate_adc_midpoint",
+      "requirement_quote": "LED（D13）闪烁频率由 A0 控制（0.2~2 秒）",
+      "pin": 13,
+      "edge": "rising",
+      "from_ms": 34500,
+      "to_ms": 44900,
+      "min_count": 2,
+      "max_count": 54
+    },
+    {
+      "kind": "edges",
+      "id": "complete_cycle_rate_return_to_zero",
+      "requirement_quote": "LED（D13）闪烁频率由 A0 控制（0.2~2 秒）",
+      "pin": 13,
+      "edge": "rising",
+      "from_ms": 49500,
+      "to_ms": 59900,
+      "min_count": 2,
+      "max_count": 54
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nstatic bool ledOn = false;\nstatic unsigned long lastToggle = 0;\n\nvoid setup() {\n  pinMode(13, OUTPUT);\n  pinMode(A0, INPUT);\n  digitalWrite(13, LOW);\n  lastToggle = millis();\n}\n\nvoid loop() {\n  const int raw = analogRead(A0);\n  const unsigned long interval = 200UL + (1800UL * (unsigned long)raw) / 1023UL;\n  const unsigned long now = millis();\n  if (now - lastToggle >= interval) {\n    lastToggle = now;\n    ledOn = !ledOn;\n    digitalWrite(13, ledOn ? HIGH : LOW);\n  }\n}\n",
+  "electrical_led_pins": {}
+}

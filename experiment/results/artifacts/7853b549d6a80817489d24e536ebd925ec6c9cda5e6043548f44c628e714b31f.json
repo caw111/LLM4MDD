@@ -1,0 +1,286 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "未提供阈值设定、光敏电阻与 LM35 的电气标定/换算关系、串口输出的确切文本格式（例如是否为“LIGHT=..., TEMP=...”以及 WARNING 的固定文本内容）；这些均作为 SysML 模型业务参数处理，并在触发点上对 serial_channels 的值进行固定格式化输出。",
+    "串口输出频率：模型使用 elapsed_ms 的 delta_since_previous_step 累积，实现“每秒输出一次”；由于要求为时间相关行为，控制周期设为 10ms 作为调度粒度。",
+    "模拟输入类型单位与转换：analog_input 作为原始 ADC 量由模型换算为最终报告的 f64（光照单位与温度单位 degC；温度换算需在模型中完成）。",
+    "D13 为 WARNING LED：active_high=true，模型以 LED 点亮的布尔语义 true 对应物理高电平。",
+    "串口帧：使用题述串口设置 baud=9600、framing=line_or_idle、idle_timeout_ms=20；由于需求未给出强制固定文本行，serial_channels 采用结构化数值/布尔上报，由模型保证最终文本格式。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "光敏电阻 A0 测得的光照值（ADC）",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "LM35 A1 输出的温度值（ADC，对应温度：由模型换算）",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "WARNING 指示 LED（当任一阈值超限时点亮）",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "距离上一控制步的实际增量时间（delta_since_previous_step，单位 ms）",
+      "sample_period_ms": 10,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "每秒输出一次：光照值与温度值（格式由模型固定）",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "light_adc",
+      "initial": 0,
+      "meaning": "光照值（光敏电阻 A0 转换后的显示量，由模型决定映射/标定）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"LIGHT\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "LIGHT"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "温度值（LM35 A1 换算后的温度，单位℃，由模型完成）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"TEMP\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "TEMP"
+      }
+    },
+    {
+      "name": "serial_1_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "当任一值超过设定阈值时：额外输出 WARNING（格式由模型固定）",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_1_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "WARNING 状态（任一阈值超限时为 true，用于触发 WARNING 文本/标记输出，由模型决定输出固定文本或组合格式）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"WARNING\", \"trigger\": \"serial_1_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_1_trigger",
+        "baud": 9600,
+        "label": "WARNING"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "digital_output": {
+      "pin": "D13"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个实验数据监视系统，使用光敏电阻 A0、LM35（A1）和串口。系统每秒通过串口输出一次光照值和温度值；如果任一值超过设定阈值，则额外输出 WARNING，并点亮 D13 LED。",
+    "effective_requirement": "实现一个实验数据监视系统，使用光敏电阻 A0、LM35（A1）和串口。系统每秒通过串口输出一次光照值和温度值；如果任一值超过设定阈值，则额外输出 WARNING，并点亮 D13 LED。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "实现一个实验数据监视系统，使用光敏电阻 A0、LM35（A1）和串口。系统每秒通过串口输出一次光照值和温度值；如果任一值超过设定阈值，则额外输出 WARNING，并点亮 D13 LED。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_1_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_value_0": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      },
+      {
+        "id": "serial_1",
+        "trigger_port": "serial_1_trigger",
+        "value_ports": [
+          "serial_1_value_0"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,576 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board is Arduino Mega 2560. Wiring preserved: btn1->D2, btn2->D3, btn3->D4; rgb1 COM->GND, rgb1 R->D5, G->D6, B->D7; bargraph1 segments A1..A8 -> D8,D9,D10,D11,D12,D13,D44,D45 respectively with C1..C8 -> GND.",
+    "All three buttons are wired to ground when pressed (active_low), so ports use active_high:false with pullup enabled; model logic must debounce and update intensity on press edges.",
+    "RGB uses PWM outputs on D5/D6/D7 with initial intensities 0 so the RGB LED is off at startup.",
+    "LED bar graph ports initial false so the bar graph is off at startup; model maps the currently selected color’s intensity to 1..8 lit segments (32->1 LED ... 255->8 LEDs).",
+    "No serial I/O is required by the provided specification."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "btn1: increment red intensity by 32 (debounced in model)",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "btn2: increment green intensity by 32 (debounced in model)",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "btn3: increment blue intensity by 32 (debounced in model)",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D4\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB red intensity (0-255) to rgb1:R",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB green intensity (0-255) to rgb1:G",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D6\", \"scale\": 1}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1,
+        "offset": 0.0,
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB blue intensity (0-255) to rgb1:B",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D7\", \"scale\": 1}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1,
+        "offset": 0.0,
+        "pin": "D7"
+      }
+    },
+    {
+      "name": "io_6_segment_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D8\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D8",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D9\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D9",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D10",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D11\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D11",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D12",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D13",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D44\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D44",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bar graph level for the most recently adjusted RGB component (1..8 LEDs based on intensity/32)",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D45\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D45",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (rgb1) and an LED bar graph (bargraph1) using three pushbuttons (btn1, btn2, btn3). Each button adjusts the intensity of a specific color component (red, green, blue) in the RGB LED, while the bar graph visually indicates the current intensity level of the most recently adjusted color.\n\n**Detail Rules**:\n1. **Initialization**:  \n   - The RGB LED (rgb1) and LED bar graph (bargraph1) must be off when the system starts.  \n2. **Button Functionality**:  \n   - **btn1**: Increases the red intensity by 32 (0-255 range). After reaching 255, the next press resets to 0.  \n   - **btn2**: Adjusts the green intensity in the same manner.  \n   - **btn3**: Adjusts the blue intensity in the same manner.  \n   - Each button press must update the bar graph to display the current intensity level of the adjusted color, the pins of the bar chart are A1-A8 .(e.g., 32 = 1 LED lit, 64 = 2 LEDs lit, up to 255 = 8 LEDs lit). (the bargraph display the intensity of the light corresponding to the button currently pressed)\n3. **RGB LED Behavior**:  \n   - The RGB LED must display the combined color based on the current red, green, and blue intensities.  \n4. **Stability**:  \n   - Button presses must be debounced to avoid false triggers.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"btn3:2.r\", \"black\"], [\"mega:4\", \"btn3:1.l\", \"green\"], [\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:5\", \"rgb1:R\", \"red\"], [\"mega:6\", \"rgb1:G\", \"green\"], [\"mega:7\", \"rgb1:B\", \"blue\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (rgb1) and an LED bar graph (bargraph1) using three pushbuttons (btn1, btn2, btn3). Each button adjusts the intensity of a specific color component (red, green, blue) in the RGB LED, while the bar graph visually indicates the current intensity level of the most recently adjusted color.\n\n**Detail Rules**:\n1. **Initialization**:  \n   - The RGB LED (rgb1) and LED bar graph (bargraph1) must be off when the system starts.  \n2. **Button Functionality**:  \n   - **btn1**: Increases the red intensity by 32 (0-255 range). After reaching 255, the next press resets to 0.  \n   - **btn2**: Adjusts the green intensity in the same manner.  \n   - **btn3**: Adjusts the blue intensity in the same manner.  \n   - Each button press must update the bar graph to display the current intensity level of the adjusted color, the pins of the bar chart are A1-A8 .(e.g., 32 = 1 LED lit, 64 = 2 LEDs lit, up to 255 = 8 LEDs lit). (the bargraph display the intensity of the light corresponding to the button currently pressed)\n3. **RGB LED Behavior**:  \n   - The RGB LED must display the combined color based on the current red, green, and blue intensities.  \n4. **Stability**:  \n   - Button presses must be debounced to avoid false triggers.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"btn3:2.r\", \"black\"], [\"mega:4\", \"btn3:1.l\", \"green\"], [\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:5\", \"rgb1:R\", \"red\"], [\"mega:6\", \"rgb1:G\", \"green\"], [\"mega:7\", \"rgb1:B\", \"blue\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn1",
+            "top": -195.4,
+            "left": 19.2,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn2",
+            "top": -195.4,
+            "left": 105.0,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn3",
+            "top": -195.4,
+            "left": 190.8,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb1",
+            "top": -130.4,
+            "left": 39.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-led-bar-graph",
+            "id": "bargraph1",
+            "left": 417.6,
+            "top": -14.2,
+            "attrs": {
+              "color": "lime"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "btn1:2.r",
+            "black"
+          ],
+          [
+            "mega:2",
+            "btn1:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "btn2:2.r",
+            "black"
+          ],
+          [
+            "mega:3",
+            "btn2:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "btn3:2.r",
+            "black"
+          ],
+          [
+            "mega:4",
+            "btn3:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "rgb1:COM",
+            "black"
+          ],
+          [
+            "mega:5",
+            "rgb1:R",
+            "red"
+          ],
+          [
+            "mega:6",
+            "rgb1:G",
+            "green"
+          ],
+          [
+            "mega:7",
+            "rgb1:B",
+            "blue"
+          ],
+          [
+            "mega:8",
+            "bargraph1:A1",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C1",
+            "black"
+          ],
+          [
+            "mega:9",
+            "bargraph1:A2",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C2",
+            "black"
+          ],
+          [
+            "mega:10",
+            "bargraph1:A3",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C3",
+            "black"
+          ],
+          [
+            "mega:11",
+            "bargraph1:A4",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C4",
+            "black"
+          ],
+          [
+            "mega:12",
+            "bargraph1:A5",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C5",
+            "black"
+          ],
+          [
+            "mega:13",
+            "bargraph1:A6",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C6",
+            "black"
+          ],
+          [
+            "mega:44",
+            "bargraph1:A7",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C7",
+            "black"
+          ],
+          [
+            "mega:45",
+            "bargraph1:A8",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C8",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (rgb1) and an LED bar graph (bargraph1) using three pushbuttons (btn1, btn2, btn3). Each button adjusts the intensity of a specific color component (red, green, blue) in the RGB LED, while the bar graph visually indicates the current intensity level of the most recently adjusted color.\n\n**Detail Rules**:\n1. **Initialization**:  \n   - The RGB LED (rgb1) and LED bar graph (bargraph1) must be off when the system starts.  \n2. **Button Functionality**:  \n   - **btn1**: Increases the red intensity by 32 (0-255 range). After reaching 255, the next press resets to 0.  \n   - **btn2**: Adjusts the green intensity in the same manner.  \n   - **btn3**: Adjusts the blue intensity in the same manner.  \n   - Each button press must update the bar graph to display the current intensity level of the adjusted color, the pins of the bar chart are A1-A8 .(e.g., 32 = 1 LED lit, 64 = 2 LEDs lit, up to 255 = 8 LEDs lit). (the bargraph display the intensity of the light corresponding to the button currently pressed)\n3. **RGB LED Behavior**:  \n   - The RGB LED must display the combined color based on the current red, green, and blue intensities.  \n4. **Stability**:  \n   - Button presses must be debounced to avoid false triggers.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"btn3:2.r\", \"black\"], [\"mega:4\", \"btn3:1.l\", \"green\"], [\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:5\", \"rgb1:R\", \"red\"], [\"mega:6\", \"rgb1:G\", \"green\"], [\"mega:7\", \"rgb1:B\", \"blue\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_6_segment_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_7": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  }
+}

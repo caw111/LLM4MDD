@@ -1,0 +1,556 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Circuit preserves wiring: rgb1 COM->GND.1 and R/G/B->D2/D3/D4; rgb2 COM->GND.1 and R/G/B->D5/D6/D7; bargraph1 C1..C8->GND.1 and A1..A8->D8/D9/D10/D11/D12/D13/D44/D45 in that segment order.",
+    "Initialization: all LEDs start off after reset/power-on; bar graph segments start off and rgb color channels start false (OFF).",
+    "Bar graph sequencing (A1..A8 with 2s per segment, then repeat) and RGB color mapping for A1-A4 (rgb1=red, rgb2=blue) vs A5-A8 (rgb1=green, rgb2=yellow) are handled in the SysML model (no serial or additional electrical ports required).",
+    "Control period selected as 10 ms; the 2-second hold and segment transitions will use elapsed_ms in the model (timing/business logic not placed in these electrical port requests)."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb1 red (A1-A4 active => red)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D2\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb1 green (A5-A8 active => green)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D3\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb1 blue (A1-A8 not specified => off)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D4\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb2 red (A5-A8 => yellow needs red on)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D5\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D5"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb2 green (A5-A8 => yellow needs green on)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D6"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb2 blue (A1-A4 active => blue)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D7\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D8\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D8",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D9\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D9",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D10",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D11\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D11",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D12",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D13",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D44\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D44",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph1 sequential pattern A1->A8 (one segment on at a time)",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D45\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D45",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an LED bar graph (bargraph1) and two RGB LEDs (rgb1, rgb2). The bar graph will display a sequential pattern, while the RGB LEDs will change colors based on the active segment of the bar graph.\n\n**Detail Rules**:\n1. **Initialization**: All components start in an off state when powered on or reset.\n2. **Bar Graph Sequence**:\n   - The bar graph (bargraph1) lights up LEDs sequentially from A1 to A8, one at a time.\n   - Each LED remains lit for **2 seconds** before moving to the next.\n   - After reaching A8, the sequence restarts from A1.\n3. **RGB LED Behavior**:\n   - When LEDs A1-A4 are lit, rgb1 must display **red** and rgb2 must display **blue**.\n   - When LEDs A5-A8 are lit, rgb1 must display **green** and rgb2 must display **yellow** (red + green).\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:5\", \"rgb2:R\", \"red\"], [\"mega:6\", \"rgb2:G\", \"green\"], [\"mega:7\", \"rgb2:B\", \"blue\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an LED bar graph (bargraph1) and two RGB LEDs (rgb1, rgb2). The bar graph will display a sequential pattern, while the RGB LEDs will change colors based on the active segment of the bar graph.\n\n**Detail Rules**:\n1. **Initialization**: All components start in an off state when powered on or reset.\n2. **Bar Graph Sequence**:\n   - The bar graph (bargraph1) lights up LEDs sequentially from A1 to A8, one at a time.\n   - Each LED remains lit for **2 seconds** before moving to the next.\n   - After reaching A8, the sequence restarts from A1.\n3. **RGB LED Behavior**:\n   - When LEDs A1-A4 are lit, rgb1 must display **red** and rgb2 must display **blue**.\n   - When LEDs A5-A8 are lit, rgb1 must display **green** and rgb2 must display **yellow** (red + green).\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:5\", \"rgb2:R\", \"red\"], [\"mega:6\", \"rgb2:G\", \"green\"], [\"mega:7\", \"rgb2:B\", \"blue\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb1",
+            "top": -130.4,
+            "left": 39.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb2",
+            "top": -130.4,
+            "left": 97.1,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-led-bar-graph",
+            "id": "bargraph1",
+            "left": 417.6,
+            "top": -14.2,
+            "attrs": {
+              "color": "lime"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "rgb1:COM",
+            "black"
+          ],
+          [
+            "mega:2",
+            "rgb1:R",
+            "red"
+          ],
+          [
+            "mega:3",
+            "rgb1:G",
+            "green"
+          ],
+          [
+            "mega:4",
+            "rgb1:B",
+            "blue"
+          ],
+          [
+            "mega:GND.1",
+            "rgb2:COM",
+            "black"
+          ],
+          [
+            "mega:5",
+            "rgb2:R",
+            "red"
+          ],
+          [
+            "mega:6",
+            "rgb2:G",
+            "green"
+          ],
+          [
+            "mega:7",
+            "rgb2:B",
+            "blue"
+          ],
+          [
+            "mega:8",
+            "bargraph1:A1",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C1",
+            "black"
+          ],
+          [
+            "mega:9",
+            "bargraph1:A2",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C2",
+            "black"
+          ],
+          [
+            "mega:10",
+            "bargraph1:A3",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C3",
+            "black"
+          ],
+          [
+            "mega:11",
+            "bargraph1:A4",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C4",
+            "black"
+          ],
+          [
+            "mega:12",
+            "bargraph1:A5",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C5",
+            "black"
+          ],
+          [
+            "mega:13",
+            "bargraph1:A6",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C6",
+            "black"
+          ],
+          [
+            "mega:44",
+            "bargraph1:A7",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C7",
+            "black"
+          ],
+          [
+            "mega:45",
+            "bargraph1:A8",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C8",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an LED bar graph (bargraph1) and two RGB LEDs (rgb1, rgb2). The bar graph will display a sequential pattern, while the RGB LEDs will change colors based on the active segment of the bar graph.\n\n**Detail Rules**:\n1. **Initialization**: All components start in an off state when powered on or reset.\n2. **Bar Graph Sequence**:\n   - The bar graph (bargraph1) lights up LEDs sequentially from A1 to A8, one at a time.\n   - Each LED remains lit for **2 seconds** before moving to the next.\n   - After reaching A8, the sequence restarts from A1.\n3. **RGB LED Behavior**:\n   - When LEDs A1-A4 are lit, rgb1 must display **red** and rgb2 must display **blue**.\n   - When LEDs A5-A8 are lit, rgb1 must display **green** and rgb2 must display **yellow** (red + green).\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:5\", \"rgb2:R\", \"red\"], [\"mega:6\", \"rgb2:G\", \"green\"], [\"mega:7\", \"rgb2:B\", \"blue\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_7": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  }
+}

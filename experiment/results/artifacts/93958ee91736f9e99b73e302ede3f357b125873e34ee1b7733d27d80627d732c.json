@@ -1,0 +1,135 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"pageIndex\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dhtTempLastValid\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"dhtHumLastValid\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"reportAccumMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_4\",\n        \"then\": [\n          {\n            \"assign\": \"dhtTempLastValid\",\n            \"value\": \"io_2\"\n          },\n          {\n            \"assign\": \"dhtHumLastValid\",\n            \"value\": \"io_3\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"pageIndex\",\n            \"value\": {\n              \"if\": \"pageIndex == 0\",\n              \"then\": 1,\n              \"else\": {\n                \"if\": \"pageIndex == 1\",\n                \"then\": 2,\n                \"else\": 0\n              }\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"reportAccumMs\",\n        \"value\": \"reportAccumMs + io_6\"\n      },\n      {\n        \"if\": \"reportAccumMs >= 2000\",\n        \"then\": [\n          {\n            \"assign\": \"reportAccumMs\",\n            \"value\": \"reportAccumMs - 2000\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_5\": {\n        \"if\": \"pageIndex == 0\",\n        \"then\": {\n          \"if\": \"io_0 >= 1000.0\",\n          \"then\": 9999,\n          \"else\": {\n            \"if\": \"io_0 <= 0.0\",\n            \"then\": 0,\n            \"else\": \"RealFunctions::floor(io_0)\"\n          }\n        },\n        \"else\": {\n          \"if\": \"pageIndex == 1\",\n          \"then\": \"RealFunctions::floor((if io_4 then io_2 else dhtTempLastValid))\",\n          \"else\": \"RealFunctions::floor((if io_4 then io_3 else dhtHumLastValid))\"\n        }\n      },\n      \"serial_0_trigger\": \"reportAccumMs >= 2000\",\n      \"serial_0_value_0\": \"io_0\",\n      \"serial_0_value_1\": {\n        \"if\": \"io_4\",\n        \"then\": \"io_2\",\n        \"else\": \"dhtTempLastValid\"\n      },\n      \"serial_0_value_2\": {\n        \"if\": \"io_4\",\n        \"then\": \"io_3\",\n        \"else\": \"dhtHumLastValid\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Initialize pageIndex=0; apply io_1 rising edge (io_1: false->true once, then false) with constant io_0 and constant io_4=true; repeat for two more presses.\",\n        \"oracle\": \"After each rising edge, io_5 changes in order: light page (pageIndex=0) then temperature page (pageIndex=1) then humidity page (pageIndex=2) and wraps back to light page on next press.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Keep io_6=10 for 201 steps (total >2000ms). Hold io_0, io_4=true with io_2 and io_3 constant.\",\n        \"oracle\": \"serial_0_trigger becomes true at the first control step where accumulated elapsed time reaches/exceeds 2000ms, and the reported serial_0_value_0/1/2 match the current sensor values (io_0, io_2, io_3) on that step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_4=false for several steps after previously having io_4=true with io_2=25.0, io_3=60.0. Then let io_6 advance until a serial_0_trigger time point.\",\n        \"oracle\": \"serial_0_value_1 and serial_0_value_2 equal the last valid held values (25.0 and 60.0) even while io_4 is false; serial_0_value_0 still equals io_0.\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_5: Invalid conditional expression 'RealFunctions::floor((if io_4 then io_2 else dhtTempLastValid))'. if condition then value else value is not the executable SysML expression syntax. Return {\"if\":\"condition\",\"then\":\"yesValue\",\"else\":\"noValue\"}; this renders (if condition ? yesValue else noValue). Example: if remaining > 0 then remaining - delta else 0 becomes {\"if\":\"remaining > 0\",\"then\":\"remaining - delta\",\"else\":0}. For a conditional nested in arithmetic, return the WHOLE expression as nested objects: elapsed + (if enabled then delta else 0) becomes {\"+\":[\"elapsed\",{\"if\":\"enabled\",\"then\":\"delta\",\"else\":0}]}. Never put a JSON object inside an expression string. Preserve both values and the original condition; then/else action arrays are different from expression values.",
+          "path": "/controller/outputs/io_5"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_5: Invalid conditional expression 'RealFunctions::floor((if io_4 then io_2 else dhtTempLastValid))'. if condition then value else value is not the executable SysML expression syntax. Return {\"if\":\"condition\",\"then\":\"yesValue\",\"else\":\"noValue\"}; this renders (if condition ? yesValue else noValue). Example: if remaining > 0 then remaining - delta else 0 becomes {\"if\":\"remaining > 0\",\"then\":\"remaining - delta\",\"else\":0}. For a conditional nested in arithmetic, return the WHOLE expression as nested objects: elapsed + (if enabled then delta else 0) becomes {\"+\":[\"elapsed\",{\"if\":\"enabled\",\"then\":\"delta\",\"else\":0}]}. Never put a JSON object inside an expression string. Preserve both values and the original condition; then/else action arrays are different from expression values.",
+          "path": "/controller/outputs/io_5"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/outputs/io_5: Invalid conditional expression 'RealFunctions::floor((if io_4 then io_2 else dhtTempLastValid))'. if condition then value else value is not the executable SysML expression syntax. Return {\"if\":\"condition\",\"then\":\"yesValue\",\"else\":\"noValue\"}; this renders (if condition ? yesValue else noValue). Example: if remaining > 0 then remaining - delta else 0 becomes {\"if\":\"remaining > 0\",\"then\":\"remaining - delta\",\"else\":0}. For a conditional nested in arithmetic, return the WHOLE expression as nested objects: elapsed + (if enabled then delta else 0) becomes {\"+\":[\"elapsed\",{\"if\":\"enabled\",\"then\":\"delta\",\"else\":0}]}. Never put a JSON object inside an expression string. Preserve both values and the original condition; then/else action arrays are different from expression values."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"pageIndex\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dhtTempLastValid\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"dhtHumLastValid\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"reportAccumMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_4\",\n        \"then\": [\n          {\n            \"assign\": \"dhtTempLastValid\",\n            \"value\": \"io_2\"\n          },\n          {\n            \"assign\": \"dhtHumLastValid\",\n            \"value\": \"io_3\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"pageIndex\",\n            \"value\": {\n              \"if\": \"pageIndex == 0\",\n              \"then\": 1,\n              \"else\": {\n                \"if\": \"pageIndex == 1\",\n                \"then\": 2,\n                \"else\": 0\n              }\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"reportAccumMs\",\n        \"value\": \"reportAccumMs + io_6\"\n      },\n      {\n        \"if\": \"reportAccumMs >= 2000\",\n        \"then\": [\n          {\n            \"assign\": \"reportAccumMs\",\n            \"value\": \"reportAccumMs - 2000\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_5\": {\n        \"if\": \"pageIndex == 0\",\n        \"then\": {\n          \"if\": \"io_0 >= 1000.0\",\n          \"then\": 9999,\n          \"else\": {\n            \"if\": \"io_0 <= 0.0\",\n            \"then\": 0,\n            \"else\": \"RealFunctions::floor(io_0)\"\n          }\n        },\n        \"else\": {\n          \"if\": \"pageIndex == 1\",\n          \"then\": {\n            \"if\": \"io_4\",\n            \"then\": \"RealFunctions::floor(io_2)\",\n            \"else\": \"RealFunctions::floor(dhtTempLastValid)\"\n          },\n          \"else\": {\n            \"if\": \"io_4\",\n            \"then\": \"RealFunctions::floor(io_3)\",\n            \"else\": \"RealFunctions::floor(dhtHumLastValid)\"\n          }\n        }\n      },\n      \"serial_0_trigger\": \"reportAccumMs >= 2000\",\n      \"serial_0_value_0\": \"io_0\",\n      \"serial_0_value_1\": {\n        \"if\": \"io_4\",\n        \"then\": \"io_2\",\n        \"else\": \"dhtTempLastValid\"\n      },\n      \"serial_0_value_2\": {\n        \"if\": \"io_4\",\n        \"then\": \"io_3\",\n        \"else\": \"dhtHumLastValid\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Initialize pageIndex=0; apply io_1 rising edge (io_1: false->true once, then false) with constant io_0 and constant io_4=true; repeat for two more presses.\",\n        \"oracle\": \"After each rising edge, io_5 changes in order: light page (pageIndex=0) then temperature page (pageIndex=1) then humidity page (pageIndex=2) and wraps back to light page on next press.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Keep io_6=10 for 201 steps (total >2000ms). Hold io_0, io_4=true with io_2 and io_3 constant.\",\n        \"oracle\": \"serial_0_trigger becomes true at the first control step where accumulated elapsed time reaches/exceeds 2000ms, and the reported serial_0_value_0/1/2 match the current sensor values (io_0, io_2, io_3) on that step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_4=false for several steps after previously having io_4=true with io_2=25.0, io_3=60.0. Then let io_6 advance until a serial_0_trigger time point.\",\n        \"oracle\": \"serial_0_value_1 and serial_0_value_2 equal the last valid held values (25.0 and 60.0) even while io_4 is false; serial_0_value_0 still equals io_0.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_6 : Integer;\n    attribute pageIndex : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute dhtTempLastValid : Real := 0.0;\n    attribute dhtHumLastValid : Real := 0.0;\n    attribute reportAccumMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_4 {\n        first start;\n        then assign dhtTempLastValid := io_2;\n        then assign dhtHumLastValid := io_3;\n      }\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign pageIndex := (if pageIndex == 0 ? 1 else (if pageIndex == 1 ? 2 else 0));\n      }\n      then assign previousPressed := io_1;\n      then assign reportAccumMs := reportAccumMs + io_6;\n      then if reportAccumMs >= 2000 {\n        first start;\n        then assign reportAccumMs := reportAccumMs - 2000;\n      }\n    }\n    out attribute io_5 : Integer = (if pageIndex == 0 ? (if io_0 >= 1000.0 ? 9999 else (if io_0 <= 0.0 ? 0 else RealFunctions::floor(io_0))) else (if pageIndex == 1 ? (if io_4 ? RealFunctions::floor(io_2) else RealFunctions::floor(dhtTempLastValid)) else (if io_4 ? RealFunctions::floor(io_3) else RealFunctions::floor(dhtHumLastValid))));\n    out attribute serial_0_trigger : Boolean = reportAccumMs >= 2000;\n    out attribute serial_0_value_0 : Real = io_0;\n    out attribute serial_0_value_1 : Real = (if io_4 ? io_2 else dhtTempLastValid);\n    out attribute serial_0_value_2 : Real = (if io_4 ? io_3 else dhtHumLastValid);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

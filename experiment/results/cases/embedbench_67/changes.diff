@@ -1,0 +1,108 @@
+--- original.ino
++++ repaired.ino
+@@ -57,59 +57,24 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_0, double* io_1, double* io_2) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    double sysml_conditional_2 = 0;
+-    double sysml_conditional_3 = 0;
+-    if (sysml_state_debouncedPressed) {
+-        if ((!io_0)) {
+-            sysml_state_debouncedPressed = false;
+-        }
++    static bool previous=false,started=false,reverse=false;
++    static uint32_t began=0;
++    static double fromA=0,fromB=0,targetA=0,targetB=0;
++    uint32_t now=millis();
++    double fraction=min(1.0,(uint32_t)(now-began)/1000.0);
++    double a=fromA+(targetA-fromA)*fraction,b=fromB+(targetB-fromB)*fraction;
++    if (io_0 && !previous) {
++        fromA=a;
++        fromB=b;
++        began=now;
++        reverse=started && !reverse;
++        started=true;
++        targetA=reverse ? 180 : 0;
++        targetB=180-targetA;
+     }
+-    sysml_lazy_0 = !sysml_state_debouncedPressed;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = io_0;
+-    }
+-    if (sysml_lazy_0) {
+-        sysml_state_debounceCounter = (sysml_state_debounceCounter + 1);
+-    }
+-    else {
+-        if ((!io_0)) {
+-            sysml_state_debounceCounter = 0;
+-        }
+-    }
+-    if ((sysml_state_debounceCounter >= 3)) {
+-        sysml_state_debouncedPressed = true;
+-    }
+-    sysml_lazy_1 = sysml_state_debouncedPressed;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = !sysml_state_previousPressed;
+-    }
+-    if (sysml_lazy_1) {
+-        sysml_state_toggleState = (!sysml_state_toggleState);
+-        if (sysml_state_toggleState) {
+-            sysml_conditional_2 = 0.0;
+-        }
+-        else {
+-            sysml_conditional_2 = 180.0;
+-        }
+-        sysml_state_servo1Angle = sysml_conditional_2;
+-        if (sysml_state_toggleState) {
+-            sysml_conditional_3 = 180.0;
+-        }
+-        else {
+-            sysml_conditional_3 = 0.0;
+-        }
+-        sysml_state_servo2Angle = sysml_conditional_3;
+-    }
+-    sysml_state_previousPressed = sysml_state_debouncedPressed;
+-    double sysml_value_0 = 0;
+-    sysml_value_0 = sysml_state_servo1Angle;
+-    double sysml_value_1 = 0;
+-    sysml_value_1 = sysml_state_servo2Angle;
+-    *io_1 = sysml_value_0;
+-    *io_2 = sysml_value_1;
++    previous=io_0;
++    *io_1=a;
++    *io_2=b;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -132,9 +97,18 @@
+ Servo hw_servo_io_2;
+ static int hw_servo_previous_io_2 = -1;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+-  pinMode(2, INPUT);
++  pinMode(2, INPUT_PULLUP);
+   hw_servo_io_1.attach(3);
+   if (isfinite((double)hw_value_io_1) && hw_value_io_1 >= 0 && hw_value_io_1 <= 180) {
+     int command = (int)hw_value_io_1;
+@@ -158,7 +132,7 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(2) == HIGH);
++    hw_value_io_0 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

@@ -1,0 +1,165 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "displayCycleMs",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "previousVibration",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "faultEntry",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "calculations": [
+      {
+        "name": "currentAmperes",
+        "type": "f64",
+        "expression": "io_0 * 10.0 / 1023.0"
+      },
+      {
+        "name": "temperatureCelsius",
+        "type": "f64",
+        "expression": "io_1 * 500.0 / 1023.0"
+      },
+      {
+        "name": "motorStatus",
+        "type": "i32",
+        "expression": {
+          "if": "io_2",
+          "then": 3,
+          "else": {
+            "if": {
+              ">": [
+                "temperatureCelsius",
+                60.0
+              ]
+            },
+            "then": 2,
+            "else": {
+              "if": {
+                ">": [
+                  "currentAmperes",
+                  7.0
+                ]
+              },
+              "then": 1,
+              "else": 0
+            }
+          }
+        }
+      }
+    ],
+    "updates": [
+      {
+        "assign": "faultEntry",
+        "value": {
+          "and": [
+            "io_2",
+            {
+              "not": "previousVibration"
+            }
+          ]
+        }
+      },
+      {
+        "assign": "displayCycleMs",
+        "value": "displayCycleMs + io_7"
+      },
+      {
+        "assign": "displayCycleMs",
+        "value": "displayCycleMs - 6000.0 * RealFunctions::floor(displayCycleMs / 6000.0)"
+      },
+      {
+        "assign": "previousVibration",
+        "value": "io_2"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": {
+          ">": [
+            "temperatureCelsius",
+            60.0
+          ]
+        },
+        "then": 255.0,
+        "else": 0.0
+      },
+      "io_4": {
+        "if": "io_2",
+        "then": 1000,
+        "else": 0
+      },
+      "io_5": "io_2",
+      "io_6": {
+        "if": {
+          "<": [
+            "displayCycleMs",
+            2000.0
+          ]
+        },
+        "then": "RealFunctions::floor(currentAmperes)",
+        "else": {
+          "if": {
+            "<": [
+              "displayCycleMs",
+              4000.0
+            ]
+          },
+          "then": "RealFunctions::floor(temperatureCelsius)",
+          "else": "motorStatus"
+        }
+      },
+      "serial_0_trigger": "faultEntry",
+      "serial_0_value_0": {
+        "if": "io_2",
+        "then": 3,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Apply current ADC values 716 and 717 and temperature ADC values 122 and 123. Exercise each combination with vibration inactive, then active, then released. Observe the status display page.",
+        "oracle": "Calibrations are ADC*10/1023 amperes and ADC*500/1023 Celsius. Status is 3 during vibration, otherwise 2 above 60 Celsius, otherwise 1 above 7 amperes, otherwise 0. Release immediately recomputes status without latching.",
+        "requirement_text": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Change temperature ADC between 122 and 123 with both vibration states and both low and high current.",
+        "oracle": "Fan command is respectively 0 and 255, independent of current and mechanical-fault priority, and changes within 250 ms.",
+        "requirement_text": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Start with vibration active; hold, release, reactivate, hold, and release again. Also repeat starting inactive. Drive physical D2 LOW for active and HIGH for inactive.",
+        "oracle": "Each fault entry, including an initially active first sample, emits exactly one unprefixed integer line 3 at 9600 baud. Held faults do not repeat reports. Active faults command a continuous 1000 Hz tone and illuminated LED; release silences the tone and extinguishes the LED within 250 ms.",
+        "requirement_text": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Apply distinct current, temperature, and status values. Advance io_7 across 2000, 4000, and 6000 ms boundaries and through multiple complete cycles, including a delta spanning several pages. Change sensor inputs and release vibration within a selected page.",
+        "oracle": "Display begins with floored current amperes, switches to floored Celsius at 2000 ms, and to current status at 4000 ms; the cycle repeats every 6000 ms with residual elapsed time preserved. Selected values refresh each step without resetting rotation. TM1637 uses the resolved D4 clock and D3 data wiring.",
+        "requirement_text": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_7 : Integer;\n    attribute displayCycleMs : Real := 0.0;\n    attribute previousVibration : Boolean := false;\n    attribute faultEntry : Boolean := false;\n    attribute currentAmperes : Real = io_0 * 10.0 / 1023.0;\n    attribute temperatureCelsius : Real = io_1 * 500.0 / 1023.0;\n    attribute motorStatus : Integer = (if io_2 ? 3 else (if ((temperatureCelsius) > (60.0)) ? 2 else (if ((currentAmperes) > (7.0)) ? 1 else 0)));\n    perform action tick {\n      first start;\n      then assign faultEntry := ((io_2) and ((not previousVibration)));\n      then assign displayCycleMs := displayCycleMs + io_7;\n      then assign displayCycleMs := displayCycleMs - 6000.0 * RealFunctions::floor(displayCycleMs / 6000.0);\n      then assign previousVibration := io_2;\n    }\n    out attribute io_3 : Real = (if ((temperatureCelsius) > (60.0)) ? 255.0 else 0.0);\n    out attribute io_4 : Integer = (if io_2 ? 1000 else 0);\n    out attribute io_5 : Boolean = io_2;\n    out attribute io_6 : Integer = (if ((displayCycleMs) < (2000.0)) ? RealFunctions::floor(currentAmperes) else (if ((displayCycleMs) < (4000.0)) ? RealFunctions::floor(temperatureCelsius) else motorStatus));\n    out attribute serial_0_trigger : Boolean = faultEntry;\n    out attribute serial_0_value_0 : Integer = (if io_2 ? 3 else 0);\n  }\n  part system : Controller;\n}\n"
+}

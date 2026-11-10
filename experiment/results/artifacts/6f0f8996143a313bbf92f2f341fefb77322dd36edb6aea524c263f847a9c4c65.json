@@ -1,0 +1,291 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeAuto",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "manualTargetFan",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "prevModeBtn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevTargetBtn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "manualFanActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "manualLightActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "manualPumpActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "faultAlarmed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevFault",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "displayIndex",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevModeBtn"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeAuto",
+            "value": {
+              "if": "modeAuto",
+              "then": false,
+              "else": true
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevTargetBtn"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "manualTargetFan",
+            "value": {
+              "if": "manualTargetFan",
+              "then": false,
+              "else": true
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevModeBtn",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevTargetBtn",
+        "value": "io_1"
+      },
+      {
+        "if": {
+          "not": "modeAuto"
+        },
+        "then": [
+          {
+            "assign": "manualFanActive",
+            "value": "manualTargetFan"
+          },
+          {
+            "assign": "manualLightActive",
+            "value": {
+              "if": "manualTargetFan",
+              "then": false,
+              "else": true
+            }
+          },
+          {
+            "assign": "manualPumpActive",
+            "value": false
+          }
+        ],
+        "else": [
+          {
+            "assign": "manualFanActive",
+            "value": false
+          },
+          {
+            "assign": "manualLightActive",
+            "value": false
+          },
+          {
+            "assign": "manualPumpActive",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "faultAlarmed",
+        "value": {
+          "not": "io_11"
+        }
+      },
+      {
+        "assign": "prevFault",
+        "value": "faultAlarmed"
+      },
+      {
+        "assign": "displayIndex",
+        "value": {
+          "+": [
+            "displayIndex",
+            1
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "io_5": {
+        "if": "modeAuto",
+        "then": {
+          "if": {
+            ">=": [
+              "io_9",
+              30.0
+            ]
+          },
+          "then": 255.0,
+          "else": 0.0
+        },
+        "else": {
+          "if": "manualFanActive",
+          "then": "io_2",
+          "else": 0.0
+        }
+      },
+      "io_6": {
+        "if": "modeAuto",
+        "then": {
+          "if": {
+            "<=": [
+              "io_3",
+              400.0
+            ]
+          },
+          "then": true,
+          "else": false
+        },
+        "else": {
+          "if": "manualLightActive",
+          "then": {
+            ">": [
+              "io_2",
+              0.0
+            ]
+          },
+          "else": false
+        }
+      },
+      "io_7": {
+        "if": "modeAuto",
+        "then": {
+          "if": {
+            "<=": [
+              "io_4",
+              400.0
+            ]
+          },
+          "then": true,
+          "else": false
+        },
+        "else": {
+          "if": "manualPumpActive",
+          "then": {
+            ">": [
+              "io_2",
+              0.0
+            ]
+          },
+          "else": false
+        }
+      },
+      "io_8": {
+        "if": "faultAlarmed",
+        "then": 2000,
+        "else": 0
+      },
+      "io_12": {
+        "if": {
+          "==": [
+            "displayIndex",
+            0
+          ]
+        },
+        "then": {
+          "RealFunctions::floor": "io_9"
+        },
+        "else": {
+          "if": {
+            "==": [
+              "displayIndex",
+              1
+            ]
+          },
+          "then": {
+            "RealFunctions::floor": "io_3"
+          },
+          "else": {
+            "RealFunctions::floor": "io_4"
+          }
+        }
+      },
+      "serial_0_trigger": "faultAlarmed",
+      "serial_0_value_0": "faultAlarmed",
+      "serial_0_value_1": "io_3",
+      "serial_0_value_2": "io_4"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "设定io_0为模式切换按钮：初始modeAuto=true；在一个控制步将io_0从false跳到true再回到false（上升沿），然后保持模式稳定，并令io_11=false以触发DHT异常；采样io_3与io_4为非零固定值。",
+        "oracle": "serial_0_trigger为true、serial_0_value_0为true、serial_0_value_1等于光照输入io_3、serial_0_value_2等于土壤湿度输入io_4；蜂鸣器输出io_8为2000且TM1637显示io_12使用轮流索引表达式（不因报警而变为常数）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "置modeAuto=true并令io_11=true；依次设置io_9=31.0、io_3=300.0、io_4=300.0，每次保持1个控制步。",
+        "oracle": "风扇PWM输出io_5应为255.0（温度阈值条件满足）；补光LED输出io_6应为true（光照阈值条件满足）；水泵继电器输出io_7应为true（土壤湿度阈值条件满足）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "从modeAuto=true切到手动：对io_0产生一次上升沿；保持io_11=true；设定io_2=123.0；然后对io_1产生一次上升沿切换当前控制对象（fan/Light选择反转），各保持1个控制步。",
+        "oracle": "在手动模式下，io_5随手动风扇选择而在fan选择时等于io_2、非fan选择时为0；补光LEDio_6在light选择时为(io_2>0.0)即true，在非light选择时为false。水泵io_7在该控制策略下应始终为false。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_9 : Real;\n    in attribute io_10 : Real;\n    in attribute io_11 : Boolean;\n    attribute modeAuto : Boolean := true;\n    attribute manualTargetFan : Boolean := true;\n    attribute prevModeBtn : Boolean := false;\n    attribute prevTargetBtn : Boolean := false;\n    attribute manualFanActive : Boolean := false;\n    attribute manualLightActive : Boolean := false;\n    attribute manualPumpActive : Boolean := false;\n    attribute faultAlarmed : Boolean := false;\n    attribute prevFault : Boolean := false;\n    attribute displayIndex : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not prevModeBtn))) {\n        first start;\n        then assign modeAuto := (if modeAuto ? false else true);\n      }\n      then if ((io_1) and ((not prevTargetBtn))) {\n        first start;\n        then assign manualTargetFan := (if manualTargetFan ? false else true);\n      }\n      then assign prevModeBtn := io_0;\n      then assign prevTargetBtn := io_1;\n      then if (not modeAuto) {\n        first start;\n        then assign manualFanActive := manualTargetFan;\n        then assign manualLightActive := (if manualTargetFan ? false else true);\n        then assign manualPumpActive := false;\n      } else {\n        first start;\n        then assign manualFanActive := false;\n        then assign manualLightActive := false;\n        then assign manualPumpActive := false;\n      }\n      then assign faultAlarmed := (not io_11);\n      then assign prevFault := faultAlarmed;\n      then assign displayIndex := ((displayIndex) + (1));\n    }\n    out attribute io_5 : Real = (if modeAuto ? (if ((io_9) >= (30.0)) ? 255.0 else 0.0) else (if manualFanActive ? io_2 else 0.0));\n    out attribute io_6 : Boolean = (if modeAuto ? (if ((io_3) <= (400.0)) ? true else false) else (if manualLightActive ? ((io_2) > (0.0)) else false));\n    out attribute io_7 : Boolean = (if modeAuto ? (if ((io_4) <= (400.0)) ? true else false) else (if manualPumpActive ? ((io_2) > (0.0)) else false));\n    out attribute io_8 : Integer = (if faultAlarmed ? 2000 else 0);\n    out attribute io_12 : Integer = (if ((displayIndex) == (0)) ? RealFunctions::floor(io_9) else (if ((displayIndex) == (1)) ? RealFunctions::floor(io_3) else RealFunctions::floor(io_4)));\n    out attribute serial_0_trigger : Boolean = faultAlarmed;\n    out attribute serial_0_value_0 : Boolean = faultAlarmed;\n    out attribute serial_0_value_1 : Real = io_3;\n    out attribute serial_0_value_2 : Real = io_4;\n  }\n  part system : Controller;\n}\n"
+}

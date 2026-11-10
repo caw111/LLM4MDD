@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Assume the MPU6050 default I2C address 104 because no AD0 connection or alternate address is specified.",
+    "Preserve SDA=A4, SCL=A5, VCC=3.3V and the diagram's GND.2 connection. GND.2 and the prose/configuration GND.3 are electrically common on this Uno.",
+    "Interpret the loop's 500 ms delay as a nominal 500 ms acquisition and reporting cadence, not a 500 ms control step.",
+    "The SysML model uses actual elapsed time for report scheduling, emits the readiness message once upon the first valid acquisition, and suppresses measurement reports while validity is false. Initial zero measurements are placeholders, not successful sensor readings.",
+    "Use the specified two-decimal compound serial format. Initialize Serial at 9600 baud; no serial receiver is required, so receive framing settings do not apply.",
+    "Do not introduce a startup delay; setup must return within 500 ms."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "rad/s",
+      "initial": 0,
+      "meaning": "Measured X-axis angular velocity in rad/s",
+      "sample_period_ms": 500,
+      "device": "mpu6050 6-axis accel & gyro sensor1",
+      "hardware": "{\"address\": 104, \"axis\": \"x\", \"kind\": \"mpu_gyro\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "mpu_gyro",
+        "address": 104,
+        "sda_pin": "A4",
+        "axis": "x",
+        "scl_pin": "A5"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "rad/s",
+      "initial": 0,
+      "meaning": "Measured Y-axis angular velocity in rad/s",
+      "sample_period_ms": 500,
+      "device": "mpu6050 6-axis accel & gyro sensor1",
+      "hardware": "{\"address\": 104, \"axis\": \"y\", \"kind\": \"mpu_gyro\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "mpu_gyro",
+        "address": 104,
+        "sda_pin": "A4",
+        "axis": "y",
+        "scl_pin": "A5"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "rad/s",
+      "initial": 0,
+      "meaning": "Measured Z-axis angular velocity in rad/s",
+      "sample_period_ms": 500,
+      "device": "mpu6050 6-axis accel & gyro sensor1",
+      "hardware": "{\"address\": 104, \"axis\": \"z\", \"kind\": \"mpu_gyro\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "mpu_gyro",
+        "address": 104,
+        "sda_pin": "A4",
+        "axis": "z",
+        "scl_pin": "A5"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "MPU6050 acquisition validity",
+      "sample_period_ms": 500,
+      "device": "mpu6050 6-axis accel & gyro sensor1",
+      "hardware": "{\"address\": 104, \"kind\": \"mpu_valid\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "mpu_valid",
+        "address": 104,
+        "sda_pin": "A4",
+        "scl_pin": "A5"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "One-time report gate after successful MPU6050 initialization is established",
+      "sample_period_ms": 10,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"MPU6050 ready!\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "text": "MPU6050 ready!",
+        "baud": 9600
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual elapsed milliseconds since the previous control step for report scheduling",
+      "sample_period_ms": 10,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report valid gyroscope measurements every 500 ms after readiness",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\", \"format\": \"X: {0:.2f}, Y: {1:.2f}, Z: {2:.2f} rad/s\", \"values\": [\"serial_0_value_0\", \"serial_0_value_1\", \"serial_0_value_2\"]}",
+      "binding": {
+        "kind": "report_trigger",
+        "format": "X: {0:.2f}, Y: {1:.2f}, Z: {2:.2f} rad/s",
+        "values": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2"
+        ]
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "rad/s",
+      "initial": 0,
+      "meaning": "X-axis angular velocity",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"X: \", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "X: "
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "rad/s",
+      "initial": 0,
+      "meaning": "Y-axis angular velocity",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Y: \", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "Y: "
+      }
+    },
+    {
+      "name": "serial_0_value_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "rad/s",
+      "initial": 0,
+      "meaning": "Z-axis angular velocity",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Z: \", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "Z: "
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Gyroscope\n\n## Project Description\nThis is an Arduino project that uses MPU6050 6-axis accelerometer & gyro sensor to measure the rotation.\n\n## Hardware Components\n- Arduino Uno\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nThe MPU6050 sensor is connected to the Arduino. The VCC pin is connected to 3.3V, the GND pin to gnd3, the SCL pin to A5, and the SDA pin to A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the MPU sensor can be initialized successfully, and print 'MPU6050 ready!' to the serial monitor\n3. Continuously read the gryoscope data from the MPU6050 sensor\n4. Print the X, Y, and Z axis rotation values in rad/s to the serial monitor, for example: 'X: 1.13, Y: 2.97, Z: -2.01 rad/s'\n\n## Success Criteria\nThe test is successful when:\n1. Correct X, Y, Z gyroscope result is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Adafruit_MPU6050.h, Adafruit_Sensor.h, Wire.h libraries.\n- Delay 500ms in every loop.\n- MPU6050 has I2C interface.\n\n## Variants\nThere may be variants with GND connected to different pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of MPU6050\",\n    \"config\": {\n        \"scl_pin\": \"A5\",\n        \"sda_pin\": \"A4\",\n        \"gnd_pin\": \"GND.3\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": 234.22,\n            \"left\": 117.52,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"black\",\n            [\n                \"v38.3\",\n                \"h32.7\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:3.3V\",\n            \"red\",\n            [\n                \"v-38.4\",\n                \"h-67.12\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h67.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v-38.4\",\n                \"h67.28\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "effective_requirement": "# Gyroscope\n\n## Project Description\nThis is an Arduino project that uses MPU6050 6-axis accelerometer & gyro sensor to measure the rotation.\n\n## Hardware Components\n- Arduino Uno\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nThe MPU6050 sensor is connected to the Arduino. The VCC pin is connected to 3.3V, the GND pin to gnd3, the SCL pin to A5, and the SDA pin to A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the MPU sensor can be initialized successfully, and print 'MPU6050 ready!' to the serial monitor\n3. Continuously read the gryoscope data from the MPU6050 sensor\n4. Print the X, Y, and Z axis rotation values in rad/s to the serial monitor, for example: 'X: 1.13, Y: 2.97, Z: -2.01 rad/s'\n\n## Success Criteria\nThe test is successful when:\n1. Correct X, Y, Z gyroscope result is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Adafruit_MPU6050.h, Adafruit_Sensor.h, Wire.h libraries.\n- Delay 500ms in every loop.\n- MPU6050 has I2C interface.\n\n## Variants\nThere may be variants with GND connected to different pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of MPU6050\",\n    \"config\": {\n        \"scl_pin\": \"A5\",\n        \"sda_pin\": \"A4\",\n        \"gnd_pin\": \"GND.3\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": 234.22,\n            \"left\": 117.52,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"black\",\n            [\n                \"v38.3\",\n                \"h32.7\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:3.3V\",\n            \"red\",\n            [\n                \"v-38.4\",\n                \"h-67.12\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h67.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v-38.4\",\n                \"h67.28\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Read value of MPU6050",
+        "config": {
+          "scl_pin": "A5",
+          "sda_pin": "A4",
+          "gnd_pin": "GND.3"
+        },
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": -9,
+            "left": -19.8,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-mpu6050",
+            "id": "mpu6050 6-axis accel & gyro sensor1",
+            "top": 234.22,
+            "left": 117.52,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "arduino uno1:GND.2",
+            "mpu6050 6-axis accel & gyro sensor1:GND",
+            "black",
+            [
+              "v38.3",
+              "h32.7"
+            ]
+          ],
+          [
+            "mpu6050 6-axis accel & gyro sensor1:VCC",
+            "arduino uno1:3.3V",
+            "red",
+            [
+              "v-38.4",
+              "h-67.12"
+            ]
+          ],
+          [
+            "mpu6050 6-axis accel & gyro sensor1:SCL",
+            "arduino uno1:A5",
+            "green",
+            [
+              "v-28.8",
+              "h67.28"
+            ]
+          ],
+          [
+            "mpu6050 6-axis accel & gyro sensor1:SDA",
+            "arduino uno1:A4",
+            "green",
+            [
+              "v-38.4",
+              "h67.28"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# Gyroscope\n\n## Project Description\nThis is an Arduino project that uses MPU6050 6-axis accelerometer & gyro sensor to measure the rotation.\n\n## Hardware Components\n- Arduino Uno\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nThe MPU6050 sensor is connected to the Arduino. The VCC pin is connected to 3.3V, the GND pin to gnd3, the SCL pin to A5, and the SDA pin to A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Check if the MPU sensor can be initialized successfully, and print 'MPU6050 ready!' to the serial monitor\n3. Continuously read the gryoscope data from the MPU6050 sensor\n4. Print the X, Y, and Z axis rotation values in rad/s to the serial monitor, for example: 'X: 1.13, Y: 2.97, Z: -2.01 rad/s'\n\n## Success Criteria\nThe test is successful when:\n1. Correct X, Y, Z gyroscope result is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Adafruit_MPU6050.h, Adafruit_Sensor.h, Wire.h libraries.\n- Delay 500ms in every loop.\n- MPU6050 has I2C interface.\n\n## Variants\nThere may be variants with GND connected to different pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of MPU6050\",\n    \"config\": {\n        \"scl_pin\": \"A5\",\n        \"sda_pin\": \"A4\",\n        \"gnd_pin\": \"GND.3\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": 234.22,\n            \"left\": 117.52,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"black\",\n            [\n                \"v38.3\",\n                \"h32.7\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:3.3V\",\n            \"red\",\n            [\n                \"v-38.4\",\n                \"h-67.12\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h67.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v-38.4\",\n                \"h67.28\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2"
+        ]
+      }
+    ],
+    "serial_text_outputs": [
+      {
+        "id": "io_4",
+        "trigger_port": "io_4",
+        "kind": "serial_text_output",
+        "text": "MPU6050 ready!",
+        "baud": 9600
+      }
+    ]
+  }
+}

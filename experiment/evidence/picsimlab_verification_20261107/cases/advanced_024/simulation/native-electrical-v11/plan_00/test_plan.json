@@ -1,0 +1,194 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests event-counting invariants: proximity transitions cannot create more counts than possible deposits, held sensor levels cannot repeatedly add deposits, and the displayed total remains stable without new deposits. These bounds remain valid whether the unspecified full threshold permits or blocks counting. Exact positive increments, full-state entry, alarm timing, and reset recovery cannot be independently asserted because the full threshold, proximity active levels, and alarm/reset semantics are unspecified. Separate category totals have no specified externally observable interface.",
+  "assumptions": [
+    "TM1637 displays the combined deposit count numerically.",
+    "Each complete isolated proximity pulse represents at most one deposit; a continuously held sensor level is not a sequence of deposits.",
+    "Proximity active polarity is unspecified. The stimulus exercises both levels, and count bounds allow either polarity, including a possible startup detection on each initially HIGH sensor.",
+    "The full threshold and distance-to-fullness conversion are unspecified. No tested distance is assumed to guarantee either empty or full status.",
+    "The D7 button uses the disclosed bench default: INPUT_PULLUP, released HIGH and pressed LOW.",
+    "The reference sketch chooses active-LOW proximity sensors, a 20 cm full threshold, a latched alarm, and a 2000 Hz buzzer carrier. These are reference implementation choices, not candidate acceptance requirements.",
+    "The LED uses the disclosed active-HIGH bench default. The requirement does not specify its exact signaling pattern, so no LED pattern is asserted."
+  ],
+  "horizon_ms": 18000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 7,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 9,
+      "value": 400
+    },
+    {
+      "at_ms": 2000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 5000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 6500,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 9500,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 11000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 12000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 13500,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 14500,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [
+    {
+      "trigger_pin": 8,
+      "echo_pin": 9
+    }
+  ],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "display",
+      "id": "initial_total_bound",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "name": "tm:4:5",
+      "at_ms": 1500,
+      "min": 0,
+      "max": 2,
+      "numeric": true
+    },
+    {
+      "kind": "relation",
+      "id": "first_sensor_held_no_repeat",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        2700,
+        3700,
+        4700
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "display",
+      "id": "first_complete_pulse_bound",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "name": "tm:4:5",
+      "at_ms": 6000,
+      "min": 0,
+      "max": 3,
+      "numeric": true
+    },
+    {
+      "kind": "relation",
+      "id": "second_sensor_held_no_repeat",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        7200,
+        8200,
+        9200
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "display",
+      "id": "both_categories_pulse_bound",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "name": "tm:4:5",
+      "at_ms": 10300,
+      "min": 0,
+      "max": 4,
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "repeated_first_category_bound",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "name": "tm:4:5",
+      "at_ms": 12800,
+      "min": 0,
+      "max": 5,
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "repeated_second_category_bound",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "name": "tm:4:5",
+      "at_ms": 15300,
+      "min": 0,
+      "max": 6,
+      "numeric": true
+    },
+    {
+      "kind": "relation",
+      "id": "no_deposits_total_stable",
+      "requirement_quote": "系统分别统计两类投递次数并显示总次数",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        15500,
+        16500,
+        17500
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nunsigned long recyclable = 0;\nunsigned long other = 0;\nbool full = false;\nbool previousRecyclable = false;\nbool previousOther = false;\nbool previousButton = false;\nunsigned long lastSample = 0;\nunsigned long lastReport = 0;\nbool haveDistance = false;\nfloat distanceCm = 400.0f;\n\nfloat readDistance() {\n  digitalWrite(8, LOW);\n  delayMicroseconds(2);\n  digitalWrite(8, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(8, LOW);\n  unsigned long duration = pulseIn(9, HIGH, 30000UL);\n  if (duration == 0) return -1.0f;\n  return duration * 0.0343f / 2.0f;\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(3, INPUT_PULLUP);\n  pinMode(7, INPUT_PULLUP);\n  pinMode(8, OUTPUT);\n  pinMode(9, INPUT);\n  pinMode(6, OUTPUT);\n  pinMode(13, OUTPUT);\n  digitalWrite(8, LOW);\n  digitalWrite(13, LOW);\n  Serial.begin(9600);\n  display.setBrightness(7);\n  display.showNumberDec(0);\n  lastSample = millis() - 100UL;\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (now - lastSample >= 100UL) {\n    lastSample = now;\n    float measured = readDistance();\n    if (measured >= 0.0f) {\n      distanceCm = measured;\n      haveDistance = true;\n      if (distanceCm < 20.0f) full = true;\n    }\n  }\n\n  bool button = digitalRead(7) == LOW;\n  bool a = digitalRead(2) == LOW;\n  bool b = digitalRead(3) == LOW;\n  if (button && !previousButton && haveDistance && distanceCm >= 20.0f) {\n    recyclable = 0;\n    other = 0;\n    full = false;\n  }\n  previousButton = button;\n\n  if (!full) {\n    if (a && !previousRecyclable) ++recyclable;\n    if (b && !previousOther) ++other;\n  }\n  previousRecyclable = a;\n  previousOther = b;\n\n  digitalWrite(13, full ? HIGH : LOW);\n  if (full) {\n    tone(6, 2000);\n    if (lastReport == 0 || now - lastReport >= 1000UL) {\n      Serial.println(\"empty bin needed\");\n      lastReport = now;\n    }\n  } else {\n    noTone(6);\n    lastReport = 0;\n  }\n  display.showNumberDec((recyclable + other) % 10000UL);\n  delay(5);\n}\n",
+  "electrical_led_pins": {}
+}

@@ -1,0 +1,296 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "ledPhaseMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "sevsegPhaseMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "sevsegDigit",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "servo1PhaseMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "servo2PhaseMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "servo1AtEndpoint",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "servo2AtEndpoint",
+        "type": "bool",
+        "initial": "true"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "ledPhaseMs",
+        "value": "ledPhaseMs + elapsedMilliseconds"
+      },
+      {
+        "if": "ledPhaseMs >= 2000",
+        "then": [
+          {
+            "assign": "ledPhaseMs",
+            "value": "ledPhaseMs - 2000"
+          }
+        ]
+      },
+      {
+        "assign": "sevsegPhaseMs",
+        "value": "sevsegPhaseMs + elapsedMilliseconds"
+      },
+      {
+        "if": "sevsegPhaseMs >= 2000",
+        "then": [
+          {
+            "assign": "sevsegPhaseMs",
+            "value": "sevsegPhaseMs - 2000"
+          },
+          {
+            "assign": "sevsegDigit",
+            "value": {
+              "if": "sevsegDigit == 9",
+              "then": 0,
+              "else": "sevsegDigit + 1"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "servo1PhaseMs",
+        "value": "servo1PhaseMs + elapsedMilliseconds"
+      },
+      {
+        "assign": "servo2PhaseMs",
+        "value": "servo2PhaseMs + elapsedMilliseconds"
+      },
+      {
+        "if": "servo1AtEndpoint and servo1PhaseMs >= 2000",
+        "then": [
+          {
+            "assign": "servo1PhaseMs",
+            "value": "servo1PhaseMs - 2000"
+          },
+          {
+            "assign": "servo1AtEndpoint",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": "not servo1AtEndpoint and servo1PhaseMs >= 2000",
+        "then": [
+          {
+            "assign": "servo1PhaseMs",
+            "value": "servo1PhaseMs - 2000"
+          },
+          {
+            "assign": "servo1AtEndpoint",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": "servo2AtEndpoint and servo2PhaseMs >= 2000",
+        "then": [
+          {
+            "assign": "servo2PhaseMs",
+            "value": "servo2PhaseMs - 2000"
+          },
+          {
+            "assign": "servo2AtEndpoint",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": "not servo2AtEndpoint and servo2PhaseMs >= 2000",
+        "then": [
+          {
+            "assign": "servo2PhaseMs",
+            "value": "servo2PhaseMs - 2000"
+          },
+          {
+            "assign": "servo2AtEndpoint",
+            "value": true
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": {
+          ">=": [
+            "ledPhaseMs",
+            1000
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "io_1": {
+        "if": {
+          ">=": [
+            "ledPhaseMs",
+            1000
+          ]
+        },
+        "then": false,
+        "else": true
+      },
+      "io_2": {
+        "if": {
+          ">=": [
+            "sevsegDigit",
+            0
+          ]
+        },
+        "then": "sevsegDigit",
+        "else": 0
+      },
+      "io_3": {
+        "if": "servo1AtEndpoint",
+        "then": {
+          "if": {
+            "<": [
+              "servo1PhaseMs",
+              1
+            ]
+          },
+          "then": 0.0,
+          "else": 180.0
+        },
+        "else": {
+          "if": {
+            "<": [
+              "servo1PhaseMs",
+              1000
+            ]
+          },
+          "then": {
+            "if": {
+              "==": [
+                "servo1PhaseMs",
+                0
+              ]
+            },
+            "then": 0.0,
+            "else": {
+              "*": [
+                {
+                  "/": [
+                    "servo1PhaseMs",
+                    1000.0
+                  ]
+                },
+                180.0
+              ]
+            }
+          },
+          "else": {
+            "*": [
+              {
+                "/": [
+                  "servo1PhaseMs - 1000",
+                  1000.0
+                ]
+              },
+              180.0
+            ]
+          }
+        }
+      },
+      "io_4": {
+        "if": "servo2AtEndpoint",
+        "then": {
+          "if": {
+            "<": [
+              "servo2PhaseMs",
+              1
+            ]
+          },
+          "then": 180.0,
+          "else": 0.0
+        },
+        "else": {
+          "if": {
+            "<": [
+              "servo2PhaseMs",
+              1000
+            ]
+          },
+          "then": {
+            "if": {
+              "==": [
+                "servo2PhaseMs",
+                0
+              ]
+            },
+            "then": 180.0,
+            "else": {
+              "-": [
+                180.0,
+                {
+                  "*": [
+                    {
+                      "/": [
+                        "servo2PhaseMs",
+                        1000.0
+                      ]
+                    },
+                    180.0
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "-": [
+              180.0,
+              {
+                "*": [
+                  {
+                    "/": [
+                      "servo2PhaseMs - 1000",
+                      1000.0
+                    ]
+                  },
+                  180.0
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two LEDs (led1, led2), a 7-segment display (sevseg1), and two servo motors (servo1, servo2). The LEDs will blink alternately, the 7-segment display will count from 0 to 9 repeatedly, and the servo motors will sweep between 0° and 180° in opposite directions. The system should operate continuously, with each component functioning independently.\n\n**Detail Rules**:\n1. **LEDs (led1, led2)**:\n   - The LEDs should blink alternately, with each LED staying on for 2 second and off for 2 second.\n   - When one LED is on, the other should be off, and vice versa.\n   - First led1 off, led2 on, then led1 on, led2 off.\n\n2. **7-Segment Display (sevseg1)**:\n   - The display should count from 0 to 9 repeatedly, with each number displayed for 2 seconds.\n   - The count should reset to 0 after reaching 9.\n\n3. **Servo Motors (servo1, servo2)**:\n   - The first servo (servo1) should sweep from 0° to 180° and back to 0° continuously, with each sweep taking 4 seconds.\n   - The second servo (servo2) should sweep from 180° to 0° and back to 180° continuously, with each sweep taking 4 seconds.\n   - The servos should move in opposite directions at the same time. \n   - when move to 180° or 0°, the servo should stop for 2 second and then continue sweep.\n   - Before the servo start the first sweep, althoug the servo is in 0° or 180°, the servo don't need to stop for 2 second.\n4. **System Operation**:\n   - All components should operate simultaneously and independently.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"mega:4\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:5\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Drive elapsedMilliseconds through continuous steps (e.g., 5ms each), observing outputs for multiple 2s (LED/display) and 4s (servo sweep) cycles.",
+        "oracle": "io_0/io_1 alternate such that led2 is ON while led1 is OFF first, then swapped after 2s, repeating every 4s; io_2 cycles 0..9 with each digit held for 2s then resets after 9 to 0; io_3 and io_4 sweep between endpoints with opposite directions, with 2s dwell at 0° and 180° (no initial 2s dwell before first sweep arrival at the starting endpoint) and continuous operation."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute elapsedMilliseconds : Integer;\n    attribute ledPhaseMs : Integer := 0;\n    attribute sevsegPhaseMs : Integer := 0;\n    attribute sevsegDigit : Integer := 0;\n    attribute servo1PhaseMs : Integer := 0;\n    attribute servo2PhaseMs : Integer := 0;\n    attribute servo1AtEndpoint : Boolean := false;\n    attribute servo2AtEndpoint : Boolean := true;\n    perform action tick {\n      first start;\n      then assign ledPhaseMs := ledPhaseMs + elapsedMilliseconds;\n      then if ledPhaseMs >= 2000 {\n        first start;\n        then assign ledPhaseMs := ledPhaseMs - 2000;\n      }\n      then assign sevsegPhaseMs := sevsegPhaseMs + elapsedMilliseconds;\n      then if sevsegPhaseMs >= 2000 {\n        first start;\n        then assign sevsegPhaseMs := sevsegPhaseMs - 2000;\n        then assign sevsegDigit := (if sevsegDigit == 9 ? 0 else sevsegDigit + 1);\n      }\n      then assign servo1PhaseMs := servo1PhaseMs + elapsedMilliseconds;\n      then assign servo2PhaseMs := servo2PhaseMs + elapsedMilliseconds;\n      then if servo1AtEndpoint and servo1PhaseMs >= 2000 {\n        first start;\n        then assign servo1PhaseMs := servo1PhaseMs - 2000;\n        then assign servo1AtEndpoint := false;\n      }\n      then if not servo1AtEndpoint and servo1PhaseMs >= 2000 {\n        first start;\n        then assign servo1PhaseMs := servo1PhaseMs - 2000;\n        then assign servo1AtEndpoint := true;\n      }\n      then if servo2AtEndpoint and servo2PhaseMs >= 2000 {\n        first start;\n        then assign servo2PhaseMs := servo2PhaseMs - 2000;\n        then assign servo2AtEndpoint := false;\n      }\n      then if not servo2AtEndpoint and servo2PhaseMs >= 2000 {\n        first start;\n        then assign servo2PhaseMs := servo2PhaseMs - 2000;\n        then assign servo2AtEndpoint := true;\n      }\n    }\n    out attribute io_0 : Boolean = (if ((ledPhaseMs) >= (1000)) ? true else false);\n    out attribute io_1 : Boolean = (if ((ledPhaseMs) >= (1000)) ? false else true);\n    out attribute io_2 : Integer = (if ((sevsegDigit) >= (0)) ? sevsegDigit else 0);\n    out attribute io_3 : Real = (if servo1AtEndpoint ? (if ((servo1PhaseMs) < (1)) ? 0.0 else 180.0) else (if ((servo1PhaseMs) < (1000)) ? (if ((servo1PhaseMs) == (0)) ? 0.0 else ((((servo1PhaseMs) / (1000.0))) * (180.0))) else ((((servo1PhaseMs - 1000) / (1000.0))) * (180.0))));\n    out attribute io_4 : Real = (if servo2AtEndpoint ? (if ((servo2PhaseMs) < (1)) ? 180.0 else 0.0) else (if ((servo2PhaseMs) < (1000)) ? (if ((servo2PhaseMs) == (0)) ? 180.0 else ((180.0) - (((((servo2PhaseMs) / (1000.0))) * (180.0))))) else ((180.0) - (((((servo2PhaseMs - 1000) / (1000.0))) * (180.0))))));\n  }\n  part system : Controller;\n}\n"
+}

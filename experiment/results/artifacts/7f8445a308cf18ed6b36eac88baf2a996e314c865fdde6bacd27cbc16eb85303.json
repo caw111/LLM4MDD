@@ -1,0 +1,67 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevMinDeg",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "prevMaxDeg",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "prevMinDeg",
+        "value": {
+          "if": "io_0 > 0.0",
+          "then": "((io_0 * 90.0) / 1023.0)",
+          "else": 0.0
+        }
+      },
+      {
+        "assign": "prevMaxDeg",
+        "value": {
+          "if": "io_1 > 0.0",
+          "then": "(90.0 + ((io_1 * 90.0) / 1023.0))",
+          "else": 90.0
+        }
+      },
+      {
+        "if": "prevMinDeg > prevMaxDeg",
+        "then": [
+          {
+            "assign": "prevMinDeg",
+            "value": "prevMaxDeg"
+          },
+          {
+            "assign": "prevMaxDeg",
+            "value": "prevMinDeg"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": "prevMaxDeg > prevMinDeg",
+        "then": "(prevMinDeg + ((io_2 * (prevMaxDeg - prevMinDeg)) / 1023.0))",
+        "else": "prevMinDeg"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\nTask:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1) using three slide potentiometers (pot1, pot2, pot3). The servo motor's position will be determined by the combined input from the three potentiometers. Each potentiometer will control a specific aspect of the servo's behavior: one for the minimum angle, one for the maximum angle, and one for the current position.\n\nDetail Rules:\nInitialization: Upon powering on or resetting, the servo motor (servo1) should be set to its default position (0 degrees).\nPotentiometer Interaction:\n1. The first potentiometer (pot1) determines the minimum angle of the servo motor. The value of pot1 is mapped to a range of 0 to 90 degrees.\n2. The second potentiometer (pot2) determines the maximum angle of the servo motor. The value of pot2 is mapped to a range of 90 to 180 degrees.\n3. The third potentiometer (pot3) controls the current position of the servo motor. The value of pot3 is mapped to the range defined by the minimum (pot1) and maximum (pot2) angles.\n4. The servo motor's position should be updated continuously based on the current values of the potentiometers.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -408.8, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}], \"connections\": [[\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"pot3:GND\", \"mega:GND.1\", \"black\"], [\"pot3:VCC\", \"mega:5V\", \"red\"], [\"pot3:SIG\", \"mega:A5\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Step 1: io_0=0, io_1=0, io_2=0. Step 2: io_0=1023, io_1=1023, io_2=1023. Then hold inputs constant for subsequent steps.",
+        "oracle": "At step 1, io_3=0 deg. After step 2, io_3 should be mapped within the computed [min,max] range and reflect continuous updates on each subsequent step (same inputs produce the same output each control step)."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    attribute prevMinDeg : Real := 0.0;\n    attribute prevMaxDeg : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign prevMinDeg := (if io_0 > 0.0 ? ((io_0 * 90.0) / 1023.0) else 0.0);\n      then assign prevMaxDeg := (if io_1 > 0.0 ? (90.0 + ((io_1 * 90.0) / 1023.0)) else 90.0);\n      then if prevMinDeg > prevMaxDeg {\n        first start;\n        then assign prevMinDeg := prevMaxDeg;\n        then assign prevMaxDeg := prevMinDeg;\n      }\n    }\n    out attribute io_3 : Real = (if prevMaxDeg > prevMinDeg ? (prevMinDeg + ((io_2 * (prevMaxDeg - prevMinDeg)) / 1023.0)) else prevMinDeg);\n  }\n  part system : Controller;\n}\n"
+}

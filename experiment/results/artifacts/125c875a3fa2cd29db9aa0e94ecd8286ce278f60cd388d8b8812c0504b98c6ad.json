@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"paused\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"seconds\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousStartPausePressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousResetPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"buzzerOn\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"buzzerRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"toneHz\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"displayValue\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_0 and not previousStartPausePressed\",\n        \"then\": [\n          {\n            \"assign\": \"paused\",\n            \"value\": {\n              \"not\": \"paused\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": \"io_1 and not previousResetPressed\",\n        \"then\": [\n          {\n            \"assign\": \"running\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"paused\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"seconds\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"buzzerOn\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"buzzerRemainingMs\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"toneHz\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"displayValue\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"buzzerRemainingMs <= 0\",\n        \"then\": [\n          {\n            \"assign\": \"buzzerOn\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"toneHz\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"not paused and buzzerOn and buzzerRemainingMs > 0\",\n        \"then\": [\n          {\n            \"assign\": \"buzzerRemainingMs\",\n            \"value\": \"buzzerRemainingMs\"\n          },\n          {\n            \"assign\": \"toneHz\",\n            \"value\": \"toneHz\"\n          }\n        ]\n      },\n      {\n        \"if\": \"buzzerOn and buzzerRemainingMs <= 0\",\n        \"then\": [\n          {\n            \"assign\": \"buzzerOn\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"toneHz\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"seconds >= 60 and not buzzerOn\",\n        \"then\": [\n          {\n            \"assign\": \"buzzerOn\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"buzzerRemainingMs\",\n            \"value\": 1000\n          },\n          {\n            \"assign\": \"toneHz\",\n            \"value\": 1000\n          }\n        ]\n      },\n      {\n        \"if\": \"not paused\",\n        \"then\": [\n          {\n            \"assign\": \"seconds\",\n            \"value\": \"seconds\"\n          },\n          {\n            \"assign\": \"displayValue\",\n            \"value\": \"seconds\"\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"displayValue\",\n            \"value\": \"seconds\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousStartPausePressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"previousResetPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"toneHz\",\n      \"io_3\": \"displayValue\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下并释放 io_0（start/pause）一次，再按下并释放 io_0 一次（恢复暂停前状态检查），不按 io_1。\",\n        \"oracle\": \"io_3 保持不变（无elapsed_ms输入，秒数递增不发生），io_2 保持为0（无到达60秒与1秒鸣叫时序输入）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下并释放 io_0（start/pause），再按下并释放 io_1（reset）。\",\n        \"oracle\": \"io_3 变为0，io_2 变为0，并且之后在未给出elapsed_ms时间推进条件前不启动蜂鸣器。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_1 从未按下；只按下并保持 io_0 若干个周期（不释放），观察后续多个控制步输出变化。\",\n        \"oracle\": \"由于边沿检测与首次上升沿只翻转一次paused状态，且无elapsed_ms输入，io_3不递增，io_2保持0。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute running : Boolean := false;\n    attribute paused : Boolean := false;\n    attribute seconds : Integer := 0;\n    attribute previousStartPausePressed : Boolean := false;\n    attribute previousResetPressed : Boolean := false;\n    attribute buzzerOn : Boolean := false;\n    attribute buzzerRemainingMs : Integer := 0;\n    attribute toneHz : Integer := 0;\n    attribute displayValue : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_0 and not previousStartPausePressed {\n        first start;\n        then assign paused := (not paused);\n      }\n      then if io_1 and not previousResetPressed {\n        first start;\n        then assign running := false;\n        then assign paused := false;\n        then assign seconds := 0;\n        then assign buzzerOn := false;\n        then assign buzzerRemainingMs := 0;\n        then assign toneHz := 0;\n        then assign displayValue := 0;\n      }\n      then if buzzerRemainingMs <= 0 {\n        first start;\n        then assign buzzerOn := false;\n        then assign toneHz := 0;\n      }\n      then if not paused and buzzerOn and buzzerRemainingMs > 0 {\n        first start;\n        then assign buzzerRemainingMs := buzzerRemainingMs;\n        then assign toneHz := toneHz;\n      }\n      then if buzzerOn and buzzerRemainingMs <= 0 {\n        first start;\n        then assign buzzerOn := false;\n        then assign toneHz := 0;\n      }\n      then if seconds >= 60 and not buzzerOn {\n        first start;\n        then assign buzzerOn := true;\n        then assign buzzerRemainingMs := 1000;\n        then assign toneHz := 1000;\n      }\n      then if not paused {\n        first start;\n        then assign seconds := seconds;\n        then assign displayValue := seconds;\n      } else {\n        first start;\n        then assign displayValue := seconds;\n      }\n      then assign previousStartPausePressed := io_0;\n      then assign previousResetPressed := io_1;\n    }\n    out attribute io_2 : Integer = toneHz;\n    out attribute io_3 : Integer = displayValue;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

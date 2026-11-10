@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousDoor\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousVibration\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"abnormalCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"doorOpenCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"vibrationEventCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"isAlarmLatched\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_6_valid\",\n        \"then\": [\n          {\n            \"if\": {\n              \"==\": [\n                \"io_6\",\n                1\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"isAlarmLatched\",\n                \"value\": true\n              }\n            ]\n          },\n          {\n            \"if\": {\n              \"==\": [\n                \"io_6\",\n                0\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"isAlarmLatched\",\n                \"value\": false\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \">=\": [\n            \"io_0\",\n            30.0\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"abnormalCount\",\n            \"value\": {\n              \"+\": [\n                \"abnormalCount\",\n                1\n              ]\n            }\n          },\n          {\n            \"assign\": \"isAlarmLatched\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"not\": \"previousDoor\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"doorOpenCount\",\n            \"value\": {\n              \"+\": [\n                \"doorOpenCount\",\n                1\n              ]\n            }\n          },\n          {\n            \"assign\": \"abnormalCount\",\n            \"value\": {\n              \"+\": [\n                \"abnormalCount\",\n                1\n              ]\n            }\n          },\n          {\n            \"assign\": \"isAlarmLatched\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousVibration\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"vibrationEventCount\",\n            \"value\": {\n              \"+\": [\n                \"vibrationEventCount\",\n                1\n              ]\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousDoor\",\n        \"value\": \"io_2\"\n      },\n      {\n        \"assign\": \"previousVibration\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"isAlarmLatched\",\n      \"io_4\": {\n        \"if\": \"isAlarmLatched\",\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_5\": {\n        \"if\": {\n          \">=\": [\n            \"io_0\",\n            30.0\n          ]\n        },\n        \"then\": \"abnormalCount\",\n        \"else\": 0\n      },\n      \"serial_0_trigger\": {\n        \"or\": [\n          {\n            \">=\": [\n              \"io_0\",\n              30.0\n            ]\n          },\n          {\n            \"and\": [\n              \"io_2\",\n              {\n                \"not\": \"previousDoor\"\n              }\n            ]\n          },\n          {\n            \"and\": [\n              \"io_1\",\n              {\n                \"not\": \"previousVibration\"\n              }\n            ]\n          },\n          \"isAlarmLatched\"\n        ]\n      },\n      \"serial_0_value_0\": {\n        \"if\": \"io_6_valid\",\n        \"then\": \"io_0\",\n        \"else\": \"io_0\"\n      },\n      \"serial_0_value_1\": \"abnormalCount\",\n      \"serial_0_value_2\": {\n        \"if\": \"io_6_valid\",\n        \"then\": {\n          \"+\": [\n            0,\n            0\n          ]\n        },\n        \"else\": 0\n      },\n      \"serial_0_value_3\": {\n        \"if\": \"io_6_valid\",\n        \"then\": {\n          \"+\": [\n            0,\n            0\n          ]\n        },\n        \"else\": 0\n      },\n      \"serial_1_trigger\": {\n        \"and\": [\n          {\n            \"not\": \"isAlarmLatched\"\n          },\n          \"io_6_valid\"\n        ]\n      },\n      \"serial_1_value_0\": \"io_0\",\n      \"serial_1_value_1\": \"abnormalCount\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_1=false, io_2=false, io_6_valid=false；将 io_0 从 25.0 提高到 30.0 且在后续步骤保持 >=30.0\",\n        \"oracle\": \"io_3 变为 true 且 io_4 为 2000；serial_0_trigger 在触发温度到达与保持期间应为 true；serial_0_value_0 等于 io_0，serial_0_value_1 为异常计数\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_0=25.0；将 io_2 从 false 翻转为 true（一次开箱上升沿），其余 io_1=false，io_6_valid=false\",\n        \"oracle\": \"开箱上升沿发生的步，previousDoor 在同一步之前用于边沿检测，abnormalCount 与 doorOpenCount 增加；io_3 变为 true 且 io_4 为 2000；serial_0_trigger 为 true\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_0<30.0 且 io_2 始终为 false；让 io_1 从 false 上升为 true 再回到 false（一次震动上升沿），io_6_valid=false\",\n        \"oracle\": \"vibrationEventCount 增加一次；若未满足温度异常或开箱，isAlarmLatched 不因震动而强制为 true；serial_0_trigger 在震动上升沿步应为 true\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将 isAlarmLatched 通过 serial输入保持在 false：先保持 io_0=25.0, io_2=false, io_1=false；随后让 io_6_valid=true 且 io_6=0，接着维持 io_6_valid=true\",\n        \"oracle\": \"当 isAlarmLatched 为 false 且 io_6_valid=true，serial_1_trigger 为 true，serial_1_value_0 等于 io_0，serial_1_value_1 等于异常计数；io_3 为 false 且 io_4 为 0\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_6 : Integer;\n    in attribute io_6_valid : Boolean;\n    attribute previousDoor : Boolean := false;\n    attribute previousVibration : Boolean := false;\n    attribute abnormalCount : Integer := 0;\n    attribute doorOpenCount : Integer := 0;\n    attribute vibrationEventCount : Integer := 0;\n    attribute isAlarmLatched : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_6_valid {\n        first start;\n        then if ((io_6) == (1)) {\n          first start;\n          then assign isAlarmLatched := true;\n        }\n        then if ((io_6) == (0)) {\n          first start;\n          then assign isAlarmLatched := false;\n        }\n      }\n      then if ((io_0) >= (30.0)) {\n        first start;\n        then assign abnormalCount := ((abnormalCount) + (1));\n        then assign isAlarmLatched := true;\n      }\n      then if ((io_2) and ((not previousDoor))) {\n        first start;\n        then assign doorOpenCount := ((doorOpenCount) + (1));\n        then assign abnormalCount := ((abnormalCount) + (1));\n        then assign isAlarmLatched := true;\n      }\n      then if ((io_1) and ((not previousVibration))) {\n        first start;\n        then assign vibrationEventCount := ((vibrationEventCount) + (1));\n      }\n      then assign previousDoor := io_2;\n      then assign previousVibration := io_1;\n    }\n    out attribute io_3 : Boolean = isAlarmLatched;\n    out attribute io_4 : Integer = (if isAlarmLatched ? 2000 else 0);\n    out attribute io_5 : Integer = (if ((io_0) >= (30.0)) ? abnormalCount else 0);\n    out attribute serial_0_trigger : Boolean = ((((io_0) >= (30.0))) or (((io_2) and ((not previousDoor)))) or (((io_1) and ((not previousVibration)))) or (isAlarmLatched));\n    out attribute serial_0_value_0 : Real = (if io_6_valid ? io_0 else io_0);\n    out attribute serial_0_value_1 : Integer = abnormalCount;\n    out attribute serial_0_value_2 : Integer = (if io_6_valid ? ((0) + (0)) else 0);\n    out attribute serial_0_value_3 : Integer = (if io_6_valid ? ((0) + (0)) else 0);\n    out attribute serial_1_trigger : Boolean = (((not isAlarmLatched)) and (io_6_valid));\n    out attribute serial_1_value_0 : Real = io_0;\n    out attribute serial_1_value_1 : Integer = abnormalCount;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

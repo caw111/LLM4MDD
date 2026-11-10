@@ -1,0 +1,185 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevBed1",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevBed2",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevBed3",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevAck",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pending",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "activeBed",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "queueSeq",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevBed1"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "pending",
+            "value": true
+          },
+          {
+            "assign": "activeBed",
+            "value": 1
+          },
+          {
+            "assign": "queueSeq",
+            "value": "queueSeq + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevBed2"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "pending",
+            "value": true
+          },
+          {
+            "assign": "activeBed",
+            "value": 2
+          },
+          {
+            "assign": "queueSeq",
+            "value": "queueSeq + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_2",
+            {
+              "not": "prevBed3"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "pending",
+            "value": true
+          },
+          {
+            "assign": "activeBed",
+            "value": 3
+          },
+          {
+            "assign": "queueSeq",
+            "value": "queueSeq + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "not": "prevAck"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "pending",
+            "value": false
+          },
+          {
+            "assign": "activeBed",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "prevBed1",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevBed2",
+        "value": "io_1"
+      },
+      {
+        "assign": "prevBed3",
+        "value": "io_2"
+      },
+      {
+        "assign": "prevAck",
+        "value": "io_3"
+      }
+    ],
+    "outputs": {
+      "io_4": "pending",
+      "io_5": {
+        "if": "pending",
+        "then": 1000,
+        "else": 0
+      },
+      "io_6": {
+        "if": "pending",
+        "then": 1000,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "在无确认的情况下，对io_0产生一次从false到true的上升沿（按下床1按钮），保持io_3为false。",
+        "oracle": "输出io_4为true，io_5为1000，io_6为1000（表示处于有待处理呼叫状态且显示非零）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个病房呼叫与响应记录系统，使用床位按钮 D2、D3、D4 分别对应三张床，护士确认按钮 D7、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。任一床位按下后系统记录呼叫顺序和等待时间并报警提示；确认按钮按下后清除当前最高优先级呼叫并输出处理日志。数码管显示当前等待最久的床位编号和秒数。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "在已存在待处理呼叫（例如由io_0上升沿触发）时，对io_3产生一次从false到true的上升沿（按下护士确认），保持床位输入为任意值（可不释放）。",
+        "oracle": "确认后同一步/后续输出io_4为false，io_5为0，io_6为0。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute prevBed1 : Boolean := false;\n    attribute prevBed2 : Boolean := false;\n    attribute prevBed3 : Boolean := false;\n    attribute prevAck : Boolean := false;\n    attribute pending : Boolean := false;\n    attribute activeBed : Integer := 0;\n    attribute queueSeq : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not prevBed1))) {\n        first start;\n        then assign pending := true;\n        then assign activeBed := 1;\n        then assign queueSeq := queueSeq + 1;\n      }\n      then if ((io_1) and ((not prevBed2))) {\n        first start;\n        then assign pending := true;\n        then assign activeBed := 2;\n        then assign queueSeq := queueSeq + 1;\n      }\n      then if ((io_2) and ((not prevBed3))) {\n        first start;\n        then assign pending := true;\n        then assign activeBed := 3;\n        then assign queueSeq := queueSeq + 1;\n      }\n      then if ((io_3) and ((not prevAck))) {\n        first start;\n        then assign pending := false;\n        then assign activeBed := 0;\n      }\n      then assign prevBed1 := io_0;\n      then assign prevBed2 := io_1;\n      then assign prevBed3 := io_2;\n      then assign prevAck := io_3;\n    }\n    out attribute io_4 : Boolean = pending;\n    out attribute io_5 : Integer = (if pending ? 1000 else 0);\n    out attribute io_6 : Integer = (if pending ? 1000 else 0);\n  }\n  part system : Controller;\n}\n"
+}

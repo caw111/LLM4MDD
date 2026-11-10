@@ -1,0 +1,249 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "UNO：超声波触发/回波引脚 D8/D9；LED 为 D13；蜂鸣器为 D6；串口使用同一物理串口且波特率 9600。",
+    "原需求包含“10cm 内检测到人：LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机”。计时/阈值/闪烁节奏/三次短鸣/5 秒无靠近恢复均归入 SysML 模型，不放入请求。",
+    "ultrasonic_distance/ultrasonic_valid 共享相同触发/回波引脚，invalid_policy=hold_last_valid；超声波超时与采样周期按约束：timeout_us=30000（在 25000..60000 内），sample_period_ms=70（>=60 且为控制步长整数倍）。",
+    "串口输出仅支持固定文本：因此使用 serial_text_output 固定文本 \"welcome\"，由模型中的业务触发布尔门控决定何时打印。",
+    "未提供任何额外的输入/传感器/按键/可调参数布线覆盖；本提案不引入额外设备。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Proximity LED (fast blink when person within 10cm; otherwise standby)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Proximity buzzer (short beep three times when person within 10cm)",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "HC-SR04 measured distance to person (cm)",
+      "sample_period_ms": 70,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "HC-SR04 validity for the distance measurement",
+      "sample_period_ms": 70,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 30000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 30000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Serial welcome message gate when person is detected within 10cm",
+      "sample_period_ms": 10,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"welcome\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "text": "welcome",
+        "baud": 9600
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Enable serial output of welcome when proximity condition holds (exact gating handled in model)",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Reported proximity distance (cm)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"proximity_distance_cm\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "proximity_distance_cm"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。",
+    "effective_requirement": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ],
+    "serial_text_outputs": [
+      {
+        "id": "io_4",
+        "trigger_port": "io_4",
+        "kind": "serial_text_output",
+        "text": "welcome",
+        "baud": 9600
+      }
+    ]
+  }
+}

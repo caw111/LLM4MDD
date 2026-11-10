@@ -1,0 +1,254 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "running",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "blinkPeriodMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "remainingMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "tickPhase",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "ledOn",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "running",
+            "value": {
+              "not": "running"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_1"
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "io_0",
+                0.0
+              ]
+            },
+            {
+              "<=": [
+                "io_0",
+                1023.0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "blinkPeriodMs",
+            "value": {
+              "if": {
+                "==": [
+                  {
+                    "floor": {
+                      "-": [
+                        {
+                          "*": [
+                            "io_0",
+                            1000.0
+                          ]
+                        },
+                        0.0
+                      ]
+                    }
+                  },
+                  0
+                ]
+              },
+              "then": 1,
+              "else": {
+                "floor": {
+                  "+": [
+                    1.0,
+                    {
+                      "*": [
+                        {
+                          "/": [
+                            "io_0",
+                            1023.0
+                          ]
+                        },
+                        999.0
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "blinkPeriodMs",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "running",
+            {
+              "==": [
+                "remainingMs",
+                0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "remainingMs",
+            "value": "blinkPeriodMs"
+          },
+          {
+            "assign": "tickPhase",
+            "value": 0
+          },
+          {
+            "assign": "ledOn",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "running"
+            },
+            true
+          ]
+        },
+        "then": [
+          {
+            "assign": "remainingMs",
+            "value": 0
+          },
+          {
+            "assign": "tickPhase",
+            "value": 0
+          },
+          {
+            "assign": "ledOn",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "running",
+            {
+              "!=": [
+                "remainingMs",
+                0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "remainingMs",
+            "value": {
+              "-": [
+                "remainingMs",
+                5
+              ]
+            }
+          },
+          {
+            "if": {
+              "<=": [
+                "remainingMs",
+                0
+              ]
+            },
+            "then": [
+              {
+                "assign": "ledOn",
+                "value": {
+                  "not": "ledOn"
+                }
+              },
+              {
+                "assign": "remainingMs",
+                "value": "blinkPeriodMs"
+              },
+              {
+                "assign": "tickPhase",
+                "value": {
+                  "+": [
+                    "tickPhase",
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "and": [
+          "running",
+          "ledOn"
+        ]
+      },
+      "io_3": "blinkPeriodMs"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个可配置闪烁系统，使用 LED D13、电位器 A0、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。电位器控制闪烁周期，数码管显示周期值；按钮用于启动和停止闪烁，停止时 LED 熄灭但保留当前周期设置。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持io_0为固定值(如约中值)，先不按io_1运行，观察io_2与io_3；然后对io_1做一次按下上升沿使running从false变true，持续若干控制步；再按下一次使running从true变false。",
+        "oracle": "按下之前io_2始终为false且io_3等于由io_0映射得到的blinkPeriodMs；running为true期间io_2按blinkPeriodMs半周期发生翻转(本模型以5ms步进实现)；停止后io_2必须为false，且io_3保持为停止前最后一次计算得到的blinkPeriodMs。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute running : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    attribute blinkPeriodMs : Integer := 0;\n    attribute remainingMs : Integer := 0;\n    attribute tickPhase : Integer := 0;\n    attribute ledOn : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign running := (not running);\n      }\n      then assign previousPressed := io_1;\n      then if ((((io_0) >= (0.0))) and (((io_0) <= (1023.0)))) {\n        first start;\n        then assign blinkPeriodMs := (if ((RealFunctions::floor(((((io_0) * (1000.0))) - (0.0)))) == (0)) ? 1 else RealFunctions::floor(((1.0) + (((((io_0) / (1023.0))) * (999.0))))));\n      } else {\n        first start;\n        then assign blinkPeriodMs := 1;\n      }\n      then if ((running) and (((remainingMs) == (0)))) {\n        first start;\n        then assign remainingMs := blinkPeriodMs;\n        then assign tickPhase := 0;\n        then assign ledOn := true;\n      }\n      then if (((not running)) and (true)) {\n        first start;\n        then assign remainingMs := 0;\n        then assign tickPhase := 0;\n        then assign ledOn := false;\n      }\n      then if ((running) and (((remainingMs) != (0)))) {\n        first start;\n        then assign remainingMs := ((remainingMs) - (5));\n        then if ((remainingMs) <= (0)) {\n          first start;\n          then assign ledOn := (not ledOn);\n          then assign remainingMs := blinkPeriodMs;\n          then assign tickPhase := ((tickPhase) + (1));\n        }\n      }\n    }\n    out attribute io_2 : Boolean = ((running) and (ledOn));\n    out attribute io_3 : Integer = blinkPeriodMs;\n  }\n  part system : Controller;\n}\n"
+}

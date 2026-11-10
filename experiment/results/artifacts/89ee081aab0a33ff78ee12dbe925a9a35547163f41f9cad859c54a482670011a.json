@@ -1,0 +1,129 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "servoAngleDeg",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "directionUp",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "started",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportPending",
+        "type": "bool",
+        "initial": true
+      }
+    ],
+    "updates": [
+      {
+        "if": "not started",
+        "then": [
+          {
+            "assign": "started",
+            "value": true
+          },
+          {
+            "assign": "directionUp",
+            "value": true
+          },
+          {
+            "assign": "servoAngleDeg",
+            "value": 0.0
+          },
+          {
+            "assign": "reportPending",
+            "value": true
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "directionUp",
+        "then": [
+          {
+            "assign": "servoAngleDeg",
+            "value": {
+              "if": "servoAngleDeg >= 180.0",
+              "then": 180.0,
+              "else": "servoAngleDeg + 1.0"
+            }
+          },
+          {
+            "if": "servoAngleDeg >= 179.0",
+            "then": [
+              {
+                "assign": "directionUp",
+                "value": false
+              },
+              {
+                "assign": "reportPending",
+                "value": true
+              }
+            ],
+            "else": [
+              {
+                "assign": "reportPending",
+                "value": false
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "servoAngleDeg",
+            "value": {
+              "if": "servoAngleDeg <= 0.0",
+              "then": 0.0,
+              "else": "servoAngleDeg - 1.0"
+            }
+          },
+          {
+            "if": "servoAngleDeg <= 1.0",
+            "then": [
+              {
+                "assign": "directionUp",
+                "value": true
+              },
+              {
+                "assign": "reportPending",
+                "value": true
+              }
+            ],
+            "else": [
+              {
+                "assign": "reportPending",
+                "value": false
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": "servoAngleDeg",
+      "serial_0_trigger": "reportPending",
+      "serial_0_value_0": "RealFunctions::floor(servoAngleDeg)"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "# Servo Motor Control\n\n## Project Description\nThis is a simple Arduino project that uses servo motor.\n\n## Hardware Components\n- Arduino Uno\n- Servo Motor\n\n## Circuit Description\nThe servo motor is connected to the Arduino. The V+ pin is connected to 5V, the GND pin to gnd1, PWM to pin 9.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Attach servo motor to pin 9\n2. Move the servo from 0 to 180 degrees in 1-degree steps\n3. When the moving is finished, print the current servo position to the serial monitor by reading the servo position.\n4. Move the servo from 180 to 0 degrees in 1-degree steps\n5. When the moving is finished, print the current servo position to the serial monitor by reading the servo position.\n6. Repeat 3~6 process.\n\n## Success Criteria\nThe test is successful when:\n1. The servo motor moves correctly.\n2. Correct position is printed to the serial monitor.\n\n## Notes for Implementation\n- Use Servo library to use the servo motor.\n- Print only the number when printing the angle.\n\n## Variants\nThere may be variants with GND pin, PWM pin.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Servo motor\",\n    \"parts\": [\n        {\n            \"id\": \"arduino uno1\",\n            \"type\": \"wokwi-arduino-uno\",\n            \"top\": 200,\n            \"left\": 20\n        },\n        {\n            \"id\": \"servo motor1\",\n            \"type\": \"wokwi-servo\",\n            \"left\": 400,\n            \"top\": 200,\n            \"attrs\": {\n                \"hornColor\": \"black\"\n            },\n            \"rotate\": 0\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:9\",\n            \"servo motor1:PWM\",\n            \"orange\",\n            [\n                \"v-20\",\n                \"*\",\n                \"h0\",\n                \"h-52\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"servo motor1:V+\",\n            \"red\",\n            [\n                \"v20\",\n                \"h0\",\n                \"*\",\n                \"h-20\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.1\",\n            \"servo motor1:GND\",\n            \"black\",\n            [\n                \"v-28\",\n                \"h240\",\n                \"*\",\n                \"h-20\"\n            ]\n        ]\n    ]\n}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Power on and run for sufficient control steps to traverse at least 0..180 then 180..0",
+        "oracle": "io_0 follows 0..180 in 1-degree increments then 180..0 in 1-degree decrements; serial_0_trigger is asserted exactly when the move reaches an endpoint (180 or 0), and serial_0_value_0 equals the current integer angle when serial_0_trigger is true"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    attribute servoAngleDeg : Real := 0.0;\n    attribute directionUp : Boolean := true;\n    attribute started : Boolean := false;\n    attribute reportPending : Boolean := true;\n    perform action tick {\n      first start;\n      then if not started {\n        first start;\n        then assign started := true;\n        then assign directionUp := true;\n        then assign servoAngleDeg := 0.0;\n        then assign reportPending := true;\n      }\n      then if directionUp {\n        first start;\n        then assign servoAngleDeg := (if servoAngleDeg >= 180.0 ? 180.0 else servoAngleDeg + 1.0);\n        then if servoAngleDeg >= 179.0 {\n          first start;\n          then assign directionUp := false;\n          then assign reportPending := true;\n        } else {\n          first start;\n          then assign reportPending := false;\n        }\n      } else {\n        first start;\n        then assign servoAngleDeg := (if servoAngleDeg <= 0.0 ? 0.0 else servoAngleDeg - 1.0);\n        then if servoAngleDeg <= 1.0 {\n          first start;\n          then assign directionUp := true;\n          then assign reportPending := true;\n        } else {\n          first start;\n          then assign reportPending := false;\n        }\n      }\n    }\n    out attribute io_0 : Real = servoAngleDeg;\n    out attribute serial_0_trigger : Boolean = reportPending;\n    out attribute serial_0_value_0 : Integer = RealFunctions::floor(servoAngleDeg);\n  }\n  part system : Controller;\n}\n"
+}

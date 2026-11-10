@@ -1,0 +1,55 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prev_valid",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "serial_value_hold",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "serial_value_hold",
+            "value": "io_0"
+          }
+        ]
+      },
+      {
+        "assign": "prev_valid",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": {
+        "and": [
+          "io_1",
+          {
+            "not": "prev_valid"
+          }
+        ]
+      },
+      "serial_0_value_0": "serial_value_hold"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "# Distance Sensor\n\n## Project Description\nThis is a simple Arduino project that uses Ultrasonic distance sensor to measure the distance.\n\n## Hardware Components\n- Arduino Uno\n- Ultrasonic Distance Sensor\n\n## Circuit Description\nThe ultrasonic distance sensor is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the TRIG pin to pin3, and the ECHO pin to pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Continuously trigger and read the Ultrasonic distance sensor\n3. Change the value to the centimeter and print in the format: \"Distance in CM: {value}\"\n\n## Success Criteria\nThe test is successful when:\n1. Correct distance value in centimeter is printed in the serial monitor.\n\n## Notes for Implementation\n- To convert the distance sensor value to centimeters, divide it by 58.\n\n## Variants\nThere may be variants with init distance value and ECHO, TRIG, GND pin number.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of distance sensor\",\n    \"config\": {\n        \"distance_echo_pin\": \"2\",\n        \"distance_trig_pin\": \"3\",\n        \"gnd_pin\": \"GND.3\",\n        \"distance_init\": \"400\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-hc-sr04\",\n            \"id\": \"ultrasonic distance sensor1\",\n            \"top\": 43.5,\n            \"left\": 288.9,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"distance\": \"400\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"ultrasonic distance sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"ultrasonic distance sensor1:GND\",\n            \"arduino uno1:GND.3\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"ultrasonic distance sensor1:TRIG\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"ultrasonic distance sensor1:ECHO\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Apply io_1=false then raise io_1=true for one step with io_0=25.0 (cm), then keep io_1=false for subsequent steps while io_0 changes",
+        "oracle": "serial_0_trigger is true exactly on the rising validity step and serial_0_value_0 equals 25.0 for that report; while io_1 remains false, no further serial_0_trigger assertions occur"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute prev_valid : Boolean := false;\n    attribute serial_value_hold : Real := 0.0;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign serial_value_hold := io_0;\n      }\n      then assign prev_valid := io_1;\n    }\n    out attribute serial_0_trigger : Boolean = ((io_1) and ((not prev_valid)));\n    out attribute serial_0_value_0 : Real = serial_value_hold;\n  }\n  part system : Controller;\n}\n"
+}

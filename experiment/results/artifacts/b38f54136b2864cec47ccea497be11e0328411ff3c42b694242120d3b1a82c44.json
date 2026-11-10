@@ -1,0 +1,378 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "A dedicated serial receive requirement is added via serial_command_input (CLK/DIO tokens with the integer codes from the provided serial inventory). Outgoing serial_channels cannot replace receiving.",
+    "The requirement mentions RTC current time provided via serial input but does not specify the exact command payload/format beyond CLK/DIO tokens; SysML must interpret the receive events accordingly to update 'current time' state and reminder schedule.",
+    "Exact HH:MM display format and how three reminder times are shown during browsing (while digit formatting/colon behavior is not specified for TM1637 here) must be handled in the model.",
+    "Button electrical polarity and whether pullups are used are not explicitly provided; digital_input uses catalog defaults unless the circuit facts establish otherwise. If the buttons are wired active-low with pullups, model/button logic must account for that.",
+    "The original requirement states sending fixed text 'missed dose' on the serial warning. The provided contract only reports a typed numeric missed-dose count. If exact fixed text with no number is mandatory, add serial_text_output with text='missed dose' under the same trigger; this proposal keeps the unchanged numeric report because the prior contract did not include the fixed-text requirement in wiring."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Dose confirmation / acknowledge button (browse & confirm)",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Browse today's reminder status button",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Set/adjust reminder time selection button",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D4\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED status indicator (blink on missed/active reminder wait)",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer intermittent alarm tone (model controls enable/duration)",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "7-segment display content (steady show current time; cleared/updated by model)",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D7\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": true}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "clk_pin": "D7",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "RTC time source via serial: update current time using command tokens CLK/DIO (mapping per source inventory)",
+      "sample_period_ms": 10,
+      "device": "serial_command_input",
+      "hardware": "{\"baud\": 9600, \"commands\": {\"CLK\": 1, \"DIO\": 2}, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_command_input\"}",
+      "binding": {
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600,
+        "commands": {
+          "CLK": 1,
+          "DIO": 2
+        }
+      }
+    },
+    {
+      "name": "io_6_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 10,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_6\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_6"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Serial report gate: when a missed dose warning event occurs (30s not confirmed)",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "count",
+      "initial": 0,
+      "meaning": "Cumulative missed dose count reported after 'missed dose' warning",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"missed_dose_count\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "missed_dose_count"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D7",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D4"
+        },
+        "resolved": {
+          "pin": "D4"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D7",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20,
+      "commands": {
+        "CLK": 1,
+        "DIO": 2
+      }
+    },
+    "original_requirement": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。",
+    "effective_requirement": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D7，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_input\", \"pin\": \"D4\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D7\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"commands\": {\"CLK\": 1, \"DIO\": 2}}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "clk_pin",
+        "original": "D4",
+        "resolved": "D7",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_6_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ],
+    "serial_inputs": [
+      {
+        "id": "io_6",
+        "value_port": "io_6",
+        "valid_port": "io_6_valid",
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600,
+        "commands": {
+          "CLK": 1,
+          "DIO": 2
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,465 @@
+{
+  "ok": false,
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_0 and not previousPressed\",\n        \"then\": [\n          {\n            \"assign\": \"running\",\n            \"value\": {\n              \"if\": \"running\",\n              \"then\": false,\n              \"else\": true\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"running\",\n        \"then\": {\n          \"if\": \"((elapsedMilliseconds >= 1000) or false) \",\n          \"then\": false,\n          \"else\": false\n        },\n        \"else\": false\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）控制 LED（D13）开始/停止闪烁\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 io_0=false 且持续保持；随后在某个控制步注入一次短按边缘（形成 io_0 从false上升到true的单步变化，对应物理D2从HIGH到LOW的按下沿，随后保持true若干步再释放回false）；期间采样elapsedMilliseconds以覆盖至少0.5s并观察D13变化；最后再注入一次短按边缘以停止（同样为rising edge）。\",\n        \"oracle\": \"初始时 io_1=false；第一次按下沿后开始运行，且LED从熄灭开始，每500ms翻转一次（500ms±20ms）；长按或松开不改变状态（io_0保持true或从true到false均不额外切换）；第二次按下沿后立即停止并将 io_1=false；停止后再按下沿启动时翻转计时重新从熄灭开始。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "CONTRACT_PERIODIC",
+          "stage": "requirements",
+          "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 505, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 510, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 515, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 520, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 525, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 530, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 535, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 540, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}]}"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute elapsedMilliseconds : Integer;\n    attribute running : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and not previousPressed {\n        first start;\n        then assign running := (if running ? false else true);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = (if running ? (if ((elapsedMilliseconds >= 1000) or false) ? false else false) else false);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "CONTRACT_PERIODIC",
+          "stage": "requirements",
+          "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 505, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 510, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 515, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 520, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 525, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 530, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 535, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 540, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}]}"
+        }
+      ],
+      "coverage": {
+        "status": "failed",
+        "issues": [
+          {
+            "severity": "error",
+            "code": "CONTRACT_PERIODIC",
+            "stage": "requirements",
+            "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 505, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 510, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 515, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 520, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 525, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 530, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 535, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 540, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}]}"
+          }
+        ],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "passed",
+          "checked": 1,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof.",
+          "inputs": {
+            "io_0": false,
+            "elapsedMilliseconds": 0
+          },
+          "observed": {
+            "io_1": false
+          }
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "failed",
+          "checked": 100,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof.",
+          "counterexample": {
+            "check": {
+              "delta": "elapsedMilliseconds",
+              "output": "io_1",
+              "period_ms": 1000,
+              "pulse_ms": 500,
+              "first_pulse": "after_silence",
+              "active_value": true,
+              "inactive_value": false,
+              "tolerance_ms": 20,
+              "evidence": "每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时",
+              "pause_input": "io_0",
+              "initial_running": false,
+              "pause_policy": "reset"
+            },
+            "paused": false,
+            "jitter": false,
+            "pause_offset_ms": null,
+            "history": [
+              {
+                "at_ms": 505,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": false,
+                "actual": false
+              },
+              {
+                "at_ms": 510,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": false,
+                "actual": false
+              },
+              {
+                "at_ms": 515,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": true,
+                "actual": false
+              },
+              {
+                "at_ms": 520,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": true,
+                "actual": false
+              },
+              {
+                "at_ms": 525,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": true,
+                "actual": false
+              },
+              {
+                "at_ms": 530,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": true,
+                "actual": false
+              },
+              {
+                "at_ms": 535,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": true,
+                "actual": false
+              },
+              {
+                "at_ms": 540,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": true,
+                "actual": false
+              }
+            ]
+          }
+        },
+        "numeric": {
+          "status": "not_run",
+          "checked": 0
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [
+        [
+          "CONTRACT_PERIODIC",
+          "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 505, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 510, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 515, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 520, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 525, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 530, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 535, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}, {\"at_ms\": 540, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": true, \"actual\": false}]}"
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [
+        "{\"check\": {\"active_value\": true, \"delta\": \"elapsedMilliseconds\", \"evidence\": \"\\u6bcf500ms\\u7ffb\\u8f6c; \\u54cd\\u5e94\\u53ca\\u7ffb\\u8f6c\\u65f6\\u95f4\\u5bb9\\u5dee20ms; \\u521d\\u59cb\\u505c\\u6b62\\u4e14D13\\u7184\\u706d; \\u542f\\u52a8\\u65f6\\u4ece\\u7184\\u706d\\u5f00\\u59cb; \\u6309\\u4e0b\\u6cbf\\u5207\\u6362\\u8fd0\\u884c/\\u505c\\u6b62; \\u505c\\u6b62\\u7acb\\u5373\\u7184\\u706d; \\u518d\\u542f\\u52a8\\u91cd\\u65b0\\u8ba1\\u65f6\", \"first_pulse\": \"after_silence\", \"inactive_value\": false, \"initial_running\": false, \"output\": \"io_1\", \"pause_input\": \"io_0\", \"pause_policy\": \"reset\", \"period_ms\": 1000, \"pulse_ms\": 500, \"tolerance_ms\": 20}, \"code\": \"CONTRACT_PERIODIC\"}"
+      ],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": {
+        "target_output": "io_1",
+        "evidence": "每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时",
+        "controller_fragment": {
+          "components": [
+            {
+              "kind": "edge_toggle",
+              "name": "repairRun0",
+              "input": "io_0",
+              "edge": "rising",
+              "initial": false,
+              "previous_input": false
+            },
+            {
+              "kind": "periodic_pulse",
+              "name": "repairPulse0",
+              "delta": "elapsedMilliseconds",
+              "enabled": "component_repairRun0_value",
+              "period_ms": 1000,
+              "pulse_ms": 500,
+              "first_pulse": "after_silence",
+              "pause": "reset"
+            }
+          ],
+          "outputs": {
+            "io_1": {
+              "if": "component_repairPulse0_value",
+              "then": true,
+              "else": false
+            }
+          }
+        },
+        "instructions": "This is a partial controller fragment for the cited periodic obligation, not a full replacement model. Use its exact frozen input/output names, values and timing parameters. Replace the faulty timer implementation for this output with these components when it has exactly these required semantics; do not keep a second timer that overrides the same behavior. Preserve every other required output, dependency, state, guard and requirement mapping. If other requirements add behavior not expressed here, integrate it explicitly or retain a correct full state machine. Return the complete controller and req_test_map; all parser, IR, contract and later functional checks still apply."
+      },
+      "failure_stage": "requirements"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_0 and not previousPressed\",\n        \"then\": [\n          {\n            \"assign\": \"running\",\n            \"value\": \"not running\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"running\",\n        \"then\": \"component_repairPulse0_value\",\n        \"else\": false\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）控制 LED（D13）开始/停止闪烁\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 io_0=false 且持续保持；随后在某个控制步注入一次短按边缘（形成 io_0 从false上升到true的单步变化，对应物理D2从HIGH到LOW的按下沿，随后保持true若干步再释放回false）；期间采样elapsedMilliseconds以覆盖至少0.5s并观察D13变化；最后再注入一次短按边缘以停止（同样为rising edge）。\",\n        \"oracle\": \"初始时 io_1=false；第一次按下沿后开始运行，且LED从熄灭开始，每500ms翻转一次（500ms±20ms）；长按或松开不改变状态（io_0保持true或从true到false均不额外切换）；第二次按下沿后立即停止并将 io_1=false；停止后再按下沿启动时翻转计时重新从熄灭开始。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "org.eclipse.xtext.diagnostics.Diagnostic.Linking",
+          "message": "Couldn't resolve reference to Element 'component_repairPulse0_value'.",
+          "line": 16,
+          "column": 50,
+          "syntax": false
+        },
+        {
+          "severity": "warning",
+          "code": "validateBindingConnectorTypeConformance",
+          "message": "Bound features should have conforming types",
+          "line": 16,
+          "column": 50,
+          "syntax": false
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute elapsedMilliseconds : Integer;\n    attribute running : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and not previousPressed {\n        first start;\n        then assign running := not running;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = (if running ? component_repairPulse0_value else false);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": false,
+        "sysml_to_ir": null,
+        "ir_to_il": null
+      },
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "org.eclipse.xtext.diagnostics.Diagnostic.Linking",
+          "message": "Couldn't resolve reference to Element 'component_repairPulse0_value'.",
+          "line": 16,
+          "column": 50,
+          "syntax": false
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "org.eclipse.xtext.diagnostics.Diagnostic.Linking",
+          "Couldn't resolve reference to Element 'component_repairPulse0_value'."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 3,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"running\",\n            \"value\": {\n              \"not\": \"running\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"running\",\n        \"then\": {\n          \"if\": {\n            \"and\": [\n              {\n                \">=\": [\n                  \"elapsedMilliseconds\",\n                  0\n                ]\n              },\n              {\n                \"<=\": [\n                  \"elapsedMilliseconds\",\n                  1000000\n                ]\n              }\n            ]\n          },\n          \"then\": {\n            \"if\": {\n              \"and\": [\n                \"running\",\n                {\n                  \"<=\": [\n                    {\n                      \"floor\": {\n                        \"/\": [\n                          \"elapsedMilliseconds\",\n                          500\n                        ]\n                      }\n                    },\n                    {\n                      \"floor\": {\n                        \"/\": [\n                          \"elapsedMilliseconds\",\n                          500\n                        ]\n                      }\n                    }\n                  ]\n                }\n              ]\n            },\n            \"then\": true,\n            \"else\": false\n          },\n          \"else\": false\n        },\n        \"else\": false\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）控制 LED（D13）开始/停止闪烁\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 io_0=false 且持续保持；随后在某个控制步注入一次短按边缘（形成 io_0 从false上升到true的单步变化，对应物理D2从HIGH到LOW的按下沿，随后保持true若干步再释放回false）；期间采样elapsedMilliseconds以覆盖至少0.5s并观察D13变化；最后再注入一次短按边缘以停止（同样为rising edge）。\",\n        \"oracle\": \"初始时 io_1=false；第一次按下沿后开始运行，且LED从熄灭开始，每500ms翻转一次（500ms±20ms）；长按或松开不改变状态（io_0保持true或从true到false均不额外切换）；第二次按下沿后立即停止并将 io_1=false；停止后再按下沿启动时翻转计时重新从熄灭开始。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "CONTRACT_PERIODIC",
+          "stage": "requirements",
+          "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 0, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 0}, \"expected\": false, \"actual\": false}, {\"at_ms\": 5, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 10, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 15, \"inputs\": {\"io_0\": true, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": true}]}"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute elapsedMilliseconds : Integer;\n    attribute running : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign running := (not running);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = (if running ? (if ((((elapsedMilliseconds) >= (0))) and (((elapsedMilliseconds) <= (1000000)))) ? (if ((running) and (((RealFunctions::floor(((elapsedMilliseconds) / (500)))) <= (RealFunctions::floor(((elapsedMilliseconds) / (500))))))) ? true else false) else false) else false);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "CONTRACT_PERIODIC",
+          "stage": "requirements",
+          "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 0, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 0}, \"expected\": false, \"actual\": false}, {\"at_ms\": 5, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 10, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 15, \"inputs\": {\"io_0\": true, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": true}]}"
+        }
+      ],
+      "coverage": {
+        "status": "failed",
+        "issues": [
+          {
+            "severity": "error",
+            "code": "CONTRACT_PERIODIC",
+            "stage": "requirements",
+            "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 0, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 0}, \"expected\": false, \"actual\": false}, {\"at_ms\": 5, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 10, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 15, \"inputs\": {\"io_0\": true, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": true}]}"
+          }
+        ],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "passed",
+          "checked": 1,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof.",
+          "inputs": {
+            "io_0": false,
+            "elapsedMilliseconds": 0
+          },
+          "observed": {
+            "io_1": false
+          }
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "failed",
+          "checked": 4,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof.",
+          "counterexample": {
+            "check": {
+              "delta": "elapsedMilliseconds",
+              "output": "io_1",
+              "period_ms": 1000,
+              "pulse_ms": 500,
+              "first_pulse": "after_silence",
+              "active_value": true,
+              "inactive_value": false,
+              "tolerance_ms": 20,
+              "evidence": "每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时",
+              "pause_input": "io_0",
+              "initial_running": false,
+              "pause_policy": "reset"
+            },
+            "paused": false,
+            "jitter": false,
+            "pause_offset_ms": null,
+            "history": [
+              {
+                "at_ms": 0,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 0
+                },
+                "expected": false,
+                "actual": false
+              },
+              {
+                "at_ms": 5,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": false,
+                "actual": false
+              },
+              {
+                "at_ms": 10,
+                "inputs": {
+                  "io_0": false,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": false,
+                "actual": false
+              },
+              {
+                "at_ms": 15,
+                "inputs": {
+                  "io_0": true,
+                  "elapsedMilliseconds": 5
+                },
+                "expected": false,
+                "actual": true
+              }
+            ]
+          }
+        },
+        "numeric": {
+          "status": "not_run",
+          "checked": 0
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [
+        [
+          "CONTRACT_PERIODIC",
+          "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"io_1\", \"period_ms\": 1000, \"pulse_ms\": 500, \"first_pulse\": \"after_silence\", \"active_value\": true, \"inactive_value\": false, \"tolerance_ms\": 20, \"evidence\": \"每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时\", \"pause_input\": \"io_0\", \"initial_running\": false, \"pause_policy\": \"reset\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 0, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 0}, \"expected\": false, \"actual\": false}, {\"at_ms\": 5, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 10, \"inputs\": {\"io_0\": false, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": false}, {\"at_ms\": 15, \"inputs\": {\"io_0\": true, \"elapsedMilliseconds\": 5}, \"expected\": false, \"actual\": true}]}"
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [
+        "{\"check\": {\"active_value\": true, \"delta\": \"elapsedMilliseconds\", \"evidence\": \"\\u6bcf500ms\\u7ffb\\u8f6c; \\u54cd\\u5e94\\u53ca\\u7ffb\\u8f6c\\u65f6\\u95f4\\u5bb9\\u5dee20ms; \\u521d\\u59cb\\u505c\\u6b62\\u4e14D13\\u7184\\u706d; \\u542f\\u52a8\\u65f6\\u4ece\\u7184\\u706d\\u5f00\\u59cb; \\u6309\\u4e0b\\u6cbf\\u5207\\u6362\\u8fd0\\u884c/\\u505c\\u6b62; \\u505c\\u6b62\\u7acb\\u5373\\u7184\\u706d; \\u518d\\u542f\\u52a8\\u91cd\\u65b0\\u8ba1\\u65f6\", \"first_pulse\": \"after_silence\", \"inactive_value\": false, \"initial_running\": false, \"output\": \"io_1\", \"pause_input\": \"io_0\", \"pause_policy\": \"reset\", \"period_ms\": 1000, \"pulse_ms\": 500, \"tolerance_ms\": 20}, \"code\": \"CONTRACT_PERIODIC\"}"
+      ],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": {
+        "target_output": "io_1",
+        "evidence": "每500ms翻转; 响应及翻转时间容差20ms; 初始停止且D13熄灭; 启动时从熄灭开始; 按下沿切换运行/停止; 停止立即熄灭; 再启动重新计时",
+        "controller_fragment": {
+          "components": [
+            {
+              "kind": "edge_toggle",
+              "name": "repairRun0",
+              "input": "io_0",
+              "edge": "rising",
+              "initial": false,
+              "previous_input": false
+            },
+            {
+              "kind": "periodic_pulse",
+              "name": "repairPulse0",
+              "delta": "elapsedMilliseconds",
+              "enabled": "component_repairRun0_value",
+              "period_ms": 1000,
+              "pulse_ms": 500,
+              "first_pulse": "after_silence",
+              "pause": "reset"
+            }
+          ],
+          "outputs": {
+            "io_1": {
+              "if": "component_repairPulse0_value",
+              "then": true,
+              "else": false
+            }
+          }
+        },
+        "instructions": "This is a partial controller fragment for the cited periodic obligation, not a full replacement model. Use its exact frozen input/output names, values and timing parameters. Replace the faulty timer implementation for this output with these components when it has exactly these required semantics; do not keep a second timer that overrides the same behavior. Preserve every other required output, dependency, state, guard and requirement mapping. If other requirements add behavior not expressed here, integrate it explicitly or retain a correct full state machine. Return the complete controller and req_test_map; all parser, IR, contract and later functional checks still apply."
+      },
+      "failure_stage": "requirements"
+    }
+  ]
+}

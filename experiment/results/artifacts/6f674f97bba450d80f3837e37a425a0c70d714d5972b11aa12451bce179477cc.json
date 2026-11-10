@@ -1,0 +1,184 @@
+{
+  "ok": false,
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"run\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"elapsed\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"ledLit\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"run\",\n            \"value\": {\n              \"not\": \"run\"\n            }\n          },\n          {\n            \"assign\": \"elapsed\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"ledLit\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": \"run\",\n        \"then\": [\n          {\n            \"assign\": \"elapsed\",\n            \"value\": \"elapsed + io_2\"\n          },\n          {\n            \"if\": {\n              \">=\": [\n                \"elapsed\",\n                500\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"elapsed\",\n                \"value\": \"elapsed - 500\"\n              },\n              {\n                \"assign\": \"ledLit\",\n                \"value\": {\n                  \"not\": \"ledLit\"\n                }\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"not\": \"run\"\n        },\n        \"else\": [\n          {\n            \"assign\": \"ledLit\",\n            \"value\": {\n              \"if\": \"run ? true : false\",\n              \"then\": \"ledLit\",\n              \"else\": false\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": \"ledLit\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）控制 LED（D13）开始/停止闪烁\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始时 io_0=false(未按下)若干步；在某一步产生按下沿：从 io_0=false->true(保持为true一段时间后再松开到false)；期间持续提供 io_2=5ms 的delta并贯穿多次500ms边界；然后在再次按下沿 io_0从false->true时切换停止；停止后保持按住与松开不再切换。\",\n        \"oracle\": \"D13初始为false；首次按下沿切换到运行且LED从false开始，随后每隔约500ms翻转一次（相对周期与响应容差±20ms）；长按或松开期间不发生额外切换；停止在按下沿切换后的同控制步立即为false；停止后保持为false；再次启动后LED重新从false开始并重新计时后翻转。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/updates/2/else/0/value/if",
+          "original": "run ? true : false",
+          "normalized": {
+            "if": "run",
+            "then": true,
+            "else": false
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed + io_2->io_2 + io_2",
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed - 500->io_2 - 500"
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"run\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"elapsed\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"ledLit\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"run\",\n            \"value\": {\n              \"not\": \"run\"\n            }\n          },\n          {\n            \"assign\": \"elapsed\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"ledLit\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": \"run\",\n        \"then\": [\n          {\n            \"assign\": \"elapsed\",\n            \"value\": \"elapsed + io_2\"\n          },\n          {\n            \"if\": \"elapsed >= 500\",\n            \"then\": [\n              {\n                \"assign\": \"elapsed\",\n                \"value\": \"elapsed - 500\"\n              },\n              {\n                \"assign\": \"ledLit\",\n                \"value\": {\n                  \"not\": \"ledLit\"\n                }\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": \"if run then ledLit else false\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）控制 LED（D13）开始/停止闪烁\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始若干控制步保持 io_0=false；每步提供 io_2=5ms；在某一步产生一次按下沿（io_0从false->true并保持为true若干步后再回到false）；在另一次按下沿（再次从false->true）切换状态为停止；停止后保持按住与松开期间不再切换（io_0保持true若干步后再回到false，且不产生新的false->true沿）。再次按下沿从停止切回运行（false->true）并继续提供 io_2=5ms。\",\n        \"oracle\": \"D13( io_1 )初始为false；第一次按下沿切换到运行后同控制步起 io_1=false，并在随后每隔约500ms（允许±20ms，基于累计io_2到达/跨过500ms）发生一次翻转（false->true->false...）；在长按或松开期间（无新的false->true沿）不发生额外翻转；停止在第二次按下沿切换后的同控制步立即使 io_1=false；停止后保持io_1=false直到再次启动；再次启动后从false开始并重新计时后继续以约500ms周期翻转。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/outputs/io_1",
+          "original": "if run then ledLit else false",
+          "normalized": {
+            "if": "run",
+            "then": "ledLit",
+            "else": false
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed + io_2->io_2 + io_2",
+        "clock_alias:elapsed >= 500->io_2 >= 500",
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed - 500->io_2 - 500"
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        ]
+      ],
+      "no_progress": true,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 3,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"run\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"elapsed\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"ledLit\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"run\",\n            \"value\": {\n              \"not\": \"run\"\n            }\n          },\n          {\n            \"assign\": \"elapsed\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"ledLit\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": \"run\",\n        \"then\": [\n          {\n            \"assign\": \"elapsed\",\n            \"value\": \"elapsed + io_2\"\n          },\n          {\n            \"if\": \"elapsed >= 500\",\n            \"then\": [\n              {\n                \"assign\": \"elapsed\",\n                \"value\": \"elapsed - 500\"\n              },\n              {\n                \"assign\": \"ledLit\",\n                \"value\": {\n                  \"not\": \"ledLit\"\n                }\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"run\",\n        \"then\": \"ledLit\",\n        \"else\": false\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）控制 LED（D13）开始/停止闪烁\\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；每次按下沿切换运行/停止，长按或松开不切换。初始停止且D13熄灭；启动时从熄灭开始，每500ms翻转；停止立即熄灭，再启动重新计时。输入响应及翻转时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始若干控制步保持 io_0=false；每步提供 io_2=5ms；在某一步产生一次按下沿（io_0从false->true并保持为true若干步后再回到false）；在另一次按下沿（再次从false->true）切换状态为停止；停止后保持按住与松开期间不再切换（io_0保持true若干步后再回到false，且不产生新的false->true沿）。再次按下沿从停止切回运行（false->true）并继续提供 io_2=5ms。\",\n        \"oracle\": \"D13( io_1 )初始为false；第一次按下沿切换到运行后同控制步起 io_1=false，并在随后每隔约500ms（允许±20ms，基于累计io_2到达/跨过500ms）发生一次翻转（false->true->false...）；在长按或松开期间（无新的false->true沿）不发生额外翻转；停止在第二次按下沿切换后的同控制步立即使 io_1=false；停止后保持io_1=false直到再次启动；再次启动后从false开始并重新计时后继续以约500ms周期翻转。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed + io_2->io_2 + io_2",
+        "clock_alias:elapsed >= 500->io_2 >= 500",
+        "clock_alias:elapsed->io_2",
+        "clock_alias:elapsed - 500->io_2 - 500"
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        ]
+      ],
+      "no_progress": true,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    }
+  ]
+}

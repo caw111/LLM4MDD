@@ -1,0 +1,111 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests temperature display updates across rising, falling, and repeated DHT11 readings. The fan threshold is unspecified, so no particular temperature can independently be asserted to require fan activation or deactivation. Fan threshold behavior is therefore not covered; neither a threshold nor a PWM speed is imposed on candidates.",
+  "assumptions": [
+    "Authoritative wiring is DHT11 data on D7, fan PWM on D5, and TM1637 CLK on D4 and DIO on D2.",
+    "Displayed temperature is in degrees Celsius, the native DHT temperature API unit. No display formatting beyond a numeric temperature is required.",
+    "Each temperature state lasts at least 3 seconds to accommodate the cached 2-second DHT API and ordinary display update delays.",
+    "The requirement does not specify a fan threshold, running PWM duty, hysteresis, or invalid-reading policy. The reference chooses a 30-degree threshold and full-duty operation as implementation choices, not candidate acceptance criteria.",
+    "No default LED or button wiring assumptions are needed. Fan driver circuitry is not specified; no electrical polarity assertion is made about it."
+  ],
+  "horizon_ms": 32000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "pin": 7,
+      "value": 15,
+      "kind": "temperature"
+    },
+    {
+      "at_ms": 7000,
+      "pin": 7,
+      "value": 35,
+      "kind": "temperature"
+    },
+    {
+      "at_ms": 14000,
+      "pin": 7,
+      "value": 48,
+      "kind": "temperature"
+    },
+    {
+      "at_ms": 21000,
+      "pin": 7,
+      "value": 15,
+      "kind": "temperature"
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "id": "gpio_5_6000_0",
+      "kind": "gpio",
+      "at_ms": 6000,
+      "requirement_quote": "TM1637 显示温度，风扇 D5 高温启动、低温停止",
+      "pin": 5,
+      "expected": 0
+    },
+    {
+      "id": "gpio_5_20000_1",
+      "kind": "gpio",
+      "at_ms": 20000,
+      "requirement_quote": "TM1637 显示温度，风扇 D5 高温启动、低温停止",
+      "pin": 5,
+      "expected": 1
+    },
+    {
+      "id": "gpio_5_29000_2",
+      "kind": "gpio",
+      "at_ms": 29000,
+      "requirement_quote": "TM1637 显示温度，风扇 D5 高温启动、低温停止",
+      "pin": 5,
+      "expected": 0
+    },
+    {
+      "id": "display_tm:4:5_6000_3",
+      "kind": "display",
+      "at_ms": 6000,
+      "requirement_quote": "TM1637 显示温度，风扇 D5 高温启动、低温停止",
+      "numeric": true,
+      "name": "tm:4:2",
+      "expected": "15",
+      "tolerance": 1
+    },
+    {
+      "id": "display_tm:4:5_13000_4",
+      "kind": "display",
+      "at_ms": 13000,
+      "requirement_quote": "TM1637 显示温度，风扇 D5 高温启动、低温停止",
+      "numeric": true,
+      "name": "tm:4:2",
+      "expected": "35",
+      "tolerance": 1
+    },
+    {
+      "id": "display_tm:4:5_20000_5",
+      "kind": "display",
+      "at_ms": 20000,
+      "requirement_quote": "TM1637 显示温度，风扇 D5 高温启动、低温停止",
+      "numeric": true,
+      "name": "tm:4:2",
+      "expected": "48",
+      "tolerance": 1
+    },
+    {
+      "id": "display_tm:4:5_29000_6",
+      "kind": "display",
+      "at_ms": 29000,
+      "requirement_quote": "TM1637 显示温度，风扇 D5 高温启动、低温停止",
+      "numeric": true,
+      "name": "tm:4:2",
+      "expected": "15",
+      "tolerance": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <TM1637Display.h>\n#include <math.h>\n\nconst uint8_t FAN_PIN = 5;\nconst uint8_t DHT_PIN = 7;\nconst float FAN_THRESHOLD_C = 30.0f;\nDHT sensor(DHT_PIN, DHT11);\nTM1637Display display(4, 2);\nunsigned long lastRead = 0;\nbool firstRead = true;\n\nvoid setup() {\n  pinMode(FAN_PIN, OUTPUT);\n  analogWrite(FAN_PIN, 0);\n  sensor.begin();\n  display.setBrightness(7);\n  display.clear();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (firstRead || now - lastRead >= 2000UL) {\n    firstRead = false;\n    lastRead = now;\n    float temperature = sensor.readTemperature();\n    if (!isnan(temperature)) {\n      display.showNumberDec((int)roundf(temperature), false);\n      analogWrite(FAN_PIN, temperature > FAN_THRESHOLD_C ? 255 : 0);\n    }\n  }\n}\n",
+  "core_criterion": "TM1637 显示温度，风扇 D5 高温启动、低温停止"
+}

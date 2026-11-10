@@ -1,0 +1,268 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeAuto",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "prevButton",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "manualForcedUntil",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "manualRemainingMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "displayPhase",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_7",
+            {
+              "not": "prevButton"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": "modeAuto",
+            "then": [
+              {
+                "assign": "modeAuto",
+                "value": false
+              }
+            ],
+            "else": [
+              {
+                "assign": "modeAuto",
+                "value": true
+              }
+            ]
+          },
+          {
+            "if": {
+              "not": "modeAuto"
+            },
+            "then": [
+              {
+                "assign": "manualRemainingMs",
+                "value": 5000
+              },
+              {
+                "assign": "manualForcedUntil",
+                "value": 1
+              }
+            ],
+            "else": []
+          }
+        ]
+      },
+      {
+        "assign": "prevButton",
+        "value": "io_7"
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "!=": [
+                "manualForcedUntil",
+                0
+              ]
+            },
+            {
+              ">": [
+                "manualRemainingMs",
+                0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "manualRemainingMs",
+            "value": "manualRemainingMs"
+          },
+          {
+            "assign": "manualForcedUntil",
+            "value": "manualForcedUntil"
+          }
+        ],
+        "else": [
+          {
+            "assign": "manualForcedUntil",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "modeAuto",
+        "then": [
+          {
+            "assign": "displayPhase",
+            "value": {
+              "+": [
+                "displayPhase",
+                1
+              ]
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "displayPhase",
+            "value": {
+              "+": [
+                "displayPhase",
+                1
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": "modeAuto",
+        "then": {
+          "and": [
+            {
+              "<": [
+                "io_0",
+                512.0
+              ]
+            },
+            {
+              ">=": [
+                "io_1",
+                512.0
+              ]
+            },
+            {
+              ">=": [
+                "io_2",
+                512.0
+              ]
+            }
+          ]
+        },
+        "else": {
+          "and": [
+            {
+              "!=": [
+                "manualForcedUntil",
+                0
+              ]
+            },
+            {
+              ">": [
+                "manualRemainingMs",
+                0
+              ]
+            }
+          ]
+        }
+      },
+      "io_4": {
+        "if": {
+          "and": [
+            "modeAuto",
+            {
+              "<": [
+                "io_2",
+                512.0
+              ]
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "io_5": {
+        "if": {
+          "and": [
+            "modeAuto",
+            {
+              "<": [
+                "io_2",
+                512.0
+              ]
+            }
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_6": {
+        "if": {
+          "==": [
+            "displayPhase",
+            0
+          ]
+        },
+        "then": {
+          "floor": "io_0"
+        },
+        "else": {
+          "if": {
+            "==": [
+              "displayPhase",
+              1
+            ]
+          },
+          "then": {
+            "floor": "io_2"
+          },
+          "else": {
+            "if": "modeAuto",
+            "then": 0,
+            "else": 1
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能灌溉控制系统，使用土壤湿度传感器 A0、雨滴传感器 A1、水位传感器 A2、水泵继电器 D10、状态 LED D13、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和按钮 D2。自动模式下仅在土壤干燥、未下雨且水位足够时开启水泵；若水位不足则禁止启动并报警；按钮用于切换自动/手动模式，手动模式下再次按键可强制启动 5 秒。数码管循环显示土壤湿度、水位和当前模式。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下/释放按钮将模式切换到自动；设置io_0<512(干燥)、io_1<512(未下雨)、io_2>=512(水位足够)；保持输入不变若干控制步。",
+        "oracle": "io_3为true(泵开启)，io_4为false，io_5为0，io_6按循环阶段显示土壤湿度数值、随后水位数值、随后模式值(0=自动/1=手动)。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能灌溉控制系统，使用土壤湿度传感器 A0、雨滴传感器 A1、水位传感器 A2、水泵继电器 D10、状态 LED D13、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和按钮 D2。自动模式下仅在土壤干燥、未下雨且水位足够时开启水泵；若水位不足则禁止启动并报警；按钮用于切换自动/手动模式，手动模式下再次按键可强制启动 5 秒。数码管循环显示土壤湿度、水位和当前模式。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "切换到自动模式；设置io_2<512(水位不足)，并设置io_0与io_1满足‘干燥且未下雨’(io_0<512且io_1<512)。保持输入不变。",
+        "oracle": "io_3为false(禁止启动)，io_4为true，io_5为1000(报警音)，且io_6仍在循环更新显示。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能灌溉控制系统，使用土壤湿度传感器 A0、雨滴传感器 A1、水位传感器 A2、水泵继电器 D10、状态 LED D13、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和按钮 D2。自动模式下仅在土壤干燥、未下雨且水位足够时开启水泵；若水位不足则禁止启动并报警；按钮用于切换自动/手动模式，手动模式下再次按键可强制启动 5 秒。数码管循环显示土壤湿度、水位和当前模式。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "将系统切换到手动模式(通过按钮切换一次）；随后在手动模式下再次产生按钮上升沿(pressed先由false->true)。在此过程中设置任意io_0/io_1，并设置io_2可以小于512或大于512。",
+        "oracle": "在按钮上升沿之后，io_3被拉高(强制启动逻辑生效)，io_4为false，io_5为0；TM1637切换显示模式值(1=手动)并继续循环显示。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_7 : Boolean;\n    attribute modeAuto : Boolean := true;\n    attribute prevButton : Boolean := false;\n    attribute manualForcedUntil : Integer := 0;\n    attribute manualRemainingMs : Integer := 0;\n    attribute displayPhase : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_7) and ((not prevButton))) {\n        first start;\n        then if modeAuto {\n          first start;\n          then assign modeAuto := false;\n        } else {\n          first start;\n          then assign modeAuto := true;\n        }\n        then if (not modeAuto) {\n          first start;\n          then assign manualRemainingMs := 5000;\n          then assign manualForcedUntil := 1;\n        }\n      }\n      then assign prevButton := io_7;\n      then if ((((manualForcedUntil) != (0))) and (((manualRemainingMs) > (0)))) {\n        first start;\n        then assign manualRemainingMs := manualRemainingMs;\n        then assign manualForcedUntil := manualForcedUntil;\n      } else {\n        first start;\n        then assign manualForcedUntil := 0;\n      }\n      then if modeAuto {\n        first start;\n        then assign displayPhase := ((displayPhase) + (1));\n      } else {\n        first start;\n        then assign displayPhase := ((displayPhase) + (1));\n      }\n    }\n    out attribute io_3 : Boolean = (if modeAuto ? ((((io_0) < (512.0))) and (((io_1) >= (512.0))) and (((io_2) >= (512.0)))) else ((((manualForcedUntil) != (0))) and (((manualRemainingMs) > (0)))));\n    out attribute io_4 : Boolean = (if ((modeAuto) and (((io_2) < (512.0)))) ? true else false);\n    out attribute io_5 : Integer = (if ((modeAuto) and (((io_2) < (512.0)))) ? 1000 else 0);\n    out attribute io_6 : Integer = (if ((displayPhase) == (0)) ? RealFunctions::floor(io_0) else (if ((displayPhase) == (1)) ? RealFunctions::floor(io_2) else (if modeAuto ? 0 else 1)));\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,242 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "warningLevel",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevFlame",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "toneRunning",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "warningLevel",
+        "value": 0
+      },
+      {
+        "if": {
+          "or": [
+            {
+              ">=": [
+                {
+                  "+": [
+                    {
+                      "*": [
+                        {
+                          "if": {
+                            ">=": [
+                              "io_0",
+                              0.0
+                            ]
+                          },
+                          "then": "io_0",
+                          "else": 0.0
+                        },
+                        1.0
+                      ]
+                    },
+                    0.0
+                  ]
+                },
+                60.0
+              ]
+            },
+            {
+              ">=": [
+                {
+                  "if": {
+                    ">=": [
+                      "io_1",
+                      0.0
+                    ]
+                  },
+                  "then": "io_1",
+                  "else": 0.0
+                },
+                550.0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "warningLevel",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "if": {
+          "or": [
+            {
+              ">=": [
+                "io_0",
+                80.0
+              ]
+            },
+            {
+              ">=": [
+                "io_1",
+                750.0
+              ]
+            },
+            {
+              "and": [
+                "io_2",
+                {
+                  "or": [
+                    {
+                      ">=": [
+                        "io_0",
+                        60.0
+                      ]
+                    },
+                    {
+                      ">=": [
+                        "io_1",
+                        550.0
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "io_2"
+          ]
+        },
+        "then": [
+          {
+            "assign": "warningLevel",
+            "value": 2
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "==": [
+            {
+              "if": {
+                "==": [
+                  "warningLevel",
+                  2
+                ]
+              },
+              "then": 1,
+              "else": 0
+            },
+            1
+          ]
+        },
+        "then": [
+          {
+            "assign": "toneRunning",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "toneRunning",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "prevFlame",
+        "value": "io_2"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": "toneRunning",
+        "then": 2000,
+        "else": 0
+      },
+      "io_4": {
+        "if": {
+          "==": [
+            "warningLevel",
+            2
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "io_5": {
+        "if": {
+          "==": [
+            "warningLevel",
+            1
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "io_6": "warningLevel",
+      "serial_0_trigger": {
+        "==": [
+          "warningLevel",
+          2
+        ]
+      },
+      "serial_0_value_0": "warningLevel",
+      "serial_0_value_1": {
+        "if": {
+          "==": [
+            "warningLevel",
+            2
+          ]
+        },
+        "then": "io_0",
+        "else": {
+          "if": {
+            "==": [
+              "warningLevel",
+              1
+            ]
+          },
+          "then": "io_0",
+          "else": 0.0
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多传感器火灾预警系统，使用温度传感器 LM35（A1）、烟雾传感器 MQ-2（A0）、火焰传感器 D2、蜂鸣器 D6、红色 LED D13、绿色 LED D12、TM1637（CLK=D4，DIO=D5）和串口。系统将预警分为正常、关注、警报三级：任一指标轻微超限进入关注，多个指标超限或火焰传感器触发进入警报。数码管显示当前等级编号和关键值；警报级下蜂鸣器持续间歇报警并串口输出 fire alert。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_2=false; io_0 below 60; io_1 below 550",
+        "oracle": "io_4=false (red off), io_5=false (green off), io_6=0, io_3=0, serial_0_trigger=false, serial_0_value_0=0"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多传感器火灾预警系统，使用温度传感器 LM35（A1）、烟雾传感器 MQ-2（A0）、火焰传感器 D2、蜂鸣器 D6、红色 LED D13、绿色 LED D12、TM1637（CLK=D4，DIO=D5）和串口。系统将预警分为正常、关注、警报三级：任一指标轻微超限进入关注，多个指标超限或火焰传感器触发进入警报。数码管显示当前等级编号和关键值；警报级下蜂鸣器持续间歇报警并串口输出 fire alert。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_2=false; (io_0=65, io_1 below 550) 维持单步",
+        "oracle": "warningLevel=1 -> io_5=true, io_4=false, io_6=1, io_3=0, serial_0_trigger=false, serial_0_value_0=1"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多传感器火灾预警系统，使用温度传感器 LM35（A1）、烟雾传感器 MQ-2（A0）、火焰传感器 D2、蜂鸣器 D6、红色 LED D13、绿色 LED D12、TM1637（CLK=D4，DIO=D5）和串口。系统将预警分为正常、关注、警报三级：任一指标轻微超限进入关注，多个指标超限或火焰传感器触发进入警报。数码管显示当前等级编号和关键值；警报级下蜂鸣器持续间歇报警并串口输出 fire alert。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "io_2=true; io_0任意; io_1任意（保持单步）",
+        "oracle": "warningLevel=2 -> io_4=true, io_5=false, io_6=2, io_3=2000, serial_0_trigger=true, serial_0_value_0=2"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    attribute warningLevel : Integer := 0;\n    attribute prevFlame : Boolean := false;\n    attribute toneRunning : Boolean := false;\n    perform action tick {\n      first start;\n      then assign warningLevel := 0;\n      then if (((((((((if ((io_0) >= (0.0)) ? io_0 else 0.0)) * (1.0))) + (0.0))) >= (60.0))) or ((((if ((io_1) >= (0.0)) ? io_1 else 0.0)) >= (550.0)))) {\n        first start;\n        then assign warningLevel := 1;\n      }\n      then if ((((io_0) >= (80.0))) or (((io_1) >= (750.0))) or (((io_2) and (((((io_0) >= (60.0))) or (((io_1) >= (550.0))))))) or (io_2)) {\n        first start;\n        then assign warningLevel := 2;\n      }\n      then if (((if ((warningLevel) == (2)) ? 1 else 0)) == (1)) {\n        first start;\n        then assign toneRunning := true;\n      } else {\n        first start;\n        then assign toneRunning := false;\n      }\n      then assign prevFlame := io_2;\n    }\n    out attribute io_3 : Integer = (if toneRunning ? 2000 else 0);\n    out attribute io_4 : Boolean = (if ((warningLevel) == (2)) ? true else false);\n    out attribute io_5 : Boolean = (if ((warningLevel) == (1)) ? true else false);\n    out attribute io_6 : Integer = warningLevel;\n    out attribute serial_0_trigger : Boolean = ((warningLevel) == (2));\n    out attribute serial_0_value_0 : Integer = warningLevel;\n    out attribute serial_0_value_1 : Real = (if ((warningLevel) == (2)) ? io_0 else (if ((warningLevel) == (1)) ? io_0 else 0.0));\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"mode\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"mode\",\n            \"value\": {\n              \"if\": \"mode == 2\",\n              \"then\": 0,\n              \"else\": \"mode + 1\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": \"mode == 0\",\n        \"then\": 0,\n        \"else\": {\n          \"if\": \"mode == 1\",\n          \"then\": {\n            \"if\": \"io_0 < 0.0\",\n            \"then\": 0,\n            \"else\": {\n              \"if\": \"io_0 > 1023.0\",\n              \"then\": 1023,\n              \"else\": {\n                \"floor\": \"io_0\"\n              }\n            }\n          },\n          \"else\": 1234\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）循环切换 TM1637 显示：计数/电位器值/1234\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_1 rising edge (press) while io_0 arbitrary; repeat with two more distinct press rising edges\",\n        \"oracle\": \"io_2 cycles through 0 -> floor(clamp(io_0,0..1023)) -> 1234 -> 0 on successive press rising edges\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"按钮（D2）循环切换 TM1637 显示：计数/电位器值/1234\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Hold io_1=true across multiple control steps (no additional rising edges), with varying io_0\",\n        \"oracle\": \"mode does not change while the button is held; io_2 updates only when mode==1 via io_0, otherwise remains fixed (0 or 1234)\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute mode : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign mode := (if mode == 2 ? 0 else mode + 1);\n      }\n      then assign previousPressed := io_1;\n    }\n    out attribute io_2 : Integer = (if mode == 0 ? 0 else (if mode == 1 ? (if io_0 < 0.0 ? 0 else (if io_0 > 1023.0 ? 1023 else RealFunctions::floor(io_0))) else 1234));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

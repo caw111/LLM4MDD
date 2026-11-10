@@ -1,0 +1,107 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "stepIndex",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "direction",
+        "type": "bool",
+        "initial": "true"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "accumulatedMs",
+        "value": "accumulatedMs + io_1"
+      },
+      {
+        "if": "accumulatedMs >= 2000",
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs - 2000"
+          },
+          {
+            "if": "direction",
+            "then": [
+              {
+                "if": "stepIndex >= 18",
+                "then": [
+                  {
+                    "assign": "direction",
+                    "value": "false"
+                  },
+                  {
+                    "assign": "stepIndex",
+                    "value": "17"
+                  }
+                ]
+              },
+              {
+                "if": "stepIndex < 18",
+                "then": [
+                  {
+                    "assign": "stepIndex",
+                    "value": "stepIndex + 1"
+                  }
+                ]
+              }
+            ],
+            "else": [
+              {
+                "if": "stepIndex <= 0",
+                "then": [
+                  {
+                    "assign": "direction",
+                    "value": "true"
+                  },
+                  {
+                    "assign": "stepIndex",
+                    "value": "1"
+                  }
+                ]
+              },
+              {
+                "if": "stepIndex > 0",
+                "then": [
+                  {
+                    "assign": "stepIndex",
+                    "value": "stepIndex - 1"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "direction",
+        "then": "5.0 * (2 * stepIndex)",
+        "else": "5.0 * (2 * stepIndex)"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1). The servo motor should sweep its position back and forth between 0° and 180° in increments of 10°, with each position held for 2 seconds before moving to the next.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the servo motor (servo1) should start at the 0° position.\nSweep Operation:\n1. The servo motor should move from 0° to 180° in increments of 10°, holding each position for 2 seconds.\n2. After reaching 180°, the servo motor should reverse direction and move back to 0° in decrements of 10°, again holding each position for 2 seconds.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}], \"connections\": [[\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Initialize with io_1=0 for the first step, then apply repeated control steps with io_1=10ms for enough steps to cover: 0° dwell 2s, then each subsequent 10° increment dwell 2s up to 180°, then the return dwell 2s for 170° down to 0°.",
+        "oracle": "io_0 starts at 0.0 deg at power-up, then updates to 10.0, 20.0, ... , 180.0 at each elapsed 2000ms boundary while sweeping up, and then updates to 170.0, 160.0, ... , 0.0 at each elapsed 2000ms boundary while sweeping back down; it holds each commanded angle constant for each 2s interval."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute accumulatedMs : Integer := 0;\n    attribute stepIndex : Integer := 0;\n    attribute direction : Boolean := true;\n    perform action tick {\n      first start;\n      then assign accumulatedMs := accumulatedMs + io_1;\n      then if accumulatedMs >= 2000 {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 2000;\n        then if direction {\n          first start;\n          then if stepIndex >= 18 {\n            first start;\n            then assign direction := false;\n            then assign stepIndex := 17;\n          }\n          then if stepIndex < 18 {\n            first start;\n            then assign stepIndex := stepIndex + 1;\n          }\n        } else {\n          first start;\n          then if stepIndex <= 0 {\n            first start;\n            then assign direction := true;\n            then assign stepIndex := 1;\n          }\n          then if stepIndex > 0 {\n            first start;\n            then assign stepIndex := stepIndex - 1;\n          }\n        }\n      }\n    }\n    out attribute io_0 : Real = (if direction ? 5.0 * (2 * stepIndex) else 5.0 * (2 * stepIndex));\n  }\n  part system : Controller;\n}\n"
+}

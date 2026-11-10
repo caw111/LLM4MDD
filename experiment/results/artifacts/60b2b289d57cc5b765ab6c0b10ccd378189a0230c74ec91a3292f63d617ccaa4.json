@@ -1,0 +1,320 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "displayMode",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "occupiedCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevInPositionOccupied",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevOccupied",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "entryDistanceCm",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "parkingDistanceCm",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "entryDistanceCm",
+        "value": {
+          "if": "io_1",
+          "then": "io_0",
+          "else": "entryDistanceCm"
+        }
+      },
+      {
+        "assign": "parkingDistanceCm",
+        "value": {
+          "if": "io_3",
+          "then": "io_2",
+          "else": "parkingDistanceCm"
+        }
+      },
+      {
+        "assign": "displayMode",
+        "value": {
+          "if": {
+            "and": [
+              "io_8",
+              {
+                "not": "previousPressed"
+              }
+            ]
+          },
+          "then": {
+            "+": [
+              {
+                "+": [
+                  "displayMode",
+                  1
+                ]
+              },
+              0
+            ]
+          },
+          "else": "displayMode"
+        }
+      },
+      {
+        "if": "displayMode >= 3",
+        "then": [
+          {
+            "assign": "displayMode",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "occupiedCount",
+        "value": {
+          "if": {
+            "and": [
+              "not prevInPositionOccupied",
+              {
+                "and": [
+                  "parkingDistanceCm <= 20.0",
+                  "io_3"
+                ]
+              }
+            ]
+          },
+          "then": "occupiedCount + 1",
+          "else": "occupiedCount"
+        }
+      },
+      {
+        "assign": "prevInPositionOccupied",
+        "value": {
+          "and": [
+            "parkingDistanceCm <= 20.0",
+            "io_3"
+          ]
+        }
+      },
+      {
+        "assign": "prevOccupied",
+        "value": {
+          "and": [
+            "parkingDistanceCm <= 20.0",
+            "io_3"
+          ]
+        }
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_8"
+      }
+    ],
+    "outputs": {
+      "io_4": {
+        "if": {
+          "==": [
+            "displayMode",
+            0
+          ]
+        },
+        "then": {
+          "if": "io_1",
+          "then": "RealFunctions::floor(entryDistanceCm)",
+          "else": 0
+        },
+        "else": {
+          "if": {
+            "==": [
+              "displayMode",
+              1
+            ]
+          },
+          "then": {
+            "if": "io_3",
+            "then": "RealFunctions::floor(parkingDistanceCm)",
+            "else": 0
+          },
+          "else": {
+            "if": {
+              "==": [
+                "displayMode",
+                2
+              ]
+            },
+            "then": "occupiedCount",
+            "else": "occupiedCount"
+          }
+        }
+      },
+      "io_5": {
+        "if": {
+          "and": [
+            "io_3",
+            "parkingDistanceCm < 5.0"
+          ]
+        },
+        "then": true,
+        "else": {
+          "if": {
+            "and": [
+              "io_3",
+              "parkingDistanceCm <= 20.0"
+            ]
+          },
+          "then": {
+            "or": [
+              {
+                ">=": [
+                  "parkingDistanceCm",
+                  5.0
+                ]
+              },
+              true
+            ]
+          },
+          "else": false
+        }
+      },
+      "io_6": {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "<": [
+                "entryDistanceCm",
+                30.0
+              ]
+            },
+            {
+              "not": {
+                "and": [
+                  "io_3",
+                  {
+                    "<=": [
+                      "parkingDistanceCm",
+                      20.0
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "io_7": {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              "<": [
+                "parkingDistanceCm",
+                5.0
+              ]
+            }
+          ]
+        },
+        "then": 2000,
+        "else": {
+          "if": {
+            "and": [
+              "io_3",
+              {
+                "<=": [
+                  "parkingDistanceCm",
+                  20.0
+                ]
+              }
+            ]
+          },
+          "then": {
+            "if": {
+              "<": [
+                "parkingDistanceCm",
+                10.0
+              ]
+            },
+            "then": 1800,
+            "else": {
+              "if": {
+                "<": [
+                  "parkingDistanceCm",
+                  15.0
+                ]
+              },
+              "then": 1200,
+              "else": 700
+            }
+          },
+          "else": 0
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下按钮D2产生一次上升沿（io_8从false变true），保持io_1与io_3有效，trace显示模式切换。",
+        "oracle": "TM1637显示从模式0切到模式1，再次按下切到模式2；连续三次按下后回到模式0（在有效距离时分别显示入口/车位的整数距离与占用计数）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "设置io_1有效且entryDistanceCm=25.0（io_0=25.0，io_1=true）；同时设置io_3有效且parkingDistanceCm=30.0（io_2=30.0，io_3=true）。",
+        "oracle": "绿色LED（io_6）为true，红色LED（io_5）为false，蜂鸣器频率输出（io_7）为0。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "设置io_3有效且parkingDistanceCm=18.0（io_2=18.0，io_3=true）；设置io_1无效或无关（io_1=false）。",
+        "oracle": "蜂鸣器输出（io_7）为700（<=20且>=15分级），红色LED（io_5）为true，绿色LED（io_6）为false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "倒车持续报警场景：保持io_3=true，parkingDistanceCm从6.0逐步减小到4.9（io_2=6.0,4.9），其间多步trace。",
+        "oracle": "当parkingDistanceCm<5.0时，红色LED（io_5）持续为true，蜂鸣器输出（io_7）持续为2000；当parkingDistanceCm>=5.0时蜂鸣器不为2000并按距离分级。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+        "test_point_id": "T5",
+        "test_method": "trace",
+        "stimulus": "占用计数：令parkingDistanceCm由21.0降到19.0且io_3=true（一次进入车位），随后保持在19.0多步，再令parkingDistanceCm回到21.0（离开），最后再从21.0降到19.0（第二次进入）。",
+        "oracle": "占用计数（displayMode=2时的io_4）在每次由>20cm进入<=20cm时各自增加1；停留在<=20cm期间不重复增加；离开后再次进入才再次增加。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_8 : Boolean;\n    in attribute io_9 : Integer;\n    attribute previousPressed : Boolean := false;\n    attribute displayMode : Integer := 0;\n    attribute occupiedCount : Integer := 0;\n    attribute prevInPositionOccupied : Boolean := false;\n    attribute prevOccupied : Boolean := false;\n    attribute entryDistanceCm : Real := 0.0;\n    attribute parkingDistanceCm : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign entryDistanceCm := (if io_1 ? io_0 else entryDistanceCm);\n      then assign parkingDistanceCm := (if io_3 ? io_2 else parkingDistanceCm);\n      then assign displayMode := (if ((io_8) and ((not previousPressed))) ? ((((displayMode) + (1))) + (0)) else displayMode);\n      then if displayMode >= 3 {\n        first start;\n        then assign displayMode := 0;\n      }\n      then assign occupiedCount := (if ((not prevInPositionOccupied) and (((parkingDistanceCm <= 20.0) and (io_3)))) ? occupiedCount + 1 else occupiedCount);\n      then assign prevInPositionOccupied := ((parkingDistanceCm <= 20.0) and (io_3));\n      then assign prevOccupied := ((parkingDistanceCm <= 20.0) and (io_3));\n      then assign previousPressed := io_8;\n    }\n    out attribute io_4 : Integer = (if ((displayMode) == (0)) ? (if io_1 ? RealFunctions::floor(entryDistanceCm) else 0) else (if ((displayMode) == (1)) ? (if io_3 ? RealFunctions::floor(parkingDistanceCm) else 0) else (if ((displayMode) == (2)) ? occupiedCount else occupiedCount)));\n    out attribute io_5 : Boolean = (if ((io_3) and (parkingDistanceCm < 5.0)) ? true else (if ((io_3) and (parkingDistanceCm <= 20.0)) ? ((((parkingDistanceCm) >= (5.0))) or (true)) else false));\n    out attribute io_6 : Boolean = (if ((io_1) and (((entryDistanceCm) < (30.0))) and ((not ((io_3) and (((parkingDistanceCm) <= (20.0))))))) ? true else false);\n    out attribute io_7 : Integer = (if ((io_3) and (((parkingDistanceCm) < (5.0)))) ? 2000 else (if ((io_3) and (((parkingDistanceCm) <= (20.0)))) ? (if ((parkingDistanceCm) < (10.0)) ? 1800 else (if ((parkingDistanceCm) < (15.0)) ? 1200 else 700)) else 0));\n  }\n  part system : Controller;\n}\n"
+}

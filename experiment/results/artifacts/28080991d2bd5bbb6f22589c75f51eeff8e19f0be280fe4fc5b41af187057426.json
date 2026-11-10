@@ -1,0 +1,145 @@
+{
+  "contract_sha256": "66df358c4b40fd8ae6d85bc899c60bce6aa6f7889d9701940dd517889af9832e",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_1_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_value_0": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      },
+      {
+        "id": "serial_1",
+        "trigger_port": "serial_1_trigger",
+        "value_ports": [
+          "serial_1_value_0"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED D13 command (lights when persistent object detected)\"\n    },\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"Temperature for 3s巡检\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"Humidity (acquired alongside temperature) for 3s巡检\"\n    },\n    {\n      \"kind\": \"dht_valid\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": false,\n      \"meaning\": \"DHT读数有效性\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"sample_period_ms\": 3000,\n      \"initial\": 0,\n      \"meaning\": \"Distance for 3s巡检 (cm)\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"sample_period_ms\": 3000,\n      \"initial\": false,\n      \"meaning\": \"Distance有效性 (cm reading valid)\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"每3秒巡检一次的串口输出触发（包含温度与距离；若连续3次距离<20cm则输出persistent object detected并点亮LED）\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"Reported temperature (degC)\",\n          \"label\": \"Temperature\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"cm\",\n          \"initial\": 0,\n          \"meaning\": \"Reported distance (cm)\",\n          \"label\": \"Distance\"\n        }\n      ]\n    },\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"persistent object detected 固定文本输出触发条件（连续3次距离都小于20cm）\"\n      },\n      \"values\": [\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"Used only as a gating condition for the fixed message emission in SysML\",\n          \"label\": \"PersistentDetectedGate\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Arduino UNO: wiring preserved as D13 LED, D7 DHT11, D8 Trig and D9 Echo for HC-SR04; Serial uses baud 9600 with framing line_or_idle and idle_timeout_ms=20 (as specified).\",\n    \"Control scheduling uses control_period_ms=10ms; the 3秒轮询触发与连续3次距离<20cm的计数、LED点亮与固定文本输出时序均在 SysML 模型中完成。\",\n    \"DHT采样配置为同一物理引脚D7，温湿度与有效性声明共享同一DHT11传感器；invalid_policy为hold_last_valid，SysML在无效时应处理有效性标志。\",\n    \"超声距离与有效性使用相同触发/回波引脚（D8/D9）与HC-SR04；sample_period_ms设为3000ms以匹配“每3秒轮询”。\",\n    \"串口输出：数值（温度与距离）与触发条件绑定在同一serial_channels组；固定文本“persistent object detected”不通过拼接动态文本实现，而由SysML在触发时选择发送固定文本（该选择由触发闸门完成）。\",\n    \"若超声读数超时或无效，距离保持上一次有效值且valid为false；连续次数判定应使用valid为true且距离<20cm的采样。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+    "effective_requirement": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

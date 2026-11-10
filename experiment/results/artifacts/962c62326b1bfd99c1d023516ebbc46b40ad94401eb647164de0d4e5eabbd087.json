@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousAnyPIR\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"isLighting\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"todayCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"illuminatedOnTimeMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"isLighting\",\n        \"value\": {\n          \"and\": [\n            \"io_2 < 300.0\",\n            {\n              \"or\": [\n                \"io_0\",\n                \"io_1\"\n              ]\n            }\n          ]\n        }\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"or\": [\n                \"io_0\",\n                \"io_1\"\n              ]\n            },\n            {\n              \"not\": \"previousAnyPIR\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"todayCount\",\n            \"value\": \"todayCount + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": \"isLighting\",\n        \"then\": [\n          {\n            \"assign\": \"illuminatedOnTimeMs\",\n            \"value\": \"illuminatedOnTimeMs + 10\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousAnyPIR\",\n        \"value\": {\n          \"or\": [\n            \"io_0\",\n            \"io_1\"\n          ]\n        }\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": \"isLighting\",\n        \"then\": 255.0,\n        \"else\": 0.0\n      },\n      \"io_4\": \"todayCount\",\n      \"io_5\": {\n        \"if\": \"isLighting\",\n        \"then\": 255.0,\n        \"else\": 0.0\n      },\n      \"serial_0_trigger\": {\n        \"if\": \"isLighting\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_value_0\": \"illuminatedOnTimeMs\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个楼道照明与节电管理系统，使用两个 PIR 传感器 D2、D3 分别位于楼道两端，PWM 灯光 D9、环境光传感器 A0、TM1637（CLK=D4，DIO=D5）和串口。只有在环境光较暗且任一端检测到人时才开启照明；若连续检测到人员移动则延长亮灯时间并根据方向估计通行人数。数码管显示今日通行计数，串口输出累计点亮时长。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"环境光 io_2=0（暗）且从无人体检测切换到 io_0=true（io_1=false），保持后续步中保持 io_0=true；观察后续步骤重复切换无人体（io_0=false、io_1=false）。\",\n        \"oracle\": \"当 io_2 < 300.0 且任一 PIR 为 true 时，io_3 与 io_5 为 255.0；当任一条件不满足时为 0.0。首次从任一PIR=0->1的上升沿使 io_4（todayCount）+1。serial_0_trigger 在 isLighting=true 时为 true，serial_0_value_0 为累计的 illuminatedOnTimeMs（每控制步 +10ms）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个楼道照明与节电管理系统，使用两个 PIR 传感器 D2、D3 分别位于楼道两端，PWM 灯光 D9、环境光传感器 A0、TM1637（CLK=D4，DIO=D5）和串口。只有在环境光较暗且任一端检测到人时才开启照明；若连续检测到人员移动则延长亮灯时间并根据方向估计通行人数。数码管显示今日通行计数，串口输出累计点亮时长。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将 io_2=1000（亮）保持不变，令 io_0 与 io_1 在多个控制步内交替为 true/false。\",\n        \"oracle\": \"不论 PIR 输入如何变化，只要 io_2 >= 300.0，则 isLighting=false：io_3=0.0、io_5=0.0，serial_0_trigger=false，serial_0_value_0 在该阶段不增长；io_4 在没有任何 isLighting=上升边条件触发时保持不变。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    attribute previousAnyPIR : Boolean := false;\n    attribute isLighting : Boolean := false;\n    attribute todayCount : Integer := 0;\n    attribute illuminatedOnTimeMs : Integer := 0;\n    perform action tick {\n      first start;\n      then assign isLighting := ((io_2 < 300.0) and (((io_0) or (io_1))));\n      then if ((((io_0) or (io_1))) and ((not previousAnyPIR))) {\n        first start;\n        then assign todayCount := todayCount + 1;\n      }\n      then if isLighting {\n        first start;\n        then assign illuminatedOnTimeMs := illuminatedOnTimeMs + 10;\n      }\n      then assign previousAnyPIR := ((io_0) or (io_1));\n    }\n    out attribute io_3 : Real = (if isLighting ? 255.0 else 0.0);\n    out attribute io_4 : Integer = todayCount;\n    out attribute io_5 : Real = (if isLighting ? 255.0 else 0.0);\n    out attribute serial_0_trigger : Boolean = (if isLighting ? true else false);\n    out attribute serial_0_value_0 : Integer = illuminatedOnTimeMs;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

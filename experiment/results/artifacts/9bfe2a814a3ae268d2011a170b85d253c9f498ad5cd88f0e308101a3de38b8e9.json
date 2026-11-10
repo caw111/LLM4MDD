@@ -1,0 +1,184 @@
+{
+  "contract_sha256": "29bd6ea58ab8919fd0d107bfe9c6c87b9dc47a178b5231a7f57785b07e511058",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_1_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_1_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_1_value_1": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_1_value_2": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      },
+      {
+        "id": "serial_1",
+        "trigger_port": "serial_1_trigger",
+        "value_ports": [
+          "serial_1_value_0",
+          "serial_1_value_1",
+          "serial_1_value_2"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Floor select button: arrive 1st floor\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"Floor select button: arrive 2nd floor\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D4\",\n      \"initial\": false,\n      \"meaning\": \"Floor select button: arrive 3rd floor\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Weight sensor load value (ADC) representing payload\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"Buzzer alarm output (active when payload exceeds limit)\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"Status LED (indicates normal/overload condition as defined in model)\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D7\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display number showing current floor and (as defined in model) load percent representation\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Movement complete gate for serial output\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"ms\",\n          \"initial\": 0,\n          \"meaning\": \"Elapsed movement duration or movement-complete timestamp delta as defined in model\",\n          \"label\": \"movement_complete_ms\"\n        }\n      ]\n    },\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Overload alarm state report gate\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"%\",\n          \"initial\": 0,\n          \"meaning\": \"Current load percent (0..100) at time of overload report\",\n          \"label\": \"load_percent\"\n        },\n        {\n          \"type\": \"i32\",\n          \"unit\": \"floor\",\n          \"initial\": 1,\n          \"meaning\": \"Current requested/blocked floor index when overload prevents change\",\n          \"label\": \"floor\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"state\",\n          \"initial\": false,\n          \"meaning\": \"Overload exceeded boolean state\",\n          \"label\": \"overload\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Buttons D2/D3/D4 represent arrival to floors 1..3; digital_input initial is false (button not pressed). Active polarity (active_high/pullup) is not specified in the provided wiring; default catalog polarity is assumed.\",\n    \"A0 is used as a raw analog_input; conversion from ADC to load percent and overload threshold are model responsibilities.\",\n    \"TM1637 is used via tm1637_number on CLK=D7 and DIO=D5. The display content (floor vs load percent) and its switching cadence are handled in SysML; this interface only provides a single numeric channel.\",\n    \"Buzzer D6 uses tone_output. Alarm activation policy and tone frequency/duration are model responsibilities; this interface provides only the tone command.\",\n    \"Serial: original requirement states that when a floor-change button triggers, the system simulates movement delay and outputs 'movement complete'. Exact output text/protocol is not specified; assumption: report includes one structured numeric value (movement duration in ms) on a dedicated trigger gate.\",\n    \"Additional overload state reporting cadence and exact fields are not specified; assumption: a separate report group exists for overload events/states with load percent, floor, and overload boolean.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D4"
+        },
+        "resolved": {
+          "pin": "D4"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D7",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个简化电梯楼层与载荷监控系统，使用按钮 D2、D3、D4 表示到达 1 到 3 层，重量传感器 A0 表示载荷，蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和 LED D13。系统显示当前楼层和载荷百分比；若载荷超限则蜂鸣报警并阻止楼层变化。按钮触发楼层切换时需要模拟移动延时，并在串口输出 movement complete。",
+    "effective_requirement": "实现一个简化电梯楼层与载荷监控系统，使用按钮 D2、D3、D4 表示到达 1 到 3 层，重量传感器 A0 表示载荷，蜂鸣器 D6、TM1637（CLK=D7，DIO=D5）和 LED D13。系统显示当前楼层和载荷百分比；若载荷超限则蜂鸣报警并阻止楼层变化。按钮触发楼层切换时需要模拟移动延时，并在串口输出 movement complete。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_input\", \"pin\": \"D4\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D7\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "clk_pin",
+        "original": "D4",
+        "resolved": "D7",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

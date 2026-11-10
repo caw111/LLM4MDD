@@ -1,0 +1,144 @@
+{
+  "contract_sha256": "30778bb8cd8cc669aae98ff14966ed0026795975e387a767005b797e17b535cb",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"initial\": 0,\n      \"meaning\": \"DHT11 temperature reading\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"pin\": \"D7\",\n      \"initial\": 0,\n      \"meaning\": \"DHT11 humidity reading\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Display mode toggle button (press to switch temperature/humidity)\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"Fan PWM speed output controlled by temperature\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display number (default show temperature, toggle to humidity)\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Use UNO wiring as provided: DHT11 data D7, fan PWM D5, TM1637 CLK D4 and DIO D3, mode button D2. No other pins are assumed wired.\",\n    \"Declare both temperature and humidity on the same D7 DHT11 pin as a coherent acquisition frame; when reads are invalid, retain last valid values and set validity false via model handling.\",\n    \"D2 button model initial is not specified as active-high/active-low in requirements; default digital_input uses initial=false meaning the model is false when not pressed and true when pressed (no additional inversion). If the physical button wiring is active-low, this must be adjusted in the model via active_high/pullup selection (not available here as an override).\",\n    \"PWM output on D5 is compatible with UNO. Timer conflicts are avoided by selecting D5 (not D3/D11 for PWM).\",\n    \"Control_period_ms is chosen as a scheduling granularity (5ms). Business timing (button edge detection, display update, fan speed updates, temperature threshold logic, and PWM mapping) belongs in the SysML model using elapsed_ms.\"\n  ]\n}",
+      "error": "DHT inputs require exactly kind, pin, sensor (DHT11/DHT22), invalid_policy in binding",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"DHT11 temperature reading\",\n      \"invalid_policy\": \"hold_last_valid\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"DHT11 humidity reading\",\n      \"invalid_policy\": \"hold_last_valid\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Display mode toggle button (press to switch temperature/humidity)\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"Fan PWM speed output controlled by temperature\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display number (default show temperature, toggle to humidity)\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Use UNO wiring as provided: DHT11 data D7, fan PWM D5, TM1637 CLK D4 and DIO D3, mode button D2. No other pins are assumed wired.\",\n    \"Declare both temperature and humidity on the same D7 DHT11 pin as a coherent acquisition frame; when reads are invalid, retain last valid values and set validity false via model handling.\",\n    \"D2 button model initial is set to false (model true when pressed). If the physical button wiring is active-low, the SysML model must handle that inversion; no active_high/pullup override is available because no wiring override pins were supplied.\",\n    \"PWM output on D5 is compatible with UNO and avoids Timer conflicts versus D3/D11.\",\n    \"Control_period_ms is a scheduling granularity (5ms). Business timing (button press edge detection, display switching, and fan speed update mapping based on temperature threshold) belongs in the SysML model using elapsed_ms.\"\n  ]\n}",
+      "error": "Mixed-device control requires a dht_valid input for each DHT sensor. Share its pin, sensor, sample period and hold_last_valid policy; use bool, unit 1, initial false. The model must handle invalid data without stopping unrelated devices.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"DHT11 temperature reading\",\n      \"invalid_policy\": \"hold_last_valid\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": 0,\n      \"meaning\": \"DHT11 humidity reading\",\n      \"invalid_policy\": \"hold_last_valid\"\n    },\n    {\n      \"kind\": \"dht_valid\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"initial\": false,\n      \"meaning\": \"DHT11 validity for temperature/humidity frame\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"unit\": 1\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Display mode toggle button (press to switch temperature/humidity)\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"Fan PWM speed output controlled by temperature\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display number (default show temperature, toggle to humidity)\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Use UNO wiring as provided: DHT11 data D7, fan PWM D5, TM1637 CLK D4 and DIO D3, mode button D2. No other pins are assumed wired.\",\n    \"Declare both temperature and humidity on the same D7 DHT11 pin as a coherent acquisition frame; when reads are invalid, retain last valid values and set validity false via model handling using dht_valid.\",\n    \"D2 button model initial is set to false (model true when pressed). If the physical button wiring is active-low, the SysML model must handle that inversion; no active_high/pullup override is available because no wiring override pins were supplied.\",\n    \"PWM output on D5 is compatible with UNO and avoids Timer conflicts versus D3/D11.\",\n    \"Control_period_ms is a scheduling granularity (5ms). Business timing (button edge detection, display switching, and fan speed update mapping based on temperature threshold) belongs in the SysML model using elapsed_ms.\"\n  ]\n}",
+      "construction": [
+        "interface_requests[2].unit: restored Boolean catalog unit 1 (no numeric conversion)",
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。",
+    "effective_requirement": "实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D3）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "states": [
+    {
+      "name": "count",
+      "type": "i32",
+      "initial": 0
+    },
+    {
+      "name": "age",
+      "type": "i32",
+      "initial": 0
+    },
+    {
+      "name": "previousDirection",
+      "type": "i32",
+      "initial": 0
+    }
+  ],
+  "calculations": [
+    {
+      "name": "direction",
+      "type": "i32",
+      "expression": {
+        "if": "up and not down",
+        "then": 1,
+        "else": {
+          "if": "down and not up",
+          "then": -1,
+          "else": 0
+        }
+      }
+    },
+    {
+      "name": "intervalMs",
+      "type": "i32",
+      "expression": "100 + RealFunctions::floor(speedAdc * 900.0 / 1023.0)"
+    }
+  ],
+  "updates": [
+    {
+      "if": "reset",
+      "then": [
+        {
+          "assign": "count",
+          "value": 0
+        },
+        {
+          "assign": "age",
+          "value": 0
+        },
+        {
+          "assign": "previousDirection",
+          "value": 0
+        }
+      ],
+      "else": [
+        {
+          "if": "direction == 0",
+          "then": [
+            {
+              "assign": "age",
+              "value": 0
+            }
+          ],
+          "else": [
+            {
+              "if": "direction != previousDirection",
+              "then": [
+                {
+                  "assign": "count",
+                  "value": "count + direction"
+                },
+                {
+                  "if": "count > 99",
+                  "then": [
+                    {
+                      "assign": "count",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "if": "count < 0",
+                  "then": [
+                    {
+                      "assign": "count",
+                      "value": 99
+                    }
+                  ]
+                },
+                {
+                  "assign": "age",
+                  "value": 0
+                }
+              ],
+              "else": [
+                {
+                  "assign": "age",
+                  "value": "age + dt"
+                },
+                {
+                  "if": "age >= intervalMs",
+                  "then": [
+                    {
+                      "assign": "count",
+                      "value": "count + direction"
+                    },
+                    {
+                      "if": "count > 99",
+                      "then": [
+                        {
+                          "assign": "count",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    {
+                      "if": "count < 0",
+                      "then": [
+                        {
+                          "assign": "count",
+                          "value": 99
+                        }
+                      ]
+                    },
+                    {
+                      "assign": "age",
+                      "value": "age - intervalMs"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "assign": "previousDirection",
+          "value": "direction"
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "displayNumber": "count"
+  }
+}

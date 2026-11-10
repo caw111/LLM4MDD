@@ -1,0 +1,242 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "pollAccumMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "distancePersistCount",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "distanceDetected",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "lastTemperatureValid",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "lastDistanceValid",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevDhtValid",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevUltrasonicValid",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "lastTempSnapshot",
+        "type": "f64",
+        "initial": "0.0"
+      },
+      {
+        "name": "lastDistSnapshot",
+        "type": "f64",
+        "initial": "0.0"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "pollAccumMs",
+        "value": "pollAccumMs + io_6"
+      },
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "assign": "lastTempSnapshot",
+            "value": "io_1"
+          },
+          {
+            "assign": "lastTemperatureValid",
+            "value": "true"
+          }
+        ],
+        "else": [
+          {
+            "assign": "lastTemperatureValid",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "if": "io_5",
+        "then": [
+          {
+            "assign": "lastDistSnapshot",
+            "value": "io_4"
+          },
+          {
+            "assign": "lastDistanceValid",
+            "value": "true"
+          }
+        ],
+        "else": [
+          {
+            "assign": "lastDistanceValid",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "if": "pollAccumMs >= 3000",
+        "then": [
+          {
+            "assign": "pollAccumMs",
+            "value": "pollAccumMs - 3000"
+          },
+          {
+            "if": {
+              "and": [
+                "lastDistanceValid",
+                {
+                  "<": [
+                    "lastDistSnapshot",
+                    20.0
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "distancePersistCount",
+                "value": "distancePersistCount + 1"
+              }
+            ],
+            "else": [
+              {
+                "assign": "distancePersistCount",
+                "value": "0"
+              }
+            ]
+          },
+          {
+            "if": {
+              ">=": [
+                {
+                  "+": [
+                    "distancePersistCount",
+                    {
+                      "if": {
+                        "and": [
+                          "lastDistanceValid",
+                          {
+                            "<": [
+                              "lastDistSnapshot",
+                              20.0
+                            ]
+                          }
+                        ]
+                      },
+                      "then": 1,
+                      "else": 0
+                    }
+                  ]
+                },
+                3
+              ]
+            },
+            "then": [
+              {
+                "assign": "distanceDetected",
+                "value": "true"
+              }
+            ],
+            "else": [
+              {
+                "if": "not (lastDistanceValid and (lastDistSnapshot < 20.0))",
+                "then": [
+                  {
+                    "assign": "distanceDetected",
+                    "value": "false"
+                  }
+                ],
+                "else": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "prevDhtValid",
+        "value": "io_3"
+      },
+      {
+        "assign": "prevUltrasonicValid",
+        "value": "io_5"
+      }
+    ],
+    "outputs": {
+      "io_0": "distanceDetected",
+      "serial_0_trigger": {
+        "if": "pollAccumMs + io_6 >= 3000",
+        "then": {
+          "and": [
+            "lastTemperatureValid",
+            "lastDistanceValid"
+          ]
+        },
+        "else": false
+      },
+      "serial_0_value_0": {
+        "if": "pollAccumMs + io_6 >= 3000",
+        "then": "lastTempSnapshot",
+        "else": 0.0
+      },
+      "serial_0_value_1": {
+        "if": "pollAccumMs + io_6 >= 3000",
+        "then": "lastDistSnapshot",
+        "else": 0.0
+      },
+      "serial_0_value_2": {
+        "if": "pollAccumMs + io_6 >= 3000",
+        "then": "distancePersistCount",
+        "else": 0
+      },
+      "serial_1_trigger": {
+        "if": {
+          "and": [
+            "pollAccumMs + io_6 >= 3000",
+            "distanceDetected"
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "serial_1_value_0": "distanceDetected"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持 io_3=true 且每次 io_5=true；在连续三次 3秒轮询时刻将 io_4 分别设为 19.9, 19.8, 19.0（单位cm），其间让 io_6 按控制步长累计到覆盖多个 3s 周期。",
+        "oracle": "到第三次轮询完成后：io_0==true；并且 serial_1_trigger 在检测条件成立的轮询步骤为 true，serial_1_value_0==true；serial_0_trigger 每次到 3 秒轮询点为 true，且 serial_0_value_0/serial_0_value_1 对应当次快照的 io_1/io_4。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持 io_3=true 且 io_5=true；令连续两次轮询距离小于 20cm（19.0, 18.0），第三次轮询将 io_4=20.0 或更大（例如 20.1），io_6 同样推进覆盖多个 3s 周期。",
+        "oracle": "LED io_0 在第三次轮询后为 false（连续条件被打断）；serial_1_trigger 在第三次轮询步骤为 false；serial_0_trigger 仍在每个 3 秒轮询时刻为 true并输出对应的温度/距离快照。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    in attribute io_6 : Integer;\n    attribute pollAccumMs : Integer := 0;\n    attribute distancePersistCount : Integer := 0;\n    attribute distanceDetected : Boolean := false;\n    attribute lastTemperatureValid : Boolean := false;\n    attribute lastDistanceValid : Boolean := false;\n    attribute prevDhtValid : Boolean := false;\n    attribute prevUltrasonicValid : Boolean := false;\n    attribute lastTempSnapshot : Real := 0.0;\n    attribute lastDistSnapshot : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign pollAccumMs := pollAccumMs + io_6;\n      then if io_3 {\n        first start;\n        then assign lastTempSnapshot := io_1;\n        then assign lastTemperatureValid := true;\n      } else {\n        first start;\n        then assign lastTemperatureValid := false;\n      }\n      then if io_5 {\n        first start;\n        then assign lastDistSnapshot := io_4;\n        then assign lastDistanceValid := true;\n      } else {\n        first start;\n        then assign lastDistanceValid := false;\n      }\n      then if pollAccumMs >= 3000 {\n        first start;\n        then assign pollAccumMs := pollAccumMs - 3000;\n        then if ((lastDistanceValid) and (((lastDistSnapshot) < (20.0)))) {\n          first start;\n          then assign distancePersistCount := distancePersistCount + 1;\n        } else {\n          first start;\n          then assign distancePersistCount := 0;\n        }\n        then if ((((distancePersistCount) + ((if ((lastDistanceValid) and (((lastDistSnapshot) < (20.0)))) ? 1 else 0)))) >= (3)) {\n          first start;\n          then assign distanceDetected := true;\n        } else {\n          first start;\n          then if not (lastDistanceValid and (lastDistSnapshot < 20.0)) {\n            first start;\n            then assign distanceDetected := false;\n          }\n        }\n      }\n      then assign prevDhtValid := io_3;\n      then assign prevUltrasonicValid := io_5;\n    }\n    out attribute io_0 : Boolean = distanceDetected;\n    out attribute serial_0_trigger : Boolean = (if pollAccumMs + io_6 >= 3000 ? ((lastTemperatureValid) and (lastDistanceValid)) else false);\n    out attribute serial_0_value_0 : Real = (if pollAccumMs + io_6 >= 3000 ? lastTempSnapshot else 0.0);\n    out attribute serial_0_value_1 : Real = (if pollAccumMs + io_6 >= 3000 ? lastDistSnapshot else 0.0);\n    out attribute serial_0_value_2 : Integer = (if pollAccumMs + io_6 >= 3000 ? distancePersistCount else 0);\n    out attribute serial_1_trigger : Boolean = (if ((pollAccumMs + io_6 >= 3000) and (distanceDetected)) ? true else false);\n    out attribute serial_1_value_0 : Boolean = distanceDetected;\n  }\n  part system : Controller;\n}\n"
+}

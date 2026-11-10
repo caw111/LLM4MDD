@@ -1,0 +1,89 @@
+--- original.ino
++++ repaired.ino
+@@ -47,60 +47,19 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_0, bool io_1, int32_t io_5, bool io_5_valid, bool* io_2, int32_t* io_3, int32_t* io_4) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    bool sysml_lazy_2 = 0;
+-    bool sysml_lazy_3 = 0;
+-    bool sysml_lazy_4 = 0;
+-    sysml_lazy_0 = io_5_valid;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = io_5 == 6;
++    static bool previous[2]={},beeping=false;
++    static uint32_t beepStart=0;
++    if(io_0&&!previous[0]) {sysml_state_lightOn=true;++sysml_state_count;}
++    if(io_1&&!previous[1]) {sysml_state_lightOn=false;++sysml_state_count;}
++    if(io_5_valid) {
++      if(io_5==6) {sysml_state_lightOn=true;++sysml_state_count;}
++      else if(io_5==5) {sysml_state_lightOn=false;++sysml_state_count;}
++      else if(io_5==1) {beeping=true;beepStart=millis();++sysml_state_count;}
++      else if(io_5==3) sysml_state_count=0;
+     }
+-    if (sysml_lazy_0) {
+-        sysml_state_lightOn = true;
+-    }
+-    sysml_lazy_1 = io_5_valid;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = io_5 == 5;
+-    }
+-    if (sysml_lazy_1) {
+-        sysml_state_lightOn = false;
+-    }
+-    sysml_lazy_2 = io_5_valid;
+-    if (sysml_lazy_2) {
+-        sysml_lazy_2 = io_5 == 3;
+-    }
+-    if (sysml_lazy_2) {
+-        sysml_state_count = 0;
+-    }
+-    sysml_lazy_3 = io_0;
+-    if (sysml_lazy_3) {
+-        sysml_lazy_3 = !sysml_state_prevIo0;
+-    }
+-    if (sysml_lazy_3) {
+-        sysml_state_lightOn = true;
+-        sysml_state_count = (sysml_state_count + 1);
+-    }
+-    sysml_lazy_4 = io_1;
+-    if (sysml_lazy_4) {
+-        sysml_lazy_4 = !sysml_state_prevIo1;
+-    }
+-    if (sysml_lazy_4) {
+-        sysml_state_lightOn = false;
+-        sysml_state_count = (sysml_state_count + 1);
+-    }
+-    sysml_state_prevIo0 = io_0;
+-    sysml_state_prevIo1 = io_1;
+-    bool sysml_value_0 = 0;
+-    sysml_value_0 = sysml_state_lightOn;
+-    int32_t sysml_value_1 = 0;
+-    sysml_value_1 = 0;
+-    int32_t sysml_value_2 = 0;
+-    sysml_value_2 = sysml_state_count;
+-    *io_2 = sysml_value_0;
+-    *io_3 = sysml_value_1;
+-    *io_4 = sysml_value_2;
++    if(beeping && (uint32_t)(millis()-beepStart)>=200) beeping=false;
++    *io_2=sysml_state_lightOn;*io_3=beeping ? 1000 : 0;*io_4=sysml_state_count;
++    previous[0]=io_0;previous[1]=io_1;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -199,11 +158,11 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(2) == HIGH);
++    hw_value_io_0 = (digitalRead(2) == LOW);
+   }
+   if (!hw_attempted_io_1 || (uint32_t)(hw_now - hw_sampled_io_1) >= 5UL) {
+     hw_attempted_io_1 = true; hw_sampled_io_1 = hw_now;
+-    hw_value_io_1 = (digitalRead(3) == HIGH);
++    hw_value_io_1 = (digitalRead(3) == LOW);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

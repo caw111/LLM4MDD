@@ -1,0 +1,84 @@
+--- original.ino
++++ repaired.ino
+@@ -42,44 +42,12 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_0, bool* serial_0_trigger, double* serial_0_value_0) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    bool sysml_lazy_2 = 0;
+-    bool sysml_lazy_3 = 0;
+-    sysml_lazy_0 = io_0;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = !sysml_state_previousPressed;
+-    }
+-    if (sysml_lazy_0) {
+-        sysml_state_running = true;
+-    }
+-    sysml_lazy_1 = !io_0;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = sysml_state_previousPressed;
+-    }
+-    if (sysml_lazy_1) {
+-        sysml_state_running = false;
+-        sysml_state_pressedDurationS = 0.0;
+-    }
+-    sysml_lazy_2 = sysml_state_running;
+-    if (sysml_lazy_2) {
+-        sysml_lazy_2 = io_0;
+-    }
+-    if (sysml_lazy_2) {
+-        sysml_state_pressedDurationS = 0.0;
+-    }
+-    sysml_state_previousPressed = io_0;
+-    bool sysml_value_0 = 0;
+-    sysml_lazy_3 = !sysml_state_running;
+-    if (sysml_lazy_3) {
+-        sysml_lazy_3 = sysml_state_previousPressed;
+-    }
+-    sysml_value_0 = sysml_lazy_3;
+-    double sysml_value_1 = 0;
+-    sysml_value_1 = sysml_state_pressedDurationS;
+-    *serial_0_trigger = sysml_value_0;
+-    *serial_0_value_0 = sysml_value_1;
++    static bool previous=false;
++    static unsigned long began=0;
++    if(io_0&&!previous) began=millis();
++    *serial_0_trigger=!io_0&&previous;
++    *serial_0_value_0=(unsigned long)(millis()-began)/1000.0;
++    previous=io_0;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -97,6 +65,15 @@
+ static bool hw_value_serial_0_trigger = false;
+ static double hw_value_serial_0_value_0 = 0;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+   Serial.begin(9600);
+@@ -110,12 +87,12 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(4) == HIGH);
++    hw_value_io_0 = manual_debounce_input((digitalRead(4) == LOW), 0);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+   if (hw_elapsed > 2147483647UL) return;
+   hw_last_step = hw_now; hw_started = true;
+   ProgramPage1(hw_value_io_0, &hw_value_serial_0_trigger, &hw_value_serial_0_value_0);
+-  if (hw_value_serial_0_trigger) { Serial.print("duration_s"); Serial.println(hw_value_serial_0_value_0); }
++  if (hw_value_serial_0_trigger) { Serial.print("Button pressed duration: "); Serial.print(hw_value_serial_0_value_0); Serial.println("s"); }
+ }

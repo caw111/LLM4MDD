@@ -1,0 +1,478 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 1,
+  "planning_notes": [
+    "Preserve the external 10 kΩ button pull-ups to 5V; internal pull-ups are disabled. Active-low inputs already normalize pressed to true and must not be inverted again.",
+    "Preserve the common-cathode RGB LED connection to GND and each channel's 220 Ω series resistor.",
+    "Assume all LED channels start off and initial button model values are unpressed until inputs are read.",
+    "The SysML model independently maps each normalized button value to its corresponding PWM command, allowing simultaneous colors. No debounce delay or timed behavior is specified."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Red button pressed; true when the physical input is LOW",
+      "sample_period_ms": 1,
+      "device": "push button1",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D4\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Green button pressed; true when the physical input is LOW",
+      "sample_period_ms": 1,
+      "device": "push button2",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Blue button pressed; true when the physical input is LOW",
+      "sample_period_ms": 1,
+      "device": "push button3",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Red channel brightness command: 255 while the red button is pressed, otherwise 0",
+      "sample_period_ms": 1,
+      "device": "rgb led1",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D11\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D11"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Green channel brightness command: 255 while the green button is pressed, otherwise 0",
+      "sample_period_ms": 1,
+      "device": "rgb led1",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D10\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D10"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Blue channel brightness command: 255 while the blue button is pressed, otherwise 0",
+      "sample_period_ms": 1,
+      "device": "rgb led1",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D9\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D9"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Button RGB LED\n\n## Project Description\nThis is a simple Arduino project that turns on an LED connected to a specific pin.\n\n## Hardware Components\n- Arduino Uno\n- RGB LED\n- 220Ω resistor * 3\n- Push Button * 3\n- 10kΩ resistor * 3\n\n## Circuit Description\nThe R, G, B pin of the RGB LED is connected to the arduino digital pins through a 220Ω current-limiting resistor.\nRGB LED has common cathode configuration. Push button uses pull-up resistor configuration. The three buttons correspond to R, G, and B respectively, and are connected to arduino pin4, pin3, and pin2 for input.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set LED pins to OUTPUT, and button pins to INPUT\n2. Continuously read the button value\n3. When a button is pressed, the corresponding color on the RGB LED lights up at full brightness.\n\n## Success Criteria\nThe test is successful when:\n1. The pressed button and the corresponding RGB LED pin state line up perfectly.\n\n## Notes for Implementation\n- Each button is configured with a pull-up resistor, resulting in a LOW signal when pressed.\n- The RGB LED has a common cathode connected to GND, so a PWM value of 0 turns it off and 255 turns it fully on.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the LED, button connected to different pins.\n\n## Attributes\n- To use 220Ω resistor, set the property name \"value\" to \"220 ohm\".\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Button RGB LED\",\n    \"config\": {\n        \"R_led_pin\": 11,\n        \"G_led_pin\": 10,\n        \"B_led_pin\": 9,\n        \"R_button_pin\": 4,\n        \"G_button_pin\": 3,\n        \"B_button_pin\": 2\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 125.4,\n            \"left\": -0.6,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-rgb-led\",\n            \"id\": \"rgb led1\",\n            \"top\": -44,\n            \"left\": 135.5,\n            \"attrs\": {\n                \"common\": \"cathode\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 57.4,\n            \"left\": 113,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor2\",\n            \"top\": 57.4,\n            \"left\": 132.2,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor3\",\n            \"top\": 57.4,\n            \"left\": 151.4,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 38.3,\n            \"left\": 243.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"Red\",\n                \"key\": \"r\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button2\",\n            \"top\": 38.3,\n            \"left\": 291.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"LimeGreen\",\n                \"key\": \"g\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button3\",\n            \"top\": 38.3,\n            \"left\": 339.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"Blue\",\n                \"key\": \"b\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor4\",\n            \"top\": 153.4,\n            \"left\": 257,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor5\",\n            \"top\": 153.4,\n            \"left\": 305,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor6\",\n            \"top\": 153.4,\n            \"left\": 353,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.1\",\n            \"rgb led1:COM\",\n            \"Black\",\n            [\n                \"v-115.2\",\n                \"h38.1\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.1\",\n            \"push button1:2.l\",\n            \"Black\",\n            [\n                \"h-0.3\",\n                \"v-115.2\",\n                \"h154.4\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"push button2:2.l\",\n            \"Black\",\n            [\n                \"v-9.6\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"push button2:2.l\",\n            \"push button3:2.l\",\n            \"Black\",\n            [\n                \"v-9.6\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"rgb led1:R\",\n            \"resistor1:1\",\n            \"Red\",\n            [\n                \"v0\",\n                \"h0\"\n            ]\n        ],\n        [\n            \"rgb led1:B\",\n            \"resistor3:1\",\n            \"Blue\",\n            [\n                \"v1\",\n                \"h11.2\"\n            ]\n        ],\n        [\n            \"rgb led1:G\",\n            \"resistor2:1\",\n            \"Green\",\n            [\n                \"v0\",\n                \"h33\"\n            ]\n        ],\n        [\n            \"arduino uno1:11\",\n            \"resistor1:2\",\n            \"Red\",\n            [\n                \"v-19.2\",\n                \"h0.6\"\n            ]\n        ],\n        [\n            \"arduino uno1:9\",\n            \"resistor3:2\",\n            \"Blue\",\n            [\n                \"v-19.2\",\n                \"h20\"\n            ]\n        ],\n        [\n            \"arduino uno1:10\",\n            \"resistor2:2\",\n            \"Green\",\n            [\n                \"v-28.8\",\n                \"h10.3\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:4\",\n            \"DarkSlateBlue\",\n            [\n                \"v9.8\",\n                \"h-71.1\"\n            ]\n        ],\n        [\n            \"push button2:1.r\",\n            \"arduino uno1:3\",\n            \"DarkSlateBlue\",\n            [\n                \"v19.4\",\n                \"h-109.6\"\n            ]\n        ],\n        [\n            \"push button3:1.r\",\n            \"arduino uno1:2\",\n            \"DarkSlateBlue\",\n            [\n                \"v29\",\n                \"h-148.1\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"resistor4:2\",\n            \"Red\",\n            [\n                \"v19.1\",\n                \"h128.6\"\n            ]\n        ],\n        [\n            \"resistor4:2\",\n            \"resistor5:2\",\n            \"Red\",\n            [\n                \"v17.8\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"resistor5:2\",\n            \"resistor6:2\",\n            \"Red\",\n            [\n                \"v17.8\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"resistor4:1\",\n            \"push button1:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor5:1\",\n            \"push button2:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor6:1\",\n            \"push button3:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ]\n    ]\n}",
+    "effective_requirement": "# Button RGB LED\n\n## Project Description\nThis is a simple Arduino project that turns on an LED connected to a specific pin.\n\n## Hardware Components\n- Arduino Uno\n- RGB LED\n- 220Ω resistor * 3\n- Push Button * 3\n- 10kΩ resistor * 3\n\n## Circuit Description\nThe R, G, B pin of the RGB LED is connected to the arduino digital pins through a 220Ω current-limiting resistor.\nRGB LED has common cathode configuration. Push button uses pull-up resistor configuration. The three buttons correspond to R, G, and B respectively, and are connected to arduino pin4, pin3, and pin2 for input.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set LED pins to OUTPUT, and button pins to INPUT\n2. Continuously read the button value\n3. When a button is pressed, the corresponding color on the RGB LED lights up at full brightness.\n\n## Success Criteria\nThe test is successful when:\n1. The pressed button and the corresponding RGB LED pin state line up perfectly.\n\n## Notes for Implementation\n- Each button is configured with a pull-up resistor, resulting in a LOW signal when pressed.\n- The RGB LED has a common cathode connected to GND, so a PWM value of 0 turns it off and 255 turns it fully on.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the LED, button connected to different pins.\n\n## Attributes\n- To use 220Ω resistor, set the property name \"value\" to \"220 ohm\".\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Button RGB LED\",\n    \"config\": {\n        \"R_led_pin\": 11,\n        \"G_led_pin\": 10,\n        \"B_led_pin\": 9,\n        \"R_button_pin\": 4,\n        \"G_button_pin\": 3,\n        \"B_button_pin\": 2\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 125.4,\n            \"left\": -0.6,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-rgb-led\",\n            \"id\": \"rgb led1\",\n            \"top\": -44,\n            \"left\": 135.5,\n            \"attrs\": {\n                \"common\": \"cathode\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 57.4,\n            \"left\": 113,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor2\",\n            \"top\": 57.4,\n            \"left\": 132.2,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor3\",\n            \"top\": 57.4,\n            \"left\": 151.4,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 38.3,\n            \"left\": 243.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"Red\",\n                \"key\": \"r\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button2\",\n            \"top\": 38.3,\n            \"left\": 291.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"LimeGreen\",\n                \"key\": \"g\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button3\",\n            \"top\": 38.3,\n            \"left\": 339.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"Blue\",\n                \"key\": \"b\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor4\",\n            \"top\": 153.4,\n            \"left\": 257,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor5\",\n            \"top\": 153.4,\n            \"left\": 305,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor6\",\n            \"top\": 153.4,\n            \"left\": 353,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.1\",\n            \"rgb led1:COM\",\n            \"Black\",\n            [\n                \"v-115.2\",\n                \"h38.1\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.1\",\n            \"push button1:2.l\",\n            \"Black\",\n            [\n                \"h-0.3\",\n                \"v-115.2\",\n                \"h154.4\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"push button2:2.l\",\n            \"Black\",\n            [\n                \"v-9.6\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"push button2:2.l\",\n            \"push button3:2.l\",\n            \"Black\",\n            [\n                \"v-9.6\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"rgb led1:R\",\n            \"resistor1:1\",\n            \"Red\",\n            [\n                \"v0\",\n                \"h0\"\n            ]\n        ],\n        [\n            \"rgb led1:B\",\n            \"resistor3:1\",\n            \"Blue\",\n            [\n                \"v1\",\n                \"h11.2\"\n            ]\n        ],\n        [\n            \"rgb led1:G\",\n            \"resistor2:1\",\n            \"Green\",\n            [\n                \"v0\",\n                \"h33\"\n            ]\n        ],\n        [\n            \"arduino uno1:11\",\n            \"resistor1:2\",\n            \"Red\",\n            [\n                \"v-19.2\",\n                \"h0.6\"\n            ]\n        ],\n        [\n            \"arduino uno1:9\",\n            \"resistor3:2\",\n            \"Blue\",\n            [\n                \"v-19.2\",\n                \"h20\"\n            ]\n        ],\n        [\n            \"arduino uno1:10\",\n            \"resistor2:2\",\n            \"Green\",\n            [\n                \"v-28.8\",\n                \"h10.3\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:4\",\n            \"DarkSlateBlue\",\n            [\n                \"v9.8\",\n                \"h-71.1\"\n            ]\n        ],\n        [\n            \"push button2:1.r\",\n            \"arduino uno1:3\",\n            \"DarkSlateBlue\",\n            [\n                \"v19.4\",\n                \"h-109.6\"\n            ]\n        ],\n        [\n            \"push button3:1.r\",\n            \"arduino uno1:2\",\n            \"DarkSlateBlue\",\n            [\n                \"v29\",\n                \"h-148.1\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"resistor4:2\",\n            \"Red\",\n            [\n                \"v19.1\",\n                \"h128.6\"\n            ]\n        ],\n        [\n            \"resistor4:2\",\n            \"resistor5:2\",\n            \"Red\",\n            [\n                \"v17.8\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"resistor5:2\",\n            \"resistor6:2\",\n            \"Red\",\n            [\n                \"v17.8\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"resistor4:1\",\n            \"push button1:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor5:1\",\n            \"push button2:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor6:1\",\n            \"push button3:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ]\n    ]\n}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Button RGB LED",
+        "config": {
+          "R_led_pin": 11,
+          "G_led_pin": 10,
+          "B_led_pin": 9,
+          "R_button_pin": 4,
+          "G_button_pin": 3,
+          "B_button_pin": 2
+        },
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 125.4,
+            "left": -0.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb led1",
+            "top": -44,
+            "left": 135.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor1",
+            "top": 57.4,
+            "left": 113,
+            "rotate": 90,
+            "attrs": {
+              "value": "220"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor2",
+            "top": 57.4,
+            "left": 132.2,
+            "rotate": 90,
+            "attrs": {
+              "value": "220"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor3",
+            "top": 57.4,
+            "left": 151.4,
+            "rotate": 90,
+            "attrs": {
+              "value": "220"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "push button1",
+            "top": 38.3,
+            "left": 243.5,
+            "rotate": 90,
+            "attrs": {
+              "color": "Red",
+              "key": "r"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "push button2",
+            "top": 38.3,
+            "left": 291.5,
+            "rotate": 90,
+            "attrs": {
+              "color": "LimeGreen",
+              "key": "g"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "push button3",
+            "top": 38.3,
+            "left": 339.5,
+            "rotate": 90,
+            "attrs": {
+              "color": "Blue",
+              "key": "b"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor4",
+            "top": 153.4,
+            "left": 257,
+            "rotate": 90,
+            "attrs": {
+              "value": "10000"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor5",
+            "top": 153.4,
+            "left": 305,
+            "rotate": 90,
+            "attrs": {
+              "value": "10000"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor6",
+            "top": 153.4,
+            "left": 353,
+            "rotate": 90,
+            "attrs": {
+              "value": "10000"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "arduino uno1:GND.1",
+            "rgb led1:COM",
+            "Black",
+            [
+              "v-115.2",
+              "h38.1"
+            ]
+          ],
+          [
+            "arduino uno1:GND.1",
+            "push button1:2.l",
+            "Black",
+            [
+              "h-0.3",
+              "v-115.2",
+              "h154.4"
+            ]
+          ],
+          [
+            "push button1:2.l",
+            "push button2:2.l",
+            "Black",
+            [
+              "v-9.6",
+              "h48"
+            ]
+          ],
+          [
+            "push button2:2.l",
+            "push button3:2.l",
+            "Black",
+            [
+              "v-9.6",
+              "h48"
+            ]
+          ],
+          [
+            "rgb led1:R",
+            "resistor1:1",
+            "Red",
+            [
+              "v0",
+              "h0"
+            ]
+          ],
+          [
+            "rgb led1:B",
+            "resistor3:1",
+            "Blue",
+            [
+              "v1",
+              "h11.2"
+            ]
+          ],
+          [
+            "rgb led1:G",
+            "resistor2:1",
+            "Green",
+            [
+              "v0",
+              "h33"
+            ]
+          ],
+          [
+            "arduino uno1:11",
+            "resistor1:2",
+            "Red",
+            [
+              "v-19.2",
+              "h0.6"
+            ]
+          ],
+          [
+            "arduino uno1:9",
+            "resistor3:2",
+            "Blue",
+            [
+              "v-19.2",
+              "h20"
+            ]
+          ],
+          [
+            "arduino uno1:10",
+            "resistor2:2",
+            "Green",
+            [
+              "v-28.8",
+              "h10.3"
+            ]
+          ],
+          [
+            "push button1:1.r",
+            "arduino uno1:4",
+            "DarkSlateBlue",
+            [
+              "v9.8",
+              "h-71.1"
+            ]
+          ],
+          [
+            "push button2:1.r",
+            "arduino uno1:3",
+            "DarkSlateBlue",
+            [
+              "v19.4",
+              "h-109.6"
+            ]
+          ],
+          [
+            "push button3:1.r",
+            "arduino uno1:2",
+            "DarkSlateBlue",
+            [
+              "v29",
+              "h-148.1"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "resistor4:2",
+            "Red",
+            [
+              "v19.1",
+              "h128.6"
+            ]
+          ],
+          [
+            "resistor4:2",
+            "resistor5:2",
+            "Red",
+            [
+              "v17.8",
+              "h48"
+            ]
+          ],
+          [
+            "resistor5:2",
+            "resistor6:2",
+            "Red",
+            [
+              "v17.8",
+              "h48"
+            ]
+          ],
+          [
+            "resistor4:1",
+            "push button1:1.r",
+            "DarkSlateBlue",
+            [
+              "h0"
+            ]
+          ],
+          [
+            "resistor5:1",
+            "push button2:1.r",
+            "DarkSlateBlue",
+            [
+              "h0"
+            ]
+          ],
+          [
+            "resistor6:1",
+            "push button3:1.r",
+            "DarkSlateBlue",
+            [
+              "h0"
+            ]
+          ]
+        ]
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# Button RGB LED\n\n## Project Description\nThis is a simple Arduino project that turns on an LED connected to a specific pin.\n\n## Hardware Components\n- Arduino Uno\n- RGB LED\n- 220Ω resistor * 3\n- Push Button * 3\n- 10kΩ resistor * 3\n\n## Circuit Description\nThe R, G, B pin of the RGB LED is connected to the arduino digital pins through a 220Ω current-limiting resistor.\nRGB LED has common cathode configuration. Push button uses pull-up resistor configuration. The three buttons correspond to R, G, and B respectively, and are connected to arduino pin4, pin3, and pin2 for input.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set LED pins to OUTPUT, and button pins to INPUT\n2. Continuously read the button value\n3. When a button is pressed, the corresponding color on the RGB LED lights up at full brightness.\n\n## Success Criteria\nThe test is successful when:\n1. The pressed button and the corresponding RGB LED pin state line up perfectly.\n\n## Notes for Implementation\n- Each button is configured with a pull-up resistor, resulting in a LOW signal when pressed.\n- The RGB LED has a common cathode connected to GND, so a PWM value of 0 turns it off and 255 turns it fully on.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the LED, button connected to different pins.\n\n## Attributes\n- To use 220Ω resistor, set the property name \"value\" to \"220 ohm\".\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Button RGB LED\",\n    \"config\": {\n        \"R_led_pin\": 11,\n        \"G_led_pin\": 10,\n        \"B_led_pin\": 9,\n        \"R_button_pin\": 4,\n        \"G_button_pin\": 3,\n        \"B_button_pin\": 2\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 125.4,\n            \"left\": -0.6,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-rgb-led\",\n            \"id\": \"rgb led1\",\n            \"top\": -44,\n            \"left\": 135.5,\n            \"attrs\": {\n                \"common\": \"cathode\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 57.4,\n            \"left\": 113,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor2\",\n            \"top\": 57.4,\n            \"left\": 132.2,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor3\",\n            \"top\": 57.4,\n            \"left\": 151.4,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 38.3,\n            \"left\": 243.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"Red\",\n                \"key\": \"r\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button2\",\n            \"top\": 38.3,\n            \"left\": 291.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"LimeGreen\",\n                \"key\": \"g\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button3\",\n            \"top\": 38.3,\n            \"left\": 339.5,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"Blue\",\n                \"key\": \"b\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor4\",\n            \"top\": 153.4,\n            \"left\": 257,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor5\",\n            \"top\": 153.4,\n            \"left\": 305,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor6\",\n            \"top\": 153.4,\n            \"left\": 353,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.1\",\n            \"rgb led1:COM\",\n            \"Black\",\n            [\n                \"v-115.2\",\n                \"h38.1\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.1\",\n            \"push button1:2.l\",\n            \"Black\",\n            [\n                \"h-0.3\",\n                \"v-115.2\",\n                \"h154.4\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"push button2:2.l\",\n            \"Black\",\n            [\n                \"v-9.6\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"push button2:2.l\",\n            \"push button3:2.l\",\n            \"Black\",\n            [\n                \"v-9.6\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"rgb led1:R\",\n            \"resistor1:1\",\n            \"Red\",\n            [\n                \"v0\",\n                \"h0\"\n            ]\n        ],\n        [\n            \"rgb led1:B\",\n            \"resistor3:1\",\n            \"Blue\",\n            [\n                \"v1\",\n                \"h11.2\"\n            ]\n        ],\n        [\n            \"rgb led1:G\",\n            \"resistor2:1\",\n            \"Green\",\n            [\n                \"v0\",\n                \"h33\"\n            ]\n        ],\n        [\n            \"arduino uno1:11\",\n            \"resistor1:2\",\n            \"Red\",\n            [\n                \"v-19.2\",\n                \"h0.6\"\n            ]\n        ],\n        [\n            \"arduino uno1:9\",\n            \"resistor3:2\",\n            \"Blue\",\n            [\n                \"v-19.2\",\n                \"h20\"\n            ]\n        ],\n        [\n            \"arduino uno1:10\",\n            \"resistor2:2\",\n            \"Green\",\n            [\n                \"v-28.8\",\n                \"h10.3\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:4\",\n            \"DarkSlateBlue\",\n            [\n                \"v9.8\",\n                \"h-71.1\"\n            ]\n        ],\n        [\n            \"push button2:1.r\",\n            \"arduino uno1:3\",\n            \"DarkSlateBlue\",\n            [\n                \"v19.4\",\n                \"h-109.6\"\n            ]\n        ],\n        [\n            \"push button3:1.r\",\n            \"arduino uno1:2\",\n            \"DarkSlateBlue\",\n            [\n                \"v29\",\n                \"h-148.1\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"resistor4:2\",\n            \"Red\",\n            [\n                \"v19.1\",\n                \"h128.6\"\n            ]\n        ],\n        [\n            \"resistor4:2\",\n            \"resistor5:2\",\n            \"Red\",\n            [\n                \"v17.8\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"resistor5:2\",\n            \"resistor6:2\",\n            \"Red\",\n            [\n                \"v17.8\",\n                \"h48\"\n            ]\n        ],\n        [\n            \"resistor4:1\",\n            \"push button1:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor5:1\",\n            \"push button2:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor6:1\",\n            \"push button3:1.r\",\n            \"DarkSlateBlue\",\n            [\n                \"h0\"\n            ]\n        ]\n    ]\n}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  }
+}

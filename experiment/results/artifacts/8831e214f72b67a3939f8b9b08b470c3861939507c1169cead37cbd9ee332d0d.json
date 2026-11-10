@@ -1,0 +1,541 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "按权威引脚分配：UNO。DHT11 使用 D7；TM1637 使用 CLK=D4、DIO=D8；风扇PWM= D5；补光LED= D9；水泵继电器= D10；蜂鸣器= D6；按钮= D2/D3；电位器= A2；光敏= A0；土壤湿度= A1。",
+    "本提案未声明超声波/移位寄存器/伺服等未在需求与已解析布线中出现的器件。",
+    "tm1637_number 采用 invalid_policy=blank，且 initial 使用 10000 以请求启动空白（符合目录要求）。",
+    "serial_channels 仅在“任一传感器异常”时触发发送；具体异常判定阈值、轮流显示时序、以及串口报文格式/字段组织均放在 SysML 模型中实现；串口物理 baud=9600 与 framing=line_or_idle 维持一致。",
+    "模拟输入的比例/偏移与异常检测阈值未在题面给出，按建模假设由 SysML 处理或使用目录默认标定（不在本接口提案中编造标定参数）。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "模式切换按钮/手动-自动切换",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "手动模式中当前控制对象切换按钮",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "手动模式输出调节电位器（控制对象输出幅度）",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A2"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "光敏电阻光照输入",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "土壤湿度传感器输入",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "风扇PWM输出（自动/手动）",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "水泵继电器控制",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D10"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "补光LED控制",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D9\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D9"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "蜂鸣器报警音（传感器异常时）",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_9",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "温度（自动/手动控制与轮流显示）",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_10",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "湿度（自动/手动控制与轮流显示）",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_11",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT读取有效性标志（温度/湿度异常报警）",
+      "sample_period_ms": 2000,
+      "device": "dht_valid",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_valid",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_12",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 10000,
+      "meaning": "TM1637轮流显示（温度/光照/土壤湿度；启动空白）",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D8\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D8"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "任一传感器读数异常时的故障信息串口输出门控",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT有效性（报警原因之一）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"dht_valid\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "dht_valid"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "光照传感器当前值（用于故障信息上报）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"light_value\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "light_value"
+      }
+    },
+    {
+      "name": "serial_0_value_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "土壤湿度传感器当前值（用于故障信息上报）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"soil_value\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "soil_value"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D8"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A2"
+        },
+        "resolved": {
+          "pin": "A2"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D10"
+        },
+        "resolved": {
+          "pin": "D10"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D9"
+        },
+        "resolved": {
+          "pin": "D9"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D8"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+    "effective_requirement": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D8）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A2\"}, {\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D9\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D8\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D8",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_9": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_10": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_11": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_12": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2"
+        ]
+      }
+    ]
+  }
+}

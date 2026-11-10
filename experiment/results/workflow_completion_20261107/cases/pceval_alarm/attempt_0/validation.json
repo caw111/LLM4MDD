@@ -1,0 +1,1295 @@
+{
+  "status": "passed",
+  "contract_revisions": 0,
+  "rounds": [
+    {
+      "revision": 0,
+      "contract": {
+        "version": 1,
+        "board": "arduino:avr:uno",
+        "control_period_ms": 10,
+        "planning_notes": [
+          "Use RTClib RTC_DS1307 initialization and periodic acquisition, with matching default sampling for the epoch and validity requests. Do not adjust the RTC from the diagram's initial timestamp.",
+          "The SysML model compares valid RTC time against 2024-11-24T04:49:00, represented by the i32 Unix epoch constant 1732423740. Treat the threshold and RTC calendar values in the same timezone without adding an unspecified offset.",
+          "The buzzer starts silent. The model commands a continuous tone only while RTC validity is true and the current epoch is at or after the threshold; otherwise it commands zero.",
+          "The alarm frequency is unspecified. Assume 1000 Hz unless another audible frequency is selected during model review.",
+          "No elapsed-time input is required for the absolute RTC comparison. Initialization must return within 500 ms without waiting for the alarm threshold."
+        ],
+        "interfaces": [
+          {
+            "name": "io_0",
+            "direction": "input",
+            "type": "i32",
+            "unit": "s",
+            "initial": 0,
+            "meaning": "Current DS1307 time as Unix epoch seconds",
+            "sample_period_ms": 10,
+            "device": "rtc module1",
+            "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_epoch\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+            "binding": {
+              "kind": "rtc_epoch",
+              "address": 104,
+              "acquisition": "periodic",
+              "scl_pin": "A5",
+              "sda_pin": "A4"
+            }
+          },
+          {
+            "name": "io_1",
+            "direction": "input",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "RTC initialization and current time acquisition are valid",
+            "sample_period_ms": 10,
+            "device": "rtc module1",
+            "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_valid\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+            "binding": {
+              "kind": "rtc_valid",
+              "address": 104,
+              "acquisition": "periodic",
+              "scl_pin": "A5",
+              "sda_pin": "A4"
+            }
+          },
+          {
+            "name": "io_2",
+            "direction": "output",
+            "type": "i32",
+            "unit": "Hz",
+            "initial": 0,
+            "meaning": "Alarm tone frequency; zero silences the buzzer",
+            "sample_period_ms": 10,
+            "device": "piezoelectric buzzer1",
+            "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D8\"}",
+            "binding": {
+              "kind": "tone_output",
+              "invalid_policy": "silence",
+              "pin": "D8"
+            }
+          }
+        ],
+        "required_dependencies": {},
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+          "effective_requirement": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Trigger the buzzer when the specified time is reached",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 0,
+                  "left": 0,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ds1307",
+                  "id": "rtc module1",
+                  "top": 234.6,
+                  "left": 268.9,
+                  "attrs": {
+                    "initTime": "2024-11-24T04:48:55"
+                  }
+                },
+                {
+                  "type": "wokwi-buzzer",
+                  "id": "piezoelectric buzzer1",
+                  "top": -132,
+                  "left": 232.2,
+                  "attrs": {
+                    "volume": "0.1"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "rtc module1:SCL",
+                  "arduino uno1:A5",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:SDA",
+                  "arduino uno1:A4",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:5V",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:GND",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "piezoelectric buzzer1:1",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "v192",
+                    "h-96"
+                  ]
+                ],
+                [
+                  "piezoelectric buzzer1:2",
+                  "arduino uno1:8",
+                  "green",
+                  [
+                    "v28.8",
+                    "h-38.8"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": true
+        },
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+            "assertion_ids": [
+              "source_requirement_R1"
+            ]
+          }
+        ],
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_2": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": []
+        }
+      },
+      "planning": {
+        "contract_sha256": "8ecb9d9e9ee5d370b91e9eea0eb1a1bf3f0a08a4cf0f8823439daba64e4e29c2",
+        "provenance": "program_assembled",
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_2": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": []
+        },
+        "registered_relationships": "verified",
+        "functional_status": "unverified",
+        "attempts": [
+          {
+            "ok": true,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"rtc_epoch\",\n      \"device\": \"rtc module1\",\n      \"initial\": 0,\n      \"meaning\": \"Current DS1307 time as Unix epoch seconds\",\n      \"sda_pin\": \"A4\",\n      \"scl_pin\": \"A5\",\n      \"address\": 104,\n      \"acquisition\": \"periodic\"\n    },\n    {\n      \"kind\": \"rtc_valid\",\n      \"device\": \"rtc module1\",\n      \"initial\": false,\n      \"meaning\": \"RTC initialization and current time acquisition are valid\",\n      \"sda_pin\": \"A4\",\n      \"scl_pin\": \"A5\",\n      \"address\": 104,\n      \"acquisition\": \"periodic\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"device\": \"piezoelectric buzzer1\",\n      \"initial\": 0,\n      \"meaning\": \"Alarm tone frequency; zero silences the buzzer\",\n      \"pin\": \"D8\",\n      \"invalid_policy\": \"silence\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Use RTClib RTC_DS1307 initialization and periodic acquisition, with matching default sampling for the epoch and validity requests. Do not adjust the RTC from the diagram's initial timestamp.\",\n    \"The SysML model compares valid RTC time against 2024-11-24T04:49:00, represented by the i32 Unix epoch constant 1732423740. Treat the threshold and RTC calendar values in the same timezone without adding an unspecified offset.\",\n    \"The buzzer starts silent. The model commands a continuous tone only while RTC validity is true and the current epoch is at or after the threshold; otherwise it commands zero.\",\n    \"The alarm frequency is unspecified. Assume 1000 Hz unless another audible frequency is selected during model review.\",\n    \"No elapsed-time input is required for the absolute RTC comparison. Initialization must return within 500 ms without waiting for the alarm threshold.\"\n  ]\n}",
+            "construction": [
+              "catalog_interfaces_and_serial_channels_assembled"
+            ],
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            }
+          }
+        ],
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+          "effective_requirement": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Trigger the buzzer when the specified time is reached",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 0,
+                  "left": 0,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ds1307",
+                  "id": "rtc module1",
+                  "top": 234.6,
+                  "left": 268.9,
+                  "attrs": {
+                    "initTime": "2024-11-24T04:48:55"
+                  }
+                },
+                {
+                  "type": "wokwi-buzzer",
+                  "id": "piezoelectric buzzer1",
+                  "top": -132,
+                  "left": 232.2,
+                  "attrs": {
+                    "volume": "0.1"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "rtc module1:SCL",
+                  "arduino uno1:A5",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:SDA",
+                  "arduino uno1:A4",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:5V",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:GND",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "piezoelectric buzzer1:1",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "v192",
+                    "h-96"
+                  ]
+                ],
+                [
+                  "piezoelectric buzzer1:2",
+                  "arduino uno1:8",
+                  "green",
+                  [
+                    "v28.8",
+                    "h-38.8"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": true
+        }
+      },
+      "validation": {
+        "validator_version": "2026-08 / 0.62.0",
+        "attempts": [
+          {
+            "attempt": 1,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"controller\": {\n    \"states\": [],\n    \"updates\": [],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \">=\": [\n                \"io_0\",\n                1732423740\n              ]\n            }\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With io_1=true, supply io_0 values 1732423735, 1732423739, 1732423740 and 1732423741, then retain a later valid time across repeated steps.\",\n        \"oracle\": \"io_2 is 0 before 1732423740 and continuously 1000 at and after that threshold.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_0=0 and io_1=false. Supply a time above the threshold while invalid, assert validity, then clear validity while retaining the same time.\",\n        \"oracle\": \"io_2 is initially 0, remains 0 while invalid, becomes 1000 when valid, and returns to 0 when validity is lost.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Power up using the preserved circuit and RTC initial time 2024-11-24T04:48:55; observe initialization, periodic RTC acquisition and buzzer pin D8 through the threshold.\",\n        \"oracle\": \"Setup returns within 500 ms; the adapter initializes RTC_DS1307 over SDA A4/SCL A5 and configures D8 for tone output without adjusting RTC time. The buzzer remains silent before 04:49:00 and sounds continuously at 1000 Hz from the first valid sample at or after 04:49:00.\"\n      }\n    ]\n  }\n}",
+            "issues": [],
+            "ok": true,
+            "usage": {
+              "completion_tokens": 492,
+              "prompt_tokens": 11913,
+              "total_tokens": 12405,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 11910,
+                "video_tokens": 0
+              },
+              "cost": 0.034701,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.034701,
+                "upstream_inference_prompt_cost": 0.029781,
+                "upstream_inference_completions_cost": 0.00492
+              }
+            },
+            "structural_validation_passed": true,
+            "deterministic_behavior_passed": true,
+            "final_compile_passed": true,
+            "semantic_review": {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set the buzzer pin mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At the model boundary, io_2 is an output bound to tone_output on D8. The registered adapter is responsible for GPIO setup and application of scalar output commands. There is no model or contract contradiction with OUTPUT configuration.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Initialize the RTC module, and check if it can begin\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The registered RTC adapter initializes RTC_DS1307 and supplies initialization/acquisition validity before controller ticks. The contract maps that validity to io_1, which gates the alarm. Initial validity is false and the output is initially zero, so initial scalar values are not mistaken for valid measurements.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously read the current time with RTC module\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\",\n      \"reason\": \"The contract binds io_0 to periodic RTC epoch acquisition, with a 10 ms sample period and a 10 ms controller period. Registered semantics supply measured time before ticks. The output uses the current input directly, without retained state or a one-shot sampling condition.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"1732423740 is the epoch-seconds representation of the specified calendar threshold using the same calendar convention as RTC now().unixtime(). With valid acquisition, 1732423739 produces zero and 1732423740 or later produces 1000 Hz. The inclusive comparison is correct, and no unspecified timezone offset is introduced. No elapsed-time input is needed for this absolute-time comparison.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Buzzer plays tone only when the current time is on or after the specified time.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"Every valid time below the threshold produces zero. Invalid acquisition also produces zero regardless of the epoch scalar. Repeated valid samples at or after the threshold retain the tone by reevaluation, not by latching; a subsequent earlier time or loss of validity immediately selects silence on the next step. The contract defines zero as silence and the output unit as Hz.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use RTClib to generate RTC_DS1307 object and read the value.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The normative registered adapter semantics explicitly provide RTC_DS1307.begin and now().unixtime acquisition and validity. Library-object creation and hardware initialization belong to that adapter rather than the scalar SysML controller. Their absence as library calls in SysML is not an omission.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The supplied target is Arduino Uno. Both native RTC bindings use I2C address 104, SDA A4 and SCL A5; the buzzer binding uses D8. The resolved circuit preserves the supplied RTC power/ground connections, buzzer ground connection, and RTC initial calendar value. No binding conflicts with the supplied wiring.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At this model-boundary gate, neither the stateless expression nor the contract requires a startup delay or waiting for the alarm time. Thus there is no contradiction with the 500 ms setup bound; actual setup duration remains a generated-code verification obligation. SOURCE-1 repeats the alarm requirements checked above. Its conditional defaults for buttons, LEDs, counters, displays, serial streaming, servos and DHT reporting introduce no additional applicable behavior for this RTC/tone-only system.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not generated-code or runtime acceptance.\",\n    \"After code generation, verify RTC_DS1307/RTClib object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration, and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and confirm return within 500 ms; model consistency does not establish actual initialization duration.\",\n    \"The supplied test descriptions are not executed evidence. Actual target compilation and threshold-crossing integration tests remain separate obligations.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1505,
+                    "prompt_tokens": 15659,
+                    "total_tokens": 17164,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 76,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 15656,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.054196,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.054196,
+                      "upstream_inference_prompt_cost": 0.039146,
+                      "upstream_inference_completions_cost": 0.01505
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 703,
+                    "prompt_tokens": 17168,
+                    "total_tokens": 17871,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 0,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 17165,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0499485,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0499485,
+                      "upstream_inference_prompt_cost": 0.0429185,
+                      "upstream_inference_completions_cost": 0.00703
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 703,
+                "prompt_tokens": 17168,
+                "total_tokens": 17871,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 0,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 17165,
+                  "video_tokens": 0
+                },
+                "cost": 0.0499485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0499485,
+                  "upstream_inference_prompt_cost": 0.0429185,
+                  "upstream_inference_completions_cost": 0.00703
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.",
+                    "status": "satisfied",
+                    "model_quote": "out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                    "reason": "SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'",
+                    "status": "satisfied",
+                    "model_quote": "in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                    "reason": "All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "Satisfied means model-boundary consistency, not generated-code or runtime success.",
+                  "After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.",
+                  "Measure setup() completion after code generation and verify that it returns within 500 ms.",
+                  "The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed"
+              }
+            },
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            },
+            "normalizations": [
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id"
+            ],
+            "generation_mode": "contract_assembly",
+            "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\n  }\n  part system : Controller;\n}\n",
+            "stages": {
+              "sysml_generation": true,
+              "sysml_to_ir": true,
+              "ir_to_il": true
+            },
+            "focus_issues": [],
+            "coverage": {
+              "status": "structural_pass",
+              "issues": [],
+              "functional_status": "unverified",
+              "startup": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+              },
+              "pause": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+              },
+              "periodic": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+              },
+              "numeric": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+              },
+              "source_behavior": {
+                "status": "not_requested",
+                "checked": 0,
+                "traces": [],
+                "scope": "Only the exact source-derived scenarios; not full functionality proof"
+              },
+              "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+            },
+            "diagnostic_fingerprint": [],
+            "no_progress": false,
+            "failed_obligation_keys": [],
+            "repeated_requirement": false,
+            "repair_locations": [],
+            "repair_example": null,
+            "failure_stage": null
+          }
+        ],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "semantic_review": {
+          "enabled": true,
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "review_calls": 2,
+          "max_review_calls": 6,
+          "repair_count": 0,
+          "rounds": [
+            {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set the buzzer pin mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At the model boundary, io_2 is an output bound to tone_output on D8. The registered adapter is responsible for GPIO setup and application of scalar output commands. There is no model or contract contradiction with OUTPUT configuration.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Initialize the RTC module, and check if it can begin\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The registered RTC adapter initializes RTC_DS1307 and supplies initialization/acquisition validity before controller ticks. The contract maps that validity to io_1, which gates the alarm. Initial validity is false and the output is initially zero, so initial scalar values are not mistaken for valid measurements.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously read the current time with RTC module\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\",\n      \"reason\": \"The contract binds io_0 to periodic RTC epoch acquisition, with a 10 ms sample period and a 10 ms controller period. Registered semantics supply measured time before ticks. The output uses the current input directly, without retained state or a one-shot sampling condition.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"1732423740 is the epoch-seconds representation of the specified calendar threshold using the same calendar convention as RTC now().unixtime(). With valid acquisition, 1732423739 produces zero and 1732423740 or later produces 1000 Hz. The inclusive comparison is correct, and no unspecified timezone offset is introduced. No elapsed-time input is needed for this absolute-time comparison.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Buzzer plays tone only when the current time is on or after the specified time.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"Every valid time below the threshold produces zero. Invalid acquisition also produces zero regardless of the epoch scalar. Repeated valid samples at or after the threshold retain the tone by reevaluation, not by latching; a subsequent earlier time or loss of validity immediately selects silence on the next step. The contract defines zero as silence and the output unit as Hz.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use RTClib to generate RTC_DS1307 object and read the value.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The normative registered adapter semantics explicitly provide RTC_DS1307.begin and now().unixtime acquisition and validity. Library-object creation and hardware initialization belong to that adapter rather than the scalar SysML controller. Their absence as library calls in SysML is not an omission.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The supplied target is Arduino Uno. Both native RTC bindings use I2C address 104, SDA A4 and SCL A5; the buzzer binding uses D8. The resolved circuit preserves the supplied RTC power/ground connections, buzzer ground connection, and RTC initial calendar value. No binding conflicts with the supplied wiring.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At this model-boundary gate, neither the stateless expression nor the contract requires a startup delay or waiting for the alarm time. Thus there is no contradiction with the 500 ms setup bound; actual setup duration remains a generated-code verification obligation. SOURCE-1 repeats the alarm requirements checked above. Its conditional defaults for buttons, LEDs, counters, displays, serial streaming, servos and DHT reporting introduce no additional applicable behavior for this RTC/tone-only system.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not generated-code or runtime acceptance.\",\n    \"After code generation, verify RTC_DS1307/RTClib object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration, and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and confirm return within 500 ms; model consistency does not establish actual initialization duration.\",\n    \"The supplied test descriptions are not executed evidence. Actual target compilation and threshold-crossing integration tests remain separate obligations.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1505,
+                    "prompt_tokens": 15659,
+                    "total_tokens": 17164,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 76,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 15656,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.054196,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.054196,
+                      "upstream_inference_prompt_cost": 0.039146,
+                      "upstream_inference_completions_cost": 0.01505
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 703,
+                    "prompt_tokens": 17168,
+                    "total_tokens": 17871,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 0,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 17165,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0499485,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0499485,
+                      "upstream_inference_prompt_cost": 0.0429185,
+                      "upstream_inference_completions_cost": 0.00703
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 703,
+                "prompt_tokens": 17168,
+                "total_tokens": 17871,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 0,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 17165,
+                  "video_tokens": 0
+                },
+                "cost": 0.0499485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0499485,
+                  "upstream_inference_prompt_cost": 0.0429185,
+                  "upstream_inference_completions_cost": 0.00703
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.",
+                    "status": "satisfied",
+                    "model_quote": "out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                    "reason": "SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'",
+                    "status": "satisfied",
+                    "model_quote": "in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                    "reason": "All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "Satisfied means model-boundary consistency, not generated-code or runtime success.",
+                  "After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.",
+                  "Measure setup() completion after code generation and verify that it returns within 500 ms.",
+                  "The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed"
+              }
+            }
+          ],
+          "final_status": "passed",
+          "failure_category": null
+        },
+        "call_counts": {
+          "generation_and_repair": 1,
+          "semantic_review": 2
+        },
+        "usage": {
+          "generation_and_repair": [
+            {
+              "completion_tokens": 492,
+              "prompt_tokens": 11913,
+              "total_tokens": 12405,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 11910,
+                "video_tokens": 0
+              },
+              "cost": 0.034701,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.034701,
+                "upstream_inference_prompt_cost": 0.029781,
+                "upstream_inference_completions_cost": 0.00492
+              }
+            }
+          ],
+          "semantic_review": [
+            {
+              "completion_tokens": 703,
+              "prompt_tokens": 17168,
+              "total_tokens": 17871,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 17165,
+                "video_tokens": 0
+              },
+              "cost": 0.0499485,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0499485,
+                "upstream_inference_prompt_cost": 0.0429185,
+                "upstream_inference_completions_cost": 0.00703
+              }
+            }
+          ]
+        },
+        "final_status": "accepted"
+      },
+      "status": "passed"
+    }
+  ],
+  "validation": {
+    "validator_version": "2026-08 / 0.62.0",
+    "attempts": [
+      {
+        "attempt": 1,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"controller\": {\n    \"states\": [],\n    \"updates\": [],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \">=\": [\n                \"io_0\",\n                1732423740\n              ]\n            }\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With io_1=true, supply io_0 values 1732423735, 1732423739, 1732423740 and 1732423741, then retain a later valid time across repeated steps.\",\n        \"oracle\": \"io_2 is 0 before 1732423740 and continuously 1000 at and after that threshold.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_0=0 and io_1=false. Supply a time above the threshold while invalid, assert validity, then clear validity while retaining the same time.\",\n        \"oracle\": \"io_2 is initially 0, remains 0 while invalid, becomes 1000 when valid, and returns to 0 when validity is lost.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Power up using the preserved circuit and RTC initial time 2024-11-24T04:48:55; observe initialization, periodic RTC acquisition and buzzer pin D8 through the threshold.\",\n        \"oracle\": \"Setup returns within 500 ms; the adapter initializes RTC_DS1307 over SDA A4/SCL A5 and configures D8 for tone output without adjusting RTC time. The buzzer remains silent before 04:49:00 and sounds continuously at 1000 Hz from the first valid sample at or after 04:49:00.\"\n      }\n    ]\n  }\n}",
+        "issues": [],
+        "ok": true,
+        "usage": {
+          "completion_tokens": 492,
+          "prompt_tokens": 11913,
+          "total_tokens": 12405,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 11910,
+            "video_tokens": 0
+          },
+          "cost": 0.034701,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.034701,
+            "upstream_inference_prompt_cost": 0.029781,
+            "upstream_inference_completions_cost": 0.00492
+          }
+        },
+        "structural_validation_passed": true,
+        "deterministic_behavior_passed": true,
+        "final_compile_passed": true,
+        "semantic_review": {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set the buzzer pin mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At the model boundary, io_2 is an output bound to tone_output on D8. The registered adapter is responsible for GPIO setup and application of scalar output commands. There is no model or contract contradiction with OUTPUT configuration.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Initialize the RTC module, and check if it can begin\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The registered RTC adapter initializes RTC_DS1307 and supplies initialization/acquisition validity before controller ticks. The contract maps that validity to io_1, which gates the alarm. Initial validity is false and the output is initially zero, so initial scalar values are not mistaken for valid measurements.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously read the current time with RTC module\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\",\n      \"reason\": \"The contract binds io_0 to periodic RTC epoch acquisition, with a 10 ms sample period and a 10 ms controller period. Registered semantics supply measured time before ticks. The output uses the current input directly, without retained state or a one-shot sampling condition.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"1732423740 is the epoch-seconds representation of the specified calendar threshold using the same calendar convention as RTC now().unixtime(). With valid acquisition, 1732423739 produces zero and 1732423740 or later produces 1000 Hz. The inclusive comparison is correct, and no unspecified timezone offset is introduced. No elapsed-time input is needed for this absolute-time comparison.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Buzzer plays tone only when the current time is on or after the specified time.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"Every valid time below the threshold produces zero. Invalid acquisition also produces zero regardless of the epoch scalar. Repeated valid samples at or after the threshold retain the tone by reevaluation, not by latching; a subsequent earlier time or loss of validity immediately selects silence on the next step. The contract defines zero as silence and the output unit as Hz.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use RTClib to generate RTC_DS1307 object and read the value.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The normative registered adapter semantics explicitly provide RTC_DS1307.begin and now().unixtime acquisition and validity. Library-object creation and hardware initialization belong to that adapter rather than the scalar SysML controller. Their absence as library calls in SysML is not an omission.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The supplied target is Arduino Uno. Both native RTC bindings use I2C address 104, SDA A4 and SCL A5; the buzzer binding uses D8. The resolved circuit preserves the supplied RTC power/ground connections, buzzer ground connection, and RTC initial calendar value. No binding conflicts with the supplied wiring.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At this model-boundary gate, neither the stateless expression nor the contract requires a startup delay or waiting for the alarm time. Thus there is no contradiction with the 500 ms setup bound; actual setup duration remains a generated-code verification obligation. SOURCE-1 repeats the alarm requirements checked above. Its conditional defaults for buttons, LEDs, counters, displays, serial streaming, servos and DHT reporting introduce no additional applicable behavior for this RTC/tone-only system.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not generated-code or runtime acceptance.\",\n    \"After code generation, verify RTC_DS1307/RTClib object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration, and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and confirm return within 500 ms; model consistency does not establish actual initialization duration.\",\n    \"The supplied test descriptions are not executed evidence. Actual target compilation and threshold-crossing integration tests remain separate obligations.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1505,
+                "prompt_tokens": 15659,
+                "total_tokens": 17164,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 76,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 15656,
+                  "video_tokens": 0
+                },
+                "cost": 0.054196,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.054196,
+                  "upstream_inference_prompt_cost": 0.039146,
+                  "upstream_inference_completions_cost": 0.01505
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 703,
+                "prompt_tokens": 17168,
+                "total_tokens": 17871,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 0,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 17165,
+                  "video_tokens": 0
+                },
+                "cost": 0.0499485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0499485,
+                  "upstream_inference_prompt_cost": 0.0429185,
+                  "upstream_inference_completions_cost": 0.00703
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 703,
+            "prompt_tokens": 17168,
+            "total_tokens": 17871,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 0,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 17165,
+              "video_tokens": 0
+            },
+            "cost": 0.0499485,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0499485,
+              "upstream_inference_prompt_cost": 0.0429185,
+              "upstream_inference_completions_cost": 0.00703
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.",
+                "status": "satisfied",
+                "model_quote": "out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                "reason": "SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'",
+                "status": "satisfied",
+                "model_quote": "in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                "reason": "All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "Satisfied means model-boundary consistency, not generated-code or runtime success.",
+              "After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.",
+              "Measure setup() completion after code generation and verify that it returns within 500 ms.",
+              "The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed"
+          }
+        },
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "normalizations": [
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id"
+        ],
+        "generation_mode": "contract_assembly",
+        "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\n  }\n  part system : Controller;\n}\n",
+        "stages": {
+          "sysml_generation": true,
+          "sysml_to_ir": true,
+          "ir_to_il": true
+        },
+        "focus_issues": [],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "diagnostic_fingerprint": [],
+        "no_progress": false,
+        "failed_obligation_keys": [],
+        "repeated_requirement": false,
+        "repair_locations": [],
+        "repair_example": null,
+        "failure_stage": null
+      }
+    ],
+    "coverage": {
+      "status": "structural_pass",
+      "issues": [],
+      "functional_status": "unverified",
+      "startup": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+      },
+      "pause": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+      },
+      "periodic": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+      },
+      "numeric": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+      },
+      "source_behavior": {
+        "status": "not_requested",
+        "checked": 0,
+        "traces": [],
+        "scope": "Only the exact source-derived scenarios; not full functionality proof"
+      },
+      "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+    },
+    "semantic_review": {
+      "enabled": true,
+      "policy_version": "sysml-semantic-review-v2-native-boundaries",
+      "review_calls": 2,
+      "max_review_calls": 6,
+      "repair_count": 0,
+      "rounds": [
+        {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set the buzzer pin mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At the model boundary, io_2 is an output bound to tone_output on D8. The registered adapter is responsible for GPIO setup and application of scalar output commands. There is no model or contract contradiction with OUTPUT configuration.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Initialize the RTC module, and check if it can begin\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The registered RTC adapter initializes RTC_DS1307 and supplies initialization/acquisition validity before controller ticks. The contract maps that validity to io_1, which gates the alarm. Initial validity is false and the output is initially zero, so initial scalar values are not mistaken for valid measurements.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously read the current time with RTC module\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\",\n      \"reason\": \"The contract binds io_0 to periodic RTC epoch acquisition, with a 10 ms sample period and a 10 ms controller period. Registered semantics supply measured time before ticks. The output uses the current input directly, without retained state or a one-shot sampling condition.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"1732423740 is the epoch-seconds representation of the specified calendar threshold using the same calendar convention as RTC now().unixtime(). With valid acquisition, 1732423739 produces zero and 1732423740 or later produces 1000 Hz. The inclusive comparison is correct, and no unspecified timezone offset is introduced. No elapsed-time input is needed for this absolute-time comparison.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Buzzer plays tone only when the current time is on or after the specified time.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"Every valid time below the threshold produces zero. Invalid acquisition also produces zero regardless of the epoch scalar. Repeated valid samples at or after the threshold retain the tone by reevaluation, not by latching; a subsequent earlier time or loss of validity immediately selects silence on the next step. The contract defines zero as silence and the output unit as Hz.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use RTClib to generate RTC_DS1307 object and read the value.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The normative registered adapter semantics explicitly provide RTC_DS1307.begin and now().unixtime acquisition and validity. Library-object creation and hardware initialization belong to that adapter rather than the scalar SysML controller. Their absence as library calls in SysML is not an omission.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"The supplied target is Arduino Uno. Both native RTC bindings use I2C address 104, SDA A4 and SCL A5; the buzzer binding uses D8. The resolved circuit preserves the supplied RTC power/ground connections, buzzer ground connection, and RTC initial calendar value. No binding conflicts with the supplied wiring.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"At this model-boundary gate, neither the stateless expression nor the contract requires a startup delay or waiting for the alarm time. Thus there is no contradiction with the 500 ms setup bound; actual setup duration remains a generated-code verification obligation. SOURCE-1 repeats the alarm requirements checked above. Its conditional defaults for buttons, LEDs, counters, displays, serial streaming, servos and DHT reporting introduce no additional applicable behavior for this RTC/tone-only system.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not generated-code or runtime acceptance.\",\n    \"After code generation, verify RTC_DS1307/RTClib object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration, and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and confirm return within 500 ms; model consistency does not establish actual initialization duration.\",\n    \"The supplied test descriptions are not executed evidence. Actual target compilation and threshold-crossing integration tests remain separate obligations.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1505,
+                "prompt_tokens": 15659,
+                "total_tokens": 17164,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 76,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 15656,
+                  "video_tokens": 0
+                },
+                "cost": 0.054196,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.054196,
+                  "upstream_inference_prompt_cost": 0.039146,
+                  "upstream_inference_completions_cost": 0.01505
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 703,
+                "prompt_tokens": 17168,
+                "total_tokens": 17871,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 0,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 17165,
+                  "video_tokens": 0
+                },
+                "cost": 0.0499485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0499485,
+                  "upstream_inference_prompt_cost": 0.0429185,
+                  "upstream_inference_completions_cost": 0.00703
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);\",\n      \"reason\": \"All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means model-boundary consistency, not generated-code or runtime success.\",\n    \"After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.\",\n    \"Measure setup() completion after code generation and verify that it returns within 500 ms.\",\n    \"The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 703,
+            "prompt_tokens": 17168,
+            "total_tokens": 17871,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 0,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 17165,
+              "video_tokens": 0
+            },
+            "cost": 0.0499485,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0499485,
+              "upstream_inference_prompt_cost": 0.0429185,
+              "upstream_inference_completions_cost": 0.00703
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.",
+                "status": "satisfied",
+                "model_quote": "out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                "reason": "SOURCE-1 includes the alarm requirements assessed under R1 below, with the same consistent result. Its additional applicable startup bound is not contradicted: the model is stateless and requires no startup delay or waiting for the threshold. Actual setup duration is a post-generation obligation. The 10 ms acquisition and controller periods introduce no model-level reaction delay exceeding 250 ms. Conditional defaults concerning LEDs, counters, buttons, displays, serial streaming, servos and DHT reports do not apply to this RTC/tone system."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'",
+                "status": "satisfied",
+                "model_quote": "in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    out attribute io_2 : Integer = (if ((io_1) and (((io_0) >= (1732423740)))) ? 1000 else 0);",
+                "reason": "All R1 clauses are consistent at the model boundary. The Uno contract preserves the supplied circuit, including RTC power/ground, SDA A4, SCL A5 and buzzer D8/ground. Registered adapter semantics provide RTC_DS1307 initialization, begin validity and periodic now().unixtime measurements before ticks; GPIO setup and scalar tone application are adapter responsibilities. Both RTC inputs have 10 ms sampling periods. The threshold 1732423740 correctly represents the requested calendar time in the RTC epoch convention without adding a timezone offset. With io_1 true, 1732423739 selects silence, while 1732423740 and later select 1000 Hz. Frequency is otherwise unspecified, and the contract defines zero as silence. Initial validity is false and the initial output is zero, so startup scalars cannot spuriously trigger the alarm. Invalid acquisition selects silence even with an above-threshold epoch. Repeated valid later samples continuously select tone; an earlier time or lost validity selects silence on the next evaluation. There is no latch, edge dependency, persistent update ordering issue or need for elapsed-time input. These properties satisfy continuous reading, initialization checking, inclusive threshold triggering and the restriction against tones before the specified time."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "Satisfied means model-boundary consistency, not generated-code or runtime success.",
+              "After code generation, verify RTClib RTC_DS1307 object creation, begin-result propagation, periodic acquisition, D8 OUTPUT configuration and actual tone/silence execution.",
+              "Measure setup() completion after code generation and verify that it returns within 500 ms.",
+              "The supplied test descriptions are not executed evidence; target compilation and threshold-crossing execution tests remain separate acceptance obligations."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "e92b88a65dbea5346b3dc7c9d5307882802e899a4fe403578b5ca6b1327e41ed"
+          }
+        }
+      ],
+      "final_status": "passed",
+      "failure_category": null
+    },
+    "call_counts": {
+      "generation_and_repair": 1,
+      "semantic_review": 2
+    },
+    "usage": {
+      "generation_and_repair": [
+        {
+          "completion_tokens": 492,
+          "prompt_tokens": 11913,
+          "total_tokens": 12405,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 11910,
+            "video_tokens": 0
+          },
+          "cost": 0.034701,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.034701,
+            "upstream_inference_prompt_cost": 0.029781,
+            "upstream_inference_completions_cost": 0.00492
+          }
+        }
+      ],
+      "semantic_review": [
+        {
+          "completion_tokens": 703,
+          "prompt_tokens": 17168,
+          "total_tokens": 17871,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 17165,
+            "video_tokens": 0
+          },
+          "cost": 0.0499485,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0499485,
+            "upstream_inference_prompt_cost": 0.0429185,
+            "upstream_inference_completions_cost": 0.00703
+          }
+        }
+      ]
+    },
+    "final_status": "accepted"
+  }
+}

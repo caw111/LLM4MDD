@@ -1,0 +1,172 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests TEMP and HUMI independently with changing sensor values, repeated commands, return transitions, and both newline and idle-delimited command framing. BOTH alternation timing, initial display mode, initial serial-output enable state, serial report content, and report frequency are unspecified. Consequently, timed BOTH alternation and button-controlled serial-output toggling are not independently asserted by this suite.",
+  "assumptions": [
+    "Uses the authoritative wiring: TM1637 CLK D4 and DIO D5, button D2, and DHT11 data D7.",
+    "Relies on the disclosed bench default for the button: D2 connects to GND when pressed and uses INPUT_PULLUP.",
+    "Temperature is displayed in degrees Celsius and humidity in percent; integer sensor values avoid unspecified rounding behavior.",
+    "No initial display mode, serial-output enable state, BOTH alternation period, serial report period, or serial report format is specified. The reference selects permitted defaults, but checks do not require those choices.",
+    "Display checks allow leading blanks or zeros and provide several seconds for DHT cache refresh and command processing."
+  ],
+  "horizon_ms": 44000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 21
+    },
+    {
+      "at_ms": 0,
+      "kind": "humidity",
+      "pin": 7,
+      "value": 62
+    },
+    {
+      "at_ms": 8000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 28
+    },
+    {
+      "at_ms": 8000,
+      "kind": "humidity",
+      "pin": 7,
+      "value": 47
+    },
+    {
+      "at_ms": 16000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 21
+    },
+    {
+      "at_ms": 16000,
+      "kind": "humidity",
+      "pin": 7,
+      "value": 62
+    },
+    {
+      "at_ms": 32000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 32300,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 38000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 38300,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [
+    {
+      "at_ms": 300,
+      "text": "TEMP\n"
+    },
+    {
+      "at_ms": 4100,
+      "text": "HUMI"
+    },
+    {
+      "at_ms": 8100,
+      "text": "TEMP"
+    },
+    {
+      "at_ms": 12100,
+      "text": "HUMI\n"
+    },
+    {
+      "at_ms": 16100,
+      "text": "TEMP\n"
+    },
+    {
+      "at_ms": 20100,
+      "text": "HUMI"
+    },
+    {
+      "at_ms": 24100,
+      "text": "BOTH\n"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "display",
+      "id": "temperature_initial",
+      "requirement_quote": "串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示",
+      "name": "tm:4:5",
+      "at_ms": 3500,
+      "expected": "21",
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "humidity_idle_command",
+      "requirement_quote": "串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示",
+      "name": "tm:4:5",
+      "at_ms": 7500,
+      "expected": "62",
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "temperature_changed",
+      "requirement_quote": "串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示",
+      "name": "tm:4:5",
+      "at_ms": 11500,
+      "expected": "28",
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "humidity_changed",
+      "requirement_quote": "串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示",
+      "name": "tm:4:5",
+      "at_ms": 15500,
+      "expected": "47",
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "temperature_return",
+      "requirement_quote": "串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示",
+      "name": "tm:4:5",
+      "at_ms": 19500,
+      "expected": "21",
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "humidity_return",
+      "requirement_quote": "串口输入 TEMP、HUMI、BOTH 控制数码管显示温度、湿度或轮流显示",
+      "name": "tm:4:5",
+      "at_ms": 23500,
+      "expected": "62",
+      "numeric": true
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n#include <DHT.h>\n#include <math.h>\n#include <string.h>\n\nTM1637Display display(4, 5);\nDHT dht(7, DHT11);\nenum Mode { TEMP_MODE, HUMI_MODE, BOTH_MODE };\nMode mode = TEMP_MODE;\nbool serialEnabled = true;\nbool showHumidity = false;\nfloat temperatureValue = NAN, humidityValue = NAN;\nunsigned long lastSensor = 0, lastReport = 0, lastAlternate = 0;\nunsigned long lastByte = 0, buttonChanged = 0;\nbool sensorStarted = false;\nint rawButton = HIGH, stableButton = HIGH;\nchar command[24];\nunsigned int commandLength = 0;\n\nvoid acceptCommand() {\n  command[commandLength] = '\\0';\n  if (strcmp(command, \"TEMP\") == 0) mode = TEMP_MODE;\n  else if (strcmp(command, \"HUMI\") == 0) mode = HUMI_MODE;\n  else if (strcmp(command, \"BOTH\") == 0) {\n    mode = BOTH_MODE;\n    showHumidity = false;\n    lastAlternate = millis();\n  }\n  commandLength = 0;\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n  dht.begin();\n  display.setBrightness(5);\n  Serial.println(\"TEMP / HUMI / BOTH\");\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByte = millis();\n    if (c == '\\n' || c == '\\r') {\n      if (commandLength) acceptCommand();\n    } else if (commandLength < sizeof(command) - 1) {\n      command[commandLength++] = c;\n    }\n  }\n  now = millis();\n  if (commandLength && now - lastByte >= 20) acceptCommand();\n\n  int reading = digitalRead(2);\n  if (reading != rawButton) {\n    rawButton = reading;\n    buttonChanged = now;\n  }\n  if (now - buttonChanged >= 40 && stableButton != rawButton) {\n    stableButton = rawButton;\n    if (stableButton == LOW) serialEnabled = !serialEnabled;\n  }\n\n  if (!sensorStarted || now - lastSensor >= 2000) {\n    sensorStarted = true;\n    lastSensor = now;\n    float t = dht.readTemperature();\n    float h = dht.readHumidity();\n    if (!isnan(t)) temperatureValue = t;\n    if (!isnan(h)) humidityValue = h;\n  }\n  if (mode == BOTH_MODE && now - lastAlternate >= 2000) {\n    lastAlternate = now;\n    showHumidity = !showHumidity;\n  }\n  bool useHumidity = mode == HUMI_MODE || (mode == BOTH_MODE && showHumidity);\n  float value = useHumidity ? humidityValue : temperatureValue;\n  if (!isnan(value)) display.showNumberDec((int)round(value), false);\n\n  if (serialEnabled && now - lastReport >= 1000) {\n    lastReport = now;\n    Serial.print(\"TEMP: \");\n    Serial.print(temperatureValue);\n    Serial.print(\" HUMI: \");\n    Serial.println(humidityValue);\n  }\n}\n",
+  "core_criterion": "串口命令选择显示模式，按钮切换串口输出"
+}

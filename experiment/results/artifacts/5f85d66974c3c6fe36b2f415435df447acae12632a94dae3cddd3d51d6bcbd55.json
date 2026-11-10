@@ -1,0 +1,567 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Preserved wiring to Arduino Mega: rgb1 {R:D2,G:D3,B:D4}, rgb2 {R:D5,G:D6,B:D7}, rgb3 {R:D8,G:D9,B:D10}; pot1 SIG->A3, pot2 SIG->A4; servos PWM->D11/D12/D13.",
+    "Board PWM resources on Mega support D2-D13; used PWM outputs for red/green channels and digital_output fixed-off for all blue channels (B tied to 0).",
+    "Control period set to 10ms to satisfy the 'update every 100ms' requirement via model-side scheduling using elapsed_ms (sensor sampling and actuator updates occur each control step).",
+    "Potentiometers are represented as analog_input scalars; mapping from analog_input range to 0..255 (RGB) and 0..180 degrees (servo angles) is handled in the SysML model (no port-level calibration assumed).",
+    "Servo3 alternation (0<->180 every 2 seconds) and all timing logic are handled in the SysML model; no serial or extra GPIO/binding gates are declared."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot1 value (drives RGB red and servo1 angle)",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A3"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot2 value (drives RGB green and servo2 angle)",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A4"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb1 red component (0..255 mapped)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb1 green component (0..255 mapped)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb1 blue component fixed off",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D4\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb2 red component (0..255 mapped)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb2 green component (0..255 mapped)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D6\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb2 blue component fixed off",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D7\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb3 red component (0..255 mapped)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D8\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D8"
+      }
+    },
+    {
+      "name": "io_9",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb3 green component (0..255 mapped)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D9\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D9"
+      }
+    },
+    {
+      "name": "io_10",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "rgb3 blue component fixed off",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D10"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_11",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo1 angle (0..180 from pot1)",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D11\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D11"
+      }
+    },
+    {
+      "name": "io_12",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo2 angle (0..180 from pot2)",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D12"
+      }
+    },
+    {
+      "name": "io_13",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo3 alternating angle (0/180 every 2s)",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D13"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three RGB LEDs (rgb1, rgb2, rgb3), three servos (servo1, servo2, servo3), and two slide potentiometers (pot1, pot2). The RGB LEDs will display colors based on the values of the potentiometers, and the servos will rotate to positions corresponding to the potentiometer values. The system should dynamically update the colors and servo positions as the potentiometers are adjusted.\n\n**Detail Rules**:\n1. **RGB LEDs**:\n   - The first potentiometer (pot1) controls the red component of all three RGB LEDs (rgb1, rgb2, rgb3). The value of pot1 is mapped to a range of 0 to 255 for the red component.\n   - The second potentiometer (pot2) controls the green component of all three RGB LEDs (rgb1, rgb2, rgb3). The value of pot2 is mapped to a range of 0 to 255 for the green component.\n   - The blue component of all three RGB LEDs is fixed at 0 (turned off).\n   - The RGB LEDs should update their colors continuously based on the current values of the potentiometers.\n\n2. **Servos**:\n   - The first potentiometer (pot1) controls the position of the first servo (servo1). The value of pot1 is mapped to a range of 0 to 180 degrees.\n   - The second potentiometer (pot2) controls the position of the second servo (servo2). The value of pot2 is mapped to a range of 0 to 180 degrees.\n   - The third servo (servo3) should alternate between 0 and 180 degrees every 2 seconds, independent of the potentiometers.\n   - The servos should update their positions continuously based on the current values of the potentiometers or the alternating logic for servo3.\n\n3. **System Behavior**:\n   - The RGB LEDs and servos should update their states every 100 milliseconds to ensure smooth transitions.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb3\", \"top\": -130.4, \"left\": 154.7, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:5\", \"rgb2:R\", \"red\"], [\"mega:6\", \"rgb2:G\", \"green\"], [\"mega:7\", \"rgb2:B\", \"blue\"], [\"mega:GND.1\", \"rgb3:COM\", \"black\"], [\"mega:8\", \"rgb3:R\", \"red\"], [\"mega:9\", \"rgb3:G\", \"green\"], [\"mega:10\", \"rgb3:B\", \"blue\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:11\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:12\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:13\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three RGB LEDs (rgb1, rgb2, rgb3), three servos (servo1, servo2, servo3), and two slide potentiometers (pot1, pot2). The RGB LEDs will display colors based on the values of the potentiometers, and the servos will rotate to positions corresponding to the potentiometer values. The system should dynamically update the colors and servo positions as the potentiometers are adjusted.\n\n**Detail Rules**:\n1. **RGB LEDs**:\n   - The first potentiometer (pot1) controls the red component of all three RGB LEDs (rgb1, rgb2, rgb3). The value of pot1 is mapped to a range of 0 to 255 for the red component.\n   - The second potentiometer (pot2) controls the green component of all three RGB LEDs (rgb1, rgb2, rgb3). The value of pot2 is mapped to a range of 0 to 255 for the green component.\n   - The blue component of all three RGB LEDs is fixed at 0 (turned off).\n   - The RGB LEDs should update their colors continuously based on the current values of the potentiometers.\n\n2. **Servos**:\n   - The first potentiometer (pot1) controls the position of the first servo (servo1). The value of pot1 is mapped to a range of 0 to 180 degrees.\n   - The second potentiometer (pot2) controls the position of the second servo (servo2). The value of pot2 is mapped to a range of 0 to 180 degrees.\n   - The third servo (servo3) should alternate between 0 and 180 degrees every 2 seconds, independent of the potentiometers.\n   - The servos should update their positions continuously based on the current values of the potentiometers or the alternating logic for servo3.\n\n3. **System Behavior**:\n   - The RGB LEDs and servos should update their states every 100 milliseconds to ensure smooth transitions.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb3\", \"top\": -130.4, \"left\": 154.7, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:5\", \"rgb2:R\", \"red\"], [\"mega:6\", \"rgb2:G\", \"green\"], [\"mega:7\", \"rgb2:B\", \"blue\"], [\"mega:GND.1\", \"rgb3:COM\", \"black\"], [\"mega:8\", \"rgb3:R\", \"red\"], [\"mega:9\", \"rgb3:G\", \"green\"], [\"mega:10\", \"rgb3:B\", \"blue\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:11\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:12\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:13\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb1",
+            "top": -130.4,
+            "left": 39.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb2",
+            "top": -130.4,
+            "left": 97.1,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb3",
+            "top": -130.4,
+            "left": 154.7,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo3",
+            "left": -201.6,
+            "top": 170.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "rgb1:COM",
+            "black"
+          ],
+          [
+            "mega:2",
+            "rgb1:R",
+            "red"
+          ],
+          [
+            "mega:3",
+            "rgb1:G",
+            "green"
+          ],
+          [
+            "mega:4",
+            "rgb1:B",
+            "blue"
+          ],
+          [
+            "mega:GND.1",
+            "rgb2:COM",
+            "black"
+          ],
+          [
+            "mega:5",
+            "rgb2:R",
+            "red"
+          ],
+          [
+            "mega:6",
+            "rgb2:G",
+            "green"
+          ],
+          [
+            "mega:7",
+            "rgb2:B",
+            "blue"
+          ],
+          [
+            "mega:GND.1",
+            "rgb3:COM",
+            "black"
+          ],
+          [
+            "mega:8",
+            "rgb3:R",
+            "red"
+          ],
+          [
+            "mega:9",
+            "rgb3:G",
+            "green"
+          ],
+          [
+            "mega:10",
+            "rgb3:B",
+            "blue"
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black"
+          ],
+          [
+            "mega:11",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:12",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:13",
+            "servo3:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo3:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo3:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three RGB LEDs (rgb1, rgb2, rgb3), three servos (servo1, servo2, servo3), and two slide potentiometers (pot1, pot2). The RGB LEDs will display colors based on the values of the potentiometers, and the servos will rotate to positions corresponding to the potentiometer values. The system should dynamically update the colors and servo positions as the potentiometers are adjusted.\n\n**Detail Rules**:\n1. **RGB LEDs**:\n   - The first potentiometer (pot1) controls the red component of all three RGB LEDs (rgb1, rgb2, rgb3). The value of pot1 is mapped to a range of 0 to 255 for the red component.\n   - The second potentiometer (pot2) controls the green component of all three RGB LEDs (rgb1, rgb2, rgb3). The value of pot2 is mapped to a range of 0 to 255 for the green component.\n   - The blue component of all three RGB LEDs is fixed at 0 (turned off).\n   - The RGB LEDs should update their colors continuously based on the current values of the potentiometers.\n\n2. **Servos**:\n   - The first potentiometer (pot1) controls the position of the first servo (servo1). The value of pot1 is mapped to a range of 0 to 180 degrees.\n   - The second potentiometer (pot2) controls the position of the second servo (servo2). The value of pot2 is mapped to a range of 0 to 180 degrees.\n   - The third servo (servo3) should alternate between 0 and 180 degrees every 2 seconds, independent of the potentiometers.\n   - The servos should update their positions continuously based on the current values of the potentiometers or the alternating logic for servo3.\n\n3. **System Behavior**:\n   - The RGB LEDs and servos should update their states every 100 milliseconds to ensure smooth transitions.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb3\", \"top\": -130.4, \"left\": 154.7, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:5\", \"rgb2:R\", \"red\"], [\"mega:6\", \"rgb2:G\", \"green\"], [\"mega:7\", \"rgb2:B\", \"blue\"], [\"mega:GND.1\", \"rgb3:COM\", \"black\"], [\"mega:8\", \"rgb3:R\", \"red\"], [\"mega:9\", \"rgb3:G\", \"green\"], [\"mega:10\", \"rgb3:B\", \"blue\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:11\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:12\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:13\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_9": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_10": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_11": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_12": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_13": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  }
+}

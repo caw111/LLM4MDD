@@ -1,0 +1,388 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Offline audit-directed repair: remove unrequired LCD reset constructor filter; retain text, echo, formatting, frame-size, recovery and timing checks. Pixel clearing and non-ASCII cases remain unverified.",
+  "assumptions": [
+    "The supplied wiring is authoritative: hardware SPI uses MOSI 11, MISO 12, SCK 13, CS 10, and D/C 9. No reset connection is supplied, so the reference uses reset pin -1. No generic LED/button bench defaults are needed.",
+    "The disclosed transport parameters are authoritative: baud 9600, line-or-idle framing, 20ms idle timeout, and a maximum of 63 payload bytes. Tabs are explicitly permitted despite the printable-ASCII wording.",
+    "Input times are power-on relative and begin after the required 500ms setup deadline. No unspecified startup text or initial screen contents are required.",
+    "The reference treats CR and LF as delimiters, ignores empty delimiter-only frames, and accepts a following LF after CR without producing another output. The tests do not impose an empty-frame behavior.",
+    "The reference rejects invalid bytes and oversized frames as a whole until a delimiter or idle boundary; it does not display or echo a prefix.",
+    "NUL and non-ASCII byte injection is deliberately omitted because the previous disclosed execution did not establish reliable delivery through the text transport. This is an uncovered feature, not a waived requirement."
+  ],
+  "horizon_ms": 11000,
+  "input_steps": [],
+  "serial_inputs": [
+    {
+      "at_ms": 1000,
+      "text": "Hello LCD!\n"
+    },
+    {
+      "at_ms": 2000,
+      "text": " \tKeep  spaces\t \n"
+    },
+    {
+      "at_ms": 3000,
+      "text": "012345678901234567890123456789012345678901234567890123456789XYZ\n"
+    },
+    {
+      "at_ms": 4000,
+      "text": "Z\n"
+    },
+    {
+      "at_ms": 5000,
+      "text": "Split "
+    },
+    {
+      "at_ms": 5008,
+      "text": "message\r\n"
+    },
+    {
+      "at_ms": 6000,
+      "text": "Idle text"
+    },
+    {
+      "at_ms": 7000,
+      "text": "012345678901234567890123456789012345678901234567890123456789WXYZ\n"
+    },
+    {
+      "at_ms": 7600,
+      "text": "After oversized\n"
+    },
+    {
+      "at_ms": 8500,
+      "text": "CR only\r"
+    },
+    {
+      "at_ms": 9500,
+      "text": "Hello LCD!\n"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "setup",
+      "id": "setup_deadline",
+      "requirement_quote": "setup() must return within 500ms",
+      "max_ms": 500
+    },
+    {
+      "kind": "lcd",
+      "id": "first_display",
+      "requirement_quote": "print the input string at position (0, 0) in white with text size 2",
+      "from_ms": 1000,
+      "to_ms": 1250,
+      "regex": "^Hello LCD!$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "first_echo",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 1000,
+      "to_ms": 1250,
+      "regex": "^Hello LCD!$",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "whitespace_display",
+      "requirement_quote": "Preserve all received spaces and tabs, including at the beginning and end, in display and echo.",
+      "from_ms": 2000,
+      "to_ms": 2250,
+      "regex": "^ \\tKeep  spaces\\t $",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "whitespace_echo",
+      "requirement_quote": "Preserve all received spaces and tabs, including at the beginning and end, in display and echo.",
+      "from_ms": 2000,
+      "to_ms": 2250,
+      "regex": "^ \\tKeep  spaces\\t $",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "maximum_payload_display",
+      "requirement_quote": "at most63 bytes",
+      "from_ms": 3000,
+      "to_ms": 3320,
+      "regex": "^012345678901234567890123456789012345678901234567890123456789XYZ$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "maximum_payload_echo",
+      "requirement_quote": "at most63 bytes",
+      "from_ms": 3000,
+      "to_ms": 3320,
+      "regex": "^012345678901234567890123456789012345678901234567890123456789XYZ$",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "short_replacement",
+      "requirement_quote": "clear the display with a black background and print the input string",
+      "from_ms": 4000,
+      "to_ms": 4250,
+      "regex": "^Z$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "short_echo",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 4000,
+      "to_ms": 4250,
+      "regex": "^Z$",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "no_fragment_display",
+      "requirement_quote": "framing=line_or_idle",
+      "from_ms": 5000,
+      "to_ms": 5007,
+      "regex": "^Split $",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "no_fragment_echo",
+      "requirement_quote": "framing=line_or_idle",
+      "from_ms": 5000,
+      "to_ms": 5007,
+      "regex": "^Split $",
+      "min_count": 0,
+      "max_count": 0,
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "fragmented_crlf_display",
+      "requirement_quote": "framing=line_or_idle",
+      "from_ms": 5008,
+      "to_ms": 5275,
+      "regex": "^Split message$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "fragmented_crlf_echo",
+      "requirement_quote": "framing=line_or_idle",
+      "from_ms": 5008,
+      "to_ms": 5275,
+      "regex": "^Split message$",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "idle_not_early_display",
+      "requirement_quote": "idle_timeout_ms=20",
+      "from_ms": 6000,
+      "to_ms": 6019,
+      "regex": "^Idle text$",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "idle_not_early_echo",
+      "requirement_quote": "idle_timeout_ms=20",
+      "from_ms": 6000,
+      "to_ms": 6019,
+      "regex": "^Idle text$",
+      "min_count": 0,
+      "max_count": 0,
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "idle_display",
+      "requirement_quote": "idle_timeout_ms=20",
+      "from_ms": 6020,
+      "to_ms": 6285,
+      "regex": "^Idle text$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "idle_echo",
+      "requirement_quote": "idle_timeout_ms=20",
+      "from_ms": 6020,
+      "to_ms": 6285,
+      "regex": "^Idle text$",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "reject_oversized_display",
+      "requirement_quote": "Frames exceeding the buffer bound or containing NUL/non-ASCII are rejected without partial display or echo",
+      "from_ms": 7000,
+      "to_ms": 7550,
+      "regex": "0123456789|WXYZ",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "reject_oversized_echo",
+      "requirement_quote": "Frames exceeding the buffer bound or containing NUL/non-ASCII are rejected without partial display or echo",
+      "from_ms": 7000,
+      "to_ms": 7550,
+      "regex": "0123456789|WXYZ",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "lcd",
+      "id": "recovery_display",
+      "requirement_quote": "Continuously read the serial monitor",
+      "from_ms": 7600,
+      "to_ms": 7875,
+      "regex": "^After oversized$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "recovery_echo",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 7600,
+      "to_ms": 7875,
+      "regex": "^After oversized$",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "cr_display",
+      "requirement_quote": "framing=line_or_idle",
+      "from_ms": 8500,
+      "to_ms": 8770,
+      "regex": "^CR only$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "cr_echo",
+      "requirement_quote": "framing=line_or_idle",
+      "from_ms": 8500,
+      "to_ms": 8770,
+      "regex": "^CR only$",
+      "baud": 9600
+    },
+    {
+      "kind": "lcd",
+      "id": "repeated_input_display",
+      "requirement_quote": "Continuously read the serial monitor",
+      "from_ms": 9500,
+      "to_ms": 9770,
+      "regex": "^Hello LCD!$",
+      "display_properties": {
+        "initialized": true,
+        "rotation": 1,
+        "background": 0,
+        "x": 0,
+        "y": 0,
+        "color": 65535,
+        "size": 2,
+        "cs": 10,
+        "dc": 9
+      }
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_input_echo",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 9500,
+      "to_ms": 9770,
+      "regex": "^Hello LCD!$",
+      "baud": 9600
+    }
+  ],
+  "lcd_capture_interval_ms": 10,
+  "lcd_reset_pullup": true
+}

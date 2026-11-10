@@ -1,0 +1,132 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "menuIndex",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "confirmedIndex",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousMenuPressed",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "previousConfirmPressed",
+        "type": "bool",
+        "initial": true
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousMenuPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "menuIndex",
+            "value": "if menuIndex == 2 ? 0 else menuIndex + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousConfirmPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "confirmedIndex",
+            "value": "menuIndex"
+          }
+        ]
+      },
+      {
+        "assign": "previousMenuPressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousConfirmPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_6": {
+        "if": "confirmedIndex == 0",
+        "then": {
+          "if": "io_4",
+          "then": "RealFunctions::floor(io_2)",
+          "else": 0
+        },
+        "else": {
+          "if": "confirmedIndex == 1",
+          "then": {
+            "if": "io_4",
+            "then": "RealFunctions::floor(io_3)",
+            "else": 0
+          },
+          "else": "RealFunctions::floor(io_5)"
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Hold D3 pressed edge to confirm initial menuIndex; keep io_4 true with stable io_2/io_3/io_5; keep D2 not pressed; observe io_6 over several control steps.",
+        "oracle": "After D3 rising edge, io_6 equals floor(io_2) when confirmedIndex==0 and remains unchanged while D2 has no rising edges, regardless of menuIndex changes."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "With confirmedIndex already set (by a prior D3 rising edge) and io_4 true, press D2 to generate two successive rising edges; do not press D3.",
+        "oracle": "io_6 does not change after D2 presses alone; it changes only on D3 rising edges by copying menuIndex into confirmedIndex."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Drive D2 rising edges three times (0->1->2->0) while generating a D3 rising edge after each D2 rising edge; keep io_4 true and set distinct io_2/io_3/io_5 values.",
+        "oracle": "After each D3 rising edge, io_6 equals floor(io_2) for confirmedIndex==0, floor(io_3) for confirmedIndex==1, and floor(io_5) for confirmedIndex==2, matching the selected menu item."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Set confirmedIndex to temperature (menuIndex==0 then D3 rising). Then set io_4=false while keeping io_2/io_3 possibly changed, and keep D2/D3 not pressed.",
+        "oracle": "When confirmedIndex==0 and io_4 is false, io_6 becomes 0 and remains 0 until either io_4 becomes true again or confirmedIndex changes via D3."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。",
+        "test_point_id": "T5",
+        "test_method": "trace",
+        "stimulus": "Set confirmedIndex to humidity (menuIndex==1 then D3 rising). Toggle io_4 from true to false and then back to true without pressing D2 or D3.",
+        "oracle": "On io_4=false, io_6 becomes 0; on io_4=true, io_6 returns to floor(io_3) for humidity while confirmedIndex remains humidity."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Real;\n    attribute menuIndex : Integer := 0;\n    attribute confirmedIndex : Integer := 0;\n    attribute previousMenuPressed : Boolean := true;\n    attribute previousConfirmPressed : Boolean := true;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousMenuPressed))) {\n        first start;\n        then assign menuIndex := if menuIndex == 2 ? 0 else menuIndex + 1;\n      }\n      then if ((io_1) and ((not previousConfirmPressed))) {\n        first start;\n        then assign confirmedIndex := menuIndex;\n      }\n      then assign previousMenuPressed := io_0;\n      then assign previousConfirmPressed := io_1;\n    }\n    out attribute io_6 : Integer = (if confirmedIndex == 0 ? (if io_4 ? RealFunctions::floor(io_2) else 0) else (if confirmedIndex == 1 ? (if io_4 ? RealFunctions::floor(io_3) else 0) else RealFunctions::floor(io_5)));\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,259 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    },
+    {
+      "name": "io_1",
+      "type": "f64"
+    },
+    {
+      "name": "io_2",
+      "type": "bool"
+    },
+    {
+      "name": "io_3",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_4",
+      "type": "f64"
+    },
+    {
+      "name": "io_5",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_4",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 >= 30.0) ? (((arg0 - 30.0) * 20.0) + 102.0) : 0.0)"
+      }
+    },
+    {
+      "id": "compute_io_5",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "f64"
+        },
+        {
+          "name": "arg2",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? ((arg1 >= 0.0) ? ((int)(arg1) - ((arg1) < (double)((int)(arg1)) ? 1 : 0)) : (0 - ((int)((0.0 - arg1)) - (((0.0 - arg1)) < (double)((int)((0.0 - arg1))) ? 1 : 0)))) : ((int)(arg2) - ((arg2) < (double)((int)(arg2)) ? 1 : 0)))"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "lastTempC"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_4"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "modeIsTemp"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_5",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "lastTempC"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_5",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "lastHumidityPct"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_5",
+        "port": "arg2"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_5",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_5"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "modeIsTemp",
+      "type": "bool",
+      "initial": "true"
+    },
+    {
+      "name": "previousPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "lastTempC",
+      "type": "f64",
+      "initial": "0.0"
+    },
+    {
+      "name": "lastHumidityPct",
+      "type": "f64",
+      "initial": "0.0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_2"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "lastTempC",
+                "expression": "arg0",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "lastHumidityPct",
+                "expression": "arg0",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_1"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_3"
+            },
+            {
+              "kind": "state",
+              "name": "previousPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "modeIsTemp",
+                "expression": "(!arg0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "modeIsTemp"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "previousPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_3"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

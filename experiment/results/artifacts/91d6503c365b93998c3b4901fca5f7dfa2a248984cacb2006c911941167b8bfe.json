@@ -1,0 +1,270 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed1",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed2",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed3",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed4",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "locked",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "winnerId",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "resetAccumulatedMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "resetting",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "resetRequest",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "serialTriggerNext",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "serialTimestampMsNext",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_4",
+        "then": [
+          {
+            "assign": "resetting",
+            "value": true
+          },
+          {
+            "assign": "resetAccumulatedMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "not io_4",
+        "then": [
+          {
+            "assign": "resetting",
+            "value": false
+          },
+          {
+            "assign": "resetAccumulatedMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "io_4 and (resetAccumulatedMs >= 3000)",
+        "then": [
+          {
+            "assign": "resetRequest",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "resetRequest",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": "resetRequest",
+        "then": [
+          {
+            "assign": "locked",
+            "value": false
+          },
+          {
+            "assign": "winnerId",
+            "value": 0
+          },
+          {
+            "assign": "serialTriggerNext",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": "not resetRequest",
+        "then": [
+          {
+            "if": "not locked",
+            "then": [
+              {
+                "if": "io_0 and not previousPressed1",
+                "then": [
+                  {
+                    "assign": "locked",
+                    "value": true
+                  },
+                  {
+                    "assign": "winnerId",
+                    "value": 1
+                  },
+                  {
+                    "assign": "serialTriggerNext",
+                    "value": true
+                  },
+                  {
+                    "assign": "serialTimestampMsNext",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": "io_1 and not previousPressed2",
+                "then": [
+                  {
+                    "assign": "locked",
+                    "value": true
+                  },
+                  {
+                    "assign": "winnerId",
+                    "value": 2
+                  },
+                  {
+                    "assign": "serialTriggerNext",
+                    "value": true
+                  },
+                  {
+                    "assign": "serialTimestampMsNext",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": "io_2 and not previousPressed3",
+                "then": [
+                  {
+                    "assign": "locked",
+                    "value": true
+                  },
+                  {
+                    "assign": "winnerId",
+                    "value": 3
+                  },
+                  {
+                    "assign": "serialTriggerNext",
+                    "value": true
+                  },
+                  {
+                    "assign": "serialTimestampMsNext",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": "io_3 and not previousPressed4",
+                "then": [
+                  {
+                    "assign": "locked",
+                    "value": true
+                  },
+                  {
+                    "assign": "winnerId",
+                    "value": 4
+                  },
+                  {
+                    "assign": "serialTriggerNext",
+                    "value": true
+                  },
+                  {
+                    "assign": "serialTimestampMsNext",
+                    "value": 0
+                  }
+                ]
+              }
+            ],
+            "else": [
+              {
+                "assign": "serialTriggerNext",
+                "value": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "serialTriggerNext",
+        "value": false
+      },
+      {
+        "assign": "previousPressed1",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousPressed2",
+        "value": "io_1"
+      },
+      {
+        "assign": "previousPressed3",
+        "value": "io_2"
+      },
+      {
+        "assign": "previousPressed4",
+        "value": "io_3"
+      }
+    ],
+    "outputs": {
+      "io_5": "locked",
+      "io_6": 0,
+      "io_7": "winnerId",
+      "serial_0_trigger": "false",
+      "serial_0_value_0": 0,
+      "serial_0_value_1": "winnerId"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多用户答题抢答系统，使用四个按钮 D2、D3、D7、D8 分别对应四位选手，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和按钮 D9 作为复位。系统只记录第一个按下的选手编号并在数码管显示，蜂鸣器短鸣确认，之后锁定其他输入直到复位；同时通过串口输出抢答时间戳和选手编号。长按复位键 3 秒可清空累计抢答统计。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下任意一个选手按钮（io_0/io_1/io_2/io_3）产生一次上升沿；在复位（io_4）前多次保持/按下其他选手按钮",
+        "oracle": "模型锁定后io_7显示首次按下的选手编号，io_5为true且蜂鸣器输出io_6为0；串口触发serial_0_trigger保持false（此控制器未提供elapsed_ms时间戳/串口触发时序）"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多用户答题抢答系统，使用四个按钮 D2、D3、D7、D8 分别对应四位选手，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和按钮 D9 作为复位。系统只记录第一个按下的选手编号并在数码管显示，蜂鸣器短鸣确认，之后锁定其他输入直到复位；同时通过串口输出抢答时间戳和选手编号。长按复位键 3 秒可清空累计抢答统计。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "在未抢答锁定前长按复位按钮io_4（持续足够长以覆盖3秒语义）然后释放",
+        "oracle": "锁定解除、io_7清零且io_5为false；serial_0_value_0保持0，serial_0_trigger保持false"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    in attribute io_4 : Boolean;\n    attribute previousPressed1 : Boolean := false;\n    attribute previousPressed2 : Boolean := false;\n    attribute previousPressed3 : Boolean := false;\n    attribute previousPressed4 : Boolean := false;\n    attribute locked : Boolean := false;\n    attribute winnerId : Integer := 0;\n    attribute resetAccumulatedMs : Integer := 0;\n    attribute resetting : Boolean := false;\n    attribute resetRequest : Boolean := false;\n    attribute serialTriggerNext : Boolean := false;\n    attribute serialTimestampMsNext : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_4 {\n        first start;\n        then assign resetting := true;\n        then assign resetAccumulatedMs := 0;\n      }\n      then if not io_4 {\n        first start;\n        then assign resetting := false;\n        then assign resetAccumulatedMs := 0;\n      }\n      then if io_4 and (resetAccumulatedMs >= 3000) {\n        first start;\n        then assign resetRequest := true;\n      } else {\n        first start;\n        then assign resetRequest := false;\n      }\n      then if resetRequest {\n        first start;\n        then assign locked := false;\n        then assign winnerId := 0;\n        then assign serialTriggerNext := false;\n      }\n      then if not resetRequest {\n        first start;\n        then if not locked {\n          first start;\n          then if io_0 and not previousPressed1 {\n            first start;\n            then assign locked := true;\n            then assign winnerId := 1;\n            then assign serialTriggerNext := true;\n            then assign serialTimestampMsNext := 0;\n          }\n          then if io_1 and not previousPressed2 {\n            first start;\n            then assign locked := true;\n            then assign winnerId := 2;\n            then assign serialTriggerNext := true;\n            then assign serialTimestampMsNext := 0;\n          }\n          then if io_2 and not previousPressed3 {\n            first start;\n            then assign locked := true;\n            then assign winnerId := 3;\n            then assign serialTriggerNext := true;\n            then assign serialTimestampMsNext := 0;\n          }\n          then if io_3 and not previousPressed4 {\n            first start;\n            then assign locked := true;\n            then assign winnerId := 4;\n            then assign serialTriggerNext := true;\n            then assign serialTimestampMsNext := 0;\n          }\n        } else {\n          first start;\n          then assign serialTriggerNext := false;\n        }\n      }\n      then assign serialTriggerNext := false;\n      then assign previousPressed1 := io_0;\n      then assign previousPressed2 := io_1;\n      then assign previousPressed3 := io_2;\n      then assign previousPressed4 := io_3;\n    }\n    out attribute io_5 : Boolean = locked;\n    out attribute io_6 : Integer = 0;\n    out attribute io_7 : Integer = winnerId;\n    out attribute serial_0_trigger : Boolean = false;\n    out attribute serial_0_value_0 : Integer = 0;\n    out attribute serial_0_value_1 : Integer = winnerId;\n  }\n  part system : Controller;\n}\n"
+}

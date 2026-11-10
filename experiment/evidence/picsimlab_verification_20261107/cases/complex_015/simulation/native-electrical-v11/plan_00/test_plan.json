@@ -1,0 +1,182 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests the mode-toggle round-trip invariant at three different environmental inputs: two distinct button presses must restore the original LED command when sensor inputs are unchanged. This does not assume an initial mode, light polarity, light threshold, or proximity threshold. Coverage is limited: the requirement supplies none of those parameters, so this suite cannot independently establish the automatic activation boundary or identify which single-press state is forced-on. A nonfunctional toggle could pass these necessary but insufficient invariants.",
+  "assumptions": [
+    "Uses bench-default active-HIGH LED wiring on D9 and a D2 button connected to GND with INPUT_PULLUP; released level is explicitly injected.",
+    "Each 200 ms button press, separated by at least 500 ms of release, represents one mode-toggle request.",
+    "With unchanged sensor inputs and the same selected mode, the settled PWM command is repeatable; no fading, occupancy latch, or time-dependent lighting behavior is specified.",
+    "Light polarity, darkness threshold, proximity threshold, initial mode, and forced-on brightness are unspecified. Checks do not require particular choices for these parameters.",
+    "The reference sketch chooses lower ADC values as darker, a darkness threshold of 500, proximity below 100 cm, initial automatic mode, and full brightness when lit. These are illustrative implementation choices, not candidate acceptance thresholds.",
+    "D13 appears only as a hardware role in the inventory; no application behavior is specified for it, so it is not checked."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    },
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 3,
+      "value": 20
+    },
+    {
+      "at_ms": 1200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 1400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 2200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 2400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 1023
+    },
+    {
+      "at_ms": 4000,
+      "kind": "distance",
+      "pin": 3,
+      "value": 300
+    },
+    {
+      "at_ms": 5200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 5400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 6200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 6400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 8000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 512
+    },
+    {
+      "at_ms": 8000,
+      "kind": "distance",
+      "pin": 3,
+      "value": 60
+    },
+    {
+      "at_ms": 9200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 9400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 10200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 10400,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [
+    {
+      "trigger_pin": 8,
+      "echo_pin": 3
+    }
+  ],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "relation",
+      "id": "toggle_round_trip_low_adc_near",
+      "requirement_quote": "按钮用于强制常亮模式与自动模式切换",
+      "source": "pwm",
+      "pin": 9,
+      "at_ms": [
+        900,
+        3300
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "toggle_round_trip_high_adc_far",
+      "requirement_quote": "按钮用于强制常亮模式与自动模式切换",
+      "source": "pwm",
+      "pin": 9,
+      "at_ms": [
+        4900,
+        7300
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "toggle_round_trip_mid_adc",
+      "requirement_quote": "按钮用于强制常亮模式与自动模式切换",
+      "source": "pwm",
+      "pin": 9,
+      "at_ms": [
+        8900,
+        11300
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t TRIG = 8, ECHO = 3, LED = 9, BUTTON = 2;\nconst int DARK_THRESHOLD = 500;\nconst float NEAR_CM = 100.0f;\nbool forcedOn = false;\nbool lastRaw = HIGH;\nbool stableButton = HIGH;\nunsigned long changedAt = 0;\nunsigned long lastMeasurement = 0;\nbool nearPerson = false;\n\nvoid updateButton() {\n  bool raw = digitalRead(BUTTON);\n  unsigned long now = millis();\n  if (raw != lastRaw) {\n    lastRaw = raw;\n    changedAt = now;\n  }\n  if (raw != stableButton && now - changedAt >= 30) {\n    stableButton = raw;\n    if (stableButton == LOW) forcedOn = !forcedOn;\n  }\n}\n\nvoid measurePresence() {\n  digitalWrite(TRIG, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG, LOW);\n  unsigned long duration = pulseIn(ECHO, HIGH, 30000UL);\n  float cm = duration * 0.0343f / 2.0f;\n  nearPerson = duration != 0 && cm < NEAR_CM;\n}\n\nvoid setup() {\n  pinMode(TRIG, OUTPUT);\n  digitalWrite(TRIG, LOW);\n  pinMode(ECHO, INPUT);\n  pinMode(LED, OUTPUT);\n  pinMode(BUTTON, INPUT_PULLUP);\n  analogWrite(LED, 0);\n}\n\nvoid loop() {\n  updateButton();\n  unsigned long now = millis();\n  if (now - lastMeasurement >= 70) {\n    lastMeasurement = now;\n    measurePresence();\n  }\n  bool dark = analogRead(A0) < DARK_THRESHOLD;\n  analogWrite(LED, (forcedOn || (dark && nearPerson)) ? 255 : 0);\n}\n",
+  "electrical_led_pins": {}
+}

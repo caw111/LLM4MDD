@@ -1,0 +1,448 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Preserve the seven 220-ohm segment resistors and grounded common cathode. The decimal-point resistor has no MCU connection and requires no request.",
+    "Assume the MPU6050 default I2C address is 104 because AD0 is not wired. Use the legal catalog sampling default for both MPU requests, with coherent acquisition and matching sampling periods.",
+    "Use the success criterion to resolve the threshold wording: count only when the absolute raw Y reading is strictly greater than 15000 after a valid reading strictly below 2000 has armed detection. Initialize the logical total to zero and detection unarmed until that low reading occurs.",
+    "Perform threshold, rearming and counting logic only on valid sensor readings. Invalid acquisitions must not increment the total or rearm detection.",
+    "Retain the logical total across decimal display rollover. Compute the displayed ones digit in the model using total - (total / 10) * 10 with integer division; crossing nine must not reset or stop the logical total.",
+    "Initialize the display to zero, check the sensor connection during initialization, and return from setup within 500 ms without waiting indefinitely for sensor success. Reflect accepted count changes on the display within 250 ms.",
+    "No elapsed-time input or serial reporting is required; scheduling and the display response deadline do not introduce business-time logic."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "i32",
+      "unit": "raw",
+      "initial": 0,
+      "meaning": "Native signed Y-axis gyroscope reading at 250 degrees per second full scale",
+      "sample_period_ms": 5,
+      "device": "mpu6050 6-axis accel & gyro sensor1",
+      "hardware": "{\"address\": 104, \"axis\": \"y\", \"kind\": \"mpu_gyro_raw\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "mpu_gyro_raw",
+        "address": 104,
+        "sda_pin": "A4",
+        "axis": "y",
+        "scl_pin": "A5"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "MPU6050 connection and acquisition validity",
+      "sample_period_ms": 5,
+      "device": "mpu6050 6-axis accel & gyro sensor1",
+      "hardware": "{\"address\": 104, \"kind\": \"mpu_valid\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "mpu_valid",
+        "address": 104,
+        "sda_pin": "A4",
+        "scl_pin": "A5"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Decimal ones digit of the logical exercise count",
+      "sample_period_ms": 5,
+      "device": "7-segment display1",
+      "hardware": "{\"common_anode\": false, \"digit_active_high\": false, \"digit_pins\": [], \"kind\": \"seven_segment_number\", \"leading_zero\": false, \"segment_pins\": [\"D2\", \"D3\", \"D4\", \"D5\", \"D6\", \"D7\", \"D8\"]}",
+      "binding": {
+        "kind": "seven_segment_number",
+        "digit_pins": [],
+        "common_anode": false,
+        "digit_active_high": false,
+        "leading_zero": false,
+        "segment_pins": [
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6",
+          "D7",
+          "D8"
+        ]
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Exercise Counter\n\n## Project Description\nThis is a motion counter that detects movement with an MPU6050 gyroscope and displays the count on a 1-digit 7-segment display, made with arduino uno.\n\n## Hardware Components\n- Arduino Uno\n- 7-segment display\n- 220Ω resistor * 7\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nA 7-segment display and a mpu6050 sensor is connected to arduino uno. Pin A to G is connected to arduino pin 2 to 8 through 220Ω resistor, respectively. Common pin of 7-segment is connected to gnd2. For mpu6050 sensor, VCC and GND pin is connected to arduino 5v and gnd2 pin. SCL pin and SDA pin is connected to arduino pin A5 and A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set pins for 7-segments as OUTPUT\n2. Check the connection of mpu6050\n3. Display number 0 on the 7-segment display\n4. Continuously read the Y rotation value of mpu6050\n5. The count increases when the Y-axis rotation value exceeds 15000, and it does not increase again until the absolute value drops below 2000\n6. Continuously display the count on the 7-segment display\n\n## Success Criteria\nThe test is successful when:\n1. The count increases only when the absolute Y-axis rotation value rises above 15000 after previously dropping below 2000.\n2. The current count is correctly displayed on the 7-segment display.\n\n## Notes for Implementation\n- Use MPU6050.h, Wire.h libraries.\n- MPU6050 has I2C interface.\n\n## Attributes\n- To use 220Ω resistor, set the property name \"value\" to \"220 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Motion counter that detects movement with an MPU6050 gyroscope and displays the count on a 1-digit 7-segment display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": -63.38,\n            \"left\": 271.12,\n            \"attrs\": {\n                \"rotationY\": \"0\"\n            }\n        },\n        {\n            \"type\": \"wokwi-7segment\",\n            \"id\": \"7-segment display1\",\n            \"top\": -158.22,\n            \"left\": 158.68,\n            \"attrs\": {\n                \"common\": \"cathode\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -63.25,\n            \"left\": 115.2,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor2\",\n            \"top\": -72.85,\n            \"left\": 105.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor3\",\n            \"top\": -72.85,\n            \"left\": 201.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor4\",\n            \"top\": -63.25,\n            \"left\": 192,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor5\",\n            \"top\": -178.45,\n            \"left\": 105.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor6\",\n            \"top\": -188.05,\n            \"left\": 115.2,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor7\",\n            \"top\": -178.45,\n            \"left\": 201.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor8\",\n            \"top\": -188.05,\n            \"left\": 192,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v-57.6\",\n                \"h-95.92\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v-67.2\",\n                \"h-76.72\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-76.8\",\n                \"h19.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:E\",\n            \"resistor2:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"7-segment display1:D\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:C\",\n            \"resistor4:1\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor3:1\",\n            \"7-segment display1:DP\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:G\",\n            \"resistor5:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:F\",\n            \"resistor6:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor8:1\",\n            \"7-segment display1:A\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:B\",\n            \"resistor7:1\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor8:2\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor7:2\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor4:2\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:1\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"v48\",\n                \"h96\"\n            ]\n        ],\n        [\n            \"resistor2:1\",\n            \"arduino uno1:6\",\n            \"green\",\n            [\n                \"v48\",\n                \"h96\"\n            ]\n        ],\n        [\n            \"resistor6:1\",\n            \"arduino uno1:7\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor5:1\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:COM.1\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed representation choice for the single decimal digit: retain the logical total count in the model and display its decimal ones digit (total modulo10). Crossing9 must not stop or reset the logical total. This resolves unspecified visual overflow; it does not change the required motion threshold or rearming condition.",
+    "effective_requirement": "# Exercise Counter\n\n## Project Description\nThis is a motion counter that detects movement with an MPU6050 gyroscope and displays the count on a 1-digit 7-segment display, made with arduino uno.\n\n## Hardware Components\n- Arduino Uno\n- 7-segment display\n- 220Ω resistor * 7\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nA 7-segment display and a mpu6050 sensor is connected to arduino uno. Pin A to G is connected to arduino pin 2 to 8 through 220Ω resistor, respectively. Common pin of 7-segment is connected to gnd2. For mpu6050 sensor, VCC and GND pin is connected to arduino 5v and gnd2 pin. SCL pin and SDA pin is connected to arduino pin A5 and A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set pins for 7-segments as OUTPUT\n2. Check the connection of mpu6050\n3. Display number 0 on the 7-segment display\n4. Continuously read the Y rotation value of mpu6050\n5. The count increases when the Y-axis rotation value exceeds 15000, and it does not increase again until the absolute value drops below 2000\n6. Continuously display the count on the 7-segment display\n\n## Success Criteria\nThe test is successful when:\n1. The count increases only when the absolute Y-axis rotation value rises above 15000 after previously dropping below 2000.\n2. The current count is correctly displayed on the 7-segment display.\n\n## Notes for Implementation\n- Use MPU6050.h, Wire.h libraries.\n- MPU6050 has I2C interface.\n\n## Attributes\n- To use 220Ω resistor, set the property name \"value\" to \"220 ohm\".\nGiven circuit (must preserve wiring):\n{\"version\": 1.0, \"author\": \"Blind Author\", \"description\": \"Motion counter that detects movement with an MPU6050 gyroscope and displays the count on a 1-digit 7-segment display\", \"parts\": [{\"type\": \"wokwi-arduino-uno\", \"id\": \"arduino uno1\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-mpu6050\", \"id\": \"mpu6050 6-axis accel & gyro sensor1\", \"top\": -63.38, \"left\": 271.12, \"attrs\": {\"rotationY\": \"0\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"7-segment display1\", \"top\": -158.22, \"left\": 158.68, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor1\", \"top\": -63.25, \"left\": 115.2, \"attrs\": {\"value\": \"220 ohm\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor2\", \"top\": -72.85, \"left\": 105.6, \"attrs\": {\"value\": \"220 ohm\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor3\", \"top\": -72.85, \"left\": 201.6, \"attrs\": {\"value\": \"220 ohm\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor4\", \"top\": -63.25, \"left\": 192, \"attrs\": {\"value\": \"220 ohm\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor5\", \"top\": -178.45, \"left\": 105.6, \"attrs\": {\"value\": \"220 ohm\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor6\", \"top\": -188.05, \"left\": 115.2, \"attrs\": {\"value\": \"220 ohm\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor7\", \"top\": -178.45, \"left\": 201.6, \"attrs\": {\"value\": \"220 ohm\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor8\", \"top\": -188.05, \"left\": 192, \"attrs\": {\"value\": \"220 ohm\"}}], \"connections\": [[\"mpu6050 6-axis accel & gyro sensor1:VCC\", \"arduino uno1:5V\", \"red\", [\"v-57.6\", \"h-95.92\"]], [\"mpu6050 6-axis accel & gyro sensor1:GND\", \"arduino uno1:GND.2\", \"black\", [\"v-67.2\", \"h-76.72\"]], [\"mpu6050 6-axis accel & gyro sensor1:SCL\", \"arduino uno1:A5\", \"green\", [\"v-76.8\", \"h19.28\"]], [\"mpu6050 6-axis accel & gyro sensor1:SDA\", \"arduino uno1:A4\", \"green\", [\"v0\"]], [\"7-segment display1:E\", \"resistor2:2\", \"green\", [\"v0\"]], [\"resistor1:2\", \"7-segment display1:D\", \"green\", [\"v0\"]], [\"7-segment display1:C\", \"resistor4:1\", \"green\", [\"v0\"]], [\"resistor3:1\", \"7-segment display1:DP\", \"green\", [\"v0\"]], [\"7-segment display1:G\", \"resistor5:2\", \"green\", [\"v0\"]], [\"7-segment display1:F\", \"resistor6:2\", \"green\", [\"v0\"]], [\"resistor8:1\", \"7-segment display1:A\", \"green\", [\"v0\"]], [\"7-segment display1:B\", \"resistor7:1\", \"green\", [\"v0\"]], [\"resistor8:2\", \"arduino uno1:2\", \"green\", [\"v0\"]], [\"resistor7:2\", \"arduino uno1:3\", \"green\", [\"v0\"]], [\"resistor4:2\", \"arduino uno1:4\", \"green\", [\"v0\"]], [\"resistor1:1\", \"arduino uno1:5\", \"green\", [\"v48\", \"h96\"]], [\"resistor2:1\", \"arduino uno1:6\", \"green\", [\"v48\", \"h96\"]], [\"resistor6:1\", \"arduino uno1:7\", \"green\", [\"v0\"]], [\"resistor5:1\", \"arduino uno1:8\", \"green\", [\"v0\"]], [\"7-segment display1:COM.1\", \"arduino uno1:GND.2\", \"green\", [\"h0\"]]], \"dependencies\": {}}\nDisclosed representation choice for the single decimal digit: retain the logical total count in the model and display its decimal ones digit (total modulo10). Crossing9 must not stop or reset the logical total. This resolves unspecified visual overflow; it does not change the required motion threshold or rearming condition.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "device": "resistor1",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      },
+      {
+        "device": "resistor2",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      },
+      {
+        "device": "resistor3",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      },
+      {
+        "device": "resistor4",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      },
+      {
+        "device": "resistor5",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      },
+      {
+        "device": "resistor6",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      },
+      {
+        "device": "resistor7",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      },
+      {
+        "device": "resistor8",
+        "terminal": "value",
+        "original": "220",
+        "resolved": "220 ohm",
+        "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+      }
+    ],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Motion counter that detects movement with an MPU6050 gyroscope and displays the count on a 1-digit 7-segment display",
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-mpu6050",
+            "id": "mpu6050 6-axis accel & gyro sensor1",
+            "top": -63.38,
+            "left": 271.12,
+            "attrs": {
+              "rotationY": "0"
+            }
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "7-segment display1",
+            "top": -158.22,
+            "left": 158.68,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor1",
+            "top": -63.25,
+            "left": 115.2,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor2",
+            "top": -72.85,
+            "left": 105.6,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor3",
+            "top": -72.85,
+            "left": 201.6,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor4",
+            "top": -63.25,
+            "left": 192,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor5",
+            "top": -178.45,
+            "left": 105.6,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor6",
+            "top": -188.05,
+            "left": 115.2,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor7",
+            "top": -178.45,
+            "left": 201.6,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor8",
+            "top": -188.05,
+            "left": 192,
+            "attrs": {
+              "value": "220 ohm"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mpu6050 6-axis accel & gyro sensor1:VCC",
+            "arduino uno1:5V",
+            "red",
+            [
+              "v-57.6",
+              "h-95.92"
+            ]
+          ],
+          [
+            "mpu6050 6-axis accel & gyro sensor1:GND",
+            "arduino uno1:GND.2",
+            "black",
+            [
+              "v-67.2",
+              "h-76.72"
+            ]
+          ],
+          [
+            "mpu6050 6-axis accel & gyro sensor1:SCL",
+            "arduino uno1:A5",
+            "green",
+            [
+              "v-76.8",
+              "h19.28"
+            ]
+          ],
+          [
+            "mpu6050 6-axis accel & gyro sensor1:SDA",
+            "arduino uno1:A4",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "7-segment display1:E",
+            "resistor2:2",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor1:2",
+            "7-segment display1:D",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "7-segment display1:C",
+            "resistor4:1",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor3:1",
+            "7-segment display1:DP",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "7-segment display1:G",
+            "resistor5:2",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "7-segment display1:F",
+            "resistor6:2",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor8:1",
+            "7-segment display1:A",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "7-segment display1:B",
+            "resistor7:1",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor8:2",
+            "arduino uno1:2",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor7:2",
+            "arduino uno1:3",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor4:2",
+            "arduino uno1:4",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor1:1",
+            "arduino uno1:5",
+            "green",
+            [
+              "v48",
+              "h96"
+            ]
+          ],
+          [
+            "resistor2:1",
+            "arduino uno1:6",
+            "green",
+            [
+              "v48",
+              "h96"
+            ]
+          ],
+          [
+            "resistor6:1",
+            "arduino uno1:7",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor5:1",
+            "arduino uno1:8",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "7-segment display1:COM.1",
+            "arduino uno1:GND.2",
+            "green",
+            [
+              "h0"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# Exercise Counter\n\n## Project Description\nThis is a motion counter that detects movement with an MPU6050 gyroscope and displays the count on a 1-digit 7-segment display, made with arduino uno.\n\n## Hardware Components\n- Arduino Uno\n- 7-segment display\n- 220Ω resistor * 7\n- MPU6050 6-axis Accel & Gyro Sensor\n\n## Circuit Description\nA 7-segment display and a mpu6050 sensor is connected to arduino uno. Pin A to G is connected to arduino pin 2 to 8 through 220Ω resistor, respectively. Common pin of 7-segment is connected to gnd2. For mpu6050 sensor, VCC and GND pin is connected to arduino 5v and gnd2 pin. SCL pin and SDA pin is connected to arduino pin A5 and A4.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set pins for 7-segments as OUTPUT\n2. Check the connection of mpu6050\n3. Display number 0 on the 7-segment display\n4. Continuously read the Y rotation value of mpu6050\n5. The count increases when the Y-axis rotation value exceeds 15000, and it does not increase again until the absolute value drops below 2000\n6. Continuously display the count on the 7-segment display\n\n## Success Criteria\nThe test is successful when:\n1. The count increases only when the absolute Y-axis rotation value rises above 15000 after previously dropping below 2000.\n2. The current count is correctly displayed on the 7-segment display.\n\n## Notes for Implementation\n- Use MPU6050.h, Wire.h libraries.\n- MPU6050 has I2C interface.\n\n## Attributes\n- To use 220Ω resistor, set the property name \"value\" to \"220 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Motion counter that detects movement with an MPU6050 gyroscope and displays the count on a 1-digit 7-segment display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-mpu6050\",\n            \"id\": \"mpu6050 6-axis accel & gyro sensor1\",\n            \"top\": -63.38,\n            \"left\": 271.12,\n            \"attrs\": {\n                \"rotationY\": \"0\"\n            }\n        },\n        {\n            \"type\": \"wokwi-7segment\",\n            \"id\": \"7-segment display1\",\n            \"top\": -158.22,\n            \"left\": 158.68,\n            \"attrs\": {\n                \"common\": \"cathode\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -63.25,\n            \"left\": 115.2,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor2\",\n            \"top\": -72.85,\n            \"left\": 105.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor3\",\n            \"top\": -72.85,\n            \"left\": 201.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor4\",\n            \"top\": -63.25,\n            \"left\": 192,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor5\",\n            \"top\": -178.45,\n            \"left\": 105.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor6\",\n            \"top\": -188.05,\n            \"left\": 115.2,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor7\",\n            \"top\": -178.45,\n            \"left\": 201.6,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor8\",\n            \"top\": -188.05,\n            \"left\": 192,\n            \"attrs\": {\n                \"value\": \"220\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v-57.6\",\n                \"h-95.92\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v-67.2\",\n                \"h-76.72\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"v-76.8\",\n                \"h19.28\"\n            ]\n        ],\n        [\n            \"mpu6050 6-axis accel & gyro sensor1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:E\",\n            \"resistor2:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"7-segment display1:D\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:C\",\n            \"resistor4:1\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor3:1\",\n            \"7-segment display1:DP\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:G\",\n            \"resistor5:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:F\",\n            \"resistor6:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor8:1\",\n            \"7-segment display1:A\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:B\",\n            \"resistor7:1\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor8:2\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor7:2\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor4:2\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:1\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"v48\",\n                \"h96\"\n            ]\n        ],\n        [\n            \"resistor2:1\",\n            \"arduino uno1:6\",\n            \"green\",\n            [\n                \"v48\",\n                \"h96\"\n            ]\n        ],\n        [\n            \"resistor6:1\",\n            \"arduino uno1:7\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor5:1\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:COM.1\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed representation choice for the single decimal digit: retain the logical total count in the model and display its decimal ones digit (total modulo10). Crossing9 must not stop or reset the logical total. This resolves unspecified visual overflow; it does not change the required motion threshold or rearming condition.",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

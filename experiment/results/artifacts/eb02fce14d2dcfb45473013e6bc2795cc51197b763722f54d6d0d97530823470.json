@@ -1,0 +1,279 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Arduino Uno wiring preserved: DHT22 VCC->5V, GND->GND.2, SDA/data->D2.",
+    "DHT acquisition publishes coherent temperature/humidity with validity; on invalid reads, previous values are retained and validity is set false (hold_last_valid).",
+    "Prose mentions printing fixed text ('Temperature is below the threshold' / 'Temperature is above the threshold'); this proposal reports a typed Boolean comparison result instead, with the exact fixed-message printing assumed to be handled by the model using the above_threshold value.",
+    "Control period is 10 ms scheduling granularity; DHT acquisition is handled by the runtime/catalog with sample period constraints managed in the SysML model."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "DHT22 temperature reading",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D2\", \"sensor\": \"DHT22\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D2",
+        "sensor": "DHT22"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "DHT22 humidity reading",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D2\", \"sensor\": \"DHT22\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D2",
+        "sensor": "DHT22"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT22 read validity",
+      "sample_period_ms": 2000,
+      "device": "dht_valid",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D2\", \"sensor\": \"DHT22\"}",
+      "binding": {
+        "kind": "dht_valid",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D2",
+        "sensor": "DHT22"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Optional received control command; used only if valid. Expected to support float threshold or compare-mode control in the model.",
+      "sample_period_ms": 10,
+      "device": "serial_command_input",
+      "hardware": "{\"baud\": 9600, \"commands\": {\"OFF\": 2, \"ON\": 1}, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_command_input\"}",
+      "binding": {
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600,
+        "commands": {
+          "ON": 1,
+          "OFF": 2
+        }
+      }
+    },
+    {
+      "name": "io_3_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 10,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_3\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_3"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report threshold comparison result when temperature is above/below threshold",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "true when temperature is above 30.0, else false",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"above_threshold\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "above_threshold"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Temperature Sensor\n\n## Project Description\nThis is a simple Arduino project that reads temperature sensor value and check if it is above the threshold.\n\n## Hardware Components\n- Arduino Uno\n- DHT22 sensor\n\n## Circuit Description\nThe DHT22 sensor is connected to an Arduino Uno. The VCC pin is connected to the 5V pin on the Arduino, and the GND pin is connected to the GND2 pin. The data pin is connected to digital pin 2 on the Arduino.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare the threshold value, which is 30.0\n2. Initialize serial communication\n3. Continuously read the DHT sensor's temperature value\n4. Compare the temperature sensor value with the threshold, and print one of these: 'Temperature is below the threshold', 'Temperature is above the threshold'\n\n## Success Criteria\nThe test is successful when:\n1. The correct compare result is printed to the serial monitor.\n\n## Notes for Implementation\n- Serial input is always a float value.\n- Threshold is 30.0.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read temperature sensor value\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": -201.3,\n            \"left\": 100.2,\n            \"attrs\": {\n                \"humidity\": \"64.5\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v48\",\n                \"h-134.4\",\n                \"v259.2\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v48\",\n                \"h144\",\n                \"v268.8\",\n                \"h19.2\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v76.8\",\n                \"h115.3\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "effective_requirement": "# Temperature Sensor\n\n## Project Description\nThis is a simple Arduino project that reads temperature sensor value and check if it is above the threshold.\n\n## Hardware Components\n- Arduino Uno\n- DHT22 sensor\n\n## Circuit Description\nThe DHT22 sensor is connected to an Arduino Uno. The VCC pin is connected to the 5V pin on the Arduino, and the GND pin is connected to the GND2 pin. The data pin is connected to digital pin 2 on the Arduino.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare the threshold value, which is 30.0\n2. Initialize serial communication\n3. Continuously read the DHT sensor's temperature value\n4. Compare the temperature sensor value with the threshold, and print one of these: 'Temperature is below the threshold', 'Temperature is above the threshold'\n\n## Success Criteria\nThe test is successful when:\n1. The correct compare result is printed to the serial monitor.\n\n## Notes for Implementation\n- Serial input is always a float value.\n- Threshold is 30.0.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read temperature sensor value\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": -201.3,\n            \"left\": 100.2,\n            \"attrs\": {\n                \"humidity\": \"64.5\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v48\",\n                \"h-134.4\",\n                \"v259.2\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v48\",\n                \"h144\",\n                \"v268.8\",\n                \"h19.2\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v76.8\",\n                \"h115.3\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Read temperature sensor value",
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-dht22",
+            "id": "dht22 sensor1",
+            "top": -201.3,
+            "left": 100.2,
+            "attrs": {
+              "humidity": "64.5"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "dht22 sensor1:VCC",
+            "arduino uno1:5V",
+            "red",
+            [
+              "v48",
+              "h-134.4",
+              "v259.2",
+              "h182.4"
+            ]
+          ],
+          [
+            "dht22 sensor1:GND",
+            "arduino uno1:GND.2",
+            "black",
+            [
+              "v48",
+              "h144",
+              "v268.8",
+              "h19.2"
+            ]
+          ],
+          [
+            "dht22 sensor1:SDA",
+            "arduino uno1:2",
+            "green",
+            [
+              "v76.8",
+              "h115.3"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# Temperature Sensor\n\n## Project Description\nThis is a simple Arduino project that reads temperature sensor value and check if it is above the threshold.\n\n## Hardware Components\n- Arduino Uno\n- DHT22 sensor\n\n## Circuit Description\nThe DHT22 sensor is connected to an Arduino Uno. The VCC pin is connected to the 5V pin on the Arduino, and the GND pin is connected to the GND2 pin. The data pin is connected to digital pin 2 on the Arduino.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare the threshold value, which is 30.0\n2. Initialize serial communication\n3. Continuously read the DHT sensor's temperature value\n4. Compare the temperature sensor value with the threshold, and print one of these: 'Temperature is below the threshold', 'Temperature is above the threshold'\n\n## Success Criteria\nThe test is successful when:\n1. The correct compare result is printed to the serial monitor.\n\n## Notes for Implementation\n- Serial input is always a float value.\n- Threshold is 30.0.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read temperature sensor value\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": -201.3,\n            \"left\": 100.2,\n            \"attrs\": {\n                \"humidity\": \"64.5\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v48\",\n                \"h-134.4\",\n                \"v259.2\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v48\",\n                \"h144\",\n                \"v268.8\",\n                \"h19.2\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v76.8\",\n                \"h115.3\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_3_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ],
+    "serial_inputs": [
+      {
+        "id": "io_3",
+        "value_port": "io_3",
+        "valid_port": "io_3_valid",
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600,
+        "commands": {
+          "ON": 1,
+          "OFF": 2
+        }
+      }
+    ]
+  }
+}

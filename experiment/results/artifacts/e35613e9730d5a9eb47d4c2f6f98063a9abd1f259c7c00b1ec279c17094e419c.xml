@@ -1,0 +1,66 @@
+<Root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.example.org/IRMetadata">
+  <Config>
+    <IterationCount Value="1" />
+    <MainInitFunction Name="ProgramPage1_Init" />
+    <MainExecFunction Name="ProgramPage1" />
+    <MainCompositeState Name="ProgramPage1_state" />
+  </Config>
+  <File Name="ProgramPage1">
+    <Struct Name="ProgramPage1_state" />
+    <GlobalVariable Name="ProgramPage1_instance" Type="ProgramPage1_state" />
+    <Function Name="ProgramPage1_Init" Type="FunctionInit" ReturnType="void">
+      <Ref Actor="CompositeActor" Path="ProgramPage1" />
+      <Input Name="self" Type="ProgramPage1_state" IsAddress="1" />
+      <Schedule>
+        <Calculate Name="ProgramPage1_reset">
+          <Ref Actor="CompositeActor" Path="ProgramPage1.reset" />
+          <Expression Expression="sysml_state_countSeconds = 0" />
+          <Expression Expression="sysml_state_accumulatedMs = 0" />
+          <Expression Expression="sysml_state_previousPressed = false" />
+        </Calculate>
+      </Schedule>
+    </Function>
+    <GlobalVariable Name="sysml_state_countSeconds" Type="int" DefaultValue="0" />
+    <GlobalVariable Name="sysml_state_accumulatedMs" Type="int" DefaultValue="0" />
+    <GlobalVariable Name="sysml_state_previousPressed" Type="bool" DefaultValue="false" />
+    <Function Name="ProgramPage1" Type="FunctionExec" ReturnType="void">
+      <Ref Actor="CompositeActor" Path="ProgramPage1" />
+      <Input Name="io_0" Type="bool" />
+      <Input Name="elapsedMilliseconds" Type="int" />
+      <Output Name="io_1" Type="int" />
+      <Schedule>
+        <Calculate Name="ProgramPage1_body">
+          <Ref Actor="CompositeActor" Path="ProgramPage1.body" />
+          <Input Name="io_0" Type="bool" Source="io_0" />
+          <Input Name="elapsedMilliseconds" Type="int" Source="elapsedMilliseconds" />
+          <Output Name="io_1" Type="int" />
+          <LocalVariable Name="sysml_lazy_0" Type="bool" />
+          <LocalVariable Name="sysml_lazy_1" Type="bool" />
+          <Expression Expression="sysml_lazy_0 = io_0" />
+          <If Condition="sysml_lazy_0">
+            <Expression Expression="sysml_lazy_0 = !sysml_state_previousPressed" />
+          </If>
+          <If Condition="sysml_lazy_0">
+            <Expression Expression="sysml_state_countSeconds = 0" />
+            <Expression Expression="sysml_state_accumulatedMs = 0" />
+          </If>
+          <Expression Expression="sysml_lazy_1 = io_0" />
+          <If Condition="sysml_lazy_1">
+            <Expression Expression="sysml_lazy_1 = !sysml_state_previousPressed" />
+          </If>
+          <If Condition="!sysml_lazy_1">
+            <Expression Expression="sysml_state_accumulatedMs = (sysml_state_accumulatedMs + elapsedMilliseconds)" />
+            <If Condition="(sysml_state_accumulatedMs &gt;= 1000)">
+              <Expression Expression="sysml_state_accumulatedMs = (sysml_state_accumulatedMs - 1000)" />
+              <Expression Expression="sysml_state_countSeconds = (sysml_state_countSeconds + 1)" />
+            </If>
+          </If>
+          <Expression Expression="sysml_state_previousPressed = io_0" />
+          <LocalVariable Name="sysml_value_0" Type="int" />
+          <Expression Expression="sysml_value_0 = sysml_state_countSeconds" />
+          <Expression Expression="*io_1 = sysml_value_0" />
+        </Calculate>
+      </Schedule>
+    </Function>
+  </File>
+</Root>

@@ -1,0 +1,155 @@
+[
+  {
+    "name": "baseline",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests the specified active-LOW button mapping to 90 and 180 degrees across startup, repeated transitions, and sustained holds, with serial angle reports in each state. Removes the two-reports-per-short-window constraint and short transition deadlines. Observations instead use long stable-input windows and late servo samples. These remain finite-suite observation limits, not requirement-derived timing guarantees: the requirement supplies neither a response deadline nor a reporting period. Baud-rate initialization and use of the Servo library cannot be independently verified by the available check API.",
+      "assumptions": [
+        "The supplied wiring overrides bench defaults: pin 3 is externally pulled HIGH and connected to GND by a press; released is HIGH and pressed is LOW.",
+        "The circuit specifies a 1000-ohm resistor while the prose specifies 10kΩ. The supplied circuit is preserved; this discrepancy does not change the digital stimulus polarity.",
+        "No button polling interval, startup deadline, serial reporting period, or serial label format is specified. Each state is held for 20 seconds; late samples and broad reporting windows are practical observation bounds rather than additional timing requirements.",
+        "Serial checks require only one matching numeric angle report per broad stable-state window, without prescribing labels or an exact reporting rate.",
+        "Servo observations represent commanded angles, not physical shaft dynamics. Baud rate and library identity are outside the available independent checks."
+      ],
+      "horizon_ms": 100000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 3,
+          "value": 1
+        },
+        {
+          "at_ms": 20000,
+          "kind": "digital",
+          "pin": 3,
+          "value": 0
+        },
+        {
+          "at_ms": 40000,
+          "kind": "digital",
+          "pin": 3,
+          "value": 1
+        },
+        {
+          "at_ms": 60000,
+          "kind": "digital",
+          "pin": 3,
+          "value": 0
+        },
+        {
+          "at_ms": 80000,
+          "kind": "digital",
+          "pin": 3,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pin_mode",
+          "id": "external_pullup_input",
+          "requirement_quote": "Set button pin mode as INPUT",
+          "pin": 3,
+          "expected": 0
+        },
+        {
+          "kind": "servo",
+          "id": "startup_released",
+          "requirement_quote": "to 90 degrees when it is not",
+          "pin": 9,
+          "at_ms": 19000,
+          "expected": 90,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "first_press",
+          "requirement_quote": "set the servo motor to 180 degrees when the button is pressed",
+          "pin": 9,
+          "at_ms": 39000,
+          "expected": 180,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "first_release",
+          "requirement_quote": "to 90 degrees when it is not",
+          "pin": 9,
+          "at_ms": 59000,
+          "expected": 90,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "repeated_press",
+          "requirement_quote": "set the servo motor to 180 degrees when the button is pressed",
+          "pin": 9,
+          "at_ms": 79000,
+          "expected": 180,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "final_release",
+          "requirement_quote": "to 90 degrees when it is not",
+          "pin": 9,
+          "at_ms": 99000,
+          "expected": 90,
+          "tolerance": 2
+        },
+        {
+          "kind": "serial",
+          "id": "startup_angle_report",
+          "requirement_quote": "Continuously print the angle of the servo motor to serial monitor",
+          "from_ms": 5000,
+          "to_ms": 19500,
+          "regex": "(^|[^0-9])90([^0-9]|$)",
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "first_pressed_angle_report",
+          "requirement_quote": "Continuously print the angle of the servo motor to serial monitor",
+          "from_ms": 25000,
+          "to_ms": 39500,
+          "regex": "(^|[^0-9])180([^0-9]|$)",
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "first_released_angle_report",
+          "requirement_quote": "Continuously print the angle of the servo motor to serial monitor",
+          "from_ms": 45000,
+          "to_ms": 59500,
+          "regex": "(^|[^0-9])90([^0-9]|$)",
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "repeated_pressed_angle_report",
+          "requirement_quote": "Continuously print the angle of the servo motor to serial monitor",
+          "from_ms": 65000,
+          "to_ms": 79500,
+          "regex": "(^|[^0-9])180([^0-9]|$)",
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "final_released_angle_report",
+          "requirement_quote": "Continuously print the angle of the servo motor to serial monitor",
+          "from_ms": 85000,
+          "to_ms": 99500,
+          "regex": "(^|[^0-9])90([^0-9]|$)",
+          "min_count": 1
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <Servo.h>\n\nServo motor;\nunsigned long lastReport = 0;\nbool firstReport = true;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(3, INPUT);\n  motor.attach(9);\n  motor.write(digitalRead(3) == LOW ? 180 : 90);\n}\n\nvoid loop() {\n  int angle = digitalRead(3) == LOW ? 180 : 90;\n  motor.write(angle);\n  unsigned long now = millis();\n  if (firstReport || now - lastReport >= 100) {\n    firstReport = false;\n    lastReport = now;\n    Serial.println(angle);\n  }\n}\n"
+    },
+    "engine": "reviewed_assertions"
+  }
+]

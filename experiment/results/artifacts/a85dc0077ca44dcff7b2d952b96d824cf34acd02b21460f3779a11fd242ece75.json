@@ -1,0 +1,143 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"displayRoomIndex\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"displayModeIndex\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"reportAccumMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"prevButton1\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prevButton2\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"reportAccumMs\",\n        \"value\": \"reportAccumMs + io_13\"\n      },\n      {\n        \"if\": \"io_8 and (not prevButton1)\",\n        \"then\": [\n          {\n            \"assign\": \"displayRoomIndex\",\n            \"value\": \"1 - displayRoomIndex\"\n          }\n        ]\n      },\n      {\n        \"if\": \"io_9 and (not prevButton2)\",\n        \"then\": [\n          {\n            \"assign\": \"displayModeIndex\",\n            \"value\": \"1 - displayModeIndex\"\n          }\n        ]\n      },\n      {\n        \"if\": \"reportAccumMs >= 5000\",\n        \"then\": [\n          {\n            \"assign\": \"reportAccumMs\",\n            \"value\": \"reportAccumMs - 5000\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevButton1\",\n        \"value\": \"io_8\"\n      },\n      {\n        \"assign\": \"prevButton2\",\n        \"value\": \"io_9\"\n      }\n    ],\n    \"outputs\": {\n      \"io_10\": {\n        \"if\": \"io_2 and io_6 and (io_0 >= 30.0)\",\n        \"then\": \"(io_0 >= 30.0) and (io_6 >= 600.0)\",\n        \"else\": \"false\"\n      },\n      \"io_11\": {\n        \"if\": \"io_5 and io_7 and (io_3 >= 30.0)\",\n        \"then\": \"(io_3 >= 30.0) and (io_7 >= 600.0)\",\n        \"else\": \"false\"\n      },\n      \"io_12\": {\n        \"if\": \"displayRoomIndex == 0\",\n        \"then\": {\n          \"if\": \"displayModeIndex == 0\",\n          \"then\": {\n            \"if\": \"io_2\",\n            \"then\": \"RealFunctions::floor(io_0)\",\n            \"else\": \"0\"\n          },\n          \"else\": {\n            \"if\": \"io_2\",\n            \"then\": \"RealFunctions::floor(io_1)\",\n            \"else\": \"0\"\n          }\n        },\n        \"else\": {\n          \"if\": \"displayModeIndex == 0\",\n          \"then\": {\n            \"if\": \"io_5\",\n            \"then\": \"RealFunctions::floor(io_3)\",\n            \"else\": \"0\"\n          },\n          \"else\": {\n            \"if\": \"io_5\",\n            \"then\": \"RealFunctions::floor(io_4)\",\n            \"else\": \"0\"\n          }\n        }\n      },\n      \"serial_0_trigger\": \"reportAccumMs < 5000 and reportAccumMs + io_13 >= 5000\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_2\",\n        \"then\": \"io_0\",\n        \"else\": \"0.0\"\n      },\n      \"serial_0_value_1\": {\n        \"if\": \"io_2\",\n        \"then\": \"io_1\",\n        \"else\": \"0.0\"\n      },\n      \"serial_0_value_2\": \"io_6\",\n      \"serial_0_value_3\": {\n        \"if\": \"io_5\",\n        \"then\": \"io_3\",\n        \"else\": \"0.0\"\n      },\n      \"serial_0_value_4\": {\n        \"if\": \"io_5\",\n        \"then\": \"io_4\",\n        \"else\": \"0.0\"\n      },\n      \"serial_0_value_5\": \"io_7\",\n      \"serial_1_trigger\": \"(io_2 and (io_0 >= 30.0) and (io_6 >= 600.0)) or (io_5 and (io_3 >= 30.0) and (io_7 >= 600.0))\",\n      \"serial_1_value_0\": {\n        \"if\": \"io_2\",\n        \"then\": \"(io_0 >= 30.0) and (io_6 >= 600.0)\",\n        \"else\": \"false\"\n      },\n      \"serial_1_value_1\": {\n        \"if\": \"io_5\",\n        \"then\": \"(io_3 >= 30.0) and (io_7 >= 600.0)\",\n        \"else\": \"false\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在 io_13 累积达到 5000ms 的过程中保持 io_0/io_1/io_2/io_3/io_4/io_5/io_6/io_7 为一组固定值，并保持按钮不按（io_8=false, io_9=false）。\",\n        \"oracle\": \"serial_0_trigger 在到达 5 秒触发的控制步为 true，且 serial_0_value_0..5 等于对应房间有效性条件下的客厅/卧室温度与湿度（若对应 io_2/io_5=false则为0.0）以及光照 ADC 原始值 io_6/io_7。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将客厅设置为温度与光照同时满足阈值条件：令 io_2=true, io_0>=30.0, io_6>=600.0；卧室设置为不满足：令 io_5=true, io_3<30.0 或 io_7<600.0。按钮保持不按，io_13 任意。\",\n        \"oracle\": \"io_10==true 且 io_11==false；serial_1_trigger==true；serial_1_value_0==true 且 serial_1_value_1==false。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 io_8 从 false 按下到 true 再回到 false（产生一次上升沿），保持 io_9=false。设置 io_2=true，io_0 与 io_1 为不同值。令 io_13 任意。\",\n        \"oracle\": \"displayRoomIndex 切换后，io_12 的数值来源从客厅切换到卧室对应的显示项（若卧室无效则为0），且只在按钮上升沿那一步发生切换。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 io_9 从 false 按下到 true 再回到 false（产生一次上升沿），保持 io_8=false。设置当前显示房间为有效（io_2=true 或 io_5=true），并设置温度与湿度为不同值。令 io_13 任意。\",\n        \"oracle\": \"displayModeIndex 切换后，io_12 的数值在同一房间内从温度取整（floor到i32范围）切换到湿度取整（或反之），且只在按钮上升沿那一步发生切换。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "SYSML_LOWERING",
+          "message": "Logical operators require Boolean operands.",
+          "line": 38,
+          "element": null,
+          "stage": "sysml_to_ir"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    in attribute io_6 : Real;\n    in attribute io_7 : Real;\n    in attribute io_8 : Boolean;\n    in attribute io_9 : Boolean;\n    in attribute io_13 : Integer;\n    attribute displayRoomIndex : Integer := 0;\n    attribute displayModeIndex : Integer := 0;\n    attribute reportAccumMs : Integer := 0;\n    attribute prevButton1 : Boolean := false;\n    attribute prevButton2 : Boolean := false;\n    perform action tick {\n      first start;\n      then assign reportAccumMs := reportAccumMs + io_13;\n      then if io_8 and (not prevButton1) {\n        first start;\n        then assign displayRoomIndex := 1 - displayRoomIndex;\n      }\n      then if io_9 and (not prevButton2) {\n        first start;\n        then assign displayModeIndex := 1 - displayModeIndex;\n      }\n      then if reportAccumMs >= 5000 {\n        first start;\n        then assign reportAccumMs := reportAccumMs - 5000;\n      }\n      then assign prevButton1 := io_8;\n      then assign prevButton2 := io_9;\n    }\n    out attribute io_10 : Boolean = (if io_2 and io_6 and (io_0 >= 30.0) ? (io_0 >= 30.0) and (io_6 >= 600.0) else false);\n    out attribute io_11 : Boolean = (if io_5 and io_7 and (io_3 >= 30.0) ? (io_3 >= 30.0) and (io_7 >= 600.0) else false);\n    out attribute io_12 : Integer = (if displayRoomIndex == 0 ? (if displayModeIndex == 0 ? (if io_2 ? RealFunctions::floor(io_0) else 0) else (if io_2 ? RealFunctions::floor(io_1) else 0)) else (if displayModeIndex == 0 ? (if io_5 ? RealFunctions::floor(io_3) else 0) else (if io_5 ? RealFunctions::floor(io_4) else 0)));\n    out attribute serial_0_trigger : Boolean = reportAccumMs < 5000 and reportAccumMs + io_13 >= 5000;\n    out attribute serial_0_value_0 : Real = (if io_2 ? io_0 else 0.0);\n    out attribute serial_0_value_1 : Real = (if io_2 ? io_1 else 0.0);\n    out attribute serial_0_value_2 : Real = io_6;\n    out attribute serial_0_value_3 : Real = (if io_5 ? io_3 else 0.0);\n    out attribute serial_0_value_4 : Real = (if io_5 ? io_4 else 0.0);\n    out attribute serial_0_value_5 : Real = io_7;\n    out attribute serial_1_trigger : Boolean = (io_2 and (io_0 >= 30.0) and (io_6 >= 600.0)) or (io_5 and (io_3 >= 30.0) and (io_7 >= 600.0));\n    out attribute serial_1_value_0 : Boolean = (if io_2 ? (io_0 >= 30.0) and (io_6 >= 600.0) else false);\n    out attribute serial_1_value_1 : Boolean = (if io_5 ? (io_3 >= 30.0) and (io_7 >= 600.0) else false);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": false,
+        "ir_to_il": null
+      },
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "SYSML_LOWERING",
+          "message": "Logical operators require Boolean operands.",
+          "line": 38,
+          "element": null,
+          "stage": "sysml_to_ir"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "SYSML_LOWERING",
+          "Logical operators require Boolean operands."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_to_ir"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"displayRoomIndex\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"displayModeIndex\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"reportAccumMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"prevButton1\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevButton2\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"reportAccumMs\",\n        \"value\": \"reportAccumMs + io_13\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_8\",\n            {\n              \"not\": \"prevButton1\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"displayRoomIndex\",\n            \"value\": \"1 - displayRoomIndex\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_9\",\n            {\n              \"not\": \"prevButton2\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"displayModeIndex\",\n            \"value\": \"1 - displayModeIndex\"\n          }\n        ]\n      },\n      {\n        \"if\": \"reportAccumMs >= 5000\",\n        \"then\": [\n          {\n            \"assign\": \"reportAccumMs\",\n            \"value\": \"reportAccumMs - 5000\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevButton1\",\n        \"value\": \"io_8\"\n      },\n      {\n        \"assign\": \"prevButton2\",\n        \"value\": \"io_9\"\n      }\n    ],\n    \"outputs\": {\n      \"io_10\": {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"and\": [\n                \"io_6 >= 600.0\",\n                \"io_0 >= 30.0\"\n              ]\n            }\n          ]\n        },\n        \"then\": {\n          \"and\": [\n            \"io_0 >= 30.0\",\n            \"io_6 >= 600.0\"\n          ]\n        },\n        \"else\": false\n      },\n      \"io_11\": {\n        \"if\": {\n          \"and\": [\n            \"io_5\",\n            {\n              \"and\": [\n                \"io_7 >= 600.0\",\n                \"io_3 >= 30.0\"\n              ]\n            }\n          ]\n        },\n        \"then\": {\n          \"and\": [\n            \"io_3 >= 30.0\",\n            \"io_7 >= 600.0\"\n          ]\n        },\n        \"else\": false\n      },\n      \"io_12\": {\n        \"if\": \"displayRoomIndex == 0\",\n        \"then\": {\n          \"if\": \"displayModeIndex == 0\",\n          \"then\": {\n            \"if\": \"io_2\",\n            \"then\": \"RealFunctions::floor(io_0)\",\n            \"else\": 0\n          },\n          \"else\": {\n            \"if\": \"io_2\",\n            \"then\": \"RealFunctions::floor(io_1)\",\n            \"else\": 0\n          }\n        },\n        \"else\": {\n          \"if\": \"displayModeIndex == 0\",\n          \"then\": {\n            \"if\": \"io_5\",\n            \"then\": \"RealFunctions::floor(io_3)\",\n            \"else\": 0\n          },\n          \"else\": {\n            \"if\": \"io_5\",\n            \"then\": \"RealFunctions::floor(io_4)\",\n            \"else\": 0\n          }\n        }\n      },\n      \"serial_0_trigger\": \"reportAccumMs < 5000 and reportAccumMs + io_13 >= 5000\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_2\",\n        \"then\": \"io_0\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_1\": {\n        \"if\": \"io_2\",\n        \"then\": \"io_1\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_2\": \"io_6\",\n      \"serial_0_value_3\": {\n        \"if\": \"io_5\",\n        \"then\": \"io_3\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_4\": {\n        \"if\": \"io_5\",\n        \"then\": \"io_4\",\n        \"else\": 0.0\n      },\n      \"serial_0_value_5\": \"io_7\",\n      \"serial_1_trigger\": {\n        \"or\": [\n          {\n            \"and\": [\n              \"io_2\",\n              \"io_0 >= 30.0\",\n              \"io_6 >= 600.0\"\n            ]\n          },\n          {\n            \"and\": [\n              \"io_5\",\n              \"io_3 >= 30.0\",\n              \"io_7 >= 600.0\"\n            ]\n          }\n        ]\n      },\n      \"serial_1_value_0\": {\n        \"if\": \"io_2\",\n        \"then\": {\n          \"and\": [\n            \"io_0 >= 30.0\",\n            \"io_6 >= 600.0\"\n          ]\n        },\n        \"else\": false\n      },\n      \"serial_1_value_1\": {\n        \"if\": \"io_5\",\n        \"then\": {\n          \"and\": [\n            \"io_3 >= 30.0\",\n            \"io_7 >= 600.0\"\n          ]\n        },\n        \"else\": false\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在 io_13 累积达到 5000ms 的过程中保持 io_0/io_1/io_2/io_3/io_4/io_5/io_6/io_7 为一组固定值，并保持按钮不按（io_8=false, io_9=false）。\",\n        \"oracle\": \"serial_0_trigger 在到达 5 秒触发的控制步为 true，且 serial_0_value_0..5 等于对应房间有效性条件下的客厅/卧室温度与湿度（若对应 io_2/io_5=false则为0.0）以及光照 ADC 原始值 io_6/io_7。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将客厅设置为温度与光照同时满足阈值条件：令 io_2=true, io_0>=30.0, io_6>=600.0；卧室设置为不满足：令 io_5=true, io_3<30.0 或 io_7<600.0。按钮保持不按，io_13 任意。\",\n        \"oracle\": \"io_10==true 且 io_11==false；serial_1_trigger==true；serial_1_value_0==true 且 serial_1_value_1==false。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 io_8 从 false 按下到 true 再回到 false（产生一次上升沿），保持 io_9=false。设置 io_2=true，io_0 与 io_1 为不同值。令 io_13 任意。\",\n        \"oracle\": \"displayRoomIndex 切换后，io_12 的数值来源从客厅切换到卧室对应的显示项（若卧室无效则为0），且只在按钮上升沿那一步发生切换。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"初始 io_9 从 false 按下到 true 再回到 false（产生一次上升沿），保持 io_8=false。设置当前显示房间为有效（io_2=true 或 io_5=true），并设置温度与湿度为不同值。令 io_13 任意。\",\n        \"oracle\": \"displayModeIndex 切换后，io_12 的数值在同一房间内从温度取整（floor到i32范围）切换到湿度取整（或反之），且只在按钮上升沿那一步发生切换。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    in attribute io_6 : Real;\n    in attribute io_7 : Real;\n    in attribute io_8 : Boolean;\n    in attribute io_9 : Boolean;\n    in attribute io_13 : Integer;\n    attribute displayRoomIndex : Integer := 0;\n    attribute displayModeIndex : Integer := 0;\n    attribute reportAccumMs : Integer := 0;\n    attribute prevButton1 : Boolean := false;\n    attribute prevButton2 : Boolean := false;\n    perform action tick {\n      first start;\n      then assign reportAccumMs := reportAccumMs + io_13;\n      then if ((io_8) and ((not prevButton1))) {\n        first start;\n        then assign displayRoomIndex := 1 - displayRoomIndex;\n      }\n      then if ((io_9) and ((not prevButton2))) {\n        first start;\n        then assign displayModeIndex := 1 - displayModeIndex;\n      }\n      then if reportAccumMs >= 5000 {\n        first start;\n        then assign reportAccumMs := reportAccumMs - 5000;\n      }\n      then assign prevButton1 := io_8;\n      then assign prevButton2 := io_9;\n    }\n    out attribute io_10 : Boolean = (if ((io_2) and (((io_6 >= 600.0) and (io_0 >= 30.0)))) ? ((io_0 >= 30.0) and (io_6 >= 600.0)) else false);\n    out attribute io_11 : Boolean = (if ((io_5) and (((io_7 >= 600.0) and (io_3 >= 30.0)))) ? ((io_3 >= 30.0) and (io_7 >= 600.0)) else false);\n    out attribute io_12 : Integer = (if displayRoomIndex == 0 ? (if displayModeIndex == 0 ? (if io_2 ? RealFunctions::floor(io_0) else 0) else (if io_2 ? RealFunctions::floor(io_1) else 0)) else (if displayModeIndex == 0 ? (if io_5 ? RealFunctions::floor(io_3) else 0) else (if io_5 ? RealFunctions::floor(io_4) else 0)));\n    out attribute serial_0_trigger : Boolean = reportAccumMs < 5000 and reportAccumMs + io_13 >= 5000;\n    out attribute serial_0_value_0 : Real = (if io_2 ? io_0 else 0.0);\n    out attribute serial_0_value_1 : Real = (if io_2 ? io_1 else 0.0);\n    out attribute serial_0_value_2 : Real = io_6;\n    out attribute serial_0_value_3 : Real = (if io_5 ? io_3 else 0.0);\n    out attribute serial_0_value_4 : Real = (if io_5 ? io_4 else 0.0);\n    out attribute serial_0_value_5 : Real = io_7;\n    out attribute serial_1_trigger : Boolean = ((((io_2) and (io_0 >= 30.0) and (io_6 >= 600.0))) or (((io_5) and (io_3 >= 30.0) and (io_7 >= 600.0))));\n    out attribute serial_1_value_0 : Boolean = (if io_2 ? ((io_0 >= 30.0) and (io_6 >= 600.0)) else false);\n    out attribute serial_1_value_1 : Boolean = (if io_5 ? ((io_3 >= 30.0) and (io_7 >= 600.0)) else false);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

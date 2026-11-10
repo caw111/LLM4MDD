@@ -1,0 +1,435 @@
+{
+  "contract_sha256": "041736b59355a37bc50319a6abc78f4b4cd74647d289ec1838d35e164fde3560",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S0 (channel select bit 0)\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S1 (channel select bit 1)\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D4\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S2 (channel select bit 2)\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D5\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S3 (channel select bit 3)\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer EN (enable)\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Photoresistor multiplexer output (channel light level ADC)\"\n    },\n    {\n      \"kind\": \"serial_integer_input\",\n      \"baud\": 9600,\n      \"initial\": 0,\n      \"meaning\": \"Optional: receive a channel index command (0..5) to select which photoresistor to read/report\",\n      \"min\": 0,\n      \"max\": 5\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Optional: report-gate for serial output (model may ignore if always-on reporting is preferred)\",\n      \"active_high\": true\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"When true, report the complete set of 6 photoresistor readings to Serial using the fixed line format\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"adc_count\",\n          \"initial\": 0,\n          \"meaning\": \"Multiplexed photoresistor ADC reading for the currently selected channel index\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Board is Arduino Uno with analog multiplexer 4067 wired: COM->A0, S0..S3->D2..D5, VCC->5V, GND and EN->GND.2.\",\n    \"Because EN is wired to GND.2, it is effectively always enabled; the circuit provides no separate MCU control line for EN. Any EN port request is therefore unsupported and must be removed or ignored by the model; however, the wiring-to-pin extraction shows EN tied to D2 (GND.2).\",\n    \"The project prose requires printing six labeled lines repeatedly (\\\"Sensor {channel}: {light value}\\\") after continuously reading channels 0..5. Serial text output requires fixed text; the exact required text includes a dynamic channel number and dynamic value, which cannot be represented by fixed serial_text_output. Therefore, numeric reporting with a model-formatted channel label is assumed, using serial_channels values and SysML to emit the required per-line format.\",\n    \"The serial input and report gating above are included as optional controls to allow channel selection; if the intent is strictly continuous reporting of all six channels, the model can ignore the serial_integer_input and always assert the trigger.\",\n    \"Analog input scaling is left as catalog default ADC counts (no calibration scale/offset provided). Conversion to lux/light is not requested in success criteria.\",\n    \"Control_period_ms is chosen as 5ms; the model can sample the multiplexer sequentially over multiple steps as needed.\"\n  ],\n  \"unsupported\": [\n    \"EN is physically wired to GND.2 (not to a distinct MCU pin). Creating a program-owned digital output for EN on D2 contradicts the given wiring role for D2 (S0). The EN control port request cannot be realized without changing wiring.\",\n    \"Required Serial output format includes dynamic text \\\"Sensor {channel}: {light value}\\\". Catalog serial_text_output supports fixed constant strings only; serial_channels only support typed numeric/Boolean values, not constructing dynamic per-channel labeled lines. The model must handle the exact string formatting using available numeric reports (not possible as fixed text).\"\n  ]\n}",
+      "error": "Unsupported hardware: [\"EN is physically wired to GND.2 (not to a distinct MCU pin). Creating a program-owned digital output for EN on D2 contradicts the given wiring role for D2 (S0). The EN control port request cannot be realized without changing wiring.\", \"Required Serial output format includes dynamic text \\\"Sensor {channel}: {light value}\\\". Catalog serial_text_output supports fixed constant strings only; serial_channels only support typed numeric/Boolean values, not constructing dynamic per-channel labeled lines. The model must handle the exact string formatting using available numeric reports (not possible as fixed text).\"]",
+      "no_progress": false,
+      "code": "HARDWARE_CAPABILITY",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S0 channel-select line\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S1 channel-select line\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D4\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S2 channel-select line\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D5\",\n      \"initial\": false,\n      \"meaning\": \"Analog multiplexer S3 channel-select line\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Multiplexer COM output (photoresistor channel light level)\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Report photoresistor sensor values to Serial Monitor continuously\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"adc_count\",\n          \"initial\": 0,\n          \"meaning\": \"Reported light value for current multiplexer channel index\",\n          \"label\": \"Sensor {channel}\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Board: arduino:avr:uno. Wiring preserved: multiplexer COM->A0, EN->GND.2 (no port created for EN/GND/5V rails), S0..S3 -> D2..D5.\",\n    \"To satisfy 'print each sensor value ... Sensor {channel}: {light value}', the model should iterate channel index 0..5 by driving S0..S3 and sampling A0 each step, then emit 6 formatted lines per reporting cycle under the single Serial trigger in serial_channels.\",\n    \"Only one physical analog input port (A0) exists in the circuit because all six photoresistors share the multiplexer COM; therefore a single analog_input request is used and the SysML model must manage the per-channel sampling schedule and output formatting.\",\n    \"No startup ADC baseline is specified in requirements; analog_input initial is set to 0 as the only legal numeric initial without inventing a first measurement.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Multiplexer with Photoresistor\n\n## Project Description\nThis is an arduino project that reads 6 photoresistor sensor value with 16 channel analog multiplexer.\n\n## Hardware Components\n- Arduino Uno\n- Photoresistor * 6\n- Analog Multiplexer\n\n## Circuit Description\nSix photoresistors are connected to an Arduino Uno through an analog multiplexer.\nThe AO pins of photoresistors 1 through 6 are connected to channels I0 to I5 of the multiplexer, respectively.\nThe VCC pins of the photoresistors are connected to the Arduino's 5V pin, and the GND pins are connected to gnd2.\nThe SIG pin of the multiplexer is connected to the Arduino's A0 pin and is used to read values.\nThe S0 to S3 pins of the multiplexer are connected to Arduino digital pins 2 to 5.\nThe EN and GND pins of the multiplexer are connected to gnd2, and the VCC pin is connected to the 5V pin.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set Arduino pins 2 to 5 as output pins.\n2. Initialize the Serial Monitor for communication.\n3. Continuously read the sensor values from each channel (0 to 5).\n4. Print each sensor value to the Serial Monitor in the format: \"Sensor {channel}: {light value}\" for example: \"Sensor 0: 544\"\n\n## Success Criteria\nThe test is successful when:\n1. The light value of each photoresistor (1 to 6) is printed to the Serial Monitor in the correct format.\n\n## Notes for Implementation\n- No other component is connected to I6~I15 pin of the anaolog multiplexer.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read 6 photoresistor value with analog multiplexer\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"board-cd74hc4067\",\n            \"id\": \"analog multiplexer1\",\n            \"top\": 24.45,\n            \"left\": -129.71,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor1\",\n            \"top\": -140.8,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"10\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor2\",\n            \"top\": -64,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"100\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor3\",\n            \"top\": 12.8,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"200\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor4\",\n            \"top\": 89.6,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"300\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor5\",\n            \"top\": 166.4,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"400\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor6\",\n            \"top\": 243.2,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"500\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor6:GND\",\n            \"black\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor5:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-76.8\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor4:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-153.6\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor3:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-230.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor2:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-307.2\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor1:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-384\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor6:VCC\",\n            \"red\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor5:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-86.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor4:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-153.6\",\n                \"h-38.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor3:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-230.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor2:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-307.2\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor1:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-384\"\n            ]\n        ],\n        [\n            \"photoresistor1:AO\",\n            \"analog multiplexer1:I0\",\n            \"green\",\n            [\n                \"h105.6\",\n                \"v268.1\"\n            ]\n        ],\n        [\n            \"photoresistor2:AO\",\n            \"analog multiplexer1:I1\",\n            \"green\",\n            [\n                \"h96\",\n                \"v181.7\"\n            ]\n        ],\n        [\n            \"photoresistor3:AO\",\n            \"analog multiplexer1:I2\",\n            \"green\",\n            [\n                \"h86.4\",\n                \"v95.3\"\n            ]\n        ],\n        [\n            \"photoresistor4:AO\",\n            \"analog multiplexer1:I3\",\n            \"green\",\n            [\n                \"h76.8\",\n                \"v8.9\"\n            ]\n        ],\n        [\n            \"photoresistor5:AO\",\n            \"analog multiplexer1:I4\",\n            \"green\",\n            [\n                \"h67.2\",\n                \"v-87.1\"\n            ]\n        ],\n        [\n            \"photoresistor6:AO\",\n            \"analog multiplexer1:I5\",\n            \"green\",\n            [\n                \"h57.6\",\n                \"v-163.9\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:COM\",\n            \"arduino uno1:A0\",\n            \"green\",\n            [\n                \"v0\",\n                \"h67.23\",\n                \"v144\",\n                \"h220.8\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h48.03\",\n                \"v134.4\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h19.23\",\n                \"v134.4\",\n                \"h230.4\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:EN\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"h19.23\",\n                \"v153.6\",\n                \"h230.4\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S0\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h57.63\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S1\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"h48.03\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S2\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"h38.43\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S3\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"h28.83\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "effective_requirement": "# Multiplexer with Photoresistor\n\n## Project Description\nThis is an arduino project that reads 6 photoresistor sensor value with 16 channel analog multiplexer.\n\n## Hardware Components\n- Arduino Uno\n- Photoresistor * 6\n- Analog Multiplexer\n\n## Circuit Description\nSix photoresistors are connected to an Arduino Uno through an analog multiplexer.\nThe AO pins of photoresistors 1 through 6 are connected to channels I0 to I5 of the multiplexer, respectively.\nThe VCC pins of the photoresistors are connected to the Arduino's 5V pin, and the GND pins are connected to gnd2.\nThe SIG pin of the multiplexer is connected to the Arduino's A0 pin and is used to read values.\nThe S0 to S3 pins of the multiplexer are connected to Arduino digital pins 2 to 5.\nThe EN and GND pins of the multiplexer are connected to gnd2, and the VCC pin is connected to the 5V pin.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set Arduino pins 2 to 5 as output pins.\n2. Initialize the Serial Monitor for communication.\n3. Continuously read the sensor values from each channel (0 to 5).\n4. Print each sensor value to the Serial Monitor in the format: \"Sensor {channel}: {light value}\" for example: \"Sensor 0: 544\"\n\n## Success Criteria\nThe test is successful when:\n1. The light value of each photoresistor (1 to 6) is printed to the Serial Monitor in the correct format.\n\n## Notes for Implementation\n- No other component is connected to I6~I15 pin of the anaolog multiplexer.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read 6 photoresistor value with analog multiplexer\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"board-cd74hc4067\",\n            \"id\": \"analog multiplexer1\",\n            \"top\": 24.45,\n            \"left\": -129.71,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor1\",\n            \"top\": -140.8,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"10\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor2\",\n            \"top\": -64,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"100\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor3\",\n            \"top\": 12.8,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"200\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor4\",\n            \"top\": 89.6,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"300\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor5\",\n            \"top\": 166.4,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"400\"\n            }\n        },\n        {\n            \"type\": \"wokwi-photoresistor-sensor\",\n            \"id\": \"photoresistor6\",\n            \"top\": 243.2,\n            \"left\": -431.2,\n            \"attrs\": {\n                \"lux\": \"500\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor6:GND\",\n            \"black\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor5:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-76.8\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor4:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-153.6\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor3:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-230.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor2:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-307.2\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.2\",\n            \"photoresistor1:GND\",\n            \"black\",\n            [\n                \"v77.3\",\n                \"h-409.5\",\n                \"v-384\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor6:VCC\",\n            \"red\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor5:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-86.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor4:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-153.6\",\n                \"h-38.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor3:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-230.4\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor2:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-307.2\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"photoresistor1:VCC\",\n            \"red\",\n            [\n                \"v67.7\",\n                \"h-390.4\",\n                \"v-384\"\n            ]\n        ],\n        [\n            \"photoresistor1:AO\",\n            \"analog multiplexer1:I0\",\n            \"green\",\n            [\n                \"h105.6\",\n                \"v268.1\"\n            ]\n        ],\n        [\n            \"photoresistor2:AO\",\n            \"analog multiplexer1:I1\",\n            \"green\",\n            [\n                \"h96\",\n                \"v181.7\"\n            ]\n        ],\n        [\n            \"photoresistor3:AO\",\n            \"analog multiplexer1:I2\",\n            \"green\",\n            [\n                \"h86.4\",\n                \"v95.3\"\n            ]\n        ],\n        [\n            \"photoresistor4:AO\",\n            \"analog multiplexer1:I3\",\n            \"green\",\n            [\n                \"h76.8\",\n                \"v8.9\"\n            ]\n        ],\n        [\n            \"photoresistor5:AO\",\n            \"analog multiplexer1:I4\",\n            \"green\",\n            [\n                \"h67.2\",\n                \"v-87.1\"\n            ]\n        ],\n        [\n            \"photoresistor6:AO\",\n            \"analog multiplexer1:I5\",\n            \"green\",\n            [\n                \"h57.6\",\n                \"v-163.9\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:COM\",\n            \"arduino uno1:A0\",\n            \"green\",\n            [\n                \"v0\",\n                \"h67.23\",\n                \"v144\",\n                \"h220.8\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h48.03\",\n                \"v134.4\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h19.23\",\n                \"v134.4\",\n                \"h230.4\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:EN\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"h19.23\",\n                \"v153.6\",\n                \"h230.4\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S0\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h57.63\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S1\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"h48.03\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S2\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"h38.43\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ],\n        [\n            \"analog multiplexer1:S3\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"h28.83\",\n                \"v-115.2\",\n                \"h259.2\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Read 6 photoresistor value with analog multiplexer",
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "board-cd74hc4067",
+            "id": "analog multiplexer1",
+            "top": 24.45,
+            "left": -129.71,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-photoresistor-sensor",
+            "id": "photoresistor1",
+            "top": -140.8,
+            "left": -431.2,
+            "attrs": {
+              "lux": "10"
+            }
+          },
+          {
+            "type": "wokwi-photoresistor-sensor",
+            "id": "photoresistor2",
+            "top": -64,
+            "left": -431.2,
+            "attrs": {
+              "lux": "100"
+            }
+          },
+          {
+            "type": "wokwi-photoresistor-sensor",
+            "id": "photoresistor3",
+            "top": 12.8,
+            "left": -431.2,
+            "attrs": {
+              "lux": "200"
+            }
+          },
+          {
+            "type": "wokwi-photoresistor-sensor",
+            "id": "photoresistor4",
+            "top": 89.6,
+            "left": -431.2,
+            "attrs": {
+              "lux": "300"
+            }
+          },
+          {
+            "type": "wokwi-photoresistor-sensor",
+            "id": "photoresistor5",
+            "top": 166.4,
+            "left": -431.2,
+            "attrs": {
+              "lux": "400"
+            }
+          },
+          {
+            "type": "wokwi-photoresistor-sensor",
+            "id": "photoresistor6",
+            "top": 243.2,
+            "left": -431.2,
+            "attrs": {
+              "lux": "500"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "arduino uno1:GND.2",
+            "photoresistor6:GND",
+            "black",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "arduino uno1:GND.2",
+            "photoresistor5:GND",
+            "black",
+            [
+              "v77.3",
+              "h-409.5",
+              "v-76.8"
+            ]
+          ],
+          [
+            "arduino uno1:GND.2",
+            "photoresistor4:GND",
+            "black",
+            [
+              "v77.3",
+              "h-409.5",
+              "v-153.6"
+            ]
+          ],
+          [
+            "arduino uno1:GND.2",
+            "photoresistor3:GND",
+            "black",
+            [
+              "v77.3",
+              "h-409.5",
+              "v-230.4"
+            ]
+          ],
+          [
+            "arduino uno1:GND.2",
+            "photoresistor2:GND",
+            "black",
+            [
+              "v77.3",
+              "h-409.5",
+              "v-307.2"
+            ]
+          ],
+          [
+            "arduino uno1:GND.2",
+            "photoresistor1:GND",
+            "black",
+            [
+              "v77.3",
+              "h-409.5",
+              "v-384"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "photoresistor6:VCC",
+            "red",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "photoresistor5:VCC",
+            "red",
+            [
+              "v67.7",
+              "h-390.4",
+              "v-86.4"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "photoresistor4:VCC",
+            "red",
+            [
+              "v67.7",
+              "h-390.4",
+              "v-153.6",
+              "h-38.4"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "photoresistor3:VCC",
+            "red",
+            [
+              "v67.7",
+              "h-390.4",
+              "v-230.4"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "photoresistor2:VCC",
+            "red",
+            [
+              "v67.7",
+              "h-390.4",
+              "v-307.2"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "photoresistor1:VCC",
+            "red",
+            [
+              "v67.7",
+              "h-390.4",
+              "v-384"
+            ]
+          ],
+          [
+            "photoresistor1:AO",
+            "analog multiplexer1:I0",
+            "green",
+            [
+              "h105.6",
+              "v268.1"
+            ]
+          ],
+          [
+            "photoresistor2:AO",
+            "analog multiplexer1:I1",
+            "green",
+            [
+              "h96",
+              "v181.7"
+            ]
+          ],
+          [
+            "photoresistor3:AO",
+            "analog multiplexer1:I2",
+            "green",
+            [
+              "h86.4",
+              "v95.3"
+            ]
+          ],
+          [
+            "photoresistor4:AO",
+            "analog multiplexer1:I3",
+            "green",
+            [
+              "h76.8",
+              "v8.9"
+            ]
+          ],
+          [
+            "photoresistor5:AO",
+            "analog multiplexer1:I4",
+            "green",
+            [
+              "h67.2",
+              "v-87.1"
+            ]
+          ],
+          [
+            "photoresistor6:AO",
+            "analog multiplexer1:I5",
+            "green",
+            [
+              "h57.6",
+              "v-163.9"
+            ]
+          ],
+          [
+            "analog multiplexer1:COM",
+            "arduino uno1:A0",
+            "green",
+            [
+              "v0",
+              "h67.23",
+              "v144",
+              "h220.8"
+            ]
+          ],
+          [
+            "analog multiplexer1:VCC",
+            "arduino uno1:5V",
+            "red",
+            [
+              "h48.03",
+              "v134.4",
+              "h182.4"
+            ]
+          ],
+          [
+            "analog multiplexer1:GND",
+            "arduino uno1:GND.2",
+            "black",
+            [
+              "h19.23",
+              "v134.4",
+              "h230.4"
+            ]
+          ],
+          [
+            "analog multiplexer1:EN",
+            "arduino uno1:GND.2",
+            "green",
+            [
+              "h19.23",
+              "v153.6",
+              "h230.4"
+            ]
+          ],
+          [
+            "analog multiplexer1:S0",
+            "arduino uno1:2",
+            "green",
+            [
+              "h57.63",
+              "v-115.2",
+              "h259.2"
+            ]
+          ],
+          [
+            "analog multiplexer1:S1",
+            "arduino uno1:3",
+            "green",
+            [
+              "h48.03",
+              "v-115.2",
+              "h259.2"
+            ]
+          ],
+          [
+            "analog multiplexer1:S2",
+            "arduino uno1:4",
+            "green",
+            [
+              "h38.43",
+              "v-115.2",
+              "h259.2"
+            ]
+          ],
+          [
+            "analog multiplexer1:S3",
+            "arduino uno1:5",
+            "green",
+            [
+              "h28.83",
+              "v-115.2",
+              "h259.2"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

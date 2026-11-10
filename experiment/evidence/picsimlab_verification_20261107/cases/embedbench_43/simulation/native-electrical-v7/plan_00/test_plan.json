@@ -1,0 +1,131 @@
+{
+  "horizon_ms": 30700,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A3",
+      "value": 1023
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A4",
+      "value": 0
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A5",
+      "value": 0
+    },
+    {
+      "at_ms": 28500,
+      "kind": "analog",
+      "pin": "A3",
+      "value": 1023
+    },
+    {
+      "at_ms": 28500,
+      "kind": "analog",
+      "pin": "A4",
+      "value": 1023
+    },
+    {
+      "at_ms": 28500,
+      "kind": "analog",
+      "pin": "A5",
+      "value": 1023
+    },
+    {
+      "at_ms": 29300,
+      "kind": "analog",
+      "pin": "A3",
+      "value": 0
+    },
+    {
+      "at_ms": 29300,
+      "kind": "analog",
+      "pin": "A4",
+      "value": 1023
+    },
+    {
+      "at_ms": 29300,
+      "kind": "analog",
+      "pin": "A5",
+      "value": 1023
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [
+    {
+      "data_pin": "A0",
+      "clock_pin": "A2",
+      "latch_pin": "A1",
+      "registers": 1,
+      "displays": [
+        {
+          "name": "sevseg1",
+          "register_index": 0,
+          "segment_bits": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "common_anode": true
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "native_1_0",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1), a 10-segment LED bar graph (bargraph1), and three slide potentiometers (pot1, p",
+      "name": "sevseg1",
+      "at_ms": 4500,
+      "expected": "2",
+      "numeric": true
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\nconst int SHCP_PIN = A2;  \nconst int STCP_PIN = A1;  \nconst int DS_PIN = A0;    \nconst int POT1_PIN = A3;  \nconst int POT2_PIN = A4;  \nconst int POT3_PIN = A5;  \nconst int BARGRAPH_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11};  \nconst byte segmentCodes[] = {\n  0b11000000, \n  0b11111001, \n  0b10100100, \n  0b10110000, \n  0b10011001, \n  0b10010010, \n  0b10000010, \n  0b11111000, \n  0b10000000, \n  0b10010000, \n};\nint currentDigit = 0;\nunsigned long lastUpdateTime = 0;\nint updateInterval = 2000; \n\nvoid setup();\nvoid loop();\nvoid displayDigit(int digit);\nvoid updateBarGraph(int digit);\nvoid setup() {\n  pinMode(SHCP_PIN, OUTPUT);\n  pinMode(STCP_PIN, OUTPUT);\n  pinMode(DS_PIN, OUTPUT);\n  for (int i = 0; i < 10; i++) {\n    pinMode(BARGRAPH_PINS[i], OUTPUT);\n  }\n  displayDigit(currentDigit);\n  updateBarGraph(currentDigit);\n}\nvoid loop() {\n  unsigned long currentTime = millis();\n  int brightness = map(analogRead(POT1_PIN), 0, 1023, 0, 255);\n  int speed2 = map(analogRead(POT2_PIN), 0, 1023, 1000, 2000);\n  int speed3 = map(analogRead(POT3_PIN), 0, 1023, 1000, 2000);\n  updateInterval = speed2+speed3;\n  if (currentTime - lastUpdateTime >= updateInterval) {\n    currentDigit = (currentDigit + 1) % 10;\n    displayDigit(currentDigit);\n    updateBarGraph(currentDigit);\n    lastUpdateTime = currentTime;\n  }\n  for (int i = 0; i < 10; i++) {\n    analogWrite(BARGRAPH_PINS[i], (i < currentDigit) ? brightness : 0);\n  }\n}\nvoid displayDigit(int digit) {\n  byte code = segmentCodes[digit];\n  shiftOut(DS_PIN, SHCP_PIN, MSBFIRST, code);\n  digitalWrite(STCP_PIN, HIGH);\n  digitalWrite(STCP_PIN, LOW);\n}\nvoid updateBarGraph(int digit) {\n  for (int i = 0; i < 10; i++) {\n    digitalWrite(BARGRAPH_PINS[i], (i < digit) ? HIGH : LOW);\n  }\n}",
+  "coverage": "partial",
+  "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+  "native_test_entries": [
+    "test1: {'time': 4.5, 'state': {'sevseg1': '2', 'bargraph1': '2 segments lit (brightness controlled by pot1 at position 1)', 'pot1': 'position 1', 'pot2': 'position 0', 'pot3': 'position 0'}, 'description': 'After initial 4.2 seconds (plus 0.3 seconds sleep), the 7-segment display should show digit 2 (since it increments every 2 seconds from 0). The LED bar graph should have 2 segments lit with brightness controlled by pot1 at position 1. Pot2 and pot3 remain at initial position 0.'}",
+    "test2: {'time': 28.9, 'state': {'sevseg1': 'digit increments by 1 from previous state', 'bargraph1': 'number of lit segments matches new digit', 'pot1': 'position 1', 'pot2': 'position 1', 'pot3': 'position 1'}, 'description': 'After moving pot2 and pot3 to position 1 (adding 0.5 seconds each), waiting 12.2 seconds, then checking digit, then waiting another 4 seconds (total 16.2 seconds from previous check). The digit should increment by exactly 1 during the 4-second interval (since pot2+pot3 speed control reduces interval from 2 seconds). The LED bar graph should have number of lit segments matching the new digit. All pots are at position 1.'}",
+    "test3: {'time': 29.7, 'state': {'sevseg1': 'unchanged from test2', 'bargraph1': 'all segments off', 'pot1': 'position 0', 'pot2': 'position 1', 'pot3': 'position 1'}, 'description': 'After moving pot1 to position 0 and waiting 0.8 seconds, the LED bar graph should turn completely off (brightness controlled by pot1 at minimum), while the 7-segment display continues showing the same digit. Pot2 and pot3 remain at position 1.'}"
+  ],
+  "skipped_conditions": [
+    {
+      "test": 0,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "2 segments lit (brightness controlled by pot1 at position 1)"
+    },
+    {
+      "test": 1,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "number of lit segments matches new digit"
+    },
+    {
+      "test": 2,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "all segments off"
+    }
+  ],
+  "assumptions": [
+    "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+    "Normalized potentiometer positions0..1 map to ADC0..1023.",
+    "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+    "Reference preflight required; no claim that reference consistency proves all prose requirements."
+  ]
+}

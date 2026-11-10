@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"releasedDelayRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"toneOn\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_0 and not previousPressed\",\n        \"then\": [\n          {\n            \"assign\": \"releasedDelayRemainingMs\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"toneOn\",\n            \"value\": true\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": \"not io_0 and previousPressed\",\n        \"then\": [\n          {\n            \"assign\": \"releasedDelayRemainingMs\",\n            \"value\": 1000\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"releasedDelayRemainingMs\",\n        \"value\": {\n          \"if\": \"not io_0 and releasedDelayRemainingMs > 0\",\n          \"then\": \"releasedDelayRemainingMs - io_2\",\n          \"else\": \"releasedDelayRemainingMs\"\n        }\n      },\n      {\n        \"if\": \"not io_0 and releasedDelayRemainingMs <= 0\",\n        \"then\": [\n          {\n            \"assign\": \"toneOn\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"releasedDelayRemainingMs\",\n            \"value\": 0\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": \"io_0\",\n        \"then\": [\n          {\n            \"assign\": \"toneOn\",\n            \"value\": true\n          }\n        ],\n        \"else\": []\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"toneOn\",\n        \"then\": 440,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D3 按钮 + 蜂鸣器（D6）：按住发声，松开后延迟 1 秒停止\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Hold io_0 true for multiple steps, then set io_0 false once and keep it false for at least 1s worth of io_2 deltas (e.g., accumulate >=1000ms)\",\n        \"oracle\": \"io_1 is nonzero while io_0 is held; after release, io_1 remains nonzero for the following 1000ms, then becomes 0 once the accumulated post-release elapsed time reaches/exceeds 1000ms\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D3 按钮 + 蜂鸣器（D6）：按住发声，松开后延迟 1 秒停止\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Press and release quickly: io_0 rising for one step, then io_0 false for exactly 999ms accumulated across subsequent steps\",\n        \"oracle\": \"After release, io_1 stays nonzero throughout the 999ms interval and only turns 0 once accumulated post-release time reaches 1000ms (on/after the first step where io_2 accumulation crosses 1000ms)\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D3 按钮 + 蜂鸣器（D6）：按住发声，松开后延迟 1 秒停止\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Press (io_0 true) long enough to be in toneOn, then release (io_0 false), wait 500ms, press again before the 1s delay expires, and keep pressed for a few steps\",\n        \"oracle\": \"The post-release 1s timer is canceled by the second press edge; io_1 remains nonzero and does not transition to 0 during the second press interval\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_2 : Integer;\n    attribute previousPressed : Boolean := false;\n    attribute releasedDelayRemainingMs : Integer := 0;\n    attribute toneOn : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and not previousPressed {\n        first start;\n        then assign releasedDelayRemainingMs := 0;\n        then assign toneOn := true;\n      }\n      then if not io_0 and previousPressed {\n        first start;\n        then assign releasedDelayRemainingMs := 1000;\n      }\n      then assign releasedDelayRemainingMs := (if not io_0 and releasedDelayRemainingMs > 0 ? releasedDelayRemainingMs - io_2 else releasedDelayRemainingMs);\n      then if not io_0 and releasedDelayRemainingMs <= 0 {\n        first start;\n        then assign toneOn := false;\n        then assign releasedDelayRemainingMs := 0;\n      }\n      then assign previousPressed := io_0;\n      then if io_0 {\n        first start;\n        then assign toneOn := true;\n      }\n    }\n    out attribute io_1 : Integer = (if toneOn ? 440 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

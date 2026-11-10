@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "interfaces": [
+    {
+      "name": "distanceCm",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0.0,
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "trigger_pin": 8,
+        "echo_pin": 9,
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid"
+      },
+      "sample_period_ms": 100,
+      "meaning": "distanceCm",
+      "device": "HC-SR04",
+      "hardware": "TRIG D8 ECHO D9; TM1637 CLK D4 DIO D5; LED D13"
+    },
+    {
+      "name": "distanceValid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "trigger_pin": 8,
+        "echo_pin": 9,
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid"
+      },
+      "sample_period_ms": 100,
+      "meaning": "distanceValid",
+      "device": "HC-SR04",
+      "hardware": "TRIG D8 ECHO D9; TM1637 CLK D4 DIO D5; LED D13"
+    },
+    {
+      "name": "displayNumber",
+      "direction": "output",
+      "type": "i32",
+      "unit": "cm",
+      "initial": 10000,
+      "binding": {
+        "kind": "tm1637_number",
+        "clk_pin": 4,
+        "dio_pin": 5,
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank"
+      },
+      "sample_period_ms": 10,
+      "meaning": "Alternating temperature or distance integer display; 10000 requests blank",
+      "device": "tm1637_number",
+      "hardware": "TRIG D8 ECHO D9; TM1637 CLK D4 DIO D5; LED D13"
+    },
+    {
+      "name": "temperatureC",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "sample_period_ms": 2000,
+      "meaning": "temperatureC",
+      "device": "DHT11",
+      "hardware": "D7 DHT11",
+      "binding": {
+        "kind": "dht_temperature",
+        "pin": 7,
+        "sensor": "DHT11",
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "temperatureValid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 2000,
+      "meaning": "temperatureValid",
+      "device": "DHT11",
+      "hardware": "D7 DHT11",
+      "binding": {
+        "kind": "dht_valid",
+        "pin": 7,
+        "sensor": "DHT11",
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "elapsed",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "sample_period_ms": 10,
+      "meaning": "Actual elapsed since model step; first step zero",
+      "device": "clock",
+      "hardware": "millis delta",
+      "binding": {
+        "kind": "elapsed_ms"
+      }
+    },
+    {
+      "name": "alarmHz",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "sample_period_ms": 10,
+      "meaning": "1000 Hz during model-controlled alarm ON intervals, zero otherwise",
+      "device": "passive buzzer",
+      "hardware": "D6 tone",
+      "binding": {
+        "kind": "tone_output",
+        "pin": 6,
+        "invalid_policy": "silence"
+      }
+    },
+    {
+      "name": "temperatureReportDue",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 10,
+      "meaning": "Model trigger for this active reason",
+      "device": "Serial",
+      "hardware": "Serial gate",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "temperatureReason",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 10,
+      "meaning": "True only when this valid sensor triggers the alarm",
+      "device": "Serial",
+      "hardware": "Serial 115200",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "temperatureReportDue",
+        "label": "ALARM_TEMP ",
+        "baud": 115200
+      }
+    },
+    {
+      "name": "distanceReportDue",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 10,
+      "meaning": "Model trigger for this active reason",
+      "device": "Serial",
+      "hardware": "Serial gate",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "distanceReason",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 10,
+      "meaning": "True only when this valid sensor triggers the alarm",
+      "device": "Serial",
+      "hardware": "Serial 115200",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "distanceReportDue",
+        "label": "ALARM_DISTANCE ",
+        "baud": 115200
+      }
+    }
+  ],
+  "required_dependencies": {
+    "displayNumber": [
+      "temperatureC",
+      "temperatureValid",
+      "distanceCm",
+      "distanceValid",
+      "elapsed"
+    ],
+    "alarmHz": [
+      "temperatureC",
+      "temperatureValid",
+      "distanceCm",
+      "distanceValid",
+      "elapsed"
+    ],
+    "temperatureReason": [
+      "temperatureC",
+      "temperatureValid"
+    ],
+    "distanceReason": [
+      "distanceCm",
+      "distanceValid"
+    ]
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Alternate temperature/distance every 2000ms; valid temperature >32 C or valid distance <15 cm enables a 1000Hz alarm, 500ms on/500ms off starting immediately. Emit each active serial cause on alarm/cause changes and every 1000ms. Invalid selected measurements blank the display without stopping other channels.",
+      "assertion_ids": [
+        "mixed_display",
+        "mixed_sampling",
+        "mixed_alarm",
+        "mixed_reasons"
+      ]
+    }
+  ]
+}

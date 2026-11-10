@@ -1,0 +1,76 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "counter",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousIo0",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousIo0"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "counter",
+            "value": "counter + 1"
+          },
+          {
+            "assign": "previousIo0",
+            "value": "io_0"
+          }
+        ],
+        "else": [
+          {
+            "assign": "previousIo0",
+            "value": "io_0"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": {
+        "and": [
+          "io_0",
+          {
+            "not": "previousIo0"
+          }
+        ]
+      },
+      "serial_0_value_0": "counter"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D2 按钮进行计数，每按一次计数加 1，并通过串口输出当前计数值。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Keep io_0=false for several steps, then drive io_0 from false to true for one step (rising edge), hold it true for one more step, then set io_0=false; repeat for a second press with an intervening release.",
+        "oracle": "serial_0_trigger is true exactly on each rising edge of io_0; serial_0_value_0 equals the incremented counter value on the same steps as serial_0_trigger and remains the last count thereafter."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D2 按钮进行计数，每按一次计数加 1，并通过串口输出当前计数值。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Drive io_0=true continuously for N steps without any low period, starting from previousIo0=false; then release to io_0=false for M steps; then press again with a rising edge.",
+        "oracle": "counter increases only once during the initial continuous high segment (at the first rising edge) and serial_0_trigger fires only on that edge; no additional increments occur while io_0 remains true; the next press rising edge increments counter by 1 and updates serial_0_value_0 accordingly."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Integer;\n    attribute counter : Integer := 0;\n    attribute previousIo0 : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousIo0))) {\n        first start;\n        then assign counter := counter + 1;\n        then assign previousIo0 := io_0;\n      } else {\n        first start;\n        then assign previousIo0 := io_0;\n      }\n    }\n    out attribute serial_0_trigger : Boolean = ((io_0) and ((not previousIo0)));\n    out attribute serial_0_value_0 : Integer = counter;\n  }\n  part system : Controller;\n}\n"
+}

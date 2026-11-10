@@ -1,0 +1,152 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "manualMode",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "frozenDisplayValue",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "frozenBrightnessValue",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_2",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "manualMode",
+            "value": {
+              "not": "manualMode"
+            }
+          },
+          {
+            "assign": "frozenDisplayValue",
+            "value": {
+              "if": "manualMode",
+              "then": "RealFunctions::floor(io_0)",
+              "else": "RealFunctions::floor(io_0)"
+            }
+          },
+          {
+            "assign": "frozenBrightnessValue",
+            "value": {
+              "if": "manualMode",
+              "then": {
+                "if": {
+                  ">=": [
+                    "io_0",
+                    1023.0
+                  ]
+                },
+                "then": 255.0,
+                "else": {
+                  "if": {
+                    "<=": [
+                      "io_0",
+                      0.0
+                    ]
+                  },
+                  "then": 0.0,
+                  "else": "io_0 * 255.0 / 1023.0"
+                }
+              },
+              "else": {
+                "if": {
+                  ">=": [
+                    "io_0",
+                    1023.0
+                  ]
+                },
+                "then": 255.0,
+                "else": {
+                  "if": {
+                    "<=": [
+                      "io_0",
+                      0.0
+                    ]
+                  },
+                  "then": 0.0,
+                  "else": "io_0 * 255.0 / 1023.0"
+                }
+              }
+            }
+          },
+          {
+            "assign": "previousPressed",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "previousPressed",
+            "value": "io_2"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "manualMode",
+        "then": "frozenBrightnessValue",
+        "else": {
+          "if": {
+            ">=": [
+              "io_0",
+              1023.0
+            ]
+          },
+          "then": 255.0,
+          "else": {
+            "if": {
+              "<=": [
+                "io_0",
+                0.0
+              ]
+            },
+            "then": 0.0,
+            "else": "io_0 * 255.0 / 1023.0"
+          }
+        }
+      },
+      "io_3": "manualMode",
+      "io_4": {
+        "if": "manualMode",
+        "then": "frozenDisplayValue",
+        "else": "RealFunctions::floor(io_0)"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个光照联动显示系统，使用光敏电阻 A0、PWM LED D9、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认根据光照强度自动调节 LED 亮度并在数码管显示当前光照映射值；按下按钮后切换到手动冻结显示模式，再按一次恢复自动模式。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "初始io_2为false（未按下），先给io_0=100.0并保持一拍；然后对io_2产生一次上升沿（按下），同时改变io_0到200.0保持一拍；再对io_2产生第二次上升沿（再次按下），同时改变io_0到300.0保持一拍。",
+        "oracle": "第一次上升沿发生后进入手动冻结：io_1与io_4在该后续控制步保持为冻结取样（取样自第一次按下瞬间的io_0映射），即使io_0变化；第二次上升沿后退出手动并恢复自动：io_1与io_4在相应控制步随io_0=300.0更新。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_2 : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute manualMode : Boolean := false;\n    attribute frozenDisplayValue : Integer := 0;\n    attribute frozenBrightnessValue : Real := 0.0;\n    perform action tick {\n      first start;\n      then if ((io_2) and ((not previousPressed))) {\n        first start;\n        then assign manualMode := (not manualMode);\n        then assign frozenDisplayValue := (if manualMode ? RealFunctions::floor(io_0) else RealFunctions::floor(io_0));\n        then assign frozenBrightnessValue := (if manualMode ? (if ((io_0) >= (1023.0)) ? 255.0 else (if ((io_0) <= (0.0)) ? 0.0 else io_0 * 255.0 / 1023.0)) else (if ((io_0) >= (1023.0)) ? 255.0 else (if ((io_0) <= (0.0)) ? 0.0 else io_0 * 255.0 / 1023.0)));\n        then assign previousPressed := true;\n      } else {\n        first start;\n        then assign previousPressed := io_2;\n      }\n    }\n    out attribute io_1 : Real = (if manualMode ? frozenBrightnessValue else (if ((io_0) >= (1023.0)) ? 255.0 else (if ((io_0) <= (0.0)) ? 0.0 else io_0 * 255.0 / 1023.0)));\n    out attribute io_3 : Boolean = manualMode;\n    out attribute io_4 : Integer = (if manualMode ? frozenDisplayValue else RealFunctions::floor(io_0));\n  }\n  part system : Controller;\n}\n"
+}

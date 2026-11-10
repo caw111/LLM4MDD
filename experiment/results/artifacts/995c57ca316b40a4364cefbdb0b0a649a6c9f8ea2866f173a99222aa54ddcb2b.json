@@ -1,0 +1,549 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board and wiring are preserved as provided for Mega: pot1 SIG->A3, servo1 PWM->D2, servo2 PWM->D3, bargraph1 A1..A10->D4..D13 with common cathode on GND.1.",
+    "Control period set to 5 ms to support smooth synchronized updates without LED flicker; model maps pot value to servo angles and LED count with full on/off discrete LED states.",
+    "Bar graph is implemented via ten independent program-owned digital outputs for pins D4..D13, ordered left-to-right as A1..A10; all outputs start OFF.",
+    "Servos are positioned using servo_angle requests; both start at 0° as required. Servo2 direction reversal (180° to 0° mapping) is handled in SysML model logic (not by inverting any hardware signals here)."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Slide potentiometer position (0..1023)",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0, \"pin\": \"A3\", \"scale\": 1}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1,
+        "offset": 0,
+        "pin": "A3"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Servo1 angle (pot mapped 0..180°)",
+      "sample_period_ms": 5,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D2\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Servo2 angle (pot mapped opposite direction 180..0°)",
+      "sample_period_ms": 5,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D3\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A1 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D4\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A2 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D5\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D5"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A3 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D6"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A4 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D7\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A5 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D8\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D8"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A6 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D9\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D9"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_9",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A7 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D10"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_10",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A8 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D11\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D11"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_11",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A9 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D12"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_12",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Bargraph1 LED A10 (left to right)",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize two servo motors (servo1, servo2) and a 10-segment LED bar graph (bargraph1) using a slide potentiometer (pot1). The potentiometer will control the angular position of both servos and the number of illuminated LEDs in the bar graph simultaneously.\n\n**Detail Rules**:\n1. **Initialization**:  \n   - Both servos (servo1, servo2) must start at 0° when powered on.  \n   - All LEDs in the bar graph (bargraph1) must be off initially.  \n\n2. **Potentiometer Control**:  \n   - The slide potentiometer (pot1) value (0-1023) must be linearly mapped to:  \n     - Servo angles: 0° (minimum) to 180° (maximum) for servo1, and 180° to 0° for servo2 (opposite direction).  \n     - Active LEDs: 0 (all off) to 10 (all on) in the bar graph. (from pin A1 to A10) \n\n3. **Synchronization**:  \n   - When the potentiometer is at 0%:  \n     - servo1 = 0°, servo2 = 180°, all LEDs off.  \n   - When the potentiometer is at 50%:  \n     - servo1 = 90°, servo2 = 90°, exactly 5 LEDs lit.  \n   - When the potentiometer is at 100%:  \n     - servo1 = 180°, servo2 = 0°, all LEDs lit.  \n\n4. **LED Behavior**:  \n   - LEDs must light up sequentially from left to right as the potentiometer value increases.  \n   - No flickering or partial brightness is allowed, LEDs must be fully on or off.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:4\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:5\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:6\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:7\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:8\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:9\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:10\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:11\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:12\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:13\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize two servo motors (servo1, servo2) and a 10-segment LED bar graph (bargraph1) using a slide potentiometer (pot1). The potentiometer will control the angular position of both servos and the number of illuminated LEDs in the bar graph simultaneously.\n\n**Detail Rules**:\n1. **Initialization**:  \n   - Both servos (servo1, servo2) must start at 0° when powered on.  \n   - All LEDs in the bar graph (bargraph1) must be off initially.  \n\n2. **Potentiometer Control**:  \n   - The slide potentiometer (pot1) value (0-1023) must be linearly mapped to:  \n     - Servo angles: 0° (minimum) to 180° (maximum) for servo1, and 180° to 0° for servo2 (opposite direction).  \n     - Active LEDs: 0 (all off) to 10 (all on) in the bar graph. (from pin A1 to A10) \n\n3. **Synchronization**:  \n   - When the potentiometer is at 0%:  \n     - servo1 = 0°, servo2 = 180°, all LEDs off.  \n   - When the potentiometer is at 50%:  \n     - servo1 = 90°, servo2 = 90°, exactly 5 LEDs lit.  \n   - When the potentiometer is at 100%:  \n     - servo1 = 180°, servo2 = 0°, all LEDs lit.  \n\n4. **LED Behavior**:  \n   - LEDs must light up sequentially from left to right as the potentiometer value increases.  \n   - No flickering or partial brightness is allowed, LEDs must be fully on or off.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:4\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:5\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:6\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:7\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:8\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:9\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:10\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:11\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:12\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:13\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led-bar-graph",
+            "id": "bargraph1",
+            "left": 417.6,
+            "top": -14.2,
+            "attrs": {
+              "color": "lime"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "mega:2",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:3",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:4",
+            "bargraph1:A1",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C1",
+            "black"
+          ],
+          [
+            "mega:5",
+            "bargraph1:A2",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C2",
+            "black"
+          ],
+          [
+            "mega:6",
+            "bargraph1:A3",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C3",
+            "black"
+          ],
+          [
+            "mega:7",
+            "bargraph1:A4",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C4",
+            "black"
+          ],
+          [
+            "mega:8",
+            "bargraph1:A5",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C5",
+            "black"
+          ],
+          [
+            "mega:9",
+            "bargraph1:A6",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C6",
+            "black"
+          ],
+          [
+            "mega:10",
+            "bargraph1:A7",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C7",
+            "black"
+          ],
+          [
+            "mega:11",
+            "bargraph1:A8",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C8",
+            "black"
+          ],
+          [
+            "mega:12",
+            "bargraph1:A9",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C9",
+            "black"
+          ],
+          [
+            "mega:13",
+            "bargraph1:A10",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C10",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize two servo motors (servo1, servo2) and a 10-segment LED bar graph (bargraph1) using a slide potentiometer (pot1). The potentiometer will control the angular position of both servos and the number of illuminated LEDs in the bar graph simultaneously.\n\n**Detail Rules**:\n1. **Initialization**:  \n   - Both servos (servo1, servo2) must start at 0° when powered on.  \n   - All LEDs in the bar graph (bargraph1) must be off initially.  \n\n2. **Potentiometer Control**:  \n   - The slide potentiometer (pot1) value (0-1023) must be linearly mapped to:  \n     - Servo angles: 0° (minimum) to 180° (maximum) for servo1, and 180° to 0° for servo2 (opposite direction).  \n     - Active LEDs: 0 (all off) to 10 (all on) in the bar graph. (from pin A1 to A10) \n\n3. **Synchronization**:  \n   - When the potentiometer is at 0%:  \n     - servo1 = 0°, servo2 = 180°, all LEDs off.  \n   - When the potentiometer is at 50%:  \n     - servo1 = 90°, servo2 = 90°, exactly 5 LEDs lit.  \n   - When the potentiometer is at 100%:  \n     - servo1 = 180°, servo2 = 0°, all LEDs lit.  \n\n4. **LED Behavior**:  \n   - LEDs must light up sequentially from left to right as the potentiometer value increases.  \n   - No flickering or partial brightness is allowed, LEDs must be fully on or off.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:4\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:5\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:6\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:7\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:8\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:9\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:10\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:11\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:12\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:13\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_9": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_10": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_11": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_12": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Mapping rule (A0 ADC 0..1023 linear floor to 0..9999) and enforcing display update <=50ms after input change are model responsibilities; the analog_input is sampled and the model performs scaling and integer flooring, then updates tm1637_number.",
+    "TM1637 display must be always turned on per requirement; tm1637_number uses invalid_policy='blank' but the model should avoid setting invalid states for this mapping so the display stays active with the computed integer. If library semantics differ for 'blank', adjust model to keep a valid value continuously.",
+    "No explicit serial I/O requirements were provided; therefore serial_channels is empty.",
+    "No other wiring beyond A0->analog_input and D4/D5->TM1637 was specified; therefore no additional port/interface requests are created.",
+    "Timing: control_period_ms=10ms is chosen as scheduling granularity; the model should sample/pipeline such that end-to-end display latency (including TM1637 bus transfer) stays <=50ms."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "A0 potentiometer ADC mapped source for TM1637 display (raw 0..1023 -> model maps to 0..9999)",
+      "sample_period_ms": 10,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637 displays mapped A0 value as full decimal 0..9999 (no required forced leading-zero behavior; allowed to show leading zeros or blank as model decides)",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": true}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "analog_input": {
+      "pin": "A0"
+    },
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "将 A0 电位器的模拟值映射到 0 到 9999，并显示在 TM1637 数码管上，模块引脚为 CLK=D4，DIO=D5。\n验收约定：A0真实ADC读数0..1023线性映射为0..9999整数，向下取整；TM1637显示完整十进制数，允许前导零或空白。CLK=D4、DIO=D5，显示始终开启。输入变化后的显示响应时间不超过50ms，包括库的总线传输时间。",
+    "effective_requirement": "将 A0 电位器的模拟值映射到 0 到 9999，并显示在 TM1637 数码管上，模块引脚为 CLK=D4，DIO=D5。\n验收约定：A0真实ADC读数0..1023线性映射为0..9999整数，向下取整；TM1637显示完整十进制数，允许前导零或空白。CLK=D4、DIO=D5，显示始终开启。输入变化后的显示响应时间不超过50ms，包括库的总线传输时间。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "将 A0 电位器的模拟值映射到 0 到 9999，并显示在 TM1637 数码管上，模块引脚为 CLK=D4，DIO=D5。\n验收约定：A0真实ADC读数0..1023线性映射为0..9999整数，向下取整；TM1637显示完整十进制数，允许前导零或空白。CLK=D4、DIO=D5，显示始终开启。输入变化后的显示响应时间不超过50ms，包括库的总线传输时间。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

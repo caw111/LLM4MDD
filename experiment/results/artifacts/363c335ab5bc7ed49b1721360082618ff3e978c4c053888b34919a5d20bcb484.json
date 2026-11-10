@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "No serial communication was specified in the provided requirements; therefore no serial_channels are generated.",
+    "elapsed_ms is used to implement: initial silence until first accumulated 3000ms, then tone bursts of 100ms at 1000Hz every accumulated 3000ms; pause (button D2 low on press edge) immediately silences tone while preserving accumulated runtime and remaining burst time; resume continues without restarting the full cycle. All business logic and pause/remaining-time bookkeeping belong in the SysML model.",
+    "Button D2 is configured as INPUT_PULLUP; the model boolean is defined as true when the button is pressed. Long-press/release do not toggle; only press edge toggles pause state and pause persists until the next press edge.",
+    "tone_output initial is set to 31 (catalog silence behavior as permitted by tone_output: 0 or 31..65535). Model must drive 0 to keep silent and 1000Hz for 100ms when scheduled."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Pause/Resume control button state model: true when button is pressed (active-low input uses pullup)",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 31,
+      "meaning": "Passive buzzer tone: start silent; when enabled play 1000Hz for the required schedule",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual delta since previous control step (used for 3000ms accumulation and 100ms tone burst timing tolerance budgeting)",
+      "sample_period_ms": 5,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复\n验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。",
+    "effective_requirement": "蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复\n验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复\n验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "startup_checks": [
+    {
+      "output": "io_1",
+      "expected": 0,
+      "evidence": "初始运行且静音"
+    }
+  ],
+  "pause_checks": [
+    {
+      "input": "io_0",
+      "delta": "io_2",
+      "output": "io_1",
+      "initial_running": true,
+      "expected": 0,
+      "evidence": "初始运行; 按下沿切换暂停/恢复; 暂停立即静音",
+      "response_tolerance_ms": 20
+    }
+  ],
+  "periodic_checks": [
+    {
+      "delta": "io_2",
+      "output": "io_1",
+      "period_ms": 3000,
+      "pulse_ms": 100,
+      "first_pulse": "after_period",
+      "active_value": 1000,
+      "inactive_value": 0,
+      "tolerance_ms": 20,
+      "evidence": "此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长",
+      "pause_input": "io_0",
+      "initial_running": true,
+      "pause_policy": "preserve"
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

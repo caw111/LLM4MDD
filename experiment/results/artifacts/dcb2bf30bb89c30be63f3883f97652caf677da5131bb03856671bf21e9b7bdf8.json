@@ -1,0 +1,213 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "running",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "paused",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "seconds",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousStartPausePressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousResetPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "buzzerOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "buzzerRemainingMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "toneHz",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "displayValue",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_0 and not previousStartPausePressed",
+        "then": [
+          {
+            "assign": "paused",
+            "value": {
+              "not": "paused"
+            }
+          }
+        ]
+      },
+      {
+        "if": "io_1 and not previousResetPressed",
+        "then": [
+          {
+            "assign": "running",
+            "value": false
+          },
+          {
+            "assign": "paused",
+            "value": false
+          },
+          {
+            "assign": "seconds",
+            "value": 0
+          },
+          {
+            "assign": "buzzerOn",
+            "value": false
+          },
+          {
+            "assign": "buzzerRemainingMs",
+            "value": 0
+          },
+          {
+            "assign": "toneHz",
+            "value": 0
+          },
+          {
+            "assign": "displayValue",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "buzzerRemainingMs <= 0",
+        "then": [
+          {
+            "assign": "buzzerOn",
+            "value": false
+          },
+          {
+            "assign": "toneHz",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "not paused and buzzerOn and buzzerRemainingMs > 0",
+        "then": [
+          {
+            "assign": "buzzerRemainingMs",
+            "value": "buzzerRemainingMs"
+          },
+          {
+            "assign": "toneHz",
+            "value": "toneHz"
+          }
+        ]
+      },
+      {
+        "if": "buzzerOn and buzzerRemainingMs <= 0",
+        "then": [
+          {
+            "assign": "buzzerOn",
+            "value": false
+          },
+          {
+            "assign": "toneHz",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "seconds >= 60 and not buzzerOn",
+        "then": [
+          {
+            "assign": "buzzerOn",
+            "value": true
+          },
+          {
+            "assign": "buzzerRemainingMs",
+            "value": 1000
+          },
+          {
+            "assign": "toneHz",
+            "value": 1000
+          }
+        ]
+      },
+      {
+        "if": "not paused",
+        "then": [
+          {
+            "assign": "seconds",
+            "value": "seconds"
+          },
+          {
+            "assign": "displayValue",
+            "value": "seconds"
+          }
+        ],
+        "else": [
+          {
+            "assign": "displayValue",
+            "value": "seconds"
+          }
+        ]
+      },
+      {
+        "assign": "previousStartPausePressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousResetPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": "toneHz",
+      "io_3": "displayValue"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下并释放 io_0（start/pause）一次，再按下并释放 io_0 一次（恢复暂停前状态检查），不按 io_1。",
+        "oracle": "io_3 保持不变（无elapsed_ms输入，秒数递增不发生），io_2 保持为0（无到达60秒与1秒鸣叫时序输入）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "按下并释放 io_0（start/pause），再按下并释放 io_1（reset）。",
+        "oracle": "io_3 变为0，io_2 变为0，并且之后在未给出elapsed_ms时间推进条件前不启动蜂鸣器。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "保持 io_1 从未按下；只按下并保持 io_0 若干个周期（不释放），观察后续多个控制步输出变化。",
+        "oracle": "由于边沿检测与首次上升沿只翻转一次paused状态，且无elapsed_ms输入，io_3不递增，io_2保持0。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute running : Boolean := false;\n    attribute paused : Boolean := false;\n    attribute seconds : Integer := 0;\n    attribute previousStartPausePressed : Boolean := false;\n    attribute previousResetPressed : Boolean := false;\n    attribute buzzerOn : Boolean := false;\n    attribute buzzerRemainingMs : Integer := 0;\n    attribute toneHz : Integer := 0;\n    attribute displayValue : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_0 and not previousStartPausePressed {\n        first start;\n        then assign paused := (not paused);\n      }\n      then if io_1 and not previousResetPressed {\n        first start;\n        then assign running := false;\n        then assign paused := false;\n        then assign seconds := 0;\n        then assign buzzerOn := false;\n        then assign buzzerRemainingMs := 0;\n        then assign toneHz := 0;\n        then assign displayValue := 0;\n      }\n      then if buzzerRemainingMs <= 0 {\n        first start;\n        then assign buzzerOn := false;\n        then assign toneHz := 0;\n      }\n      then if not paused and buzzerOn and buzzerRemainingMs > 0 {\n        first start;\n        then assign buzzerRemainingMs := buzzerRemainingMs;\n        then assign toneHz := toneHz;\n      }\n      then if buzzerOn and buzzerRemainingMs <= 0 {\n        first start;\n        then assign buzzerOn := false;\n        then assign toneHz := 0;\n      }\n      then if seconds >= 60 and not buzzerOn {\n        first start;\n        then assign buzzerOn := true;\n        then assign buzzerRemainingMs := 1000;\n        then assign toneHz := 1000;\n      }\n      then if not paused {\n        first start;\n        then assign seconds := seconds;\n        then assign displayValue := seconds;\n      } else {\n        first start;\n        then assign displayValue := seconds;\n      }\n      then assign previousStartPausePressed := io_0;\n      then assign previousResetPressed := io_1;\n    }\n    out attribute io_2 : Integer = toneHz;\n    out attribute io_3 : Integer = displayValue;\n  }\n  part system : Controller;\n}\n"
+}

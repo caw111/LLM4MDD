@@ -1,0 +1,171 @@
+{
+  "contract_sha256": "79b5a52e6201b0b14dd628cde75781a1f3f13da6de8e14d33c6b53d90e1737d4",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_7_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2"
+        ]
+      }
+    ],
+    "serial_inputs": [
+      {
+        "id": "io_7",
+        "value_port": "io_7",
+        "valid_port": "io_7_valid",
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600,
+        "commands": {
+          "QUERY": 1,
+          "RESET": 2
+        }
+      }
+    ],
+    "serial_text_outputs": [
+      {
+        "id": "io_8",
+        "trigger_port": "io_8",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "restock needed"
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-6.1-sol",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"第一层货架占用状态，true 表示占用\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"第二层货架占用状态，true 表示占用\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D7\",\n      \"initial\": false,\n      \"meaning\": \"第三层货架占用状态，true 表示占用\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"显示当前占用层数，范围为 0 至 3\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"三层全满时的蜂鸣提示频率，0 表示静音\",\n      \"invalid_policy\": \"silence\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"货架报警指示灯\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"自上一控制步以来实际经过的毫秒数，用于各层空置计时及蜂鸣节奏\",\n      \"semantics\": \"delta_since_previous_step\"\n    },\n    {\n      \"kind\": \"serial_command_input\",\n      \"initial\": 0,\n      \"meaning\": \"串口命令：QUERY=1 查询各层状态，RESET=2 重置空置计时；仅在命令有效事件发生时处理\",\n      \"baud\": 9600,\n      \"commands\": {\n        \"QUERY\": 1,\n        \"RESET\": 2\n      },\n      \"framing\": \"line_or_idle\",\n      \"idle_timeout_ms\": 20\n    },\n    {\n      \"kind\": \"serial_text_output\",\n      \"initial\": false,\n      \"meaning\": \"某层连续空置超过设定时间时输出补货提醒的报告门控\",\n      \"baud\": 9600,\n      \"text\": \"restock needed\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"收到有效 QUERY 命令时报告各层当前占用状态\"\n      },\n      \"values\": [\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"第一层是否占用\",\n          \"label\": \"level1_occupied\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"第二层是否占用\",\n          \"label\": \"level2_occupied\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"第三层是否占用\",\n          \"label\": \"level3_occupied\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"保留 Uno 及全部明确接线；源信息未提供组件 ID，因此不虚构 device 标识。\",\n    \"三个占用传感器及 LED 的电平极性未指定，采用目录默认极性；输入初始模型值暂取未占用，显示初始为 0，蜂鸣器静音，LED 熄灭，随后根据实际输入更新。\",\n    \"每层独立使用实际 elapsed_ms 累计连续空置时间；空置阈值、是否各层采用相同阈值、复位后仍空置时的计时规则及提醒重复策略尚待确定，均在 SysML 模型中实现。\",\n    \"串口命令文本未指定，提议使用区分大小写的 QUERY 和 RESET；RESET 暂按重置全部三层空置计时解释。采用已指定的 9600 波特率及行结束或 20 ms 空闲完成分帧。\",\n    \"查询报告采用三个带标签的 Boolean 字段，true 表示该层占用；补货提醒保持精确固定文本 restock needed，不追加数字。\",\n    \"三层全满时的蜂鸣频率、持续时间、重复节奏，以及 LED 的报警条件尚待确定；相关判断和时间逻辑属于 SysML 模型。\",\n    \"新增记录的定义、记录来源、锁定后的处理方式及解除锁定条件尚待确定；锁定作为模型内部状态实现，不增设未要求的硬件或串口命令。\",\n    \"占用统计、显示数值选择、全满检测、记录锁定、空置阈值判断及查询和复位处理均由 SysML 模型实现。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个仓储货架层级报警系统，使用三个红外对射或数字占位传感器 D2、D3、D7 表示三层货架占用状态，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统需要统计当前占用层数并显示；当某层长时间空置超过设定时间时输出 restock needed；当三层全满时蜂鸣提示并锁定新增记录。串口支持查询各层状态和重置计时。",
+    "effective_requirement": "设计一个仓储货架层级报警系统，使用三个红外对射或数字占位传感器 D2、D3、D7 表示三层货架占用状态，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统需要统计当前占用层数并显示；当某层长时间空置超过设定时间时输出 restock needed；当三层全满时蜂鸣提示并锁定新增记录。串口支持查询各层状态和重置计时。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

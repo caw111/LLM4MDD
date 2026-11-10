@@ -1,0 +1,272 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "armed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "nightAuto",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "eventCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousDoorOpened",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPIR",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "serialCommandActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pendingReportCmd",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "doorRising",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pirRising",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "==": [
+            "pendingReportCmd",
+            1
+          ]
+        },
+        "then": [
+          {
+            "assign": "armed",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "pendingReportCmd",
+            2
+          ]
+        },
+        "then": [
+          {
+            "assign": "armed",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "pendingReportCmd",
+            3
+          ]
+        },
+        "then": [
+          {
+            "assign": "armed",
+            "value": false
+          },
+          {
+            "assign": "eventCount",
+            "value": 0
+          },
+          {
+            "assign": "nightAuto",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "pendingReportCmd",
+            4
+          ]
+        },
+        "then": [
+          {
+            "assign": "serialCommandActive",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "serialCommandActive",
+            true
+          ]
+        },
+        "then": [
+          {
+            "assign": "serialCommandActive",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "doorRising",
+        "value": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousDoorOpened"
+            }
+          ]
+        }
+      },
+      {
+        "assign": "pirRising",
+        "value": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPIR"
+            }
+          ]
+        }
+      },
+      {
+        "assign": "nightAuto",
+        "value": {
+          "<": [
+            "io_2",
+            512.0
+          ]
+        }
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "or": [
+                "armed",
+                "nightAuto"
+              ]
+            },
+            "doorRising",
+            "pirRising"
+          ]
+        },
+        "then": [
+          {
+            "assign": "eventCount",
+            "value": "eventCount + 1"
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousDoorOpened",
+        "value": "io_1"
+      },
+      {
+        "assign": "previousPIR",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": {
+          "and": [
+            {
+              "or": [
+                "armed",
+                "nightAuto"
+              ]
+            },
+            "doorRising",
+            "pirRising"
+          ]
+        },
+        "then": 2000,
+        "else": 0
+      },
+      "io_4": {
+        "and": [
+          {
+            "or": [
+              "armed",
+              "nightAuto"
+            ]
+          },
+          "doorRising",
+          "pirRising"
+        ]
+      },
+      "io_5": "eventCount",
+      "serial_0_trigger": {
+        "if": {
+          "==": [
+            "pendingReportCmd",
+            4
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": {
+        "if": {
+          "==": [
+            "pendingReportCmd",
+            4
+          ]
+        },
+        "then": "eventCount",
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "夜间自动布防条件：io_2 低于阈值（例如 511.0）；随后发生门打开上升沿 io_1 从 false→true 与 PIR 上升沿 io_0 从 false→true 同步或先后均可（以模型一个控制步内门上升与PIR上升均为真为准）。",
+        "oracle": "io_4 为 true 且 io_3 为非零报警频率（例如 2000），并且 io_5 的 eventCount 从 0 变为 1。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "先触发一次报警使 eventCount=1；随后执行 RESET 命令（将 pendingReportCmd 设为 3 并保持一个控制步有效）。",
+        "oracle": "io_4 为 false 且 io_3 为 0 且 io_5 输出回到 0（事件计数被清零且撤防）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "执行 STATUS 命令（将 pendingReportCmd 设为 4 并保持一个控制步有效），同时保持任意传感器输入值。",
+        "oracle": "serial_0_trigger 在该控制步为 true，serial_0_value_0 等于当前 eventCount（并且不改变 eventCount）。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    attribute armed : Boolean := false;\n    attribute nightAuto : Boolean := false;\n    attribute eventCount : Integer := 0;\n    attribute previousDoorOpened : Boolean := false;\n    attribute previousPIR : Boolean := false;\n    attribute serialCommandActive : Boolean := false;\n    attribute pendingReportCmd : Integer := 0;\n    attribute doorRising : Boolean := false;\n    attribute pirRising : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((pendingReportCmd) == (1)) {\n        first start;\n        then assign armed := true;\n      }\n      then if ((pendingReportCmd) == (2)) {\n        first start;\n        then assign armed := false;\n      }\n      then if ((pendingReportCmd) == (3)) {\n        first start;\n        then assign armed := false;\n        then assign eventCount := 0;\n        then assign nightAuto := false;\n      }\n      then if ((pendingReportCmd) == (4)) {\n        first start;\n        then assign serialCommandActive := true;\n      }\n      then if ((serialCommandActive) == (true)) {\n        first start;\n        then assign serialCommandActive := false;\n      }\n      then assign doorRising := ((io_1) and ((not previousDoorOpened)));\n      then assign pirRising := ((io_0) and ((not previousPIR)));\n      then assign nightAuto := ((io_2) < (512.0));\n      then if ((((armed) or (nightAuto))) and (doorRising) and (pirRising)) {\n        first start;\n        then assign eventCount := eventCount + 1;\n      }\n      then assign previousDoorOpened := io_1;\n      then assign previousPIR := io_0;\n    }\n    out attribute io_3 : Integer = (if ((((armed) or (nightAuto))) and (doorRising) and (pirRising)) ? 2000 else 0);\n    out attribute io_4 : Boolean = ((((armed) or (nightAuto))) and (doorRising) and (pirRising));\n    out attribute io_5 : Integer = eventCount;\n    out attribute serial_0_trigger : Boolean = (if ((pendingReportCmd) == (4)) ? true else false);\n    out attribute serial_0_value_0 : Integer = (if ((pendingReportCmd) == (4)) ? eventCount else 0);\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,118 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "alarmActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "beepPhase",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "lastValidWithin10",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "standbyAfterGuard",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "assign": "lastValidWithin10",
+            "value": true
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "and": [
+          {
+            ">=": [
+              "io_2",
+              10.0
+            ]
+          },
+          "io_3"
+        ]
+      },
+      "io_1": {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "io_2",
+                10.0
+              ]
+            },
+            "io_3"
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_4": {
+        "and": [
+          {
+            ">=": [
+              "io_2",
+              10.0
+            ]
+          },
+          "io_3"
+        ]
+      },
+      "serial_0_trigger": {
+        "and": [
+          {
+            ">=": [
+              "io_2",
+              10.0
+            ]
+          },
+          "io_3"
+        ]
+      },
+      "serial_0_value_0": "io_2"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_3=true, io_2=9.9cm for multiple control steps",
+        "oracle": "io_0 becomes true (LED active), io_1 becomes a nonzero tone frequency (beep active), and serial_0_trigger becomes true with io_4 reporting welcome for that step; serial_0_value_0 equals the current io_2"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_3=true then io_2=10.0cm and later io_2=12.0cm with io_3=true",
+        "oracle": "When io_2 is at/above 10.0cm, io_0 becomes true, io_1 equals 1000 (silence not active), serial_0_trigger true, and io_4 true; serial_0_value_0 tracks io_2"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Set io_3=false for a period after previously having io_3=true and io_2 within 10cm",
+        "oracle": "While io_3=false, proximity gating is off: io_0 false, io_1 equals 0, serial_0_trigger false, and io_4 false (distance retention must not keep the alarm active when validity is false)"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute alarmActive : Boolean := false;\n    attribute beepPhase : Integer := 0;\n    attribute lastValidWithin10 : Boolean := false;\n    attribute standbyAfterGuard : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3 {\n        first start;\n        then assign lastValidWithin10 := true;\n      }\n    }\n    out attribute io_0 : Boolean = ((((io_2) >= (10.0))) and (io_3));\n    out attribute io_1 : Integer = (if ((((io_2) >= (10.0))) and (io_3)) ? 1000 else 0);\n    out attribute io_4 : Boolean = ((((io_2) >= (10.0))) and (io_3));\n    out attribute serial_0_trigger : Boolean = ((((io_2) >= (10.0))) and (io_3));\n    out attribute serial_0_value_0 : Real = io_2;\n  }\n  part system : Controller;\n}\n"
+}

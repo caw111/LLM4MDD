@@ -1,0 +1,130 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "debounceCounter",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "stablePressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "toggleState",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_0 and not previousPressed",
+        "then": [
+          {
+            "assign": "debounceCounter",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "io_0",
+        "then": [
+          {
+            "assign": "debounceCounter",
+            "value": "debounceCounter + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "stablePressed",
+            "not io_0"
+          ]
+        },
+        "then": [
+          {
+            "assign": "debounceCounter",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "not io_0",
+        "then": [
+          {
+            "assign": "debounceCounter",
+            "value": "debounceCounter + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          ">=": [
+            "debounceCounter",
+            2
+          ]
+        },
+        "then": [
+          {
+            "assign": "stablePressed",
+            "value": "io_0"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "stablePressed",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "toggleState",
+            "value": {
+              "not": "toggleState"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "stablePressed"
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "toggleState",
+        "then": 180.0,
+        "else": 0.0
+      },
+      "io_2": {
+        "if": "toggleState",
+        "then": 0.0,
+        "else": 180.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two servo motors (servo1, servo2) using a push button (btn1). The servos should alternate their positions between 0° and 180° each time the button is pressed. Specifically, when the button is pressed, servo1 should move to 180° and servo2 should move to 0°, and vice versa on the next press.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both servos (servo1, servo2) should be set to 0°.\nButton Interaction: Each press of the button (btn1) should toggle the positions of the servos. If servo1 is at 0° and servo2 is at 180°, pressing the button should move servo1 to 180° and servo2 to 0°. The next press should reverse their positions again.\nDebouncing: The button press should be debounced to avoid false triggers caused by mechanical vibrations.\nServo Movement: The servos should move smoothly to their new positions after each button press.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:3\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:4\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start/reset with io_0 initially false; then apply a single stable press on io_0 (true for multiple consecutive control steps) followed by a release (false), repeated for two presses; during each press include brief 1-step bounces before stability.",
+        "oracle": "At power-on (first step after reset) io_1=0.0 and io_2=0.0? (initial expectation per requirement: both 0°); after the first debounced press edge, io_1=180.0 and io_2=0.0; after the second debounced press edge, io_1 returns to 0.0 and io_2 to 180.0, with no extra toggles caused by the 1-step bounces."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute debounceCounter : Integer := 0;\n    attribute stablePressed : Boolean := false;\n    attribute toggleState : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_0 and not previousPressed {\n        first start;\n        then assign debounceCounter := 0;\n      }\n      then if io_0 {\n        first start;\n        then assign debounceCounter := debounceCounter + 1;\n      }\n      then if ((stablePressed) and (not io_0)) {\n        first start;\n        then assign debounceCounter := 0;\n      }\n      then if not io_0 {\n        first start;\n        then assign debounceCounter := debounceCounter + 1;\n      }\n      then if ((debounceCounter) >= (2)) {\n        first start;\n        then assign stablePressed := io_0;\n      }\n      then if ((stablePressed) and ((not previousPressed))) {\n        first start;\n        then assign toggleState := (not toggleState);\n      }\n      then assign previousPressed := stablePressed;\n    }\n    out attribute io_1 : Real = (if toggleState ? 180.0 else 0.0);\n    out attribute io_2 : Real = (if toggleState ? 0.0 else 180.0);\n  }\n  part system : Controller;\n}\n"
+}

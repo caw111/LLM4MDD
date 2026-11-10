@@ -1,0 +1,72 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "fanOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "lastDisplayedC",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "assign": "fanOn",
+            "value": "io_1 > 30.0"
+          },
+          {
+            "assign": "lastDisplayedC",
+            "value": {
+              "if": "io_1 >= 0.0",
+              "then": "RealFunctions::floor(io_1)",
+              "else": "-RealFunctions::floor(0.0 - io_1)"
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "fanOn",
+        "then": 255.0,
+        "else": 0.0
+      },
+      "io_4": "lastDisplayedC"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 DHT11 + 风扇（D5 PWM） + TM1637：显示温度，高于阈值风扇启动",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_3=true; io_1=31.0; (任意) io_2",
+        "oracle": "io_0>0 且 io_4==31"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 DHT11 + 风扇（D5 PWM） + TM1637：显示温度，高于阈值风扇启动",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_3=true; io_1=30.0; (任意) io_2",
+        "oracle": "io_0==0 且 io_4==30"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 DHT11 + 风扇（D5 PWM） + TM1637：显示温度，高于阈值风扇启动",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "先输入 io_3=true; io_1=35.0; 再输入 io_3=false; io_1=0.0",
+        "oracle": "在 io_3=false 步骤：io_0 与 io_4 保持上一有效值对应的状态（io_0>0 且 io_4==35）"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute fanOn : Boolean := false;\n    attribute lastDisplayedC : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_3 {\n        first start;\n        then assign fanOn := io_1 > 30.0;\n        then assign lastDisplayedC := (if io_1 >= 0.0 ? RealFunctions::floor(io_1) else -RealFunctions::floor(0.0 - io_1));\n      }\n    }\n    out attribute io_0 : Real = (if fanOn ? 255.0 else 0.0);\n    out attribute io_4 : Integer = lastDisplayedC;\n  }\n  part system : Controller;\n}\n"
+}

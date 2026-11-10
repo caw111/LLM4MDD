@@ -1,0 +1,110 @@
+#line 1 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\configured_audit_v1_20261015\\simple_026\\repeat_1\\workflow\\attempt_0\\sketch\\sketch.ino"
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
+// BEGIN COMPILED SYSML MODEL
+#include <stdint.h>
+#include <stdbool.h>
+#ifndef _DEFINE_H_
+#define _DEFINE_H_
+struct ProgramPage1_state;
+struct ProgramPage1_state {
+};
+/* Global Variable define of  */
+extern struct ProgramPage1_state ProgramPage1_instance;
+/* Global Variable define of  */
+extern int32_t sysml_state_brightness;
+/* Init function of CompositeActor named "ProgramPage1" */
+void ProgramPage1_Init(struct ProgramPage1_state* self);
+/* Update function of CompositeActor named "ProgramPage1" */
+void ProgramPage1(int32_t io_1, double* io_0);
+#endif
+
+
+/* Code of ProgramPage1 */
+/* Global Variable define of  */
+struct ProgramPage1_state ProgramPage1_instance;
+/* Global Variable define of  */
+int32_t sysml_state_brightness = 0;
+/* Init function of CompositeActor named "ProgramPage1" */
+#line 85 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\configured_audit_v1_20261015\\simple_026\\repeat_1\\workflow\\attempt_0\\sketch\\sketch.ino"
+void setup();
+#line 91 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\configured_audit_v1_20261015\\simple_026\\repeat_1\\workflow\\attempt_0\\sketch\\sketch.ino"
+void loop();
+#line 29 "C:\\Users\\27872\\Desktop\\work\\GeneratedCodeOfMing\\LLM4MDD\\experiment\\output\\configured_audit_v1_20261015\\simple_026\\repeat_1\\workflow\\attempt_0\\sketch\\sketch.ino"
+void ProgramPage1_Init(struct ProgramPage1_state* self) {
+    /* Calculate code of CompositeActor named "ProgramPage1.reset" */
+    sysml_state_brightness = 0;
+}
+/* Update function of CompositeActor named "ProgramPage1" */
+void ProgramPage1(int32_t io_1, double* io_0) {
+    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+    int32_t sysml_conditional_0 = 0;
+    int32_t sysml_conditional_1 = 0;
+    int32_t sysml_conditional_2 = 0;
+    double sysml_conditional_3 = 0;
+    if (sysml_state_brightness >= 255) {
+        if (sysml_state_brightness == 255) {
+            if (io_1 > 0) {
+                sysml_conditional_2 = 0;
+            }
+            else {
+                sysml_conditional_2 = 0;
+            }
+            sysml_conditional_1 = sysml_conditional_2;
+        }
+        else {
+            sysml_conditional_1 = 0;
+        }
+        sysml_conditional_0 = sysml_conditional_1;
+    }
+    else {
+        sysml_conditional_0 = sysml_state_brightness + io_1;
+    }
+    sysml_state_brightness = sysml_conditional_0;
+    if ((sysml_state_brightness > 255)) {
+        sysml_state_brightness = 0;
+    }
+    double sysml_value_0 = 0;
+    if (sysml_state_brightness <= 255) {
+        sysml_conditional_3 = sysml_state_brightness;
+    }
+    else {
+        sysml_conditional_3 = 0.0;
+    }
+    sysml_value_0 = sysml_conditional_3;
+    *io_0 = sysml_value_0;
+}
+// END COMPILED SYSML MODEL
+
+// LLM4MDD target-board: arduino:avr:uno
+#include <Arduino.h>
+#include <math.h>
+#if defined(ARDUINO) && !defined(ARDUINO_AVR_UNO)
+#error "Selected Arduino board differs from the interface contract"
+#endif
+static uint32_t hw_last_step = 0;
+static bool hw_started = false;
+static double hw_value_io_0 = 0;
+static int32_t hw_value_io_1 = 0;
+
+void setup() {
+  ProgramPage1_Init(&ProgramPage1_instance);
+  pinMode(9, OUTPUT);
+  analogWrite(9, (int)constrain((hw_value_io_0 * 1.0 + 0.0), 0.0, 255.0));
+}
+
+void loop() {
+  uint32_t hw_now = (uint32_t)millis();
+  uint32_t hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+  if (hw_started && hw_elapsed < 5UL) return;
+  if (hw_elapsed > 2147483647UL) return;
+  hw_now = (uint32_t)millis();
+  hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+  if (hw_elapsed > 2147483647UL) return;
+  hw_value_io_1 = (int32_t)hw_elapsed;
+  hw_last_step = hw_now; hw_started = true;
+  ProgramPage1(hw_value_io_1, &hw_value_io_0);
+  analogWrite(9, (int)constrain((hw_value_io_0 * 1.0 + 0.0), 0.0, 255.0));
+}
+

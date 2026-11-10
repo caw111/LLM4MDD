@@ -1,0 +1,181 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "currentAngleDeg",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "stableSecondsRemaining",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressedBtn1",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressedBtn2",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressedBtn3",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pendingAngleDeg",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "pendingLedCount",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "stableSecondsRemaining <= 0",
+        "then": [
+          {
+            "assign": "pendingAngleDeg",
+            "value": {
+              "if": "io_0",
+              "then": 30.0,
+              "else": {
+                "if": "io_1",
+                "then": 60.0,
+                "else": {
+                  "if": "io_2",
+                  "then": 90.0,
+                  "else": 0.0
+                }
+              }
+            }
+          },
+          {
+            "assign": "pendingLedCount",
+            "value": {
+              "if": "io_0",
+              "then": 3,
+              "else": {
+                "if": "io_1",
+                "then": 6,
+                "else": {
+                  "if": "io_2",
+                  "then": 10,
+                  "else": 0
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "or": [
+                {
+                  "and": [
+                    "io_0",
+                    {
+                      "not": "previousPressedBtn1"
+                    }
+                  ]
+                },
+                {
+                  "and": [
+                    "io_1",
+                    {
+                      "not": "previousPressedBtn2"
+                    }
+                  ]
+                },
+                {
+                  "and": [
+                    "io_2",
+                    {
+                      "not": "previousPressedBtn3"
+                    }
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "currentAngleDeg",
+                "value": "pendingAngleDeg"
+              },
+              {
+                "assign": "stableSecondsRemaining",
+                "value": 2
+              }
+            ],
+            "else": []
+          }
+        ],
+        "else": [
+          {
+            "assign": "stableSecondsRemaining",
+            "value": "stableSecondsRemaining - 1"
+          }
+        ]
+      },
+      {
+        "assign": "previousPressedBtn1",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousPressedBtn2",
+        "value": "io_1"
+      },
+      {
+        "assign": "previousPressedBtn3",
+        "value": "io_2"
+      }
+    ],
+    "outputs": {
+      "io_3": "currentAngleDeg",
+      "io_4_segment_0": "stableSecondsRemaining > 0 and currentAngleDeg == 30.0 or currentAngleDeg == 60.0 or currentAngleDeg == 90.0",
+      "io_4_segment_1": "stableSecondsRemaining > 0 and (currentAngleDeg == 30.0 or currentAngleDeg == 60.0 or currentAngleDeg == 90.0)",
+      "io_4_segment_2": "stableSecondsRemaining > 0 and (currentAngleDeg == 30.0 or currentAngleDeg == 60.0 or currentAngleDeg == 90.0)",
+      "io_4_segment_3": "stableSecondsRemaining > 0 and (currentAngleDeg == 60.0 or currentAngleDeg == 90.0)",
+      "io_4_segment_4": "stableSecondsRemaining > 0 and (currentAngleDeg == 60.0 or currentAngleDeg == 90.0)",
+      "io_4_segment_5": "stableSecondsRemaining > 0 and (currentAngleDeg == 60.0 or currentAngleDeg == 90.0)",
+      "io_4_segment_6": "stableSecondsRemaining > 0 and currentAngleDeg == 90.0",
+      "io_4_segment_7": "stableSecondsRemaining > 0 and currentAngleDeg == 90.0",
+      "io_4_segment_8": "stableSecondsRemaining > 0 and currentAngleDeg == 90.0",
+      "io_4_segment_9": "stableSecondsRemaining > 0 and currentAngleDeg == 90.0"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1) and a LED bar graph (bargraph1) using three push buttons (btn1, btn2, btn3). The servo motor will rotate to specific angles based on the button pressed, and the LED bar graph will visually indicate the current angle of the servo motor. Each button corresponds to a specific angle, and the LED bar graph will light up proportionally to the angle.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the servo motor (servo1) should be at 0 degrees, and the LED bar graph (bargraph1) should be off.\nButton Interaction:\n1. When btn1 is pressed, the servo motor (servo1) should rotate to 30 degrees. The LED bar graph (bargraph1) should light up the first 3 LEDs to indicate the angle.\n2. When btn2 is pressed, the servo motor (servo1) should rotate to 60 degrees. The LED bar graph (bargraph1) should light up the first 6 LEDs to indicate the angle.\n3. When btn3 is pressed, the servo motor (servo1) should rotate to 90 degrees. The LED bar graph (bargraph1) should light up all 10 LEDs to indicate the angle.\nState Maintenance: Each state (angle and corresponding LED bar graph display) should be maintained for at least 2 seconds to allow for verification.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"btn3:2.r\", \"black\"], [\"mega:4\", \"btn3:1.l\", \"green\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"], [\"mega:45\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "At startup keep io_0=false, io_1=false, io_2=false; then press btn1 by driving io_0 true for one step then false; afterwards hold all inputs false for at least 2 seconds of model steps.",
+        "oracle": "Initially servo angle io_3=0.0 and all io_4_segment_0..io_4_segment_9=false. After the btn1 press edge, io_3=30.0 and exactly segments 0,1,2 are true while the state is maintained for at least 2 seconds."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1) and a LED bar graph (bargraph1) using three push buttons (btn1, btn2, btn3). The servo motor will rotate to specific angles based on the button pressed, and the LED bar graph will visually indicate the current angle of the servo motor. Each button corresponds to a specific angle, and the LED bar graph will light up proportionally to the angle.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the servo motor (servo1) should be at 0 degrees, and the LED bar graph (bargraph1) should be off.\nButton Interaction:\n1. When btn1 is pressed, the servo motor (servo1) should rotate to 30 degrees. The LED bar graph (bargraph1) should light up the first 3 LEDs to indicate the angle.\n2. When btn2 is pressed, the servo motor (servo1) should rotate to 60 degrees. The LED bar graph (bargraph1) should light up the first 6 LEDs to indicate the angle.\n3. When btn3 is pressed, the servo motor (servo1) should rotate to 90 degrees. The LED bar graph (bargraph1) should light up all 10 LEDs to indicate the angle.\nState Maintenance: Each state (angle and corresponding LED bar graph display) should be maintained for at least 2 seconds to allow for verification.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"btn3:2.r\", \"black\"], [\"mega:4\", \"btn3:1.l\", \"green\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"], [\"mega:45\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "From a state where stableSecondsRemaining is not active, press btn2 by driving io_1 true for one step then false; afterwards hold io_0=false, io_1=false, io_2=false for at least 2 seconds of model steps.",
+        "oracle": "After the btn2 press edge, io_3=60.0 and exactly segments 0..5 are true while the state is maintained for at least 2 seconds."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1) and a LED bar graph (bargraph1) using three push buttons (btn1, btn2, btn3). The servo motor will rotate to specific angles based on the button pressed, and the LED bar graph will visually indicate the current angle of the servo motor. Each button corresponds to a specific angle, and the LED bar graph will light up proportionally to the angle.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the servo motor (servo1) should be at 0 degrees, and the LED bar graph (bargraph1) should be off.\nButton Interaction:\n1. When btn1 is pressed, the servo motor (servo1) should rotate to 30 degrees. The LED bar graph (bargraph1) should light up the first 3 LEDs to indicate the angle.\n2. When btn2 is pressed, the servo motor (servo1) should rotate to 60 degrees. The LED bar graph (bargraph1) should light up the first 6 LEDs to indicate the angle.\n3. When btn3 is pressed, the servo motor (servo1) should rotate to 90 degrees. The LED bar graph (bargraph1) should light up all 10 LEDs to indicate the angle.\nState Maintenance: Each state (angle and corresponding LED bar graph display) should be maintained for at least 2 seconds to allow for verification.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn3\", \"top\": -195.4, \"left\": 190.8, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"btn3:2.r\", \"black\"], [\"mega:4\", \"btn3:1.l\", \"green\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"], [\"mega:45\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "From a state where stableSecondsRemaining is not active, press btn3 by driving io_2 true for one step then false; afterwards hold io_0=false, io_1=false, io_2=false for at least 2 seconds of model steps.",
+        "oracle": "After the btn3 press edge, io_3=90.0 and all segments 0..9 are true while the state is maintained for at least 2 seconds."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    attribute currentAngleDeg : Real := 0.0;\n    attribute stableSecondsRemaining : Integer := 0;\n    attribute previousPressedBtn1 : Boolean := false;\n    attribute previousPressedBtn2 : Boolean := false;\n    attribute previousPressedBtn3 : Boolean := false;\n    attribute pendingAngleDeg : Real := 0.0;\n    attribute pendingLedCount : Integer := 0;\n    perform action tick {\n      first start;\n      then if stableSecondsRemaining <= 0 {\n        first start;\n        then assign pendingAngleDeg := (if io_0 ? 30.0 else (if io_1 ? 60.0 else (if io_2 ? 90.0 else 0.0)));\n        then assign pendingLedCount := (if io_0 ? 3 else (if io_1 ? 6 else (if io_2 ? 10 else 0)));\n        then if ((((io_0) and ((not previousPressedBtn1)))) or (((io_1) and ((not previousPressedBtn2)))) or (((io_2) and ((not previousPressedBtn3))))) {\n          first start;\n          then assign currentAngleDeg := pendingAngleDeg;\n          then assign stableSecondsRemaining := 2;\n        }\n      } else {\n        first start;\n        then assign stableSecondsRemaining := stableSecondsRemaining - 1;\n      }\n      then assign previousPressedBtn1 := io_0;\n      then assign previousPressedBtn2 := io_1;\n      then assign previousPressedBtn3 := io_2;\n    }\n    out attribute io_3 : Real = currentAngleDeg;\n    out attribute io_4_segment_0 : Boolean = stableSecondsRemaining > 0 and currentAngleDeg == 30.0 or currentAngleDeg == 60.0 or currentAngleDeg == 90.0;\n    out attribute io_4_segment_1 : Boolean = stableSecondsRemaining > 0 and (currentAngleDeg == 30.0 or currentAngleDeg == 60.0 or currentAngleDeg == 90.0);\n    out attribute io_4_segment_2 : Boolean = stableSecondsRemaining > 0 and (currentAngleDeg == 30.0 or currentAngleDeg == 60.0 or currentAngleDeg == 90.0);\n    out attribute io_4_segment_3 : Boolean = stableSecondsRemaining > 0 and (currentAngleDeg == 60.0 or currentAngleDeg == 90.0);\n    out attribute io_4_segment_4 : Boolean = stableSecondsRemaining > 0 and (currentAngleDeg == 60.0 or currentAngleDeg == 90.0);\n    out attribute io_4_segment_5 : Boolean = stableSecondsRemaining > 0 and (currentAngleDeg == 60.0 or currentAngleDeg == 90.0);\n    out attribute io_4_segment_6 : Boolean = stableSecondsRemaining > 0 and currentAngleDeg == 90.0;\n    out attribute io_4_segment_7 : Boolean = stableSecondsRemaining > 0 and currentAngleDeg == 90.0;\n    out attribute io_4_segment_8 : Boolean = stableSecondsRemaining > 0 and currentAngleDeg == 90.0;\n    out attribute io_4_segment_9 : Boolean = stableSecondsRemaining > 0 and currentAngleDeg == 90.0;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,185 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests raw A0 reporting at interior values, both endpoints, and a repeated value, including a button-only transition. Cadence is measured using the distinctive stable A0 value 619, not all serial records, so separate A0 and button lines are permitted. Independent D2-state validation remains uncovered: the requirement specifies neither state encoding nor field identification, and the available checks cannot compare arbitrary serial states relationally. The available check schema also cannot inspect Serial.begin baud configuration. The reference implements D2 reporting and 9600 baud, but these are not claimed as independently verified.",
+  "assumptions": [
+    "Relies on the disclosed bench defaults: A0 is a raw ADC input from 0 through 1023 with default 5 V reference.",
+    "Relies on the disclosed button wiring default: digital pin 2 connects to GND when pressed and uses INPUT_PULLUP; released is HIGH and pressed is LOW.",
+    "Authoritative D2 denotes Arduino digital pin 2.",
+    "Serial labels, field order, and button-state encoding are unspecified. Reports may place A0 and D2 on separate lines.",
+    "One-second reporting has unspecified startup phase; cadence checks allow 150 ms scheduling tolerance.",
+    "No supported check directly observes the configured serial baud rate."
+  ],
+  "horizon_ms": 18000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 87
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 1800,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 173
+    },
+    {
+      "at_ms": 1800,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 3600,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 619
+    },
+    {
+      "at_ms": 3600,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 6200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 9000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 1023
+    },
+    {
+      "at_ms": 10800,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    },
+    {
+      "at_ms": 10800,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 12600,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 173
+    },
+    {
+      "at_ms": 12600,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 15000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "initial_adc",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 300,
+      "to_ms": 1700,
+      "regex": "(^|[^0-9])87([^0-9]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "adc_interior",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 2100,
+      "to_ms": 3500,
+      "regex": "(^|[^0-9])173([^0-9]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "adc_stable_released",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 3900,
+      "to_ms": 6100,
+      "regex": "(^|[^0-9])619([^0-9]|$)",
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "adc_stable_pressed",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 6500,
+      "to_ms": 8900,
+      "regex": "(^|[^0-9])619([^0-9]|$)",
+      "min_count": 2
+    },
+    {
+      "kind": "interval",
+      "id": "one_second_adc_reporting",
+      "requirement_quote": "每秒串口输出",
+      "source": "serial",
+      "contains": "619",
+      "from_ms": 3900,
+      "to_ms": 8900,
+      "expected_ms": 1000,
+      "tolerance_ms": 150,
+      "min_count": 4
+    },
+    {
+      "kind": "serial",
+      "id": "adc_upper_endpoint",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 9300,
+      "to_ms": 10700,
+      "regex": "(^|[^0-9])1023([^0-9]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "adc_lower_endpoint",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 11100,
+      "to_ms": 12500,
+      "regex": "(^|[^0-9])0([^0-9]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "adc_return",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 12900,
+      "to_ms": 14900,
+      "regex": "(^|[^0-9])173([^0-9]|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "adc_after_button_only_release",
+      "requirement_quote": "串口输出 A0 电位器值",
+      "from_ms": 15300,
+      "to_ms": 17900,
+      "regex": "(^|[^0-9])173([^0-9]|$)",
+      "min_count": 2
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nunsigned long lastReport = 0;\n\nvoid setup() {\n  pinMode(A0, INPUT);\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n  lastReport = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if ((unsigned long)(now - lastReport) >= 1000UL) {\n    lastReport += 1000UL;\n    int potentiometer = analogRead(A0);\n    int buttonLevel = digitalRead(2);\n    Serial.print(\"A0=\");\n    Serial.print(potentiometer);\n    Serial.print(\" D2=\");\n    Serial.println(buttonLevel);\n  }\n}\n"
+}

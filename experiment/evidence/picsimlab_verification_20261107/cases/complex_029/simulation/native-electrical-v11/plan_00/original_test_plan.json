@@ -1,0 +1,190 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "This suite tests a specific safety invariant of the button-to-count behavior: one D2 actuation must not produce repeated parity changes, and releasing buttons must leave the displayed count stable. These checks remain valid even if the unspecified initial count is already locked at 15. They detect repeated counting while a button is held and spontaneous count changes, but do not establish correct increment/decrement magnitudes, parity polarity, alarm activation, or reset completion. Absolute-value and reset-deadline checks cannot be made independently without an initial count and a specified long-press duration.",
+  "assumptions": [
+    "The bench defaults apply: D2 and D3 connect to GND when pressed and use INPUT_PULLUP; the D13 LED is active HIGH.",
+    "D6 is treated as a passive buzzer requiring a carrier; its alarm frequency is unspecified.",
+    "D2 加一 denotes one increment per distinct press, not automatic repetition while held.",
+    "The requirement does not specify the initial count, long-press duration, reset target, negative-count policy, or alarm cadence. Tests do not require particular choices for these parameters.",
+    "The reference chooses initial count zero, reset to zero after a two-second D3 hold, signed counting below zero, and a continuous 1000 Hz alarm. These reference choices are not imposed by the checks."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 1000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 2500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 4300,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 5500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 5800,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 7000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 7300,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 8500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 10000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "edges",
+      "id": "held_increment_has_at_most_one_parity_change",
+      "requirement_quote": "D2 加一",
+      "pin": 13,
+      "from_ms": 900,
+      "to_ms": 2900,
+      "min_count": 0,
+      "max_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "second_increment_has_at_most_one_parity_change",
+      "requirement_quote": "D2 加一",
+      "pin": 13,
+      "from_ms": 3900,
+      "to_ms": 4700,
+      "min_count": 0,
+      "max_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "third_increment_has_at_most_one_parity_change",
+      "requirement_quote": "D2 加一",
+      "pin": 13,
+      "from_ms": 5400,
+      "to_ms": 6200,
+      "min_count": 0,
+      "max_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "held_increment_after_decrement",
+      "requirement_quote": "D2 加一",
+      "pin": 13,
+      "from_ms": 8400,
+      "to_ms": 10400,
+      "min_count": 0,
+      "max_count": 1
+    },
+    {
+      "kind": "relation",
+      "id": "display_stable_after_first_release",
+      "requirement_quote": "数码管显示当前值",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        2900,
+        3300,
+        3700
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "display_stable_after_repeated_increment",
+      "requirement_quote": "数码管显示当前值",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        6200,
+        6500,
+        6800
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "display_stable_after_decrement_release",
+      "requirement_quote": "数码管显示当前值",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        7700,
+        8000,
+        8300
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "display_stable_after_final_release",
+      "requirement_quote": "数码管显示当前值",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        10400,
+        11000,
+        11700
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nstruct Button {\n  uint8_t pin;\n  bool raw;\n  bool stable;\n  unsigned long changed;\n};\nButton up = {2, HIGH, HIGH, 0};\nButton down = {3, HIGH, HIGH, 0};\nint countValue = 0;\nbool locked = false;\nbool resetDone = false;\nunsigned long downSince = 0;\n\nbool updateButton(Button &b, unsigned long now) {\n  bool level = digitalRead(b.pin);\n  if (level != b.raw) {\n    b.raw = level;\n    b.changed = now;\n  }\n  if (b.stable != b.raw && now - b.changed >= 30) {\n    b.stable = b.raw;\n    return true;\n  }\n  return false;\n}\n\nvoid render() {\n  display.showNumberDec(countValue, false);\n  digitalWrite(13, countValue % 2 == 0 ? HIGH : LOW);\n  if (locked) tone(6, 1000);\n  else noTone(6);\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(3, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n  pinMode(6, OUTPUT);\n  display.setBrightness(7);\n  render();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  bool upChanged = updateButton(up, now);\n  bool downChanged = updateButton(down, now);\n  bool dirty = false;\n  if (upChanged && up.stable == LOW && !locked) {\n    ++countValue;\n    if (countValue == 15) locked = true;\n    dirty = true;\n  }\n  if (downChanged) {\n    if (down.stable == LOW) {\n      downSince = now;\n      resetDone = false;\n      if (!locked) {\n        --countValue;\n        dirty = true;\n      }\n    } else {\n      resetDone = false;\n    }\n  }\n  if (locked && down.stable == LOW && !resetDone && now - downSince >= 2000) {\n    countValue = 0;\n    locked = false;\n    resetDone = true;\n    dirty = true;\n  }\n  if (dirty) render();\n}\n"
+}

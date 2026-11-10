@@ -1,0 +1,170 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"displayMode\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"alarmState\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_7 and not previousPressed\",\n        \"then\": [\n          {\n            \"assign\": \"displayMode\",\n            \"value\": \"displayMode + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": \"displayMode == 3\",\n        \"then\": [\n          {\n            \"assign\": \"displayMode\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_7\"\n      },\n      {\n        \"if\": \"io_2 < 300.0\",\n        \"then\": [\n          {\n            \"assign\": \"alarmState\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"alarmState\",\n            \"value\": false\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"if alarmState then 0.0 else (if io_0 < 250.0 then 255.0 else 0.0)\",\n      \"io_4\": \"if alarmState then 0.0 else (if io_1 < 300.0 then 200.0 else 0.0)\",\n      \"io_5\": \"if alarmState then true else false\",\n      \"io_6\": \"if alarmState then 1000 else 0\",\n      \"io_8\": \"if displayMode == 0 then RealFunctions::floor(io_0) else (if displayMode == 1 then RealFunctions::floor(io_1) else RealFunctions::floor(io_2))\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下按钮D2一次（io_7从false到true的按下沿），且在该步骤保持io_0=123，io_1=456，io_2=789\",\n        \"oracle\": \"TM1637显示值(io_8)从显示水温切换为显示光照（第一次切换模式后按显示顺序为模式1），因此io_8应等于RealFunctions::floor(io_1)\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持按钮不按（io_7=false且不发生按下沿），设置水位过低 io_2=299，给任意io_0=260、io_1=100\",\n        \"oracle\": \"报警状态为开：io_5应为true、io_6应为1000，且相关设备关闭：io_3=0.0且io_4=0.0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持按钮不按（io_7=false且不发生按下沿），设置水位正常 io_2=300，并设置io_0=200（低于加热阈值）、io_1=100（低于光照阈值）\",\n        \"oracle\": \"不报警：io_5=false且io_6=0；按温度控制加热器打开：io_3=255.0；按光照控制照明打开：io_4=200.0\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/outputs/io_3",
+          "original": "if alarmState then 0.0 else (if io_0 < 250.0 then 255.0 else 0.0)",
+          "normalized": {
+            "if": "alarmState",
+            "then": 0.0,
+            "else": {
+              "if": {
+                "<": [
+                  "io_0",
+                  250.0
+                ]
+              },
+              "then": 255.0,
+              "else": 0.0
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/outputs/io_4",
+          "original": "if alarmState then 0.0 else (if io_1 < 300.0 then 200.0 else 0.0)",
+          "normalized": {
+            "if": "alarmState",
+            "then": 0.0,
+            "else": {
+              "if": {
+                "<": [
+                  "io_1",
+                  300.0
+                ]
+              },
+              "then": 200.0,
+              "else": 0.0
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/outputs/io_5",
+          "original": "if alarmState then true else false",
+          "normalized": {
+            "if": "alarmState",
+            "then": true,
+            "else": false
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/outputs/io_6",
+          "original": "if alarmState then 1000 else 0",
+          "normalized": {
+            "if": "alarmState",
+            "then": 1000,
+            "else": 0
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/outputs/io_8",
+          "original": "if displayMode == 0 then RealFunctions::floor(io_0) else (if displayMode == 1 then RealFunctions::floor(io_1) else RealFunctions::floor(io_2))",
+          "normalized": {
+            "if": {
+              "==": [
+                "displayMode",
+                0
+              ]
+            },
+            "then": "RealFunctions::floor(io_0)",
+            "else": {
+              "if": {
+                "==": [
+                  "displayMode",
+                  1
+                ]
+              },
+              "then": "RealFunctions::floor(io_1)",
+              "else": "RealFunctions::floor(io_2)"
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_7 : Boolean;\n    attribute displayMode : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute alarmState : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_7 and not previousPressed {\n        first start;\n        then assign displayMode := displayMode + 1;\n      }\n      then if displayMode == 3 {\n        first start;\n        then assign displayMode := 0;\n      }\n      then assign previousPressed := io_7;\n      then if io_2 < 300.0 {\n        first start;\n        then assign alarmState := true;\n      } else {\n        first start;\n        then assign alarmState := false;\n      }\n    }\n    out attribute io_3 : Real = (if alarmState ? 0.0 else (if ((io_0) < (250.0)) ? 255.0 else 0.0));\n    out attribute io_4 : Real = (if alarmState ? 0.0 else (if ((io_1) < (300.0)) ? 200.0 else 0.0));\n    out attribute io_5 : Boolean = (if alarmState ? true else false);\n    out attribute io_6 : Integer = (if alarmState ? 1000 else 0);\n    out attribute io_8 : Integer = (if ((displayMode) == (0)) ? RealFunctions::floor(io_0) else (if ((displayMode) == (1)) ? RealFunctions::floor(io_1) else RealFunctions::floor(io_2)));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

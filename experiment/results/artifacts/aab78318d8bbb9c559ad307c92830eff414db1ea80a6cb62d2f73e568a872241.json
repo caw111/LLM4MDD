@@ -1,0 +1,135 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"count\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"alarmLocked\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevUp\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDown\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"alarmLocked\",\n        \"then\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"not\": \"prevDown\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"alarmLocked\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"count\",\n                \"value\": 0\n              }\n            ],\n            \"else\": []\n          }\n        ],\n        \"else\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_0\",\n                {\n                  \"not\": \"prevUp\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"if\": {\n                  \"==\": [\n                    \"count\",\n                    15\n                  ]\n                },\n                \"then\": [\n                  {\n                    \"assign\": \"alarmLocked\",\n                    \"value\": true\n                  },\n                  {\n                    \"assign\": \"count\",\n                    \"value\": 15\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"assign\": \"count\",\n                    \"value\": \"count + 1\"\n                  },\n                  {\n                    \"if\": {\n                      \"==\": [\n                        {\n                          \"+\": [\n                            \"count\",\n                            1\n                          ]\n                        },\n                        15\n                      ]\n                    },\n                    \"then\": [\n                      {\n                        \"assign\": \"alarmLocked\",\n                        \"value\": true\n                      }\n                    ],\n                    \"else\": []\n                  }\n                ]\n              }\n            ],\n            \"else\": []\n          },\n          {\n            \"if\": {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"not\": \"prevDown\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"count\",\n                \"value\": {\n                  \"if\": {\n                    \"==\": [\n                      \"count\",\n                      0\n                    ]\n                  },\n                  \"then\": 15,\n                  \"else\": \"count - 1\"\n                  }\n                }\n            ],\n            \"else\": []\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevUp\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevDown\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": {\n          \"!=\": [\n            {\n              \"n - 2 * RealFunctions::floor(n / 2)\": \"count\"\n            },\n            0\n          ]\n        },\n        \"then\": false,\n        \"else\": true\n      },\n      \"io_3\": {\n        \"if\": \"alarmLocked\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_4\": \"count\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"starting with alarmLocked=false,count=0; apply rising edge on io_0 repeatedly to reach count=15, with no io_1 edges until reaching 15\",\n        \"oracle\": \"io_4 shows incremental count values ending at 15; io_3 becomes nonzero (alarm) and alarmLocked holds so further io_0 edges do not change io_4\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"with alarmLocked=false, apply rising edge on io_0 once from count=0 to count=1, then apply rising edge on io_0 once from count=1 to count=2\",\n        \"oracle\": \"io_2 is false when count=1 and true when count=2 (LED on even, off odd); io_4 tracks 1 then 2\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"with alarmLocked=false,count=0, apply rising edge on io_1 once (count down rollover); then apply rising edge on io_1 again\",\n        \"oracle\": \"io_4 becomes 15 after first down edge, then becomes 14 after second down edge; alarm remains off so io_3 stays 0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"drive system to alarmLocked=true by counting up to 15; then apply a rising edge on io_1 to reset\",\n        \"oracle\": \"after reset edge, alarmLocked clears, io_3 returns to 0, and io_4 resets to 0; LED follows even count so io_2 becomes true\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_2: Unknown expression object {'n - 2 * RealFunctions::floor(n / 2)': 'count'}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/io_2"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_2: Unknown expression object {'n - 2 * RealFunctions::floor(n / 2)': 'count'}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/outputs/io_2"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/outputs/io_2: Unknown expression object {'n - 2 * RealFunctions::floor(n / 2)': 'count'}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"count\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"alarmLocked\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevUp\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDown\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"alarmLocked\",\n        \"then\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"not\": \"prevDown\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"alarmLocked\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"count\",\n                \"value\": 0\n              }\n            ],\n            \"else\": []\n          }\n        ],\n        \"else\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_0\",\n                {\n                  \"not\": \"prevUp\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"if\": {\n                  \"==\": [\n                    \"count\",\n                    15\n                  ]\n                },\n                \"then\": [\n                  {\n                    \"assign\": \"alarmLocked\",\n                    \"value\": true\n                  },\n                  {\n                    \"assign\": \"count\",\n                    \"value\": 15\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"assign\": \"count\",\n                    \"value\": \"count + 1\"\n                  }\n                ]\n              }\n            ],\n            \"else\": []\n          },\n          {\n            \"if\": {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"not\": \"prevDown\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"count\",\n                \"value\": {\n                  \"if\": {\n                    \"==\": [\n                      \"count\",\n                      0\n                    ]\n                  },\n                  \"then\": 15,\n                  \"else\": \"count - 1\"\n                }\n              }\n            ],\n            \"else\": []\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevUp\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevDown\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": {\n          \"==\": [\n            \"count\",\n            0\n          ]\n        },\n        \"then\": true,\n        \"else\": {\n          \"==\": [\n            \"count\",\n            {\n              \"+\": [\n                2,\n                {\n                  \"*\": [\n                    {\n                      \"RealFunctions::floor\": {\n                        \"/\": [\n                          \"count\",\n                          2\n                        ]\n                      }\n                    },\n                    0\n                  ]\n                }\n              ]\n            }\n          ]\n        }\n      },\n      \"io_3\": {\n        \"if\": \"alarmLocked\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_4\": \"count\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"starting with alarmLocked=false,count=0; apply rising edge on io_0 repeatedly to reach count=15, with no io_1 edges until reaching 15\",\n        \"oracle\": \"io_4 shows incremental count values ending at 15; io_3 becomes nonzero (alarm) and alarmLocked holds so further io_0 edges do not change io_4\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"with alarmLocked=false, apply rising edge on io_0 once from count=0 to count=1, then apply rising edge on io_0 once from count=1 to count=2\",\n        \"oracle\": \"io_2 is false when count=1 and true when count=2 (LED on even, off odd); io_4 tracks 1 then 2\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"with alarmLocked=false,count=0, apply rising edge on io_1 once (count down rollover); then apply rising edge on io_1 again\",\n        \"oracle\": \"io_4 becomes 15 after first down edge, then becomes 14 after second down edge; alarm remains off so io_3 stays 0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"drive system to alarmLocked=true by counting up to 15; then apply a rising edge on io_1 to reset\",\n        \"oracle\": \"after reset edge, alarmLocked clears, io_3 returns to 0, and io_4 resets to 0; LED follows even count so io_2 becomes true\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute count : Integer := 0;\n    attribute alarmLocked : Boolean := false;\n    attribute prevUp : Boolean := false;\n    attribute prevDown : Boolean := false;\n    perform action tick {\n      first start;\n      then if alarmLocked {\n        first start;\n        then if ((io_1) and ((not prevDown))) {\n          first start;\n          then assign alarmLocked := false;\n          then assign count := 0;\n        }\n      } else {\n        first start;\n        then if ((io_0) and ((not prevUp))) {\n          first start;\n          then if ((count) == (15)) {\n            first start;\n            then assign alarmLocked := true;\n            then assign count := 15;\n          } else {\n            first start;\n            then assign count := count + 1;\n          }\n        }\n        then if ((io_1) and ((not prevDown))) {\n          first start;\n          then assign count := (if ((count) == (0)) ? 15 else count - 1);\n        }\n      }\n      then assign prevUp := io_0;\n      then assign prevDown := io_1;\n    }\n    out attribute io_2 : Boolean = (if ((count) == (0)) ? true else ((count) == (((2) + (((RealFunctions::floor(((count) / (2)))) * (0)))))));\n    out attribute io_3 : Integer = (if alarmLocked ? 1000 else 0);\n    out attribute io_4 : Integer = count;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

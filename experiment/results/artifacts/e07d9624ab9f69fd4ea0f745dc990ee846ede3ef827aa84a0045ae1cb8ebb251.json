@@ -1,0 +1,276 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevBtn1",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevBtn2",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "btn1Stable",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "btn2Stable",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "debounceCount1",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "debounceCount2",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "colorIndex",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "btn1Stable",
+        "value": {
+          "if": "io_0",
+          "then": {
+            "if": "debounceCount1 >= 2",
+            "then": true,
+            "else": "btn1Stable"
+          },
+          "else": false
+        }
+      },
+      {
+        "assign": "btn2Stable",
+        "value": {
+          "if": "io_1",
+          "then": {
+            "if": "debounceCount2 >= 2",
+            "then": true,
+            "else": "btn2Stable"
+          },
+          "else": false
+        }
+      },
+      {
+        "assign": "debounceCount1",
+        "value": {
+          "if": "io_0",
+          "then": {
+            "if": "debounceCount1 >= 2",
+            "then": 2,
+            "else": "debounceCount1 + 1"
+          },
+          "else": 0
+        }
+      },
+      {
+        "assign": "debounceCount2",
+        "value": {
+          "if": "io_1",
+          "then": {
+            "if": "debounceCount2 >= 2",
+            "then": 2,
+            "else": "debounceCount2 + 1"
+          },
+          "else": 0
+        }
+      },
+      {
+        "if": {
+          "and": [
+            "btn1Stable",
+            {
+              "not": "prevBtn1"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "colorIndex",
+            "value": {
+              "if": "colorIndex == 8",
+              "then": 0,
+              "else": "colorIndex + 1"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "btn2Stable",
+            {
+              "not": "prevBtn2"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "colorIndex",
+            "value": {
+              "if": "colorIndex == 0",
+              "then": 8,
+              "else": "colorIndex - 1"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevBtn1",
+        "value": "btn1Stable"
+      },
+      {
+        "assign": "prevBtn2",
+        "value": "btn2Stable"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": {
+          "or": [
+            {
+              "or": [
+                {
+                  "or": [
+                    {
+                      "==": [
+                        "colorIndex",
+                        1
+                      ]
+                    },
+                    {
+                      "==": [
+                        "colorIndex",
+                        4
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "==": [
+                    "colorIndex",
+                    7
+                  ]
+                }
+              ]
+            },
+            {
+              "==": [
+                "colorIndex",
+                6
+              ]
+            }
+          ]
+        },
+        "then": 255.0,
+        "else": {
+          "if": {
+            "==": [
+              "colorIndex",
+              5
+            ]
+          },
+          "then": 0.0,
+          "else": {
+            "if": {
+              "==": [
+                "colorIndex",
+                3
+              ]
+            },
+            "then": 0.0,
+            "else": 0.0
+          }
+        }
+      },
+      "io_3": {
+        "if": {
+          "or": [
+            {
+              "==": [
+                "colorIndex",
+                2
+              ]
+            },
+            {
+              "==": [
+                "colorIndex",
+                4
+              ]
+            },
+            {
+              "==": [
+                "colorIndex",
+                5
+              ]
+            },
+            {
+              "==": [
+                "colorIndex",
+                7
+              ]
+            }
+          ]
+        },
+        "then": 255.0,
+        "else": 0.0
+      },
+      "io_4": {
+        "if": {
+          "or": [
+            {
+              "==": [
+                "colorIndex",
+                3
+              ]
+            },
+            {
+              "==": [
+                "colorIndex",
+                4
+              ]
+            },
+            {
+              "==": [
+                "colorIndex",
+                6
+              ]
+            },
+            {
+              "==": [
+                "colorIndex",
+                7
+              ]
+            }
+          ]
+        },
+        "then": 255.0,
+        "else": 0.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (rgb1) using two pushbuttons (btn1, btn2). The buttons allow navigation through a predefined sequence of colors, with btn1 advancing to the next color and btn2 returning to the previous color. The RGB LED must display the selected color continuously until a new button press occurs.\n\n**Detail Rules**:\n1. **Initialization**: The RGB LED (rgb1) starts in the **off** state when the system is powered on or reset.\n2. **Color Sequence**: The predefined color sequence is:  \n   **Off → Red → Green → Blue → Yellow → Cyan → Magenta → White → Off** (looping).\n3. **Button Interaction**:\n   - Pressing btn1 advances to the **next** color in the sequence.\n   - Pressing btn2 returns to the **previous** color in the sequence.\n   - The RGB LED must update immediately after a valid button press.\n4. **Debouncing**: Button presses must be debounced to avoid false triggers from mechanical vibrations.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:4\", \"rgb1:R\", \"red\"], [\"mega:5\", \"rgb1:G\", \"green\"], [\"mega:6\", \"rgb1:B\", \"blue\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Initialize; then apply a single clean rising press edge on btn1 (io_0 true then false) with no further button activity for several control steps.",
+        "oracle": "The RGB outputs change from Off (io_2=0.0, io_3=0.0, io_4=0.0) to Red (io_2=255.0, io_3=0.0, io_4=0.0) after the valid debounced press, and remain stable until the next valid press."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute prevBtn1 : Boolean := false;\n    attribute prevBtn2 : Boolean := false;\n    attribute btn1Stable : Boolean := false;\n    attribute btn2Stable : Boolean := false;\n    attribute debounceCount1 : Integer := 0;\n    attribute debounceCount2 : Integer := 0;\n    attribute colorIndex : Integer := 0;\n    perform action tick {\n      first start;\n      then assign btn1Stable := (if io_0 ? (if debounceCount1 >= 2 ? true else btn1Stable) else false);\n      then assign btn2Stable := (if io_1 ? (if debounceCount2 >= 2 ? true else btn2Stable) else false);\n      then assign debounceCount1 := (if io_0 ? (if debounceCount1 >= 2 ? 2 else debounceCount1 + 1) else 0);\n      then assign debounceCount2 := (if io_1 ? (if debounceCount2 >= 2 ? 2 else debounceCount2 + 1) else 0);\n      then if ((btn1Stable) and ((not prevBtn1))) {\n        first start;\n        then assign colorIndex := (if colorIndex == 8 ? 0 else colorIndex + 1);\n      }\n      then if ((btn2Stable) and ((not prevBtn2))) {\n        first start;\n        then assign colorIndex := (if colorIndex == 0 ? 8 else colorIndex - 1);\n      }\n      then assign prevBtn1 := btn1Stable;\n      then assign prevBtn2 := btn2Stable;\n    }\n    out attribute io_2 : Real = (if ((((((((colorIndex) == (1))) or (((colorIndex) == (4))))) or (((colorIndex) == (7))))) or (((colorIndex) == (6)))) ? 255.0 else (if ((colorIndex) == (5)) ? 0.0 else (if ((colorIndex) == (3)) ? 0.0 else 0.0)));\n    out attribute io_3 : Real = (if ((((colorIndex) == (2))) or (((colorIndex) == (4))) or (((colorIndex) == (5))) or (((colorIndex) == (7)))) ? 255.0 else 0.0);\n    out attribute io_4 : Real = (if ((((colorIndex) == (3))) or (((colorIndex) == (4))) or (((colorIndex) == (6))) or (((colorIndex) == (7)))) ? 255.0 else 0.0);\n  }\n  part system : Controller;\n}\n"
+}

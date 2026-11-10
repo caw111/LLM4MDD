@@ -1,0 +1,1578 @@
+{
+  "status": "passed",
+  "contract_revisions": 0,
+  "rounds": [
+    {
+      "revision": 0,
+      "contract": {
+        "version": 1,
+        "board": "arduino:avr:uno",
+        "control_period_ms": 2,
+        "planning_notes": [
+          "Preserve all supplied wiring. The native display operation configures D2 through D12 as outputs and handles multiplexing; the separate colon operation configures D13 as an output.",
+          "Initialize and check the DS1307 without adjusting its stored time. The diagram's initTime is simulation configuration, not a timestamp to write during startup.",
+          "Poll the RTC every 100 ms and use a 2 ms control step for multiplex refresh and display updates within the 250 ms acceptance bound.",
+          "The model derives HHMM using integer division and remainder expressed as subtraction, with no timezone offset: hoursTotal = epoch / 3600; hour = hoursTotal - (hoursTotal / 24) * 24; minutesTotal = epoch / 60; minute = minutesTotal - (minutesTotal / 60) * 60; display = hour * 100 + minute.",
+          "No pre-acquisition display or RTC-failure behavior is specified. Assume startup displays 00:00, update only from valid RTC acquisitions, and retain the last valid displayed time while RTC validity is false.",
+          "The common-anode colon is electrically active LOW; its normalized initial true value turns it on. No blinking or serial reporting is required.",
+          "Complete setup within 500 ms without waiting indefinitely for RTC availability. No elapsed-time model input is needed for direct periodic RTC display."
+        ],
+        "interfaces": [
+          {
+            "name": "io_0",
+            "direction": "input",
+            "type": "i32",
+            "unit": "s",
+            "initial": 0,
+            "meaning": "Current time read from the DS1307 as Unix epoch seconds",
+            "sample_period_ms": 100,
+            "device": "rtc module1",
+            "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_epoch\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+            "binding": {
+              "kind": "rtc_epoch",
+              "address": 104,
+              "acquisition": "periodic",
+              "sda_pin": "A4",
+              "scl_pin": "A5"
+            }
+          },
+          {
+            "name": "io_1",
+            "direction": "input",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "RTC availability and validity of the current acquisition",
+            "sample_period_ms": 100,
+            "device": "rtc module1",
+            "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_valid\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+            "binding": {
+              "kind": "rtc_valid",
+              "address": 104,
+              "acquisition": "periodic",
+              "sda_pin": "A4",
+              "scl_pin": "A5"
+            }
+          },
+          {
+            "name": "io_2",
+            "direction": "output",
+            "type": "i32",
+            "unit": "1",
+            "initial": 0,
+            "meaning": "Current RTC hour and minute encoded as hour times 100 plus minute, displayed as four digits",
+            "sample_period_ms": 2,
+            "device": "7-segment display1",
+            "hardware": "{\"common_anode\": true, \"digit_active_high\": true, \"digit_pins\": [\"D2\", \"D3\", \"D4\", \"D5\"], \"kind\": \"seven_segment_number\", \"leading_zero\": true, \"segment_pins\": [\"D6\", \"D7\", \"D8\", \"D9\", \"D10\", \"D11\", \"D12\"]}",
+            "binding": {
+              "kind": "seven_segment_number",
+              "digit_pins": [
+                "D2",
+                "D3",
+                "D4",
+                "D5"
+              ],
+              "common_anode": true,
+              "digit_active_high": true,
+              "leading_zero": true,
+              "segment_pins": [
+                "D6",
+                "D7",
+                "D8",
+                "D9",
+                "D10",
+                "D11",
+                "D12"
+              ]
+            }
+          },
+          {
+            "name": "io_3",
+            "direction": "output",
+            "type": "bool",
+            "unit": "1",
+            "initial": true,
+            "meaning": "Continuously illuminated clock colon",
+            "sample_period_ms": 2,
+            "device": "7-segment display1",
+            "hardware": "{\"active_high\": false, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+            "binding": {
+              "kind": "digital_output",
+              "active_high": false,
+              "pin": "D13"
+            },
+            "model_semantics": {
+              "kind": "digital_boolean",
+              "true_level": "LOW",
+              "false_level": "HIGH"
+            }
+          }
+        ],
+        "required_dependencies": {},
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# Clock\n\n## Project Description\nThis is a Arduino project that show current time using 4-digit 7-segment display.\n\n## Hardware Components\n- Arduino Uno\n- 4-digit 7-segment display\n- RTC module\n\n## Circuit Description\nCircuit is designed to use a 4-digit 7-segment display and a RTC module. \nFor RTC module, the VCC pin is connected to arduino 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5.\nIn the 4-digit 7-segment display, digit pins dig1 ~ dig4 are connected to arduino pin2 ~ pin5, respectively. Segment pins A ~ G are connected to arduino pin6 ~ pin12. Colon pin is connected to pin13. The common pin of display is connected to 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Check if the RTC module is available and initialize it\n2. Set pin 2 ~ 13 mode as OUTPUT\n3. Turn on the colon led\n4. Continuously retrieve the current time from the RTC\n5. Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct time is shown to the 4-digit 7-segment display\n\n## Notes for Implementation\n- The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\n- Digits are activated when digit pins are HIGH. \n- When using a 4-digit 7-segment display, be sure to specify '4-digit' at the beginning of the component type.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezones with button.\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -105,\n            \"left\": -67.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 138.6,\n            \"left\": 192.1,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:57\"\n            }\n        },\n        {\n            \"type\": \"wokwi-7segment\",\n            \"id\": \"7-segment display1\",\n            \"top\": -234.18,\n            \"left\": 68.32,\n            \"attrs\": {\n                \"digits\": \"4\",\n                \"colon\": \"1\",\n                \"commonPin\": \"anode\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG1\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v-9.6\",\n                \"h-76.79\",\n                \"v86.4\",\n                \"h115.2\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG2\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v-19.2\",\n                \"h-115.2\",\n                \"v105.6\",\n                \"h115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG3\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h-134.4\",\n                \"v115.2\",\n                \"h105.6\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG4\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"v47.16\",\n                \"h-48\"\n            ]\n        ],\n        [\n            \"7-segment display1:A\",\n            \"arduino uno1:6\",\n            \"orange\",\n            [\n                \"v-38.4\",\n                \"h-115.2\",\n                \"v134.4\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:B\",\n            \"arduino uno1:7\",\n            \"orange\",\n            [\n                \"v-48\",\n                \"h-163.2\",\n                \"v153.6\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:C\",\n            \"arduino uno1:8\",\n            \"orange\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:D\",\n            \"arduino uno1:9\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:E\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-47.99\",\n                \"v19.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:F\",\n            \"arduino uno1:11\",\n            \"orange\",\n            [\n                \"v-57.6\",\n                \"h-144\",\n                \"v172.8\",\n                \"h67.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:CLN\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"h0\",\n                \"v-67.2\",\n                \"h-192\",\n                \"v192\",\n                \"h57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:G\",\n            \"arduino uno1:12\",\n            \"orange\",\n            [\n                \"v37.56\",\n                \"h-115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:COM\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v210.36\",\n                \"h-96\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+          "effective_requirement": "# Clock\n\n## Project Description\nThis is a Arduino project that show current time using 4-digit 7-segment display.\n\n## Hardware Components\n- Arduino Uno\n- 4-digit 7-segment display\n- RTC module\n\n## Circuit Description\nCircuit is designed to use a 4-digit 7-segment display and a RTC module. \nFor RTC module, the VCC pin is connected to arduino 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5.\nIn the 4-digit 7-segment display, digit pins dig1 ~ dig4 are connected to arduino pin2 ~ pin5, respectively. Segment pins A ~ G are connected to arduino pin6 ~ pin12. Colon pin is connected to pin13. The common pin of display is connected to 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Check if the RTC module is available and initialize it\n2. Set pin 2 ~ 13 mode as OUTPUT\n3. Turn on the colon led\n4. Continuously retrieve the current time from the RTC\n5. Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct time is shown to the 4-digit 7-segment display\n\n## Notes for Implementation\n- The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\n- Digits are activated when digit pins are HIGH. \n- When using a 4-digit 7-segment display, be sure to specify '4-digit' at the beginning of the component type.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezones with button.\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -105,\n            \"left\": -67.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 138.6,\n            \"left\": 192.1,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:57\"\n            }\n        },\n        {\n            \"type\": \"wokwi-7segment\",\n            \"id\": \"7-segment display1\",\n            \"top\": -234.18,\n            \"left\": 68.32,\n            \"attrs\": {\n                \"digits\": \"4\",\n                \"colon\": \"1\",\n                \"commonPin\": \"anode\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG1\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v-9.6\",\n                \"h-76.79\",\n                \"v86.4\",\n                \"h115.2\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG2\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v-19.2\",\n                \"h-115.2\",\n                \"v105.6\",\n                \"h115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG3\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h-134.4\",\n                \"v115.2\",\n                \"h105.6\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG4\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"v47.16\",\n                \"h-48\"\n            ]\n        ],\n        [\n            \"7-segment display1:A\",\n            \"arduino uno1:6\",\n            \"orange\",\n            [\n                \"v-38.4\",\n                \"h-115.2\",\n                \"v134.4\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:B\",\n            \"arduino uno1:7\",\n            \"orange\",\n            [\n                \"v-48\",\n                \"h-163.2\",\n                \"v153.6\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:C\",\n            \"arduino uno1:8\",\n            \"orange\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:D\",\n            \"arduino uno1:9\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:E\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-47.99\",\n                \"v19.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:F\",\n            \"arduino uno1:11\",\n            \"orange\",\n            [\n                \"v-57.6\",\n                \"h-144\",\n                \"v172.8\",\n                \"h67.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:CLN\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"h0\",\n                \"v-67.2\",\n                \"h-192\",\n                \"v192\",\n                \"h57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:G\",\n            \"arduino uno1:12\",\n            \"orange\",\n            [\n                \"v37.56\",\n                \"h-115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:COM\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v210.36\",\n                \"h-96\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Get the current time using an RTC sensor, and change into different timezones with button.",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": -105,
+                  "left": -67.8,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ds1307",
+                  "id": "rtc module1",
+                  "top": 138.6,
+                  "left": 192.1,
+                  "attrs": {
+                    "initTime": "2024-11-24T04:48:57"
+                  }
+                },
+                {
+                  "type": "wokwi-7segment",
+                  "id": "7-segment display1",
+                  "top": -234.18,
+                  "left": 68.32,
+                  "attrs": {
+                    "digits": "4",
+                    "colon": "1",
+                    "commonPin": "anode"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "rtc module1:SCL",
+                  "arduino uno1:A5",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:SDA",
+                  "arduino uno1:A4",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:5V",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:GND",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG1",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "v-9.6",
+                    "h-76.79",
+                    "v86.4",
+                    "h115.2",
+                    "v9.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG2",
+                  "arduino uno1:3",
+                  "green",
+                  [
+                    "v-19.2",
+                    "h-115.2",
+                    "v105.6",
+                    "h115.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG3",
+                  "arduino uno1:4",
+                  "green",
+                  [
+                    "v-28.8",
+                    "h-134.4",
+                    "v115.2",
+                    "h105.6",
+                    "v9.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG4",
+                  "arduino uno1:5",
+                  "green",
+                  [
+                    "v47.16",
+                    "h-48"
+                  ]
+                ],
+                [
+                  "7-segment display1:A",
+                  "arduino uno1:6",
+                  "orange",
+                  [
+                    "v-38.4",
+                    "h-115.2",
+                    "v134.4",
+                    "h105.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:B",
+                  "arduino uno1:7",
+                  "orange",
+                  [
+                    "v-48",
+                    "h-163.2",
+                    "v153.6",
+                    "h105.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:C",
+                  "arduino uno1:8",
+                  "orange",
+                  [
+                    "v0"
+                  ]
+                ],
+                [
+                  "7-segment display1:D",
+                  "arduino uno1:9",
+                  "orange",
+                  [
+                    "v47.16",
+                    "h-57.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:E",
+                  "arduino uno1:10",
+                  "orange",
+                  [
+                    "v47.16",
+                    "h-47.99",
+                    "v19.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:F",
+                  "arduino uno1:11",
+                  "orange",
+                  [
+                    "v-57.6",
+                    "h-144",
+                    "v172.8",
+                    "h67.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:CLN",
+                  "arduino uno1:13",
+                  "green",
+                  [
+                    "h0",
+                    "v-67.2",
+                    "h-192",
+                    "v192",
+                    "h57.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:G",
+                  "arduino uno1:12",
+                  "orange",
+                  [
+                    "v37.56",
+                    "h-115.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:COM",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v210.36",
+                    "h-96"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": true
+        },
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "# Clock\n\n## Project Description\nThis is a Arduino project that show current time using 4-digit 7-segment display.\n\n## Hardware Components\n- Arduino Uno\n- 4-digit 7-segment display\n- RTC module\n\n## Circuit Description\nCircuit is designed to use a 4-digit 7-segment display and a RTC module. \nFor RTC module, the VCC pin is connected to arduino 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5.\nIn the 4-digit 7-segment display, digit pins dig1 ~ dig4 are connected to arduino pin2 ~ pin5, respectively. Segment pins A ~ G are connected to arduino pin6 ~ pin12. Colon pin is connected to pin13. The common pin of display is connected to 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Check if the RTC module is available and initialize it\n2. Set pin 2 ~ 13 mode as OUTPUT\n3. Turn on the colon led\n4. Continuously retrieve the current time from the RTC\n5. Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct time is shown to the 4-digit 7-segment display\n\n## Notes for Implementation\n- The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\n- Digits are activated when digit pins are HIGH. \n- When using a 4-digit 7-segment display, be sure to specify '4-digit' at the beginning of the component type.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezones with button.\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -105,\n            \"left\": -67.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 138.6,\n            \"left\": 192.1,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:57\"\n            }\n        },\n        {\n            \"type\": \"wokwi-7segment\",\n            \"id\": \"7-segment display1\",\n            \"top\": -234.18,\n            \"left\": 68.32,\n            \"attrs\": {\n                \"digits\": \"4\",\n                \"colon\": \"1\",\n                \"commonPin\": \"anode\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG1\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v-9.6\",\n                \"h-76.79\",\n                \"v86.4\",\n                \"h115.2\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG2\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v-19.2\",\n                \"h-115.2\",\n                \"v105.6\",\n                \"h115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG3\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h-134.4\",\n                \"v115.2\",\n                \"h105.6\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG4\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"v47.16\",\n                \"h-48\"\n            ]\n        ],\n        [\n            \"7-segment display1:A\",\n            \"arduino uno1:6\",\n            \"orange\",\n            [\n                \"v-38.4\",\n                \"h-115.2\",\n                \"v134.4\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:B\",\n            \"arduino uno1:7\",\n            \"orange\",\n            [\n                \"v-48\",\n                \"h-163.2\",\n                \"v153.6\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:C\",\n            \"arduino uno1:8\",\n            \"orange\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:D\",\n            \"arduino uno1:9\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:E\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-47.99\",\n                \"v19.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:F\",\n            \"arduino uno1:11\",\n            \"orange\",\n            [\n                \"v-57.6\",\n                \"h-144\",\n                \"v172.8\",\n                \"h67.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:CLN\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"h0\",\n                \"v-67.2\",\n                \"h-192\",\n                \"v192\",\n                \"h57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:G\",\n            \"arduino uno1:12\",\n            \"orange\",\n            [\n                \"v37.56\",\n                \"h-115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:COM\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v210.36\",\n                \"h-96\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+            "assertion_ids": [
+              "source_requirement_R1"
+            ]
+          }
+        ],
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_2": {
+              "direction": "output",
+              "type": "i32"
+            },
+            "io_3": {
+              "direction": "output",
+              "type": "bool"
+            }
+          },
+          "serial_channels": []
+        }
+      },
+      "planning": {
+        "contract_sha256": "bc0cfaa7853b16646eae44bd5e1ebbb6d793187215943005eee7cabd69664e0e",
+        "provenance": "program_assembled",
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_2": {
+              "direction": "output",
+              "type": "i32"
+            },
+            "io_3": {
+              "direction": "output",
+              "type": "bool"
+            }
+          },
+          "serial_channels": []
+        },
+        "registered_relationships": "verified",
+        "functional_status": "unverified",
+        "attempts": [
+          {
+            "ok": true,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 2,\n  \"interface_requests\": [\n    {\n      \"kind\": \"rtc_epoch\",\n      \"device\": \"rtc module1\",\n      \"initial\": 0,\n      \"meaning\": \"Current time read from the DS1307 as Unix epoch seconds\",\n      \"sda_pin\": \"A4\",\n      \"scl_pin\": \"A5\",\n      \"address\": 104,\n      \"acquisition\": \"periodic\",\n      \"sample_period_ms\": 100\n    },\n    {\n      \"kind\": \"rtc_valid\",\n      \"device\": \"rtc module1\",\n      \"initial\": false,\n      \"meaning\": \"RTC availability and validity of the current acquisition\",\n      \"sda_pin\": \"A4\",\n      \"scl_pin\": \"A5\",\n      \"address\": 104,\n      \"acquisition\": \"periodic\",\n      \"sample_period_ms\": 100\n    },\n    {\n      \"kind\": \"seven_segment_number\",\n      \"device\": \"7-segment display1\",\n      \"initial\": 0,\n      \"meaning\": \"Current RTC hour and minute encoded as hour times 100 plus minute, displayed as four digits\",\n      \"segment_pins\": [\n        \"D6\",\n        \"D7\",\n        \"D8\",\n        \"D9\",\n        \"D10\",\n        \"D11\",\n        \"D12\"\n      ],\n      \"digit_pins\": [\n        \"D2\",\n        \"D3\",\n        \"D4\",\n        \"D5\"\n      ],\n      \"common_anode\": true,\n      \"digit_active_high\": true,\n      \"leading_zero\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"device\": \"7-segment display1\",\n      \"initial\": true,\n      \"meaning\": \"Continuously illuminated clock colon\",\n      \"pin\": \"D13\",\n      \"active_high\": false\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Preserve all supplied wiring. The native display operation configures D2 through D12 as outputs and handles multiplexing; the separate colon operation configures D13 as an output.\",\n    \"Initialize and check the DS1307 without adjusting its stored time. The diagram's initTime is simulation configuration, not a timestamp to write during startup.\",\n    \"Poll the RTC every 100 ms and use a 2 ms control step for multiplex refresh and display updates within the 250 ms acceptance bound.\",\n    \"The model derives HHMM using integer division and remainder expressed as subtraction, with no timezone offset: hoursTotal = epoch / 3600; hour = hoursTotal - (hoursTotal / 24) * 24; minutesTotal = epoch / 60; minute = minutesTotal - (minutesTotal / 60) * 60; display = hour * 100 + minute.\",\n    \"No pre-acquisition display or RTC-failure behavior is specified. Assume startup displays 00:00, update only from valid RTC acquisitions, and retain the last valid displayed time while RTC validity is false.\",\n    \"The common-anode colon is electrically active LOW; its normalized initial true value turns it on. No blinking or serial reporting is required.\",\n    \"Complete setup within 500 ms without waiting indefinitely for RTC availability. No elapsed-time model input is needed for direct periodic RTC display.\"\n  ]\n}",
+            "construction": [
+              "catalog_interfaces_and_serial_channels_assembled"
+            ],
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            }
+          }
+        ],
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# Clock\n\n## Project Description\nThis is a Arduino project that show current time using 4-digit 7-segment display.\n\n## Hardware Components\n- Arduino Uno\n- 4-digit 7-segment display\n- RTC module\n\n## Circuit Description\nCircuit is designed to use a 4-digit 7-segment display and a RTC module. \nFor RTC module, the VCC pin is connected to arduino 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5.\nIn the 4-digit 7-segment display, digit pins dig1 ~ dig4 are connected to arduino pin2 ~ pin5, respectively. Segment pins A ~ G are connected to arduino pin6 ~ pin12. Colon pin is connected to pin13. The common pin of display is connected to 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Check if the RTC module is available and initialize it\n2. Set pin 2 ~ 13 mode as OUTPUT\n3. Turn on the colon led\n4. Continuously retrieve the current time from the RTC\n5. Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct time is shown to the 4-digit 7-segment display\n\n## Notes for Implementation\n- The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\n- Digits are activated when digit pins are HIGH. \n- When using a 4-digit 7-segment display, be sure to specify '4-digit' at the beginning of the component type.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezones with button.\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -105,\n            \"left\": -67.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 138.6,\n            \"left\": 192.1,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:57\"\n            }\n        },\n        {\n            \"type\": \"wokwi-7segment\",\n            \"id\": \"7-segment display1\",\n            \"top\": -234.18,\n            \"left\": 68.32,\n            \"attrs\": {\n                \"digits\": \"4\",\n                \"colon\": \"1\",\n                \"commonPin\": \"anode\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG1\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v-9.6\",\n                \"h-76.79\",\n                \"v86.4\",\n                \"h115.2\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG2\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v-19.2\",\n                \"h-115.2\",\n                \"v105.6\",\n                \"h115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG3\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h-134.4\",\n                \"v115.2\",\n                \"h105.6\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG4\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"v47.16\",\n                \"h-48\"\n            ]\n        ],\n        [\n            \"7-segment display1:A\",\n            \"arduino uno1:6\",\n            \"orange\",\n            [\n                \"v-38.4\",\n                \"h-115.2\",\n                \"v134.4\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:B\",\n            \"arduino uno1:7\",\n            \"orange\",\n            [\n                \"v-48\",\n                \"h-163.2\",\n                \"v153.6\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:C\",\n            \"arduino uno1:8\",\n            \"orange\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:D\",\n            \"arduino uno1:9\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:E\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-47.99\",\n                \"v19.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:F\",\n            \"arduino uno1:11\",\n            \"orange\",\n            [\n                \"v-57.6\",\n                \"h-144\",\n                \"v172.8\",\n                \"h67.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:CLN\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"h0\",\n                \"v-67.2\",\n                \"h-192\",\n                \"v192\",\n                \"h57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:G\",\n            \"arduino uno1:12\",\n            \"orange\",\n            [\n                \"v37.56\",\n                \"h-115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:COM\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v210.36\",\n                \"h-96\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+          "effective_requirement": "# Clock\n\n## Project Description\nThis is a Arduino project that show current time using 4-digit 7-segment display.\n\n## Hardware Components\n- Arduino Uno\n- 4-digit 7-segment display\n- RTC module\n\n## Circuit Description\nCircuit is designed to use a 4-digit 7-segment display and a RTC module. \nFor RTC module, the VCC pin is connected to arduino 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5.\nIn the 4-digit 7-segment display, digit pins dig1 ~ dig4 are connected to arduino pin2 ~ pin5, respectively. Segment pins A ~ G are connected to arduino pin6 ~ pin12. Colon pin is connected to pin13. The common pin of display is connected to 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Check if the RTC module is available and initialize it\n2. Set pin 2 ~ 13 mode as OUTPUT\n3. Turn on the colon led\n4. Continuously retrieve the current time from the RTC\n5. Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct time is shown to the 4-digit 7-segment display\n\n## Notes for Implementation\n- The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\n- Digits are activated when digit pins are HIGH. \n- When using a 4-digit 7-segment display, be sure to specify '4-digit' at the beginning of the component type.\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezones with button.\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -105,\n            \"left\": -67.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 138.6,\n            \"left\": 192.1,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:57\"\n            }\n        },\n        {\n            \"type\": \"wokwi-7segment\",\n            \"id\": \"7-segment display1\",\n            \"top\": -234.18,\n            \"left\": 68.32,\n            \"attrs\": {\n                \"digits\": \"4\",\n                \"colon\": \"1\",\n                \"commonPin\": \"anode\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG1\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v-9.6\",\n                \"h-76.79\",\n                \"v86.4\",\n                \"h115.2\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG2\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v-19.2\",\n                \"h-115.2\",\n                \"v105.6\",\n                \"h115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG3\",\n            \"arduino uno1:4\",\n            \"green\",\n            [\n                \"v-28.8\",\n                \"h-134.4\",\n                \"v115.2\",\n                \"h105.6\",\n                \"v9.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:DIG4\",\n            \"arduino uno1:5\",\n            \"green\",\n            [\n                \"v47.16\",\n                \"h-48\"\n            ]\n        ],\n        [\n            \"7-segment display1:A\",\n            \"arduino uno1:6\",\n            \"orange\",\n            [\n                \"v-38.4\",\n                \"h-115.2\",\n                \"v134.4\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:B\",\n            \"arduino uno1:7\",\n            \"orange\",\n            [\n                \"v-48\",\n                \"h-163.2\",\n                \"v153.6\",\n                \"h105.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:C\",\n            \"arduino uno1:8\",\n            \"orange\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"7-segment display1:D\",\n            \"arduino uno1:9\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:E\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v47.16\",\n                \"h-47.99\",\n                \"v19.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:F\",\n            \"arduino uno1:11\",\n            \"orange\",\n            [\n                \"v-57.6\",\n                \"h-144\",\n                \"v172.8\",\n                \"h67.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:CLN\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"h0\",\n                \"v-67.2\",\n                \"h-192\",\n                \"v192\",\n                \"h57.6\"\n            ]\n        ],\n        [\n            \"7-segment display1:G\",\n            \"arduino uno1:12\",\n            \"orange\",\n            [\n                \"v37.56\",\n                \"h-115.2\"\n            ]\n        ],\n        [\n            \"7-segment display1:COM\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v210.36\",\n                \"h-96\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Get the current time using an RTC sensor, and change into different timezones with button.",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": -105,
+                  "left": -67.8,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ds1307",
+                  "id": "rtc module1",
+                  "top": 138.6,
+                  "left": 192.1,
+                  "attrs": {
+                    "initTime": "2024-11-24T04:48:57"
+                  }
+                },
+                {
+                  "type": "wokwi-7segment",
+                  "id": "7-segment display1",
+                  "top": -234.18,
+                  "left": 68.32,
+                  "attrs": {
+                    "digits": "4",
+                    "colon": "1",
+                    "commonPin": "anode"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "rtc module1:SCL",
+                  "arduino uno1:A5",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:SDA",
+                  "arduino uno1:A4",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:5V",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:GND",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG1",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "v-9.6",
+                    "h-76.79",
+                    "v86.4",
+                    "h115.2",
+                    "v9.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG2",
+                  "arduino uno1:3",
+                  "green",
+                  [
+                    "v-19.2",
+                    "h-115.2",
+                    "v105.6",
+                    "h115.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG3",
+                  "arduino uno1:4",
+                  "green",
+                  [
+                    "v-28.8",
+                    "h-134.4",
+                    "v115.2",
+                    "h105.6",
+                    "v9.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:DIG4",
+                  "arduino uno1:5",
+                  "green",
+                  [
+                    "v47.16",
+                    "h-48"
+                  ]
+                ],
+                [
+                  "7-segment display1:A",
+                  "arduino uno1:6",
+                  "orange",
+                  [
+                    "v-38.4",
+                    "h-115.2",
+                    "v134.4",
+                    "h105.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:B",
+                  "arduino uno1:7",
+                  "orange",
+                  [
+                    "v-48",
+                    "h-163.2",
+                    "v153.6",
+                    "h105.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:C",
+                  "arduino uno1:8",
+                  "orange",
+                  [
+                    "v0"
+                  ]
+                ],
+                [
+                  "7-segment display1:D",
+                  "arduino uno1:9",
+                  "orange",
+                  [
+                    "v47.16",
+                    "h-57.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:E",
+                  "arduino uno1:10",
+                  "orange",
+                  [
+                    "v47.16",
+                    "h-47.99",
+                    "v19.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:F",
+                  "arduino uno1:11",
+                  "orange",
+                  [
+                    "v-57.6",
+                    "h-144",
+                    "v172.8",
+                    "h67.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:CLN",
+                  "arduino uno1:13",
+                  "green",
+                  [
+                    "h0",
+                    "v-67.2",
+                    "h-192",
+                    "v192",
+                    "h57.6"
+                  ]
+                ],
+                [
+                  "7-segment display1:G",
+                  "arduino uno1:12",
+                  "orange",
+                  [
+                    "v37.56",
+                    "h-115.2"
+                  ]
+                ],
+                [
+                  "7-segment display1:COM",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v210.36",
+                    "h-96"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": true
+        }
+      },
+      "validation": {
+        "validator_version": "2026-08 / 0.62.0",
+        "attempts": [
+          {
+            "attempt": 1,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"savedDisplayTime\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"calculations\": [\n      {\n        \"name\": \"hoursTotal\",\n        \"type\": \"i32\",\n        \"expression\": \"RealFunctions::floor(io_0 / 3600)\"\n      },\n      {\n        \"name\": \"minutesTotal\",\n        \"type\": \"i32\",\n        \"expression\": \"RealFunctions::floor(io_0 / 60)\"\n      },\n      {\n        \"name\": \"clockHour\",\n        \"type\": \"i32\",\n        \"expression\": \"hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24)\"\n      },\n      {\n        \"name\": \"clockMinute\",\n        \"type\": \"i32\",\n        \"expression\": \"minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60)\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_1\",\n        \"then\": [\n          {\n            \"assign\": \"savedDisplayTime\",\n            \"value\": \"clockHour * 100 + clockMinute\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"savedDisplayTime\",\n      \"io_3\": true\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_0=0 and io_1=false; supply valid epoch values 1732423737 and 1732423740, corresponding to 2024-11-24 04:48:57 and 04:49:00 UTC.\",\n        \"oracle\": \"Initially io_2=0 and io_3=true. Valid acquisitions produce io_2=448 and then 449 in their respective control steps; the four-digit display shows 04:48 and 04:49 within 250 ms, with the colon continuously on.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Supply valid epoch seconds 3599, 3600, 86399 and 86400. Then set io_1=false while changing io_0; finally restore validity with io_0=60.\",\n        \"oracle\": \"io_2 successively equals 59, 100, 2359 and 0. Invalid acquisitions retain the last displayed value. Restored validity updates io_2 to 1. io_3 remains true throughout.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Boot with the supplied circuit and RTC stored time; inspect initialization, periodic acquisitions, GPIO configuration and multiplexed display signals. Repeat with the RTC unavailable.\",\n        \"oracle\": \"Setup returns within 500 ms, checks and initializes the DS1307 over A4/A5 without overwriting its stored time, and polls every 100 ms. D2 through D13 are outputs; digit activation is HIGH and illuminated segments are LOW. D13 stays LOW for the illuminated colon. Wiring and four-digit leading-zero formatting are preserved. RTC unavailability does not block setup or overwrite the cached display.\"\n      }\n    ]\n  }\n}",
+            "issues": [],
+            "ok": true,
+            "usage": {
+              "completion_tokens": 796,
+              "prompt_tokens": 16724,
+              "total_tokens": 17520,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 44,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 16721,
+                "video_tokens": 0
+              },
+              "cost": 0.0497685,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0497685,
+                "upstream_inference_prompt_cost": 0.0418085,
+                "upstream_inference_completions_cost": 0.00796
+              }
+            },
+            "structural_validation_passed": true,
+            "deterministic_behavior_passed": true,
+            "final_compile_passed": true,
+            "semantic_review": {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if io_1 {\\n        first start;\\n        then assign savedDisplayTime := clockHour * 100 + clockMinute;\\n      }\",\n      \"reason\": \"The registered RTC adapter initializes the DS1307 and supplies acquisition validity before controller ticks. The model checks io_1 before accepting a time value. Initialization is an adapter responsibility, not a missing controller action. This is model-boundary consistency, not evidence that initialization has executed successfully.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set pin 2 ~ 13 mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\\n    out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The registered native display output binds digit pins D2–D5 and segment pins D6–D12; the digital colon output binds D13. GPIO configuration belongs to the adapters. These bindings cover exactly the requested output pins without requiring GPIO calls in SysML.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Turn on the colon led\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The contract initializes io_3 to true, and registered digital-output semantics apply that initial command during setup. Its active_high=false binding maps true to LOW on D13, consistent with the supplied common-anode circuit. The model keeps the colon on on every subsequent step.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"Both inputs have periodic DS1307 acquisition bindings on A4/A5 with 100 ms sample periods. The model processes each valid acquired value without a one-shot latch or termination condition. Invalid acquisitions do not replace the cached display; the requirement specifies no alternative RTC-failure behavior.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"The input is epoch seconds. Dividing by 3600 and 60 and reducing modulo 24 and 60 correctly extracts hour and minute. The ordered update stores hour*100+minute before io_2 is evaluated. The native four-digit binding enables leading zeros, and the separate illuminated colon supplies the separator. For example, valid epoch seconds 3599, 3600, 86399 and 86400 produce 0059, 0100, 2359 and 0000 respectively.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The correct time is shown to the 4-digit 7-segment display\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"For the supplied RTC date and time, the arithmetic selects 448, rendered with leading zeros as 04:48. Minute, hour and midnight rollover follow directly from the modulo arithmetic. Outputs observe the updated cache in the same step. The initial cache of zero is not treated as a sensor measurement, and no pre-acquisition display value is specified.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The native seven_segment_number binding declares common_anode=true and orders segment pins A–G as D6–D12. The colon separately maps its normalized ON command to LOW. There is no contradictory electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Digits are activated when digit pins are HIGH.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The display binding explicitly sets digit_active_high=true and maps the four digit positions to D2, D3, D4 and D5 in order.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The contract preserves the supplied circuit, including RTC SDA=A4, SCL=A5, supply connections, digit pins D2–D5, segment pins D6–D12, colon D13 and common connected to 5V. The display operation has four digit pins and leading-zero formatting. No alternative wiring or component behavior is introduced.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The contract samples the RTC every 100 ms and schedules controller/output steps every 2 ms. Each valid sample updates the cache before output evaluation in that step, with no model delay or extra-step retention. This is consistent with the 250 ms bound. The original clock, wiring, initialization and polarity clauses duplicated in SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute savedDisplayTime : Integer := 0;\",\n      \"reason\": \"The model has no startup wait, retry loop or warmup phase, and the contract does not require blocking until RTC availability. Nothing at the model boundary contradicts the setup deadline. Actual adapter/library setup duration remains a post-generation execution obligation. The profile's button, serial, servo, PWM and DHT conditions are not applicable to this clock.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance or runtime evidence.\",\n    \"After code generation, verify actual DS1307 bus/device initialization, availability reporting and periodic acquisition, including behavior when the RTC is unavailable.\",\n    \"After code generation, verify setup returns within 500 ms, GPIO output configuration, display multiplexing and leading-zero rendering, electrical polarity, and the end-to-end 250 ms display response bound.\",\n    \"The supplied test descriptions were not treated as executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate checks.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1774,
+                    "prompt_tokens": 28043,
+                    "total_tokens": 29817,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 85,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 28040,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.087846,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.087846,
+                      "upstream_inference_prompt_cost": 0.070106,
+                      "upstream_inference_completions_cost": 0.01774
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 946,
+                    "prompt_tokens": 29812,
+                    "total_tokens": 30758,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 64,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 29809,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0839885,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0839885,
+                      "upstream_inference_prompt_cost": 0.0745285,
+                      "upstream_inference_completions_cost": 0.00946
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 946,
+                "prompt_tokens": 29812,
+                "total_tokens": 30758,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 64,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 29809,
+                  "video_tokens": 0
+                },
+                "cost": 0.0839885,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0839885,
+                  "upstream_inference_prompt_cost": 0.0745285,
+                  "upstream_inference_completions_cost": 0.00946
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.",
+                    "status": "satisfied",
+                    "model_quote": "then assign savedDisplayTime := clockHour * 100 + clockMinute;",
+                    "reason": "The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"",
+                    "status": "satisfied",
+                    "model_quote": "attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);",
+                    "reason": "All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This review establishes model-boundary consistency only, not final code acceptance or runtime success.",
+                  "After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.",
+                  "Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.",
+                  "The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf"
+              }
+            },
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            },
+            "normalizations": [
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id"
+            ],
+            "generation_mode": "contract_assembly",
+            "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    attribute savedDisplayTime : Integer := 0;\n    attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign savedDisplayTime := clockHour * 100 + clockMinute;\n      }\n    }\n    out attribute io_2 : Integer = savedDisplayTime;\n    out attribute io_3 : Boolean = true;\n  }\n  part system : Controller;\n}\n",
+            "stages": {
+              "sysml_generation": true,
+              "sysml_to_ir": true,
+              "ir_to_il": true
+            },
+            "focus_issues": [],
+            "coverage": {
+              "status": "structural_pass",
+              "issues": [],
+              "functional_status": "unverified",
+              "startup": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+              },
+              "pause": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+              },
+              "periodic": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+              },
+              "numeric": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+              },
+              "source_behavior": {
+                "status": "not_requested",
+                "checked": 0,
+                "traces": [],
+                "scope": "Only the exact source-derived scenarios; not full functionality proof"
+              },
+              "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+            },
+            "diagnostic_fingerprint": [],
+            "no_progress": false,
+            "failed_obligation_keys": [],
+            "repeated_requirement": false,
+            "repair_locations": [],
+            "repair_example": null,
+            "failure_stage": null
+          }
+        ],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "semantic_review": {
+          "enabled": true,
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "review_calls": 2,
+          "max_review_calls": 6,
+          "repair_count": 0,
+          "rounds": [
+            {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if io_1 {\\n        first start;\\n        then assign savedDisplayTime := clockHour * 100 + clockMinute;\\n      }\",\n      \"reason\": \"The registered RTC adapter initializes the DS1307 and supplies acquisition validity before controller ticks. The model checks io_1 before accepting a time value. Initialization is an adapter responsibility, not a missing controller action. This is model-boundary consistency, not evidence that initialization has executed successfully.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set pin 2 ~ 13 mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\\n    out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The registered native display output binds digit pins D2–D5 and segment pins D6–D12; the digital colon output binds D13. GPIO configuration belongs to the adapters. These bindings cover exactly the requested output pins without requiring GPIO calls in SysML.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Turn on the colon led\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The contract initializes io_3 to true, and registered digital-output semantics apply that initial command during setup. Its active_high=false binding maps true to LOW on D13, consistent with the supplied common-anode circuit. The model keeps the colon on on every subsequent step.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"Both inputs have periodic DS1307 acquisition bindings on A4/A5 with 100 ms sample periods. The model processes each valid acquired value without a one-shot latch or termination condition. Invalid acquisitions do not replace the cached display; the requirement specifies no alternative RTC-failure behavior.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"The input is epoch seconds. Dividing by 3600 and 60 and reducing modulo 24 and 60 correctly extracts hour and minute. The ordered update stores hour*100+minute before io_2 is evaluated. The native four-digit binding enables leading zeros, and the separate illuminated colon supplies the separator. For example, valid epoch seconds 3599, 3600, 86399 and 86400 produce 0059, 0100, 2359 and 0000 respectively.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The correct time is shown to the 4-digit 7-segment display\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"For the supplied RTC date and time, the arithmetic selects 448, rendered with leading zeros as 04:48. Minute, hour and midnight rollover follow directly from the modulo arithmetic. Outputs observe the updated cache in the same step. The initial cache of zero is not treated as a sensor measurement, and no pre-acquisition display value is specified.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The native seven_segment_number binding declares common_anode=true and orders segment pins A–G as D6–D12. The colon separately maps its normalized ON command to LOW. There is no contradictory electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Digits are activated when digit pins are HIGH.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The display binding explicitly sets digit_active_high=true and maps the four digit positions to D2, D3, D4 and D5 in order.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The contract preserves the supplied circuit, including RTC SDA=A4, SCL=A5, supply connections, digit pins D2–D5, segment pins D6–D12, colon D13 and common connected to 5V. The display operation has four digit pins and leading-zero formatting. No alternative wiring or component behavior is introduced.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The contract samples the RTC every 100 ms and schedules controller/output steps every 2 ms. Each valid sample updates the cache before output evaluation in that step, with no model delay or extra-step retention. This is consistent with the 250 ms bound. The original clock, wiring, initialization and polarity clauses duplicated in SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute savedDisplayTime : Integer := 0;\",\n      \"reason\": \"The model has no startup wait, retry loop or warmup phase, and the contract does not require blocking until RTC availability. Nothing at the model boundary contradicts the setup deadline. Actual adapter/library setup duration remains a post-generation execution obligation. The profile's button, serial, servo, PWM and DHT conditions are not applicable to this clock.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance or runtime evidence.\",\n    \"After code generation, verify actual DS1307 bus/device initialization, availability reporting and periodic acquisition, including behavior when the RTC is unavailable.\",\n    \"After code generation, verify setup returns within 500 ms, GPIO output configuration, display multiplexing and leading-zero rendering, electrical polarity, and the end-to-end 250 ms display response bound.\",\n    \"The supplied test descriptions were not treated as executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate checks.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1774,
+                    "prompt_tokens": 28043,
+                    "total_tokens": 29817,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 85,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 28040,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.087846,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.087846,
+                      "upstream_inference_prompt_cost": 0.070106,
+                      "upstream_inference_completions_cost": 0.01774
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 946,
+                    "prompt_tokens": 29812,
+                    "total_tokens": 30758,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 64,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 29809,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0839885,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0839885,
+                      "upstream_inference_prompt_cost": 0.0745285,
+                      "upstream_inference_completions_cost": 0.00946
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 946,
+                "prompt_tokens": 29812,
+                "total_tokens": 30758,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 64,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 29809,
+                  "video_tokens": 0
+                },
+                "cost": 0.0839885,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0839885,
+                  "upstream_inference_prompt_cost": 0.0745285,
+                  "upstream_inference_completions_cost": 0.00946
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.",
+                    "status": "satisfied",
+                    "model_quote": "then assign savedDisplayTime := clockHour * 100 + clockMinute;",
+                    "reason": "The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"",
+                    "status": "satisfied",
+                    "model_quote": "attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);",
+                    "reason": "All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This review establishes model-boundary consistency only, not final code acceptance or runtime success.",
+                  "After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.",
+                  "Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.",
+                  "The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf"
+              }
+            }
+          ],
+          "final_status": "passed",
+          "failure_category": null
+        },
+        "call_counts": {
+          "generation_and_repair": 1,
+          "semantic_review": 2
+        },
+        "usage": {
+          "generation_and_repair": [
+            {
+              "completion_tokens": 796,
+              "prompt_tokens": 16724,
+              "total_tokens": 17520,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 44,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 16721,
+                "video_tokens": 0
+              },
+              "cost": 0.0497685,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0497685,
+                "upstream_inference_prompt_cost": 0.0418085,
+                "upstream_inference_completions_cost": 0.00796
+              }
+            }
+          ],
+          "semantic_review": [
+            {
+              "completion_tokens": 946,
+              "prompt_tokens": 29812,
+              "total_tokens": 30758,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 64,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 29809,
+                "video_tokens": 0
+              },
+              "cost": 0.0839885,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0839885,
+                "upstream_inference_prompt_cost": 0.0745285,
+                "upstream_inference_completions_cost": 0.00946
+              }
+            }
+          ]
+        },
+        "final_status": "accepted"
+      },
+      "status": "passed"
+    }
+  ],
+  "validation": {
+    "validator_version": "2026-08 / 0.62.0",
+    "attempts": [
+      {
+        "attempt": 1,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"savedDisplayTime\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"calculations\": [\n      {\n        \"name\": \"hoursTotal\",\n        \"type\": \"i32\",\n        \"expression\": \"RealFunctions::floor(io_0 / 3600)\"\n      },\n      {\n        \"name\": \"minutesTotal\",\n        \"type\": \"i32\",\n        \"expression\": \"RealFunctions::floor(io_0 / 60)\"\n      },\n      {\n        \"name\": \"clockHour\",\n        \"type\": \"i32\",\n        \"expression\": \"hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24)\"\n      },\n      {\n        \"name\": \"clockMinute\",\n        \"type\": \"i32\",\n        \"expression\": \"minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60)\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_1\",\n        \"then\": [\n          {\n            \"assign\": \"savedDisplayTime\",\n            \"value\": \"clockHour * 100 + clockMinute\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"savedDisplayTime\",\n      \"io_3\": true\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_0=0 and io_1=false; supply valid epoch values 1732423737 and 1732423740, corresponding to 2024-11-24 04:48:57 and 04:49:00 UTC.\",\n        \"oracle\": \"Initially io_2=0 and io_3=true. Valid acquisitions produce io_2=448 and then 449 in their respective control steps; the four-digit display shows 04:48 and 04:49 within 250 ms, with the colon continuously on.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Supply valid epoch seconds 3599, 3600, 86399 and 86400. Then set io_1=false while changing io_0; finally restore validity with io_0=60.\",\n        \"oracle\": \"io_2 successively equals 59, 100, 2359 and 0. Invalid acquisitions retain the last displayed value. Restored validity updates io_2 to 1. io_3 remains true throughout.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Boot with the supplied circuit and RTC stored time; inspect initialization, periodic acquisitions, GPIO configuration and multiplexed display signals. Repeat with the RTC unavailable.\",\n        \"oracle\": \"Setup returns within 500 ms, checks and initializes the DS1307 over A4/A5 without overwriting its stored time, and polls every 100 ms. D2 through D13 are outputs; digit activation is HIGH and illuminated segments are LOW. D13 stays LOW for the illuminated colon. Wiring and four-digit leading-zero formatting are preserved. RTC unavailability does not block setup or overwrite the cached display.\"\n      }\n    ]\n  }\n}",
+        "issues": [],
+        "ok": true,
+        "usage": {
+          "completion_tokens": 796,
+          "prompt_tokens": 16724,
+          "total_tokens": 17520,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 44,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 16721,
+            "video_tokens": 0
+          },
+          "cost": 0.0497685,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0497685,
+            "upstream_inference_prompt_cost": 0.0418085,
+            "upstream_inference_completions_cost": 0.00796
+          }
+        },
+        "structural_validation_passed": true,
+        "deterministic_behavior_passed": true,
+        "final_compile_passed": true,
+        "semantic_review": {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if io_1 {\\n        first start;\\n        then assign savedDisplayTime := clockHour * 100 + clockMinute;\\n      }\",\n      \"reason\": \"The registered RTC adapter initializes the DS1307 and supplies acquisition validity before controller ticks. The model checks io_1 before accepting a time value. Initialization is an adapter responsibility, not a missing controller action. This is model-boundary consistency, not evidence that initialization has executed successfully.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set pin 2 ~ 13 mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\\n    out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The registered native display output binds digit pins D2–D5 and segment pins D6–D12; the digital colon output binds D13. GPIO configuration belongs to the adapters. These bindings cover exactly the requested output pins without requiring GPIO calls in SysML.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Turn on the colon led\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The contract initializes io_3 to true, and registered digital-output semantics apply that initial command during setup. Its active_high=false binding maps true to LOW on D13, consistent with the supplied common-anode circuit. The model keeps the colon on on every subsequent step.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"Both inputs have periodic DS1307 acquisition bindings on A4/A5 with 100 ms sample periods. The model processes each valid acquired value without a one-shot latch or termination condition. Invalid acquisitions do not replace the cached display; the requirement specifies no alternative RTC-failure behavior.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"The input is epoch seconds. Dividing by 3600 and 60 and reducing modulo 24 and 60 correctly extracts hour and minute. The ordered update stores hour*100+minute before io_2 is evaluated. The native four-digit binding enables leading zeros, and the separate illuminated colon supplies the separator. For example, valid epoch seconds 3599, 3600, 86399 and 86400 produce 0059, 0100, 2359 and 0000 respectively.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The correct time is shown to the 4-digit 7-segment display\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"For the supplied RTC date and time, the arithmetic selects 448, rendered with leading zeros as 04:48. Minute, hour and midnight rollover follow directly from the modulo arithmetic. Outputs observe the updated cache in the same step. The initial cache of zero is not treated as a sensor measurement, and no pre-acquisition display value is specified.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The native seven_segment_number binding declares common_anode=true and orders segment pins A–G as D6–D12. The colon separately maps its normalized ON command to LOW. There is no contradictory electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Digits are activated when digit pins are HIGH.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The display binding explicitly sets digit_active_high=true and maps the four digit positions to D2, D3, D4 and D5 in order.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The contract preserves the supplied circuit, including RTC SDA=A4, SCL=A5, supply connections, digit pins D2–D5, segment pins D6–D12, colon D13 and common connected to 5V. The display operation has four digit pins and leading-zero formatting. No alternative wiring or component behavior is introduced.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The contract samples the RTC every 100 ms and schedules controller/output steps every 2 ms. Each valid sample updates the cache before output evaluation in that step, with no model delay or extra-step retention. This is consistent with the 250 ms bound. The original clock, wiring, initialization and polarity clauses duplicated in SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute savedDisplayTime : Integer := 0;\",\n      \"reason\": \"The model has no startup wait, retry loop or warmup phase, and the contract does not require blocking until RTC availability. Nothing at the model boundary contradicts the setup deadline. Actual adapter/library setup duration remains a post-generation execution obligation. The profile's button, serial, servo, PWM and DHT conditions are not applicable to this clock.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance or runtime evidence.\",\n    \"After code generation, verify actual DS1307 bus/device initialization, availability reporting and periodic acquisition, including behavior when the RTC is unavailable.\",\n    \"After code generation, verify setup returns within 500 ms, GPIO output configuration, display multiplexing and leading-zero rendering, electrical polarity, and the end-to-end 250 ms display response bound.\",\n    \"The supplied test descriptions were not treated as executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate checks.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1774,
+                "prompt_tokens": 28043,
+                "total_tokens": 29817,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 85,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 28040,
+                  "video_tokens": 0
+                },
+                "cost": 0.087846,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.087846,
+                  "upstream_inference_prompt_cost": 0.070106,
+                  "upstream_inference_completions_cost": 0.01774
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 946,
+                "prompt_tokens": 29812,
+                "total_tokens": 30758,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 64,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 29809,
+                  "video_tokens": 0
+                },
+                "cost": 0.0839885,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0839885,
+                  "upstream_inference_prompt_cost": 0.0745285,
+                  "upstream_inference_completions_cost": 0.00946
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 946,
+            "prompt_tokens": 29812,
+            "total_tokens": 30758,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 64,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 29809,
+              "video_tokens": 0
+            },
+            "cost": 0.0839885,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0839885,
+              "upstream_inference_prompt_cost": 0.0745285,
+              "upstream_inference_completions_cost": 0.00946
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.",
+                "status": "satisfied",
+                "model_quote": "then assign savedDisplayTime := clockHour * 100 + clockMinute;",
+                "reason": "The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"",
+                "status": "satisfied",
+                "model_quote": "attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);",
+                "reason": "All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This review establishes model-boundary consistency only, not final code acceptance or runtime success.",
+              "After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.",
+              "Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.",
+              "The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf"
+          }
+        },
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "normalizations": [
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id"
+        ],
+        "generation_mode": "contract_assembly",
+        "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    attribute savedDisplayTime : Integer := 0;\n    attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign savedDisplayTime := clockHour * 100 + clockMinute;\n      }\n    }\n    out attribute io_2 : Integer = savedDisplayTime;\n    out attribute io_3 : Boolean = true;\n  }\n  part system : Controller;\n}\n",
+        "stages": {
+          "sysml_generation": true,
+          "sysml_to_ir": true,
+          "ir_to_il": true
+        },
+        "focus_issues": [],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "diagnostic_fingerprint": [],
+        "no_progress": false,
+        "failed_obligation_keys": [],
+        "repeated_requirement": false,
+        "repair_locations": [],
+        "repair_example": null,
+        "failure_stage": null
+      }
+    ],
+    "coverage": {
+      "status": "structural_pass",
+      "issues": [],
+      "functional_status": "unverified",
+      "startup": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+      },
+      "pause": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+      },
+      "periodic": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+      },
+      "numeric": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+      },
+      "source_behavior": {
+        "status": "not_requested",
+        "checked": 0,
+        "traces": [],
+        "scope": "Only the exact source-derived scenarios; not full functionality proof"
+      },
+      "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+    },
+    "semantic_review": {
+      "enabled": true,
+      "policy_version": "sysml-semantic-review-v2-native-boundaries",
+      "review_calls": 2,
+      "max_review_calls": 6,
+      "repair_count": 0,
+      "rounds": [
+        {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if io_1 {\\n        first start;\\n        then assign savedDisplayTime := clockHour * 100 + clockMinute;\\n      }\",\n      \"reason\": \"The registered RTC adapter initializes the DS1307 and supplies acquisition validity before controller ticks. The model checks io_1 before accepting a time value. Initialization is an adapter responsibility, not a missing controller action. This is model-boundary consistency, not evidence that initialization has executed successfully.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Set pin 2 ~ 13 mode as OUTPUT\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\\n    out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The registered native display output binds digit pins D2–D5 and segment pins D6–D12; the digital colon output binds D13. GPIO configuration belongs to the adapters. These bindings cover exactly the requested output pins without requiring GPIO calls in SysML.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Turn on the colon led\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_3 : Boolean = true;\",\n      \"reason\": \"The contract initializes io_3 to true, and registered digital-output semantics apply that initial command during setup. Its active_high=false binding maps true to LOW on D13, consistent with the supplied common-anode circuit. The model keeps the colon on on every subsequent step.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"Both inputs have periodic DS1307 acquisition bindings on A4/A5 with 100 ms sample periods. The model processes each valid acquired value without a one-shot latch or termination condition. Invalid acquisitions do not replace the cached display; the requirement specifies no alternative RTC-failure behavior.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"The input is epoch seconds. Dividing by 3600 and 60 and reducing modulo 24 and 60 correctly extracts hour and minute. The ordered update stores hour*100+minute before io_2 is evaluated. The native four-digit binding enables leading zeros, and the separate illuminated colon supplies the separator. For example, valid epoch seconds 3599, 3600, 86399 and 86400 produce 0059, 0100, 2359 and 0000 respectively.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The correct time is shown to the 4-digit 7-segment display\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"For the supplied RTC date and time, the arithmetic selects 448, rendered with leading zeros as 04:48. Minute, hour and midnight rollover follow directly from the modulo arithmetic. Outputs observe the updated cache in the same step. The initial cache of zero is not treated as a sensor measurement, and no pre-acquisition display value is specified.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The 7-segment display is common anode type, so the segment turns on when the pin reads LOW.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The native seven_segment_number binding declares common_anode=true and orders segment pins A–G as D6–D12. The colon separately maps its normalized ON command to LOW. There is no contradictory electrical mapping.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Digits are activated when digit pins are HIGH.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute io_2 : Integer = savedDisplayTime;\",\n      \"reason\": \"The display binding explicitly sets digit_active_high=true and maps the four digit positions to D2, D3, D4 and D5 in order.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Integer;\\n    in attribute io_1 : Boolean;\",\n      \"reason\": \"The contract preserves the supplied circuit, including RTC SDA=A4, SCL=A5, supply connections, digit pins D2–D5, segment pins D6–D12, colon D13 and common connected to 5V. The display operation has four digit pins and leading-zero formatting. No alternative wiring or component behavior is introduced.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The contract samples the RTC every 100 ms and schedules controller/output steps every 2 ms. Each valid sample updates the cache before output evaluation in that step, with no model delay or extra-step retention. This is consistent with the 250 ms bound. The original clock, wiring, initialization and polarity clauses duplicated in SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute savedDisplayTime : Integer := 0;\",\n      \"reason\": \"The model has no startup wait, retry loop or warmup phase, and the contract does not require blocking until RTC availability. Nothing at the model boundary contradicts the setup deadline. Actual adapter/library setup duration remains a post-generation execution obligation. The profile's button, serial, servo, PWM and DHT conditions are not applicable to this clock.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance or runtime evidence.\",\n    \"After code generation, verify actual DS1307 bus/device initialization, availability reporting and periodic acquisition, including behavior when the RTC is unavailable.\",\n    \"After code generation, verify setup returns within 500 ms, GPIO output configuration, display multiplexing and leading-zero rendering, electrical polarity, and the end-to-end 250 ms display response bound.\",\n    \"The supplied test descriptions were not treated as executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate checks.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1774,
+                "prompt_tokens": 28043,
+                "total_tokens": 29817,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 85,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 28040,
+                  "video_tokens": 0
+                },
+                "cost": 0.087846,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.087846,
+                  "upstream_inference_prompt_cost": 0.070106,
+                  "upstream_inference_completions_cost": 0.01774
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 946,
+                "prompt_tokens": 29812,
+                "total_tokens": 30758,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 64,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 29809,
+                  "video_tokens": 0
+                },
+                "cost": 0.0839885,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0839885,
+                  "upstream_inference_prompt_cost": 0.0745285,
+                  "upstream_inference_completions_cost": 0.00946
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign savedDisplayTime := clockHour * 100 + clockMinute;\",\n      \"reason\": \"The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display current time to 4-digit 7-segment display, in the following format: \\\"HH:MM\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);\",\n      \"reason\": \"All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This review establishes model-boundary consistency only, not final code acceptance or runtime success.\",\n    \"After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.\",\n    \"Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.\",\n    \"The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 946,
+            "prompt_tokens": 29812,
+            "total_tokens": 30758,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 64,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 29809,
+              "video_tokens": 0
+            },
+            "cost": 0.0839885,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0839885,
+              "upstream_inference_prompt_cost": 0.0745285,
+              "upstream_inference_completions_cost": 0.00946
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms.",
+                "status": "satisfied",
+                "model_quote": "then assign savedDisplayTime := clockHour * 100 + clockMinute;",
+                "reason": "The original clock requirements duplicated in SOURCE-1 are consistent with the model and bindings as detailed in the R1 check. For the additional display deadline, the contract specifies 100 ms RTC acquisition and a 2 ms controller period. A valid acquisition updates savedDisplayTime before outputs are evaluated in the same step, with no model-imposed delay, consistent with the 250 ms bound. No elapsed-time input is necessary for this direct response. The model has no startup wait or blocking retry sequence, and the registered initialization semantics do not contradict the 500 ms setup deadline; actual setup duration remains a post-generation obligation. The required ON colon overrides the default OFF state. The profile's unwired LED/button defaults, counter initialization, command handling, serial streaming, servo, PWM and DHT conditions introduce no additional applicable behavior for this circuit. This check establishes model-boundary consistency only."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "Display current time to 4-digit 7-segment display, in the following format: \"HH:MM\"",
+                "status": "satisfied",
+                "model_quote": "attribute hoursTotal : Integer = RealFunctions::floor(io_0 / 3600);\n    attribute minutesTotal : Integer = RealFunctions::floor(io_0 / 60);\n    attribute clockHour : Integer = hoursTotal - 24 * RealFunctions::floor(hoursTotal / 24);\n    attribute clockMinute : Integer = minutesTotal - 60 * RealFunctions::floor(minutesTotal / 60);",
+                "reason": "All R1 behavior and circuit clauses were checked. The registered RTC adapter initializes/checks the DS1307 and publishes epoch seconds and validity before ticks; both input bindings acquire periodically every 100 ms over SDA A4 and SCL A5. The model accepts time only when io_1 is true. Its arithmetic extracts hours modulo 24 and minutes modulo 60 in the declared seconds unit, then stores hour*100+minute before io_2 output evaluation. Thus valid inputs 3599, 3600, 86399 and 86400 produce 59, 100, 2359 and 0, rendered as 00:59, 01:00, 23:59 and 00:00 through the four-digit leading-zero binding and illuminated colon. The supplied RTC time similarly produces 04:48. Initial cached zero and retention during invalid acquisitions do not contradict any specified pre-acquisition or failure behavior. The native display binding covers D2–D12 as outputs, with digit pins D2–D5 active HIGH and segment pins D6–D12 common-anode active LOW. The separate D13 output completes the requested output-pin range. Its initial true command is applied during setup, maps to LOW through active_high=false, and the model continuously outputs true, keeping the colon illuminated. The contract preserves the supplied four-digit component, supply connections and all circuit wiring. Adapter-owned GPIO configuration, initialization and multiplexing need not appear as library calls in SysML. No button-driven timezone behavior is specified by the operative requirements or supplied hardware. This is model-boundary consistency, not demonstrated peripheral execution."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This review establishes model-boundary consistency only, not final code acceptance or runtime success.",
+              "After code generation, verify actual DS1307 initialization, availability reporting and periodic acquisition, including operation with the RTC unavailable.",
+              "Verify actual setup completion within 500 ms, GPIO output configuration, display multiplexing, leading-zero rendering, electrical polarity and end-to-end display response within 250 ms.",
+              "The supplied test descriptions are not executed evidence. Target compilation, numeric lowering and actual peripheral execution remain separate verification obligations."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "dd0f0f092b060ae249db5039e56b5a52343a39a35ee1d5ac766a48f6092ab9cf"
+          }
+        }
+      ],
+      "final_status": "passed",
+      "failure_category": null
+    },
+    "call_counts": {
+      "generation_and_repair": 1,
+      "semantic_review": 2
+    },
+    "usage": {
+      "generation_and_repair": [
+        {
+          "completion_tokens": 796,
+          "prompt_tokens": 16724,
+          "total_tokens": 17520,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 44,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 16721,
+            "video_tokens": 0
+          },
+          "cost": 0.0497685,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0497685,
+            "upstream_inference_prompt_cost": 0.0418085,
+            "upstream_inference_completions_cost": 0.00796
+          }
+        }
+      ],
+      "semantic_review": [
+        {
+          "completion_tokens": 946,
+          "prompt_tokens": 29812,
+          "total_tokens": 30758,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 64,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 29809,
+            "video_tokens": 0
+          },
+          "cost": 0.0839885,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0839885,
+            "upstream_inference_prompt_cost": 0.0745285,
+            "upstream_inference_completions_cost": 0.00946
+          }
+        }
+      ]
+    },
+    "final_status": "accepted"
+  }
+}

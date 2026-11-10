@@ -1,0 +1,62 @@
+{
+  "controller": {
+    "states": [],
+    "updates": [],
+    "outputs": {
+      "buzzerToneHz": {
+        "if": "component_beep_value",
+        "then": "1000",
+        "else": "0"
+      }
+    },
+    "components": [
+      {
+        "kind": "edge_toggle",
+        "name": "run",
+        "input": "buttonPauseToggle",
+        "edge": "rising",
+        "initial": true,
+        "previous_input": false
+      },
+      {
+        "kind": "periodic_pulse",
+        "name": "beep",
+        "delta": "elapsedMilliseconds",
+        "enabled": "component_run_value",
+        "period_ms": 3000,
+        "pulse_ms": 100,
+        "first_pulse": "after_period",
+        "pause": "preserve"
+      }
+    ]
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "buttonPauseToggle: held LOW for a short moment to create one rising edge (press) at 500ms, then released HIGH at 700ms; elapsedMilliseconds provided as 10ms steps continuously (with no pause input toggles after initial press); total trace 6200ms",
+        "oracle": "buzzerToneHz starts at 0; first beep occurs once after accumulated running time reaches 3000ms since start (allowing 20ms tolerance); buzzerToneHz is 1000Hz for 100ms (allowing 20ms tolerance) then 0; subsequent beeps occur every 3000ms of accumulated running time. At the pause toggled by the press edge, buzzerToneHz becomes 0 immediately and remains 0 while paused; accumulated time and remaining sound time are preserved. After releasing (only one press edge caused toggle), buzzerToneHz resumes beeping continuing any remaining portion and then continues the 3000ms schedule without restarting the full cycle."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "elapsedMilliseconds as 10ms steps; buttonPauseToggle rising edge toggled to pause exactly 2950ms (i.e., press LOW at 2950ms..3005ms then release HIGH after 3050ms, with no additional press edges); then a second press edge toggled to resume at 4100ms; total trace 7000ms",
+        "oracle": "Before 3000ms accumulated run time reaches the first beep start: buzzerToneHz remains 0 until first eligible beep timing within 20ms tolerance. Because pause occurs shortly before the first beep, buzzerToneHz must be 0 immediately at the pause edge and must not start a beep while paused. When resumed, buzzerToneHz should continue according to preserved accumulated timing such that the first beep still occurs once accumulated running time reaches 3000ms threshold (within 20ms tolerance), with 100ms duration (within 20ms tolerance). Subsequent beeps follow every 3000ms of accumulated running time."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "elapsedMilliseconds as 10ms steps; create press edge at 3050ms (when first beep is in progress), hold LOW for 80ms then release HIGH; create another press edge at 3300ms to resume; total trace 5000ms",
+        "oracle": "At 3050ms press-edge, buzzerToneHz must immediately go to 0 (within 20ms tolerance) even if a beep was active; remaining beep time must be preserved such that after resume at 3300ms, buzzerToneHz returns to 1000Hz for the remaining portion to complete the 100ms total beep duration (within 20ms tolerance). After completing that beep, the next beep should occur based on preserved accumulated running time continuing with 3000ms intervals (not restarting the full cycle)."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute buttonPauseToggle : Boolean;\n    in attribute elapsedMilliseconds : Integer;\n    attribute component_run_value : Boolean := true;\n    attribute component_run_previous : Boolean := false;\n    attribute component_beep_phase : Integer := 0;\n    attribute component_beep_started : Boolean := false;\n    attribute component_beep_enabled : Boolean := false;\n    attribute component_beep_remainder : Integer := 0;\n    attribute component_beep_value : Boolean := false;\n    perform action tick {\n      first start;\n      then if buttonPauseToggle and not component_run_previous {\n        first start;\n        then assign component_run_value := not component_run_value;\n      }\n      then assign component_run_previous := buttonPauseToggle;\n      then if component_beep_enabled and elapsedMilliseconds > 0 {\n        first start;\n        then if elapsedMilliseconds >= 3000 - component_beep_phase {\n          first start;\n          then assign component_beep_started := true;\n        }\n        then assign component_beep_remainder := elapsedMilliseconds;\n        then if component_beep_remainder >= 1572864000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 1572864000;\n        }\n        then if component_beep_remainder >= 786432000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 786432000;\n        }\n        then if component_beep_remainder >= 393216000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 393216000;\n        }\n        then if component_beep_remainder >= 196608000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 196608000;\n        }\n        then if component_beep_remainder >= 98304000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 98304000;\n        }\n        then if component_beep_remainder >= 49152000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 49152000;\n        }\n        then if component_beep_remainder >= 24576000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 24576000;\n        }\n        then if component_beep_remainder >= 12288000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 12288000;\n        }\n        then if component_beep_remainder >= 6144000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 6144000;\n        }\n        then if component_beep_remainder >= 3072000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 3072000;\n        }\n        then if component_beep_remainder >= 1536000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 1536000;\n        }\n        then if component_beep_remainder >= 768000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 768000;\n        }\n        then if component_beep_remainder >= 384000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 384000;\n        }\n        then if component_beep_remainder >= 192000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 192000;\n        }\n        then if component_beep_remainder >= 96000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 96000;\n        }\n        then if component_beep_remainder >= 48000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 48000;\n        }\n        then if component_beep_remainder >= 24000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 24000;\n        }\n        then if component_beep_remainder >= 12000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 12000;\n        }\n        then if component_beep_remainder >= 6000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 6000;\n        }\n        then if component_beep_remainder >= 3000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 3000;\n        }\n        then if component_beep_remainder >= 3000 - component_beep_phase {\n          first start;\n          then assign component_beep_phase := component_beep_remainder - (3000 - component_beep_phase);\n        } else {\n          first start;\n          then assign component_beep_phase := component_beep_phase + component_beep_remainder;\n        }\n      }\n      then assign component_beep_value := (component_run_value) and component_beep_started and component_beep_phase < 100;\n      then assign component_beep_enabled := component_run_value;\n    }\n    out attribute buzzerToneHz : Integer = (if component_beep_value ? 1000 else 0);\n  }\n  part system : Controller;\n}\n"
+}

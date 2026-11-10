@@ -1,0 +1,41 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "phaseMs",
+        "type": "i32",
+        "initial": "0"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "phaseMs",
+        "value": {
+          "if": "phaseMs + io_1 >= 2000",
+          "then": "phaseMs + io_1 - 2000",
+          "else": "phaseMs + io_1"
+        }
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "phaseMs <= 1000",
+        "then": "phaseMs * 255.0 / 1000.0",
+        "else": "(2000 - phaseMs) * 255.0 / 1000.0"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "控制 D5 PWM LED 实现渐亮渐灭循环效果。\n验收约定：初始亮度0，采用线性三角波；1000ms从0渐亮至255，再用1000ms渐暗至0，完整周期2000ms并持续循环。亮度容差5个PWM计数，更新间隔不超过20ms。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "从上电开始，周期性步进 io_1=10ms，记录前 2000ms 内每一步 io_0；同一条迹中继续推进到 4000ms 以验证循环重复。",
+        "oracle": "io_0 初始为0；在约 t=1000ms 时接近255（允许±5PWM计数）；在约 t=2000ms 时回到0；随后在 t=3000ms 再次接近255并在 t=4000ms 再次回到0；任意相邻步 io_0 更新不超过20ms的控制步进节奏约束。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute phaseMs : Integer := 0;\n    perform action tick {\n      first start;\n      then assign phaseMs := (if phaseMs + io_1 >= 2000 ? phaseMs + io_1 - 2000 else phaseMs + io_1);\n    }\n    out attribute io_0 : Real = (if phaseMs <= 1000 ? phaseMs * 255.0 / 1000.0 else (2000 - phaseMs) * 255.0 / 1000.0);\n  }\n  part system : Controller;\n}\n"
+}

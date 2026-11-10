@@ -1,0 +1,206 @@
+{
+  "supported": true,
+  "coverage": "targeted_core_regression",
+  "coverage_explanation": "提供不依赖具体阈值映射的有限行为测试：在多个恒定温度和电位器输入平台上，待传感器缓存与输出稳定后，检查 LED 不发生闪烁。无论平台对应报警还是非报警状态，恒定输入下 LED 都不应周期翻转；这能发现把 LED 与周期蜂鸣器一起闪烁的实现。此测试不能保证所选平台一定进入报警状态，也不能验证 LED 的正确绝对电平。阈值映射、显示布局或轮换时序、蜂鸣器周期均未规定，因此不为这些行为强加预期值；严格比较、阈值调节效果、显示内容和蜂鸣器响应仍是覆盖缺口。参考程序采用一种允许的映射与显示方案，但测试不要求候选实现采用这些选择。",
+  "assumptions": [
+    "使用权威引脚：DHT11 D7，电位器 A0，TM1637 CLK D4 / DIO D5，蜂鸣器 D6，LED D13。",
+    "依赖默认台架约定：D13 LED 为高电平点亮，A0 接收 0..1023 原始 ADC 值。",
+    "将温度和电位器输入持续保持不变后，报警判定应保持不变；周期报警指蜂鸣器，而 LED 应保持稳定，不应跟随蜂鸣器闪烁。",
+    "未规定 A0 到阈值的映射、范围、量化或方向，因此不假定任一输入平台必然报警或解除报警。",
+    "未规定 TM1637 的布局、数值编码或交替显示周期，因此不执行可能误拒合法显示方案的定时显示检查。",
+    "未规定蜂鸣器周期、占空比或频率；蜂鸣器也未声明为有源器件，因此参考程序使用 tone()。",
+    "每个输入平台持续 6 秒，检查窗口从平台开始后 3.5 秒起，留出 DHT 缓存及通常的输出稳定时间。",
+    "参考程序自行选择阈值线性映射到 0..50 摄氏度、温度与阈值每秒交替显示，以及 500ms 发声/500ms 静音；这些是示例实现选择，不是候选程序必须遵守的参数。"
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "kind": "analog",
+      "pin": "A0",
+      "at_ms": 0,
+      "value": 819
+    },
+    {
+      "kind": "analog",
+      "pin": "A0",
+      "at_ms": 4000,
+      "value": 512
+    },
+    {
+      "kind": "analog",
+      "pin": "A0",
+      "at_ms": 7000,
+      "value": 1023
+    },
+    {
+      "kind": "temperature",
+      "pin": 7,
+      "at_ms": 0,
+      "value": 32
+    },
+    {
+      "kind": "temperature",
+      "pin": 7,
+      "at_ms": 8000,
+      "value": null
+    },
+    {
+      "kind": "temperature",
+      "pin": 7,
+      "at_ms": 10000,
+      "value": 25
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "display",
+      "id": "display_tm:4:5_300",
+      "at_ms": 300,
+      "expected": "32",
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "name": "tm:4:5"
+    },
+    {
+      "kind": "display",
+      "id": "display_tm:4:5_2400",
+      "at_ms": 2400,
+      "expected": "40",
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "name": "tm:4:5"
+    },
+    {
+      "kind": "display",
+      "id": "display_tm:4:5_4300",
+      "at_ms": 4300,
+      "expected": "32",
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "name": "tm:4:5"
+    },
+    {
+      "kind": "display",
+      "id": "display_tm:4:5_6300",
+      "at_ms": 6300,
+      "expected": "25",
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "name": "tm:4:5"
+    },
+    {
+      "kind": "display",
+      "id": "display_tm:4:5_10300",
+      "at_ms": 10300,
+      "expected": "50",
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "name": "tm:4:5"
+    },
+    {
+      "kind": "display",
+      "id": "display_tm:4:5_11300",
+      "at_ms": 11300,
+      "expected": "50",
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "name": "tm:4:5"
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_300",
+      "at_ms": 300,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_300",
+      "at_ms": 300,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_4300",
+      "at_ms": 4300,
+      "expected": 1,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_4300",
+      "at_ms": 4300,
+      "expected": 1000,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_4600",
+      "at_ms": 4600,
+      "expected": 1,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_4600",
+      "at_ms": 4600,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_5200",
+      "at_ms": 5200,
+      "expected": 1,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_5200",
+      "at_ms": 5200,
+      "expected": 1000,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_7250",
+      "at_ms": 7250,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_7250",
+      "at_ms": 7250,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_8500",
+      "at_ms": 8500,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_8500",
+      "at_ms": 8500,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6
+    }
+  ],
+  "experimental_condition": "The requirement leaves threshold range and alarm cadence open. This implementation uses 0–50 Celsius and repeats a 400 ms pulse each second.",
+  "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+}

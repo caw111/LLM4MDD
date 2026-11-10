@@ -1,0 +1,546 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises live RTC midnight rollover, leap day, forward and backward month crossings, repeated presses of both buttons, return navigation, and all seven weekday names. Checks date format, display positions, white size-3 text, LCD control-pin configuration, and the authorized response and setup deadlines. RTC connection-failure handling is unavailable on this bench, and the supported observations cannot independently prove that begin() was checked. Navigation across a subsequent RTC midnight, simultaneous presses, and long-press repeat behavior are not tested because their interaction policies are unspecified. The reference uses text APIs only, avoiding unsupported screen-clearing and shape-graphics operations that prevented the earlier reference from executing.",
+  "assumptions": [
+    "The supplied circuit overrides bench defaults: button 1 is active HIGH on pin 3 and button 2 is active HIGH on pin 2, both externally pulled down by 10kΩ resistors. Explicit LOW release stimuli are supplied.",
+    "Preserve hardware SPI MOSI=11, MISO=12, SCK=13, LCD CS=10, D/C=9, RST=8, and RTC SDA=A4/SCL=A5.",
+    "rtc_epoch_s=1709164798 is a controlled RTC-input scenario representing 2024-02-28 23:59:58, replacing only the diagram's default initial sensor time, not its wiring. The sketch must read the RTC and must not adjust it to this timestamp.",
+    "Separated 100ms presses are individual navigation actions. No assertions prescribe behavior for simultaneous buttons, button bounce, or long-press autorepeat.",
+    "The relationship between browsing and a later live RTC date rollover is unspecified. The only RTC rollover tested occurs before navigation, so either a maintained date offset or a separate browsing date can satisfy the navigation checks.",
+    "The operational profile authorizes setup completion within 500ms and display changes within 250ms. Initial display checks are relative to observed setup completion; input events remain power-on relative.",
+    "Black text background, padded weekday redraws, a 20ms software debounce, and retaining a navigation offset are reference implementation choices, not additional candidate requirements."
+  ],
+  "horizon_ms": 16000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 4000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 5000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 5100,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 6000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 6100,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 7000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 7100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 8000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 8100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 9000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 9100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 10000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 10100,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 11000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 11100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 12000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 12100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 13000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 13100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 14000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 14100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "rtc_epoch_s": 1709164798,
+  "checks": [
+    {
+      "kind": "setup",
+      "id": "startup_deadline",
+      "requirement_quote": "setup() must return within 500ms.",
+      "max_ms": 500
+    },
+    {
+      "kind": "lcd",
+      "id": "initial_date",
+      "requirement_quote": "show YYYY-MM-DD to (10, 30) position.",
+      "origin": "setup_complete",
+      "from_ms": 0,
+      "to_ms": 250,
+      "contains": "2024-02-28",
+      "display_properties": {
+        "initialized": true,
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535,
+        "cs": 10,
+        "dc": 9,
+        "rst": 8
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "initial_weekday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "origin": "setup_complete",
+      "from_ms": 0,
+      "to_ms": 250,
+      "contains": "Wednesday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "rtc_midnight_date",
+      "requirement_quote": "Continuously read the current time",
+      "from_ms": 2000,
+      "to_ms": 2250,
+      "contains": "2024-02-29",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "rtc_midnight_weekday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 2000,
+      "to_ms": 2250,
+      "contains": "Thursday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_across_leap_month",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 4000,
+      "to_ms": 4250,
+      "contains": "2024-03-01",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_friday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 4000,
+      "to_ms": 4250,
+      "contains": "Friday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "previous_to_leap_day",
+      "requirement_quote": "Button 1 corresponds to the previous date",
+      "from_ms": 5000,
+      "to_ms": 5250,
+      "contains": "2024-02-29",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "previous_thursday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 5000,
+      "to_ms": 5250,
+      "contains": "Thursday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "repeated_previous",
+      "requirement_quote": "Button 1 corresponds to the previous date",
+      "from_ms": 6000,
+      "to_ms": 6250,
+      "contains": "2024-02-28",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "previous_wednesday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 6000,
+      "to_ms": 6250,
+      "contains": "Wednesday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_return_leap_day",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 7000,
+      "to_ms": 7250,
+      "contains": "2024-02-29",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "return_thursday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 7000,
+      "to_ms": 7250,
+      "contains": "Thursday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "repeated_month_crossing",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 8000,
+      "to_ms": 8250,
+      "contains": "2024-03-01",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "repeated_friday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 8000,
+      "to_ms": 8250,
+      "contains": "Friday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_march_second",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 9000,
+      "to_ms": 9250,
+      "contains": "2024-03-02",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "saturday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 9000,
+      "to_ms": 9250,
+      "contains": "Saturday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "previous_march_first",
+      "requirement_quote": "Button 1 corresponds to the previous date",
+      "from_ms": 10000,
+      "to_ms": 10250,
+      "contains": "2024-03-01",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "previous_friday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 10000,
+      "to_ms": 10250,
+      "contains": "Friday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_march_second_again",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 11000,
+      "to_ms": 11250,
+      "contains": "2024-03-02",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "saturday_again",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 11000,
+      "to_ms": 11250,
+      "contains": "Saturday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_sunday_date",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 12000,
+      "to_ms": 12250,
+      "contains": "2024-03-03",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "sunday_wrap",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 12000,
+      "to_ms": 12250,
+      "contains": "Sunday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_monday_date",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 13000,
+      "to_ms": 13250,
+      "contains": "2024-03-04",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "monday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 13000,
+      "to_ms": 13250,
+      "contains": "Monday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "next_tuesday_date",
+      "requirement_quote": "Button 2 to the next date.",
+      "from_ms": 14000,
+      "to_ms": 14250,
+      "contains": "2024-03-05",
+      "display_properties": {
+        "x": 10,
+        "y": 30,
+        "size": 3,
+        "color": 65535
+      }
+    },
+    {
+      "kind": "lcd",
+      "id": "tuesday",
+      "requirement_quote": "Also show days of the week to (10, 80) position.",
+      "from_ms": 14000,
+      "to_ms": 14250,
+      "contains": "Tuesday",
+      "display_properties": {
+        "x": 10,
+        "y": 80,
+        "size": 3,
+        "color": 65535
+      }
+    }
+  ],
+  "lcd_capture_interval_ms": 10,
+  "electrical_led_pins": {}
+}

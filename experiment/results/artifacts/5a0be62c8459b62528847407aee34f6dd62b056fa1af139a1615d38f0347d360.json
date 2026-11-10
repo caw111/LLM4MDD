@@ -1,0 +1,283 @@
+{
+  "contract_sha256": "5b127b258904af69f9ee8048329f274621624e69c134961a48b99bb57b6d4490",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3_segment_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3_segment_9": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"btn1 press event (debounced/qualified in model)\",\n      \"active_high\": false,\n      \"pullup\": true\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"servo1 position (state machine controlled)\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D4\",\n      \"initial\": 0,\n      \"meaning\": \"servo2 position (state machine controlled)\"\n    },\n    {\n      \"kind\": \"led_bar_graph\",\n      \"pins\": [\n        \"D5\",\n        \"D6\",\n        \"D7\",\n        \"D8\",\n        \"D9\",\n        \"D10\",\n        \"D11\",\n        \"D12\",\n        \"D13\",\n        \"D44\"\n      ],\n      \"initial\": false,\n      \"meaning\": \"bargraph1 segment state (all segments controlled by model)\",\n      \"active_high\": true\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Board is Arduino Mega 2560 as specified; preserve wiring exactly from circuit: btn1->D2 with pullup and active_high=false (pressed = model true when D2 reads LOW), servo1 PWM->D3, servo2 PWM->D4, bargraph segments driven by D5,D6,D7,D8,D9,D10,D11,D12,D13,D44 with common cathodes on GND.1 (active_high=true).\",\n    \"Model must implement: 0/1/2 state cycle with immediate actuator/LED updates on valid button advance; per-state dwell of 2000ms; transition lockout of 2000ms after each valid button press; debounce qualification of 0.15s; and the specified servo angles and bargraph lit segment counts.\",\n    \"No serial reporting is requested by the provided requirements; therefore no serial channels are configured.\",\n    \"The LED bar graph request is represented as a single wired bar-graph operation; the application will expand it into per-segment GPIO outputs as needed, but program-owned segment ports are not enumerated here.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two servo motors (servo1, servo2) and a 10-segment LED bar graph (bargraph1) using a push button (btn1). The servos will alternate between three distinct positions, while the LED bar graph will visually indicate the current state. Each button press will advance the system to the next state.\n\n**Detail Rules**:\nInitialization:  \n- Both servos (servo1, servo2) start at 0° position.  \n- All segments of the LED bar graph (bargraph1) remain off.  \n\nState Transitions:  \n1. **State 0** (Initial):  \n   - Servo1 at 0°, Servo2 at 180°.  \n   - All LEDs off.  \n   - Maintained for **2 seconds** after initialization.  \n\n2. **State 1** (First button press):  \n   - Servo1 at 90°, Servo2 at 90°.  \n   - First 5 LEDs of the bar graph lit.  \n   - Maintained for **2 seconds**.  \n\n3. **State 2** (Second button press):  \n   - Servo1 at 180°, Servo2 at 0°.  \n   - All 10 LEDs of the bar graph lit.  \n   - Maintained for **2 seconds**.  \n\n4. **State 0** (Third button press):  \n   - Returns to initial configuration, repeating the cycle.  \n\nButton Interaction:  \n- Each valid button press (debounced for 0.15 seconds) advances the system to the next state.  \n- State transitions are locked for **2 seconds** after each button press to ensure stability.  \n- The LED bar graph and servo positions must update immediately after a valid state transition.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:3\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:4\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two servo motors (servo1, servo2) and a 10-segment LED bar graph (bargraph1) using a push button (btn1). The servos will alternate between three distinct positions, while the LED bar graph will visually indicate the current state. Each button press will advance the system to the next state.\n\n**Detail Rules**:\nInitialization:  \n- Both servos (servo1, servo2) start at 0° position.  \n- All segments of the LED bar graph (bargraph1) remain off.  \n\nState Transitions:  \n1. **State 0** (Initial):  \n   - Servo1 at 0°, Servo2 at 180°.  \n   - All LEDs off.  \n   - Maintained for **2 seconds** after initialization.  \n\n2. **State 1** (First button press):  \n   - Servo1 at 90°, Servo2 at 90°.  \n   - First 5 LEDs of the bar graph lit.  \n   - Maintained for **2 seconds**.  \n\n3. **State 2** (Second button press):  \n   - Servo1 at 180°, Servo2 at 0°.  \n   - All 10 LEDs of the bar graph lit.  \n   - Maintained for **2 seconds**.  \n\n4. **State 0** (Third button press):  \n   - Returns to initial configuration, repeating the cycle.  \n\nButton Interaction:  \n- Each valid button press (debounced for 0.15 seconds) advances the system to the next state.  \n- State transitions are locked for **2 seconds** after each button press to ensure stability.  \n- The LED bar graph and servo positions must update immediately after a valid state transition.  \n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:3\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:4\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:5\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:6\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:7\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:8\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:9\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:10\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:11\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:12\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:13\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:44\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn1",
+            "top": -195.4,
+            "left": 19.2,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led-bar-graph",
+            "id": "bargraph1",
+            "left": 417.6,
+            "top": -14.2,
+            "attrs": {
+              "color": "lime"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "btn1:2.r",
+            "black"
+          ],
+          [
+            "mega:2",
+            "btn1:1.l",
+            "green"
+          ],
+          [
+            "mega:3",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:4",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:5",
+            "bargraph1:A1",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C1",
+            "black"
+          ],
+          [
+            "mega:6",
+            "bargraph1:A2",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C2",
+            "black"
+          ],
+          [
+            "mega:7",
+            "bargraph1:A3",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C3",
+            "black"
+          ],
+          [
+            "mega:8",
+            "bargraph1:A4",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C4",
+            "black"
+          ],
+          [
+            "mega:9",
+            "bargraph1:A5",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C5",
+            "black"
+          ],
+          [
+            "mega:10",
+            "bargraph1:A6",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C6",
+            "black"
+          ],
+          [
+            "mega:11",
+            "bargraph1:A7",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C7",
+            "black"
+          ],
+          [
+            "mega:12",
+            "bargraph1:A8",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C8",
+            "black"
+          ],
+          [
+            "mega:13",
+            "bargraph1:A9",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C9",
+            "black"
+          ],
+          [
+            "mega:44",
+            "bargraph1:A10",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C10",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

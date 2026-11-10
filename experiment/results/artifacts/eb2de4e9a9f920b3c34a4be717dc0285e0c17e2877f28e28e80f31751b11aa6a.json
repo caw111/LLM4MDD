@@ -1,0 +1,86 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "sampleCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "sampleCount",
+            "value": "sampleCount + 1"
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": {
+          "==": [
+            "sampleCount - 5 * RealFunctions::floor(sampleCount / 5)",
+            0
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "serial_0_trigger": {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": "io_1",
+      "serial_0_value_1": "io_2",
+      "serial_0_value_2": "sampleCount"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个按钮触发的数据采样系统，使用按钮 D2、光敏电阻 A0、LM35（A1）和串口。按下按钮后立即采集一次光照与温度数据并通过串口输出，同时将采样计数加一；每完成 5 次采样，让蜂鸣器 D6 短鸣一次提示。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Hold io_0 false initially; then create a single rising edge on io_0 (false->true) with stable io_1 and io_2; keep io_0 true for one step then release to false.",
+        "oracle": "On the step of the rising edge, serial_0_trigger==true and serial_0_value_0==io_1 (sampled), serial_0_value_1==io_2 (sampled), serial_0_value_2==1; io_3==0 unless sampleCount is a multiple of 5 at that step."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个按钮触发的数据采样系统，使用按钮 D2、光敏电阻 A0、LM35（A1）和串口。按下按钮后立即采集一次光照与温度数据并通过串口输出，同时将采样计数加一；每完成 5 次采样，让蜂鸣器 D6 短鸣一次提示。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Generate 5 separate button press rising edges (io_0 false->true each time with at least one intervening false step). Keep io_1 and io_2 constant across all steps, so only the sample counter changes.",
+        "oracle": "serial_0_trigger is true exactly on each press rising-edge step; serial_0_value_2 equals the incremented count (1..5) on those steps; io_3 is nonzero only on the 5th sampling step (when count becomes 5) and 0 on the other four sampling steps."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    attribute sampleCount : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign sampleCount := sampleCount + 1;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_3 : Integer = (if ((sampleCount - 5 * RealFunctions::floor(sampleCount / 5)) == (0)) ? 1000 else 0);\n    out attribute serial_0_trigger : Boolean = (if ((io_0) and ((not previousPressed))) ? true else false);\n    out attribute serial_0_value_0 : Real = io_1;\n    out attribute serial_0_value_1 : Real = io_2;\n    out attribute serial_0_value_2 : Integer = sampleCount;\n  }\n  part system : Controller;\n}\n"
+}

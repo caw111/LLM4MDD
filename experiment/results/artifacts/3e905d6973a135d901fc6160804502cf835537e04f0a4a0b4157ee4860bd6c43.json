@@ -1,0 +1,188 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "lightOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "count",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevIo0",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevIo1",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_5_valid",
+            {
+              "==": [
+                "io_5",
+                6
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lightOn",
+            "value": true
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "io_5_valid",
+            {
+              "==": [
+                "io_5",
+                5
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lightOn",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "io_5_valid",
+            {
+              "==": [
+                "io_5",
+                3
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "count",
+            "value": 0
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevIo0"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lightOn",
+            "value": true
+          },
+          {
+            "assign": "count",
+            "value": "count + 1"
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevIo1"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lightOn",
+            "value": false
+          },
+          {
+            "assign": "count",
+            "value": "count + 1"
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "prevIo0",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevIo1",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": "lightOn",
+      "io_3": 0,
+      "io_4": "count"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Send serial frames with io_5_valid=true and io_5=6 (LIGHT_ON), then step without valid; keep io_0=false and io_1=false.",
+        "oracle": "io_2 becomes true on the LIGHT_ON step and remains true until a subsequent LIGHT_OFF command or local D3 rising edge."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Apply local D2 button press as a rising edge on io_0 (io_0 goes false->true), with io_1=false; then hold io_0=true for one step and release to false.",
+        "oracle": "On the rising edge step, io_2 becomes true and io_4 increments by 1; holding/releasing without a new rising edge does not change io_4."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Apply local D3 button press as a rising edge on io_1 (io_1 goes false->true), with io_0=false; then release.",
+        "oracle": "On the rising edge step, io_2 becomes false and io_4 increments by 1; release does not change io_2 or io_4."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "First cause at least one local press rising edge to make io_4>0; then send serial frame with io_5_valid=true and io_5=3 (COUNT_RESET); then one step with io_5_valid=false.",
+        "oracle": "On COUNT_RESET step, io_4 becomes 0 immediately and stays 0 until the next local rising edge increments it."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T5",
+        "test_method": "trace",
+        "stimulus": "Send serial frames with io_5_valid=true and io_5=1 (BEEP) for one step, with io_0=false and io_1=false; then step with io_5_valid=false.",
+        "oracle": "io_3 stays 0 (silence) on and after the BEEP command step in this controller model."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_5 : Integer;\n    in attribute io_5_valid : Boolean;\n    attribute lightOn : Boolean := false;\n    attribute count : Integer := 0;\n    attribute prevIo0 : Boolean := false;\n    attribute prevIo1 : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_5_valid) and (((io_5) == (6)))) {\n        first start;\n        then assign lightOn := true;\n      }\n      then if ((io_5_valid) and (((io_5) == (5)))) {\n        first start;\n        then assign lightOn := false;\n      }\n      then if ((io_5_valid) and (((io_5) == (3)))) {\n        first start;\n        then assign count := 0;\n      }\n      then if ((io_0) and ((not prevIo0))) {\n        first start;\n        then assign lightOn := true;\n        then assign count := count + 1;\n      }\n      then if ((io_1) and ((not prevIo1))) {\n        first start;\n        then assign lightOn := false;\n        then assign count := count + 1;\n      }\n      then assign prevIo0 := io_0;\n      then assign prevIo1 := io_1;\n    }\n    out attribute io_2 : Boolean = lightOn;\n    out attribute io_3 : Integer = 0;\n    out attribute io_4 : Integer = count;\n  }\n  part system : Controller;\n}\n"
+}

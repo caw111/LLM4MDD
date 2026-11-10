@@ -1,0 +1,224 @@
+{
+  "supported": true,
+  "coverage": "targeted_core_regression",
+  "coverage_explanation": "Tests ON/OFF transitions, repeated ON, several explicit PWM values including endpoints, line and idle framing, STATUS reporting, and button-triggered PWM-state reporting. BLINK period, BUZZ frequency/duration, startup state, and report format are unspecified. Consequently, blink/buzzer timing and the textual encoding of reported LED state are not independently asserted.",
+  "assumptions": [
+    "Relies on bench defaults: D13 and D9 LEDs are active HIGH; D2 button connects to GND and uses INPUT_PULLUP.",
+    "Commands are uppercase as listed. Newline terminates a command; an unterminated command is accepted after the specified 20 ms idle timeout.",
+    "PWM:数值 is interpreted as an Arduino PWM duty value in the standard 0..255 range; only valid values are tested.",
+    "STATUS and button reports expose the current PWM value numerically, with arbitrary labels permitted. No particular encoding of LED state is assumed by the checks.",
+    "BLINK timing and BUZZ frequency/duration are missing. The reference chooses 500 ms blink half-periods and a 1000 Hz, 200 ms buzz; these choices are not required by the checks.",
+    "Initial LED/PWM settings and button debounce duration are unspecified. Tests establish settings explicitly and hold button presses long enough for ordinary debounce."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "kind": "digital",
+      "pin": 2,
+      "at_ms": 0,
+      "value": 1
+    },
+    {
+      "kind": "digital",
+      "pin": 2,
+      "at_ms": 7200,
+      "value": 0
+    },
+    {
+      "kind": "digital",
+      "pin": 2,
+      "at_ms": 7208,
+      "value": 1
+    },
+    {
+      "kind": "digital",
+      "pin": 2,
+      "at_ms": 7215,
+      "value": 0
+    },
+    {
+      "kind": "digital",
+      "pin": 2,
+      "at_ms": 7440,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [
+    {
+      "at_ms": 500,
+      "text": "ON\n"
+    },
+    {
+      "at_ms": 1500,
+      "text": "PWM:177\n"
+    },
+    {
+      "at_ms": 2500,
+      "text": "STATUS\n"
+    },
+    {
+      "at_ms": 3000,
+      "text": "BLINK\n"
+    },
+    {
+      "at_ms": 5200,
+      "text": "BUZZ\n"
+    },
+    {
+      "at_ms": 6400,
+      "text": "OFF\n"
+    },
+    {
+      "at_ms": 8200,
+      "text": "PWM:999\n"
+    },
+    {
+      "at_ms": 9000,
+      "text": "PWM:0\n"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "gpio",
+      "id": "gpio_13_250",
+      "at_ms": 250,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_750",
+      "at_ms": 750,
+      "expected": 1,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_3200",
+      "at_ms": 3200,
+      "expected": 1,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_3750",
+      "at_ms": 3750,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_4200",
+      "at_ms": 4200,
+      "expected": 1,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "gpio",
+      "id": "gpio_13_6600",
+      "at_ms": 6600,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 13
+    },
+    {
+      "kind": "pwm",
+      "id": "pwm_9_1750",
+      "at_ms": 1750,
+      "expected": 177,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 9
+    },
+    {
+      "kind": "pwm",
+      "id": "pwm_9_7500",
+      "at_ms": 7500,
+      "expected": 177,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 9
+    },
+    {
+      "kind": "pwm",
+      "id": "pwm_9_8500",
+      "at_ms": 8500,
+      "expected": 177,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 9
+    },
+    {
+      "kind": "pwm",
+      "id": "pwm_9_9250",
+      "at_ms": 9250,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 9
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_5350",
+      "at_ms": 5350,
+      "expected": 1000,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6,
+      "tolerance": 10.0
+    },
+    {
+      "kind": "tone",
+      "id": "tone_6_5600",
+      "at_ms": 5600,
+      "expected": 0,
+      "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+      "pin": 6
+    },
+    {
+      "kind": "serial",
+      "id": "status_led_2500",
+      "from_ms": 2500,
+      "to_ms": 2750,
+      "regex": "^LED_STATE1$",
+      "min_count": 1,
+      "max_count": 1,
+      "requirement_quote": "Required serial output for the scenario"
+    },
+    {
+      "kind": "serial",
+      "id": "status_pwm_2500",
+      "from_ms": 2500,
+      "to_ms": 2750,
+      "regex": "^PWM_VALUE177$",
+      "min_count": 1,
+      "max_count": 1,
+      "requirement_quote": "Required serial output for the scenario"
+    },
+    {
+      "kind": "serial",
+      "id": "status_led_7200",
+      "from_ms": 7200,
+      "to_ms": 7450,
+      "regex": "^LED_STATE0$",
+      "min_count": 1,
+      "max_count": 1,
+      "requirement_quote": "Required serial output for the scenario"
+    },
+    {
+      "kind": "serial",
+      "id": "status_pwm_7200",
+      "from_ms": 7200,
+      "to_ms": 7450,
+      "regex": "^PWM_VALUE177$",
+      "min_count": 1,
+      "max_count": 1,
+      "requirement_quote": "Required serial output for the scenario"
+    }
+  ],
+  "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged",
+  "electrical_led_pins": {}
+}

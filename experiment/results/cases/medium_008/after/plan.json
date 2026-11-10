@@ -1,0 +1,152 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests that distinct button presses increase the displayed count, that holding a button does not repeatedly count, and that releasing it does not increment the count. The initial count is unspecified, so no absolute initial value is required. Available relational checks cannot assert an exact +1 difference between displays with an unknown initial value; exact increment magnitude therefore remains unverified.",
+  "assumptions": [
+    "Uses the disclosed bench default for D2: button to GND, INPUT_PULLUP, active LOW.",
+    "The authoritative TM1637 wiring is CLK D4 and DIO D5.",
+    "The requirement does not specify an initial count; the reference chooses zero, but checks do not require zero.",
+    "Presses are clean and widely spaced. No particular debounce algorithm or exact response latency is required.",
+    "The test exercises a few presses only; overflow and reset behavior are unspecified and are not tested."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 1000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 3000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 4500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 5500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 7500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 8500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 9000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "relation",
+      "id": "distinct_presses_increase_display",
+      "requirement_quote": "每按一次计数+1并显示",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        1400,
+        4400,
+        5900,
+        8900
+      ],
+      "relation": "increasing",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "first_hold_and_release_do_not_recount",
+      "requirement_quote": "每按一次计数+1并显示",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        1400,
+        2200,
+        2800,
+        3400,
+        3800
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "second_release_does_not_count",
+      "requirement_quote": "每按一次计数+1并显示",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        4400,
+        4900,
+        5300
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "repeated_long_hold_counts_once",
+      "requirement_quote": "每按一次计数+1并显示",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        5900,
+        6600,
+        7300,
+        7900,
+        8300
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "final_release_and_idle_preserve_count",
+      "requirement_quote": "每按一次计数+1并显示",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        8900,
+        9400,
+        10500,
+        11700
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nunsigned int count = 0;\nint lastRaw = HIGH;\nint stableState = HIGH;\nunsigned long changedAt = 0;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  display.setBrightness(7);\n  display.showNumberDec(count, false);\n  lastRaw = digitalRead(2);\n  changedAt = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  int raw = digitalRead(2);\n  if (raw != lastRaw) {\n    lastRaw = raw;\n    changedAt = now;\n  }\n  if (raw != stableState && now - changedAt >= 30) {\n    stableState = raw;\n    if (stableState == LOW) {\n      count = (count + 1) % 10000;\n      display.showNumberDec(count, false);\n    }\n  }\n}\n"
+}

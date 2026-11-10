@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousProximity\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"valveOn\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"valveRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"todayUses\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"alarmActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"alarmRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"lastDistanceValid\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"lastDisplayedPercent\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_3\",\n            {\n              \">=\": [\n                \"io_2\",\n                2.0\n              ]\n            },\n            {\n              \"<=\": [\n                \"io_2\",\n                400.0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"lastDistanceValid\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"lastDistanceValid\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousProximity\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_3\",\n                {\n                  \"<\": [\n                    \"io_2\",\n                    10.0\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"alarmActive\",\n                \"value\": true\n              },\n              {\n                \"assign\": \"alarmRemainingMs\",\n                \"value\": 3000\n              },\n              {\n                \"assign\": \"valveOn\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"valveRemainingMs\",\n                \"value\": 0\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"todayUses\",\n                \"value\": \"todayUses + 1\"\n              },\n              {\n                \"assign\": \"valveOn\",\n                \"value\": true\n              },\n              {\n                \"assign\": \"valveRemainingMs\",\n                \"value\": 5000\n              },\n              {\n                \"assign\": \"alarmActive\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"alarmRemainingMs\",\n                \"value\": 0\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"valveOn\",\n        \"then\": [\n          {\n            \"assign\": \"valveRemainingMs\",\n            \"value\": {\n              \"-\": [\n                \"valveRemainingMs\",\n                5\n              ]\n            }\n          },\n          {\n            \"if\": {\n              \"<=\": [\n                \"valveRemainingMs\",\n                0\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"valveOn\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"valveRemainingMs\",\n                \"value\": 0\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"alarmActive\",\n        \"then\": [\n          {\n            \"assign\": \"alarmRemainingMs\",\n            \"value\": {\n              \"-\": [\n                \"alarmRemainingMs\",\n                5\n              ]\n            }\n          },\n          {\n            \"if\": {\n              \"<=\": [\n                \"alarmRemainingMs\",\n                0\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"alarmActive\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"alarmRemainingMs\",\n                \"value\": 0\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"lastDistanceValid\",\n        \"then\": [\n          {\n            \"assign\": \"lastDisplayedPercent\",\n            \"value\": {\n              \"if\": {\n                \"<\": [\n                  \"io_2\",\n                  2.0\n                ]\n              },\n              \"then\": 0,\n              \"else\": {\n                \"if\": {\n                  \">\": [\n                    \"io_2\",\n                    400.0\n                  ]\n                },\n                \"then\": 100,\n                \"else\": {\n                  \"floor\": {\n                    \"*\": [\n                      {\n                        \"/\": [\n                          {\n                            \"-\": [\n                              \"io_2\",\n                              2.0\n                            ]\n                          },\n                          398.0\n                        ]\n                      },\n                      100.0\n                    ]\n                  }\n                }\n              }\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousProximity\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": \"valveOn and lastDistanceValid and not alarmActive\",\n      \"io_4\": {\n        \"if\": \"lastDistanceValid\",\n        \"then\": \"lastDisplayedPercent\",\n        \"else\": 0\n      },\n      \"io_5\": {\n        \"if\": \"alarmActive\",\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_6\": {\n        \"if\": \"not lastDistanceValid\",\n        \"then\": true,\n        \"else\": {\n          \"if\": \"alarmActive\",\n          \"then\": true,\n          \"else\": \"io_0\"\n        }\n      },\n      \"serial_0_trigger\": \"io_0\",\n      \"serial_0_value_0\": \"todayUses\",\n      \"serial_0_value_1\": {\n        \"if\": \"lastDistanceValid\",\n        \"then\": {\n          \"floor\": {\n            \"/\": [\n              {\n                \"*\": [\n                  \"lastDisplayedPercent\",\n                  1.0\n                ]\n              },\n              1.0\n            ]\n          }\n        },\n        \"else\": 0.0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_3=true且io_2>=10.0，制造io_0的上升沿一次，然后保持io_0为true或false若干控制步；期间每步记录io_1与io_5\",\n        \"oracle\": \"io_1在接近上升沿后立即为true并保持固定时长后转为false；期间io_5应为0，alarmActive不被触发\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_3=true且io_2<10.0，制造io_0上升沿一次；保持io_0随后变化若干控制步\",\n        \"oracle\": \"上升沿触发后io_1应保持false且不启动；io_5应为报警频率且报警持续固定时长后回到0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在io_3=true时依次设置io_2为2.0、2.0+398.0/2、400.0并对每个值进行一次控制步；同时在中间值上升沿触发一次io_0\",\n        \"oracle\": \"io_4与显示百分比随io_2从0递增到约50再到100；有效水位上升沿触发一次后todayUses递增1，serial_0_value_0反映递增\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_3=false并保持io_2任意，进行若干控制步，同时制造一次io_0上升沿\",\n        \"oracle\": \"io_6应指示无效液位（为true）；io_1不应开启；serial_0_trigger在io_0为true的控制步为true且serial_0_value_0/serial_0_value_1输出保持定义一致\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute previousProximity : Boolean := false;\n    attribute valveOn : Boolean := false;\n    attribute valveRemainingMs : Integer := 0;\n    attribute todayUses : Integer := 0;\n    attribute alarmActive : Boolean := false;\n    attribute alarmRemainingMs : Integer := 0;\n    attribute lastDistanceValid : Boolean := false;\n    attribute lastDisplayedPercent : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_3) and (((io_2) >= (2.0))) and (((io_2) <= (400.0)))) {\n        first start;\n        then assign lastDistanceValid := true;\n      } else {\n        first start;\n        then assign lastDistanceValid := false;\n      }\n      then if ((io_0) and ((not previousProximity))) {\n        first start;\n        then if ((io_3) and (((io_2) < (10.0)))) {\n          first start;\n          then assign alarmActive := true;\n          then assign alarmRemainingMs := 3000;\n          then assign valveOn := false;\n          then assign valveRemainingMs := 0;\n        } else {\n          first start;\n          then assign todayUses := todayUses + 1;\n          then assign valveOn := true;\n          then assign valveRemainingMs := 5000;\n          then assign alarmActive := false;\n          then assign alarmRemainingMs := 0;\n        }\n      }\n      then if valveOn {\n        first start;\n        then assign valveRemainingMs := ((valveRemainingMs) - (5));\n        then if ((valveRemainingMs) <= (0)) {\n          first start;\n          then assign valveOn := false;\n          then assign valveRemainingMs := 0;\n        }\n      }\n      then if alarmActive {\n        first start;\n        then assign alarmRemainingMs := ((alarmRemainingMs) - (5));\n        then if ((alarmRemainingMs) <= (0)) {\n          first start;\n          then assign alarmActive := false;\n          then assign alarmRemainingMs := 0;\n        }\n      }\n      then if lastDistanceValid {\n        first start;\n        then assign lastDisplayedPercent := (if ((io_2) < (2.0)) ? 0 else (if ((io_2) > (400.0)) ? 100 else RealFunctions::floor(((((((io_2) - (2.0))) / (398.0))) * (100.0)))));\n      }\n      then assign previousProximity := io_0;\n    }\n    out attribute io_1 : Boolean = valveOn and lastDistanceValid and not alarmActive;\n    out attribute io_4 : Integer = (if lastDistanceValid ? lastDisplayedPercent else 0);\n    out attribute io_5 : Integer = (if alarmActive ? 2000 else 0);\n    out attribute io_6 : Boolean = (if not lastDistanceValid ? true else (if alarmActive ? true else io_0));\n    out attribute serial_0_trigger : Boolean = io_0;\n    out attribute serial_0_value_0 : Integer = todayUses;\n    out attribute serial_0_value_1 : Real = (if lastDistanceValid ? RealFunctions::floor(((((lastDisplayedPercent) * (1.0))) / (1.0))) else 0.0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

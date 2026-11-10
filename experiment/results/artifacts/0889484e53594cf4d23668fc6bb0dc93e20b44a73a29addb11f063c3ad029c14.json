@@ -1,0 +1,81 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "welcomeActive",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "<=": [
+                "io_0",
+                10.0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "welcomeActive",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "welcomeActive",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "welcomeActive",
+        "then": true,
+        "else": false
+      },
+      "io_3": {
+        "if": "welcomeActive",
+        "then": 1000,
+        "else": 0
+      },
+      "serial_0_trigger": {
+        "if": "welcomeActive",
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": {
+        "if": "welcomeActive",
+        "then": 1,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Provide io_1=true (valid) and io_0=9.5 for multiple control steps, then keep io_1=true while increasing io_0 to 20.0 (invalid/absent distance still holds last valid).",
+        "oracle": "When io_0<=10.0 and io_1 is true, io_2 is true (LED command active), io_3 is non-zero (buzzer tone active), and serial_0_trigger is true with serial_0_value_0=1. When io_0>10.0 (and/or validity not asserted), io_2 becomes false, io_3 becomes 0, and serial_0_trigger is false (no welcome)."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Set io_1=false for at least one control step while previously sampling io_0<=10.0 with io_1=true; then set io_1=true with io_0=12.0.",
+        "oracle": "If io_1 is false, the controller deasserts welcomeActive (io_2=false, io_3=0, serial_0_trigger=false). After io_1 returns true with io_0=12.0 (>10.0), welcome remains inactive (io_2=false, io_3=0, serial_0_trigger=false)."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute welcomeActive : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and (((io_0) <= (10.0)))) {\n        first start;\n        then assign welcomeActive := true;\n      } else {\n        first start;\n        then assign welcomeActive := false;\n      }\n    }\n    out attribute io_2 : Boolean = (if welcomeActive ? true else false);\n    out attribute io_3 : Integer = (if welcomeActive ? 1000 else 0);\n    out attribute serial_0_trigger : Boolean = (if welcomeActive ? true else false);\n    out attribute serial_0_value_0 : Integer = (if welcomeActive ? 1 else 0);\n  }\n  part system : Controller;\n}\n"
+}

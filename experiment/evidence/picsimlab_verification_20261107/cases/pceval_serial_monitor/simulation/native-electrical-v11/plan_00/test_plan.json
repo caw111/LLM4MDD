@@ -1,0 +1,172 @@
+{
+  "supported": true,
+  "coverage": "full",
+  "coverage_explanation": "Exercises newline and idle framing, queued messages, repeated inputs, preservation of textual values and whitespace, and fragmented input whose idle timer must reset. Checks do not require output line terminators. Response-prefix counts detect duplicate or additional formatted echoes within this finite suite.",
+  "assumptions": [
+    "Uses the supplied serial baud rate of 9600 and line_or_idle framing with a 20 ms idle timeout.",
+    "Input newlines delimit messages and are not part of the echoed value.",
+    "Output line endings are unspecified and are not required by the checks.",
+    "No external circuit or bench-default wiring is needed."
+  ],
+  "horizon_ms": 8000,
+  "input_steps": [],
+  "serial_inputs": [
+    {
+      "at_ms": 500,
+      "text": "Hello Arduino\n"
+    },
+    {
+      "at_ms": 1200,
+      "text": "007"
+    },
+    {
+      "at_ms": 1900,
+      "text": "MiXeD case !? 42\n"
+    },
+    {
+      "at_ms": 2600,
+      "text": "  spaced value  \n"
+    },
+    {
+      "at_ms": 3300,
+      "text": "first\nsecond\n"
+    },
+    {
+      "at_ms": 4100,
+      "text": "Hello Arduino\n"
+    },
+    {
+      "at_ms": 4800,
+      "text": "-12.50"
+    },
+    {
+      "at_ms": 6200,
+      "text": "frag"
+    },
+    {
+      "at_ms": 6210,
+      "text": "ment"
+    },
+    {
+      "at_ms": 6220,
+      "text": "ed"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "line_text",
+      "requirement_quote": "print back the value in the format: \"Received: {value}\"",
+      "from_ms": 500,
+      "to_ms": 1050,
+      "contains": "Received: Hello Arduino",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "idle_numeric_text",
+      "requirement_quote": "The displayed serial message is same with the written value.",
+      "from_ms": 1200,
+      "to_ms": 1750,
+      "contains": "Received: 007",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "case_and_punctuation",
+      "requirement_quote": "The displayed serial message is same with the written value.",
+      "from_ms": 1900,
+      "to_ms": 2450,
+      "contains": "Received: MiXeD case !? 42",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "preserve_spaces",
+      "requirement_quote": "The displayed serial message is same with the written value.",
+      "from_ms": 2600,
+      "to_ms": 3150,
+      "contains": "Received:   spaced value  ",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "queued_first",
+      "requirement_quote": "Continuously read the serial monitor, and print back the value",
+      "from_ms": 3300,
+      "to_ms": 3900,
+      "contains": "Received: first",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "queued_second",
+      "requirement_quote": "Continuously read the serial monitor, and print back the value",
+      "from_ms": 3300,
+      "to_ms": 3900,
+      "contains": "Received: second",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_value",
+      "requirement_quote": "Continuously read the serial monitor, and print back the value",
+      "from_ms": 4100,
+      "to_ms": 4650,
+      "contains": "Received: Hello Arduino",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "idle_signed_decimal_text",
+      "requirement_quote": "The displayed serial message is same with the written value.",
+      "from_ms": 4800,
+      "to_ms": 5600,
+      "contains": "Received: -12.50",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "no_premature_fragment_response",
+      "requirement_quote": "idle_timeout_ms=20",
+      "from_ms": 6200,
+      "to_ms": 6238,
+      "contains": "Received:",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "fragmented_idle_message",
+      "requirement_quote": "The displayed serial message is same with the written value.",
+      "from_ms": 6240,
+      "to_ms": 6900,
+      "contains": "Received: fragmented",
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "no_duplicate_or_extra_formatted_responses",
+      "requirement_quote": "print back the value in the format: \"Received: {value}\"",
+      "from_ms": 0,
+      "to_ms": 8000,
+      "contains": "Received:",
+      "min_count": 9,
+      "max_count": 9
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nString pending;\nunsigned long lastByteAt = 0;\n\nvoid emitMessage() {\n  Serial.print(\"Received: \");\n  Serial.println(pending);\n  pending = \"\";\n}\n\nvoid setup() {\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByteAt = millis();\n    if (c == '\\n') {\n      if (pending.length() && pending[pending.length() - 1] == '\\r') {\n        pending.remove(pending.length() - 1);\n      }\n      emitMessage();\n    } else {\n      pending += c;\n    }\n  }\n  if (pending.length() > 0 && (unsigned long)(millis() - lastByteAt) >= 20) {\n    emitMessage();\n  }\n}\n",
+  "electrical_led_pins": {}
+}

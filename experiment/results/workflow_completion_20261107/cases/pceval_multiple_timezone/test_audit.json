@@ -1,0 +1,40 @@
+{
+  "case": "pceval_multiple_timezone",
+  "all_plans_approved": false,
+  "reviews": [
+    {
+      "plan": "after",
+      "approved": false,
+      "coverage": "partial",
+      "issues": [
+        "Several serial windows exclude a permitted timely response and then require an unspecified repeat. For example, Button 1 changes at 2000ms, but rtc_report_2300 only observes 2300–3800ms. A conforming implementation could print the correct timestamp at 2100ms, meeting the public 250ms response bound, without repeating it in that window. The special 500ms repeat requirement applies to Boolean-state streaming, not RTC timestamp reports. Observe the event-to-deadline response rather than imposing an unsupported reporting cadence. The checks starting at 8300ms and 11300ms have the same defect."
+      ],
+      "coverage_gaps": [
+        "No setup check enforces the public 500ms setup completion deadline.",
+        "Serial checks omit baud:9600, so they do not verify the required serial configuration.",
+        "The suite does not enforce the 250ms button-response bound; most response windows start after that deadline.",
+        "The seconds expressions accept any two digits, including invalid seconds and frozen values. Consequently, the checks do not adequately establish fresh RTC retrieval or correct second-level timestamp computation.",
+        "Release-to-UTC behavior is checked only well after the final release, not within its required response bound.",
+        "No reference_cpp is supplied, so reference implementation correctness cannot be assessed."
+      ],
+      "reason": "The pin assignments and active-HIGH button stimuli match the supplied circuit. The expected date/hour/minute arithmetic is consistent with the test's explicit rtc_epoch_s fixture, including positive-offset date rollover and the minute rollover during the run. All four timezone selections and an eventual return to UTC are exercised. Nevertheless, the late observation windows can reject implementations that respond on time, and startup, baud, response deadlines, and fresh seconds remain unverified."
+    },
+    {
+      "plan": "supplement",
+      "approved": true,
+      "coverage": "partial",
+      "issues": [],
+      "coverage_gaps": [
+        "The checks do not enforce the public 250ms button-response deadline; their observation windows permit substantially later responses.",
+        "The required setup completion within 500ms is not checked.",
+        "Serial checks omit baud=9600, so an incorrect serial configuration can pass.",
+        "Seconds are matched with [0-9]{2}, allowing incorrect or invalid seconds. The suite does not adequately verify fresh, continuously advancing RTC timestamps.",
+        "Returns to UTC after releasing buttons 1, 2, and 3 are not checked; only the final release is checked.",
+        "Button input configuration and RTC availability checking/initialization are not directly verified.",
+        "No reference_cpp is supplied, so reference implementation correctness cannot be assessed."
+      ],
+      "reason": "The executable timestamp assertions are consistent with the explicitly configured test RTC epoch, 1732481334 (2024-11-24T20:48:54 UTC), including the minute rollover and UTC+9/+4 date rollovers. The test correctly uses active-HIGH buttons on pins 2–5 and exercises all four offsets followed by a return to UTC. The 5000–5850ms assertion correctly falls before the RTC's minute rollover at 6000ms. These assertions form a sound partial behavioral suite, but they do not establish the required timing, serial configuration, initialization, or accurate continuous timekeeping."
+    }
+  ],
+  "scope": "Requirements, disclosed conditions, test and reference only; no candidate code supplied"
+}

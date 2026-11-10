@@ -1,0 +1,52 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Verifies the specific initial calendar date and corresponding weekday from the supplied RTC initialization. Button navigation is not asserted: the requirement leaves hold-repeat and debounce semantics unspecified, and the available LCD checks cannot compare navigation direction relative to an observed date without imposing a one-step-per-pulse policy. LCD text checks also cannot verify size, color, coordinates, removal of obsolete pixels, or RTC begin-result handling. The supplied RTC starts far from midnight, so this finite run does not verify an RTC-driven date rollover.",
+  "assumptions": [
+    "The host RTC honors the supplied DS1307 initTime, 2025-05-10T02:04:00, and advances normally. The input schema has no RTC-setting operation.",
+    "Explicit circuit wiring overrides bench defaults: pin 3 is the previous-date button and pin 2 is the next-date button; both are externally pulled down, released LOW and pressed HIGH.",
+    "LCD checks observe API text output rather than pixel appearance or cursor coordinates.",
+    "The reference uses debounced rising-edge navigation as one permissible implementation choice. The tests do not require that policy, an exact debounce duration, or any particular hold-repeat behavior.",
+    "No repeated text emission is required: a display may retain unchanged date and weekday text without printing it again."
+  ],
+  "horizon_ms": 3000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "lcd",
+      "id": "rtc_initial_calendar_date",
+      "requirement_quote": "show YYYY-MM-DD",
+      "from_ms": 0,
+      "to_ms": 3000,
+      "contains": "2025-05-10",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "rtc_initial_matching_weekday",
+      "requirement_quote": "Also show days of the week",
+      "from_ms": 0,
+      "to_ms": 3000,
+      "contains": "Saturday",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <SPI.h>\n#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_ILI9341.h>\n#include <RTClib.h>\n#include <stdio.h>\n\nRTC_DS1307 rtc;\nAdafruit_ILI9341 lcd(10, 9, 8);\nconst char* weekdays[] = {\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"};\nstruct Button {\n  uint8_t pin;\n  bool raw;\n  bool stable;\n  unsigned long changed;\n};\nButton previousButton = {3, false, false, 0};\nButton nextButton = {2, false, false, 0};\nint32_t offsetDays = 0;\nbool ready = false;\nbool haveDrawn = false;\nuint16_t drawnYear = 0;\nuint8_t drawnMonth = 0;\nuint8_t drawnDay = 0;\n\nbool pressed(Button &b) {\n  bool level = digitalRead(b.pin) == HIGH;\n  unsigned long now = millis();\n  if (level != b.raw) {\n    b.raw = level;\n    b.changed = now;\n  }\n  if (level != b.stable && now - b.changed >= 30) {\n    b.stable = level;\n    return level;\n  }\n  return false;\n}\n\nvoid showDate(const DateTime &selected) {\n  char dateText[16];\n  snprintf(dateText, sizeof(dateText), \"%04u-%02u-%02u\", (unsigned)selected.year(), (unsigned)selected.month(), (unsigned)selected.day());\n  lcd.fillRect(0, 25, 240, 85, ILI9341_BLACK);\n  lcd.setCursor(10, 30);\n  lcd.print(dateText);\n  lcd.setCursor(10, 80);\n  lcd.print(weekdays[selected.dayOfTheWeek()]);\n  drawnYear = selected.year();\n  drawnMonth = selected.month();\n  drawnDay = selected.day();\n  haveDrawn = true;\n}\n\nvoid setup() {\n  pinMode(3, INPUT);\n  pinMode(2, INPUT);\n  lcd.begin();\n  lcd.fillScreen(ILI9341_BLACK);\n  lcd.setTextSize(3);\n  lcd.setTextColor(ILI9341_WHITE);\n  ready = rtc.begin();\n}\n\nvoid loop() {\n  if (!ready) return;\n  if (pressed(previousButton)) --offsetDays;\n  if (pressed(nextButton)) ++offsetDays;\n  DateTime current = rtc.now();\n  DateTime selected = current + TimeSpan(offsetDays * 86400L);\n  if (!haveDrawn || selected.year() != drawnYear || selected.month() != drawnMonth || selected.day() != drawnDay) {\n    showDate(selected);\n  }\n  delay(5);\n}\n"
+}

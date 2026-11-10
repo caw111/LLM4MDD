@@ -1,0 +1,72 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "buzzActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "buzzElapsedMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1_valid and io_1 == 1",
+        "then": [
+          {
+            "assign": "buzzActive",
+            "value": true
+          },
+          {
+            "assign": "buzzElapsedMs",
+            "value": 0
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "buzzActive",
+        "then": [
+          {
+            "assign": "buzzElapsedMs",
+            "value": "buzzElapsedMs"
+          },
+          {
+            "if": "buzzElapsedMs >= 500",
+            "then": [
+              {
+                "assign": "buzzActive",
+                "value": false
+              }
+            ],
+            "else": []
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "buzzActive",
+        "then": 500,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "串口输入 BUZZ：蜂鸣器（D6）鸣叫 500ms",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "在一次控制步的有效串口帧中发送 BUZZ 命令码（io_1==1 且 io_1_valid 为 true），随后保持 io_1_valid 为 false（保持输入值不变或任意）",
+        "oracle": "从 BUZZ 命令触发后的控制步开始，io_0 输出为 500；在鸣叫 500ms 对应的时长结束后停止并令 io_0 变为 0"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    in attribute io_1_valid : Boolean;\n    attribute buzzActive : Boolean := false;\n    attribute buzzElapsedMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_1_valid and io_1 == 1 {\n        first start;\n        then assign buzzActive := true;\n        then assign buzzElapsedMs := 0;\n      }\n      then if buzzActive {\n        first start;\n        then assign buzzElapsedMs := buzzElapsedMs;\n        then if buzzElapsedMs >= 500 {\n          first start;\n          then assign buzzActive := false;\n        }\n      }\n    }\n    out attribute io_0 : Integer = (if buzzActive ? 500 else 0);\n  }\n  part system : Controller;\n}\n"
+}

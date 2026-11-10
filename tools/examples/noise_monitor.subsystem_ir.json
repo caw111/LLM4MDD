@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "name": "NoiseMonitor",
+  "page": "ProgramPage1",
+  "inputs": [
+    { "name": "mic", "type": "f32" },
+    { "name": "threshold", "type": "f32" }
+  ],
+  "outputs": [
+    { "name": "level", "type": "f32" },
+    { "name": "alarm", "type": "bool" }
+  ],
+  "nodes": [
+    {
+      "id": "SignalProcess",
+      "type": "Expression",
+      "inports": [{ "name": "x", "type": "f32" }],
+      "outports": [{ "name": "level", "type": "f32" }],
+      "params": { "Expression": "x*x" }
+    },
+    {
+      "id": "NoiseDecision",
+      "type": "RelationalOperator",
+      "inports": [
+        { "name": "level", "type": "f32" },
+        { "name": "threshold", "type": "f32" }
+      ],
+      "outports": [{ "name": "alarm", "type": "bool" }],
+      "params": { "Operator": ">" }
+    },
+    {
+      "id": "Display",
+      "type": "Display",
+      "inports": [{ "name": "level", "type": "f32" }, { "name": "alarm", "type": "bool" }],
+      "outports": [],
+      "params": { "display_update_period_ms": 100 }
+    }
+  ],
+  "edges": [
+    { "src": { "kind": "input", "name": "mic" }, "dst": { "kind": "node", "id": "SignalProcess", "port": "x" } },
+    { "src": { "kind": "node", "id": "SignalProcess", "port": "level" }, "dst": { "kind": "node", "id": "NoiseDecision", "port": "level" } },
+    { "src": { "kind": "input", "name": "threshold" }, "dst": { "kind": "node", "id": "NoiseDecision", "port": "threshold" } },
+    { "src": { "kind": "node", "id": "SignalProcess", "port": "level" }, "dst": { "kind": "node", "id": "Display", "port": "level" } },
+    { "src": { "kind": "node", "id": "NoiseDecision", "port": "alarm" }, "dst": { "kind": "node", "id": "Display", "port": "alarm" } },
+    { "src": { "kind": "node", "id": "SignalProcess", "port": "level" }, "dst": { "kind": "output", "name": "level" } },
+    { "src": { "kind": "node", "id": "NoiseDecision", "port": "alarm" }, "dst": { "kind": "output", "name": "alarm" } }
+  ]
+}

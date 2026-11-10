@@ -1,0 +1,173 @@
+{
+  "contract_sha256": "39de3385fd1ed0c385e4d91ec7b2d28a11873cf1e7144bb7b510bc420216d5fa",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_9": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [],
+    "serial_text_outputs": [
+      {
+        "id": "io_9",
+        "trigger_port": "io_9",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "incubation abnormal"
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-6.1-sol",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"孵化箱当前温度，供温控、显示和持续越限判断使用\"\n    },\n    {\n      \"kind\": \"dht_valid\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"DHT11 本次采集是否有效\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D10\",\n      \"initial\": false,\n      \"meaning\": \"加热器继电器控制\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D5\",\n      \"initial\": false,\n      \"meaning\": \"周期性通风风扇启停控制\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"invalid_policy\": \"silence\",\n      \"initial\": 0,\n      \"meaning\": \"温度连续越限一分钟后的蜂鸣报警频率\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D3\",\n      \"invalid_policy\": \"blank\",\n      \"initial\": 10000,\n      \"meaning\": \"显示模型选定的温度设定值或当前温度数值\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED 指示控制，具体指示规则待模型确认\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"切换设定值查看模式和当前值显示模式的按钮状态\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"semantics\": \"delta_since_previous_step\",\n      \"initial\": 0,\n      \"meaning\": \"距上一控制步实际经过的毫秒数，首次为零，用于通风调度和连续一分钟越限判定\"\n    },\n    {\n      \"kind\": \"serial_text_output\",\n      \"baud\": 9600,\n      \"text\": \"incubation abnormal\",\n      \"initial\": false,\n      \"meaning\": \"温度连续一分钟高于上限或低于下限时输出指定报警文本的门控\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"保留全部指定接线；未提供可用于 device 字段的源组件 ID，因此不虚构组件标识。\",\n    \"未指定启动状态，暂按加热器、风扇和 LED 关闭、蜂鸣器静音、显示器空白、默认查看当前温度处理；这些启动假设需确认。\",\n    \"数字输入和输出采用目录默认极性；按钮的有效电平、外部偏置及继电器实际有效电平未指定，需硬件确认，不擅自启用内部上拉或反相。\",\n    \"温度与有效性使用同一 DHT11 的一致采集帧，采用目录默认且不短于 2000 ms 的采样周期；无效采集保留温度并置有效性为 false。需求未要求湿度，因此不增加湿度接口。\",\n    \"目标温度、上下限、加热启停及回差规则、通风周期和每次持续时间均为待确认的模型参数。\",\n    \"连续越限的 60000 ms 累计、恢复正常后的清零、无效采集期间的计时处理、报警解除规则以及串口报警重复策略均在 SysML 模型中实现；无效采集处理和重复策略待确认。\",\n    \"按钮边沿检测、消抖和显示模式切换在 SysML 模型中实现；设定值的具体含义以及温度显示的取整规则待确认，不要求 TM1637 显示文本或小数点。\",\n    \"蜂鸣器报警频率和鸣响节奏、D13 LED 的指示含义未指定，留待模型确认。\",\n    \"串口仅用于输出精确固定文本 incubation abnormal，波特率为 9600；不增加串口接收或额外数值报告。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D10"
+        },
+        "resolved": {
+          "pin": "D10"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+    "effective_requirement": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D3）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"digital_output\", \"pin\": \"D5\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Checks value correctness whenever a sensor report occurs, using a constant nonzero A0 stimulus, and checks the four required selector output modes. No report is required by a deadline: the requirement supplies neither maximum startup latency nor scan period. Thus reporting liveness and completeness remain untested. The host API cannot independently stimulate multiplexer I0–I4 or correlate selector state with ADC reads, so channel correspondence and selector sequencing also remain untested. Incorrect numeric reports are forbidden rather than merely requiring some correct reports.",
+  "assumptions": [
+    "The explicit circuit overrides bench defaults: multiplexer COM is A0, S0–S3 connect to pins 2–5, and EN is grounded.",
+    "The disclosed raw ADC convention is used: A0 receives a raw 10-bit value with the default 5V reference.",
+    "Constant A0 stimulation represents the common-signal case in which all five potentiometers have the same value; no independent multiplexer-channel stimulus facility is available.",
+    "Startup and scan latency are unspecified. The finite observation horizon is not treated as a required reporting deadline, and silence does not fail the serial safety checks.",
+    "Serial communication uses the supplied 9600 baud setting. Sensor channel identifiers are 0 through 4."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 731
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "pin_mode",
+      "id": "selector_s0_output",
+      "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+      "pin": 2,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "selector_s1_output",
+      "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+      "pin": 3,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "selector_s2_output",
+      "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+      "pin": 4,
+      "expected": 1
+    },
+    {
+      "kind": "pin_mode",
+      "id": "selector_s3_output",
+      "requirement_quote": "Set Arduino pins 2 to 5 as output pins.",
+      "pin": 5,
+      "expected": 1
+    },
+    {
+      "kind": "serial",
+      "id": "channel_0_no_incorrect_value",
+      "requirement_quote": "Sensor {channel}: {potentiometer value}",
+      "from_ms": 0,
+      "to_ms": 12000,
+      "regex": "Sensor 0: (?!731\\b)[+-]?[0-9]+\\b",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "channel_1_no_incorrect_value",
+      "requirement_quote": "Sensor {channel}: {potentiometer value}",
+      "from_ms": 0,
+      "to_ms": 12000,
+      "regex": "Sensor 1: (?!731\\b)[+-]?[0-9]+\\b",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "channel_2_no_incorrect_value",
+      "requirement_quote": "Sensor {channel}: {potentiometer value}",
+      "from_ms": 0,
+      "to_ms": 12000,
+      "regex": "Sensor 2: (?!731\\b)[+-]?[0-9]+\\b",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "channel_3_no_incorrect_value",
+      "requirement_quote": "Sensor {channel}: {potentiometer value}",
+      "from_ms": 0,
+      "to_ms": 12000,
+      "regex": "Sensor 3: (?!731\\b)[+-]?[0-9]+\\b",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "channel_4_no_incorrect_value",
+      "requirement_quote": "Sensor {channel}: {potentiometer value}",
+      "from_ms": 0,
+      "to_ms": 12000,
+      "regex": "Sensor 4: (?!731\\b)[+-]?[0-9]+\\b",
+      "min_count": 0,
+      "max_count": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nvoid setup() {\n  for (uint8_t pin = 2; pin <= 5; ++pin) {\n    pinMode(pin, OUTPUT);\n    digitalWrite(pin, LOW);\n  }\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  for (uint8_t channel = 0; channel < 5; ++channel) {\n    for (uint8_t bit = 0; bit < 4; ++bit) {\n      digitalWrite(2 + bit, (channel & (1U << bit)) ? HIGH : LOW);\n    }\n    delayMicroseconds(20);\n    analogRead(A0);\n    int value = analogRead(A0);\n    Serial.print(\"Sensor \");\n    Serial.print(channel);\n    Serial.print(\": \");\n    Serial.println(value);\n  }\n  delay(100);\n}\n",
+  "electrical_led_pins": {}
+}

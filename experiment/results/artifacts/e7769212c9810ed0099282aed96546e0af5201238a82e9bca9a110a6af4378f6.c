@@ -1,0 +1,26 @@
+#include "define.h"
+/* Code of ProgramPage1 */
+/* Global Variable define of  */
+struct ProgramPage1_state ProgramPage1_instance;
+/* Init function of CompositeActor named "ProgramPage1" */
+void ProgramPage1_Init(struct ProgramPage1_state* self) {
+}
+/* Update function of CompositeActor named "ProgramPage1" */
+void ProgramPage1(double io_0, double io_1, double io_2, double io_3, double io_4, bool* io_5, bool* io_6, bool* io_7, bool* io_8, bool* io_9) {
+    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+    bool sysml_value_0 = 0;
+    sysml_value_0 = (io_0 < 500.0);
+    bool sysml_value_1 = 0;
+    sysml_value_1 = (io_1 < 500.0);
+    bool sysml_value_2 = 0;
+    sysml_value_2 = (io_2 < 500.0);
+    bool sysml_value_3 = 0;
+    sysml_value_3 = (io_3 < 500.0);
+    bool sysml_value_4 = 0;
+    sysml_value_4 = (io_4 < 500.0);
+    *io_5 = sysml_value_0;
+    *io_6 = sysml_value_1;
+    *io_7 = sysml_value_2;
+    *io_8 = sysml_value_3;
+    *io_9 = sysml_value_4;
+}

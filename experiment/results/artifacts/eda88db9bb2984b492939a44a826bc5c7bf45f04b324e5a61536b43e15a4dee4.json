@@ -1,0 +1,105 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "manualMode",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_4",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "manualMode",
+            "value": {
+              "not": "manualMode"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_4"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": "manualMode",
+        "then": 1023.0,
+        "else": {
+          "if": {
+            "and": [
+              {
+                "<": [
+                  "io_0",
+                  512.0
+                ]
+              },
+              "io_2",
+              {
+                "==": [
+                  true,
+                  true
+                ]
+              }
+            ]
+          },
+          "then": 1023.0,
+          "else": 0.0
+        }
+      },
+      "io_5": "manualMode"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "将按钮 io_4 先由false保持到true（产生一次上升沿），再释放为false；过程中保持 io_0=0.0（暗）且 io_2=true（距离有效），io_1任意有效距离值。",
+        "oracle": "在按钮上升沿后的控制步起，io_5为true，且io_3输出为1023.0（强制常亮）。松开后保持为true直到下一次按钮上升沿。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持按钮 io_4=false不按；处于自动模式（manualMode=false）；设置 io_0为较亮值（例如100.0），同时设置 io_2=true且 io_1为接近距离（例如10.0）。",
+        "oracle": "在自动模式下，io_5为false，且io_3为0.0（不因接近而点亮）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "保持按钮 io_4=false不按；处于自动模式（manualMode=false）；设置 io_0为较暗值（例如0.0），io_2=false（超声无效/超时保持无效），io_1任意。",
+        "oracle": "在自动模式下，io_5为false，且io_3为0.0（无效测距不触发点亮）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "保持按钮 io_4=false不按；处于自动模式（manualMode=false）；设置 io_0为较暗值（例如0.0），io_2=true（测距有效），io_1为接近距离（例如10.0）。",
+        "oracle": "在自动模式下，io_5为false，且io_3输出为1023.0（暗且接近则点亮）。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_4 : Boolean;\n    attribute manualMode : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_4) and ((not previousPressed))) {\n        first start;\n        then assign manualMode := (not manualMode);\n      }\n      then assign previousPressed := io_4;\n    }\n    out attribute io_3 : Real = (if manualMode ? 1023.0 else (if ((((io_0) < (512.0))) and (io_2) and (((true) == (true)))) ? 1023.0 else 0.0));\n    out attribute io_5 : Boolean = manualMode;\n  }\n  part system : Controller;\n}\n"
+}

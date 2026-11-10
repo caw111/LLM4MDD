@@ -1,0 +1,37 @@
+--- original.ino
++++ repaired.ino
+@@ -310,25 +310,13 @@
+ }
+ 
+ void loop() {
+-  uint32_t hw_now = (uint32_t)millis();
+-  uint32_t hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_started && hw_elapsed < 5UL) return;
+-  if (hw_elapsed > 2147483647UL) return;
+-  hw_now = (uint32_t)millis();
+-  hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_elapsed > 2147483647UL) return;
+-  hw_last_step = hw_now; hw_started = true;
+-  ProgramPage1(&hw_value_io_0, &hw_value_io_1, &hw_value_io_2, &hw_value_io_3, &hw_value_io_4, &hw_value_io_5, &hw_value_io_6, &hw_value_io_7, &hw_value_io_8, &hw_value_io_9, &hw_value_io_10, &hw_value_io_11);
+-  digitalWrite(2, hw_value_io_0 ? HIGH : LOW);
+-  digitalWrite(3, hw_value_io_1 ? HIGH : LOW);
+-  digitalWrite(4, hw_value_io_2 ? HIGH : LOW);
+-  digitalWrite(5, hw_value_io_3 ? HIGH : LOW);
+-  digitalWrite(6, hw_value_io_4 ? HIGH : LOW);
+-  digitalWrite(7, hw_value_io_5 ? HIGH : LOW);
+-  digitalWrite(8, hw_value_io_6 ? HIGH : LOW);
+-  digitalWrite(9, hw_value_io_7 ? HIGH : LOW);
+-  digitalWrite(10, hw_value_io_8 ? HIGH : LOW);
+-  digitalWrite(11, hw_value_io_9 ? HIGH : LOW);
+-  digitalWrite(12, hw_value_io_10 ? HIGH : LOW);
+-  digitalWrite(13, hw_value_io_11 ? HIGH : LOW);
++  static int previous=-1;
++  const uint8_t patterns[]={0x06,0x5b,0x4f,0x66};
++  int digit=millis()/1000UL%4;
++  if (digit==previous) return;
++  for (int pin=10; pin<=13; ++pin) digitalWrite(pin,LOW);
++  for (int bit=0; bit<7; ++bit) digitalWrite(2+bit,patterns[digit]&(1U<<bit) ? LOW : HIGH);
++  digitalWrite(9,HIGH);
++  digitalWrite(10+digit,HIGH);
++  previous=digit;
+ }

@@ -1,0 +1,65 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Checks recurring electrical buzzer activity in five separate windows, each long enough to contain a complete 200 ms burst regardless of startup phase. The available checks cannot measure the tone envelope independently of its carrier. Consequently these checks do not independently establish the exact 200 ms duration, 2-second repetition period, or silence between bursts; a continuously sounding implementation could pass.",
+  "assumptions": [
+    "The authoritative tone_output assignment identifies a passive buzzer on D6, requiring a carrier rather than a steady HIGH.",
+    "The requirement specifies neither carrier frequency nor startup phase. Neither is prescribed by the checks.",
+    "No LED, button, or analog bench defaults are needed. The reference uses a permissible 1000 Hz carrier and begins its first burst immediately."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "edges",
+      "id": "recurring_buzzer_activity_1",
+      "requirement_quote": "每 2 秒响 200ms",
+      "pin": 6,
+      "from_ms": 0,
+      "to_ms": 2300,
+      "min_count": 2
+    },
+    {
+      "kind": "edges",
+      "id": "recurring_buzzer_activity_2",
+      "requirement_quote": "每 2 秒响 200ms",
+      "pin": 6,
+      "from_ms": 2400,
+      "to_ms": 4700,
+      "min_count": 2
+    },
+    {
+      "kind": "edges",
+      "id": "recurring_buzzer_activity_3",
+      "requirement_quote": "每 2 秒响 200ms",
+      "pin": 6,
+      "from_ms": 4800,
+      "to_ms": 7100,
+      "min_count": 2
+    },
+    {
+      "kind": "edges",
+      "id": "recurring_buzzer_activity_4",
+      "requirement_quote": "每 2 秒响 200ms",
+      "pin": 6,
+      "from_ms": 7200,
+      "to_ms": 9500,
+      "min_count": 2
+    },
+    {
+      "kind": "edges",
+      "id": "recurring_buzzer_activity_5",
+      "requirement_quote": "每 2 秒响 200ms",
+      "pin": 6,
+      "from_ms": 9600,
+      "to_ms": 11900,
+      "min_count": 2
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t BUZZER_PIN = 6;\nunsigned long burstStart = 0;\nbool sounding = false;\n\nvoid setup() {\n  pinMode(BUZZER_PIN, OUTPUT);\n  digitalWrite(BUZZER_PIN, LOW);\n  burstStart = millis();\n  tone(BUZZER_PIN, 1000);\n  sounding = true;\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if ((unsigned long)(now - burstStart) >= 2000UL) {\n    burstStart += 2000UL;\n    tone(BUZZER_PIN, 1000);\n    sounding = true;\n  }\n  if (sounding && (unsigned long)(now - burstStart) >= 200UL) {\n    noTone(BUZZER_PIN);\n    digitalWrite(BUZZER_PIN, LOW);\n    sounding = false;\n  }\n}\n",
+  "electrical_led_pins": {}
+}

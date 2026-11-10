@@ -1,0 +1,1258 @@
+{
+  "revision": 0,
+  "contract": {
+    "version": 1,
+    "board": "arduino:avr:uno",
+    "control_period_ms": 5,
+    "planning_notes": [
+      "Preserve all authoritative wiring, including the A1 soil sensor omitted from the partial device inventory. Empty supplied pins introduce no overrides.",
+      "Start in automatic mode with fan PWM zero, supplemental light off, pump off, alarm silent, and the temperature display selected. Manual mode initially selects the fan.",
+      "Buttons connect to ground using internal pullups. Their model values are already true when pressed. Implement debouncing and one action per press in SysML, maintaining the 250 ms command-response bound.",
+      "D2 toggles automatic/manual mode. In manual mode, successive D3 presses select light, pump, then fan. Manual updates affect only the selected actuator; other commands remain unchanged until selected or automatic mode resumes.",
+      "In automatic mode, clamp the fan command to zero at or below 25 degrees Celsius and 255 at or above 35 degrees Celsius, with a linear ramp between them. Enable the light below ADC 400 and the pump below soil ADC 400.",
+      "In manual mode, map A2 ADC 0..1023 linearly to fan PWM 0..255. For the selected light or pump, ADC values at or above 512 mean ON and lower values mean OFF. All conversion and selection logic belongs in SysML.",
+      "Cycle temperature, light, and soil display selection every 2000 ms using actual elapsed time. Display temperature as integer Celsius, assuming nearest-integer rounding, and light/soil as raw ADC counts. Reflect changes to the currently selected quantity within 250 ms.",
+      "Use the shared legal catalog-default DHT11 acquisition schedule, no faster than once per 2000 ms. Temperature and validity must describe the same acquisition; invalid acquisitions retain the last valid temperature.",
+      "A DHT validity failure or a light/soil ADC reading equal to 0 or 1023 is a sensor fault. The A2 potentiometer endpoints are valid manual commands, not sensor faults.",
+      "Assume a tone-driven buzzer and use a continuous 2000 Hz alarm while any sensor fault is active. Silence it when all faults clear.",
+      "Fault-report text and cadence were unspecified. Use the three labeled Boolean lines in one report group, emitted on fault entry or an active fault-set change; no periodic repeat is assumed.",
+      "Actuator behavior during sensor faults is unspecified. Assume the alarm and reports do not override actuator control; temperature control uses the retained last valid measurement. Before the first valid temperature acquisition, keep the automatic fan command zero.",
+      "The 5 ms period is scheduling granularity, not the display interval or a fabricated elapsed-time increment. Keep initialization within 500 ms without waiting for a valid DHT acquisition.",
+      "No serial receiver is required. All serial reporting uses 9600 baud; receive framing settings therefore do not introduce an additional interface."
+    ],
+    "interfaces": [
+      {
+        "name": "io_0",
+        "direction": "input",
+        "type": "f64",
+        "unit": "degC",
+        "initial": 0,
+        "meaning": "Greenhouse temperature in degrees Celsius",
+        "sample_period_ms": 2000,
+        "device": "dht_temperature",
+        "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+        "binding": {
+          "kind": "dht_temperature",
+          "invalid_policy": "hold_last_valid",
+          "sensor": "DHT11",
+          "pin": "D7"
+        }
+      },
+      {
+        "name": "io_1",
+        "direction": "input",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Validity of the latest DHT11 acquisition",
+        "sample_period_ms": 2000,
+        "device": "dht_valid",
+        "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+        "binding": {
+          "kind": "dht_valid",
+          "invalid_policy": "hold_last_valid",
+          "sensor": "DHT11",
+          "pin": "D7"
+        }
+      },
+      {
+        "name": "io_2",
+        "direction": "input",
+        "type": "f64",
+        "unit": "adc_count",
+        "initial": 0,
+        "meaning": "Light sensor raw ADC reading",
+        "sample_period_ms": 5,
+        "device": "analog_input",
+        "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+        "binding": {
+          "kind": "analog_input",
+          "scale": 1.0,
+          "offset": 0.0,
+          "pin": "A0"
+        }
+      },
+      {
+        "name": "io_3",
+        "direction": "input",
+        "type": "f64",
+        "unit": "adc_count",
+        "initial": 0,
+        "meaning": "Soil moisture sensor raw ADC reading",
+        "sample_period_ms": 5,
+        "device": "analog_input",
+        "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+        "binding": {
+          "kind": "analog_input",
+          "scale": 1.0,
+          "offset": 0.0,
+          "pin": "A1"
+        }
+      },
+      {
+        "name": "io_4",
+        "direction": "input",
+        "type": "f64",
+        "unit": "adc_count",
+        "initial": 0,
+        "meaning": "Manual actuator adjustment potentiometer raw ADC reading",
+        "sample_period_ms": 5,
+        "device": "analog_input",
+        "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A2\", \"scale\": 1.0}",
+        "binding": {
+          "kind": "analog_input",
+          "scale": 1.0,
+          "offset": 0.0,
+          "pin": "A2"
+        }
+      },
+      {
+        "name": "io_5",
+        "direction": "output",
+        "type": "f64",
+        "unit": "pwm_count",
+        "initial": 0,
+        "meaning": "Fan PWM command from 0 to 255",
+        "sample_period_ms": 5,
+        "device": "pwm_output",
+        "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+        "binding": {
+          "kind": "pwm_output",
+          "scale": 1.0,
+          "offset": 0.0,
+          "pin": "D5"
+        }
+      },
+      {
+        "name": "io_6",
+        "direction": "output",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Supplemental light enabled",
+        "sample_period_ms": 5,
+        "device": "digital_output",
+        "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D9\"}",
+        "binding": {
+          "kind": "digital_output",
+          "active_high": true,
+          "pin": "D9"
+        },
+        "model_semantics": {
+          "kind": "digital_boolean",
+          "true_level": "HIGH",
+          "false_level": "LOW"
+        }
+      },
+      {
+        "name": "io_7",
+        "direction": "output",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Water pump relay enabled",
+        "sample_period_ms": 5,
+        "device": "digital_output",
+        "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+        "binding": {
+          "kind": "digital_output",
+          "active_high": true,
+          "pin": "D10"
+        },
+        "model_semantics": {
+          "kind": "digital_boolean",
+          "true_level": "HIGH",
+          "false_level": "LOW"
+        }
+      },
+      {
+        "name": "io_8",
+        "direction": "input",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Mode button pressed",
+        "sample_period_ms": 5,
+        "device": "digital_input",
+        "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+        "binding": {
+          "kind": "digital_input",
+          "active_high": false,
+          "pullup": true,
+          "pin": "D2"
+        },
+        "model_semantics": {
+          "kind": "digital_boolean",
+          "true_level": "LOW",
+          "false_level": "HIGH"
+        }
+      },
+      {
+        "name": "io_9",
+        "direction": "input",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Manual actuator selection button pressed",
+        "sample_period_ms": 5,
+        "device": "digital_input",
+        "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+        "binding": {
+          "kind": "digital_input",
+          "active_high": false,
+          "pullup": true,
+          "pin": "D3"
+        },
+        "model_semantics": {
+          "kind": "digital_boolean",
+          "true_level": "LOW",
+          "false_level": "HIGH"
+        }
+      },
+      {
+        "name": "io_10",
+        "direction": "output",
+        "type": "i32",
+        "unit": "1",
+        "initial": 0,
+        "meaning": "Selected temperature, light ADC, or soil moisture ADC display value",
+        "sample_period_ms": 5,
+        "device": "tm1637_number",
+        "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D8\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+        "binding": {
+          "kind": "tm1637_number",
+          "brightness": 7,
+          "leading_zero": false,
+          "invalid_policy": "blank",
+          "dio_pin": "D8",
+          "clk_pin": "D4"
+        }
+      },
+      {
+        "name": "io_11",
+        "direction": "output",
+        "type": "i32",
+        "unit": "Hz",
+        "initial": 0,
+        "meaning": "Sensor fault alarm frequency in Hz; zero silences the buzzer",
+        "sample_period_ms": 5,
+        "device": "tone_output",
+        "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+        "binding": {
+          "kind": "tone_output",
+          "invalid_policy": "silence",
+          "pin": "D6"
+        }
+      },
+      {
+        "name": "io_12",
+        "direction": "input",
+        "type": "i32",
+        "unit": "ms",
+        "initial": 0,
+        "meaning": "Actual elapsed milliseconds since the previous control step",
+        "sample_period_ms": 5,
+        "device": "elapsed_ms",
+        "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+        "binding": {
+          "kind": "elapsed_ms",
+          "semantics": "delta_since_previous_step"
+        }
+      },
+      {
+        "name": "serial_0_trigger",
+        "direction": "output",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Report on entry to a sensor fault condition and whenever the fault set changes while any fault remains active",
+        "sample_period_ms": 5,
+        "device": "Serial report control",
+        "hardware": "{\"kind\": \"report_trigger\"}",
+        "binding": {
+          "kind": "report_trigger"
+        }
+      },
+      {
+        "name": "serial_0_value_0",
+        "direction": "output",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "DHT11 acquisition fault",
+        "sample_period_ms": 5,
+        "device": "Serial value",
+        "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"DHT11 fault: \", \"trigger\": \"serial_0_trigger\"}",
+        "binding": {
+          "kind": "serial_value",
+          "trigger": "serial_0_trigger",
+          "baud": 9600,
+          "label": "DHT11 fault: "
+        }
+      },
+      {
+        "name": "serial_0_value_1",
+        "direction": "output",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Light sensor ADC endpoint fault",
+        "sample_period_ms": 5,
+        "device": "Serial value",
+        "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Light sensor fault: \", \"trigger\": \"serial_0_trigger\"}",
+        "binding": {
+          "kind": "serial_value",
+          "trigger": "serial_0_trigger",
+          "baud": 9600,
+          "label": "Light sensor fault: "
+        }
+      },
+      {
+        "name": "serial_0_value_2",
+        "direction": "output",
+        "type": "bool",
+        "unit": "1",
+        "initial": false,
+        "meaning": "Soil moisture sensor ADC endpoint fault",
+        "sample_period_ms": 5,
+        "device": "Serial value",
+        "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Soil sensor fault: \", \"trigger\": \"serial_0_trigger\"}",
+        "binding": {
+          "kind": "serial_value",
+          "trigger": "serial_0_trigger",
+          "baud": 9600,
+          "label": "Soil sensor fault: "
+        }
+      }
+    ],
+    "required_dependencies": {},
+    "wiring_snapshot": {
+      "tm1637_number": {
+        "clk_pin": "D4",
+        "dio_pin": "D8"
+      }
+    },
+    "configuration_resolution": {
+      "version": "configuration-defaults-v3",
+      "board": "arduino:avr:uno",
+      "devices": [
+        {
+          "kind": "pwm_output",
+          "original": {
+            "pin": "D5"
+          },
+          "resolved": {
+            "pin": "D5"
+          }
+        },
+        {
+          "kind": "analog_input",
+          "original": {
+            "pin": "A2"
+          },
+          "resolved": {
+            "pin": "A2"
+          }
+        },
+        {
+          "kind": "analog_input",
+          "original": {
+            "pin": "A0"
+          },
+          "resolved": {
+            "pin": "A0"
+          }
+        },
+        {
+          "kind": "digital_input",
+          "original": {
+            "pin": "D2"
+          },
+          "resolved": {
+            "pin": "D2"
+          }
+        },
+        {
+          "kind": "digital_input",
+          "original": {
+            "pin": "D3"
+          },
+          "resolved": {
+            "pin": "D3"
+          }
+        },
+        {
+          "kind": "digital_output",
+          "original": {
+            "pin": "D10"
+          },
+          "resolved": {
+            "pin": "D10"
+          }
+        },
+        {
+          "kind": "digital_output",
+          "original": {
+            "pin": "D9"
+          },
+          "resolved": {
+            "pin": "D9"
+          }
+        },
+        {
+          "kind": "tone_output",
+          "original": {
+            "pin": "D6"
+          },
+          "resolved": {
+            "pin": "D6"
+          }
+        },
+        {
+          "kind": "dht",
+          "original": {
+            "pin": "D7"
+          },
+          "resolved": {
+            "pin": "D7"
+          }
+        },
+        {
+          "kind": "tm1637_number",
+          "original": {
+            "clk_pin": "D4",
+            "dio_pin": "D5"
+          },
+          "resolved": {
+            "clk_pin": "D4",
+            "dio_pin": "D8"
+          }
+        }
+      ],
+      "serial": {
+        "baud": 9600,
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20
+      },
+      "original_requirement": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative.",
+      "effective_requirement": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D8）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative.\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A2\"}, {\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D9\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D8\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+      "pins": {},
+      "changes": [
+        {
+          "field": "serial.baud",
+          "original": null,
+          "resolved": 9600,
+          "reason": "unspecified transport configuration"
+        },
+        {
+          "device": "tm1637_number",
+          "field": "dio_pin",
+          "original": "D5",
+          "resolved": "D8",
+          "reason": "conflict or incompatible pin"
+        }
+      ],
+      "circuit_preserved": false
+    },
+    "requirements": [
+      {
+        "id": "R1",
+        "text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative.",
+        "assertion_ids": [
+          "source_requirement_R1"
+        ]
+      }
+    ],
+    "interface_registry": {
+      "version": 1,
+      "ports": {
+        "io_0": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_1": {
+          "direction": "input",
+          "type": "bool"
+        },
+        "io_2": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_3": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_4": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_5": {
+          "direction": "output",
+          "type": "f64"
+        },
+        "io_6": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "io_7": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "io_8": {
+          "direction": "input",
+          "type": "bool"
+        },
+        "io_9": {
+          "direction": "input",
+          "type": "bool"
+        },
+        "io_10": {
+          "direction": "output",
+          "type": "i32"
+        },
+        "io_11": {
+          "direction": "output",
+          "type": "i32"
+        },
+        "io_12": {
+          "direction": "input",
+          "type": "i32"
+        },
+        "serial_0_trigger": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "serial_0_value_0": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "serial_0_value_1": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "serial_0_value_2": {
+          "direction": "output",
+          "type": "bool"
+        }
+      },
+      "serial_channels": [
+        {
+          "id": "serial_0",
+          "trigger_port": "serial_0_trigger",
+          "value_ports": [
+            "serial_0_value_0",
+            "serial_0_value_1",
+            "serial_0_value_2"
+          ]
+        }
+      ]
+    }
+  },
+  "planning": {
+    "contract_sha256": "3e089147d49897b89c840073402aa59afcb5ffd21ed65bf6eef191b2906043a7",
+    "provenance": "program_assembled",
+    "interface_registry": {
+      "version": 1,
+      "ports": {
+        "io_0": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_1": {
+          "direction": "input",
+          "type": "bool"
+        },
+        "io_2": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_3": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_4": {
+          "direction": "input",
+          "type": "f64"
+        },
+        "io_5": {
+          "direction": "output",
+          "type": "f64"
+        },
+        "io_6": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "io_7": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "io_8": {
+          "direction": "input",
+          "type": "bool"
+        },
+        "io_9": {
+          "direction": "input",
+          "type": "bool"
+        },
+        "io_10": {
+          "direction": "output",
+          "type": "i32"
+        },
+        "io_11": {
+          "direction": "output",
+          "type": "i32"
+        },
+        "io_12": {
+          "direction": "input",
+          "type": "i32"
+        },
+        "serial_0_trigger": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "serial_0_value_0": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "serial_0_value_1": {
+          "direction": "output",
+          "type": "bool"
+        },
+        "serial_0_value_2": {
+          "direction": "output",
+          "type": "bool"
+        }
+      },
+      "serial_channels": [
+        {
+          "id": "serial_0",
+          "trigger_port": "serial_0_trigger",
+          "value_ports": [
+            "serial_0_value_0",
+            "serial_0_value_1",
+            "serial_0_value_2"
+          ]
+        }
+      ]
+    },
+    "registered_relationships": "verified",
+    "functional_status": "unverified",
+    "attempts": [
+      {
+        "ok": true,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"dht_temperature\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"Greenhouse temperature in degrees Celsius\"\n    },\n    {\n      \"kind\": \"dht_valid\",\n      \"pin\": \"D7\",\n      \"sensor\": \"DHT11\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"Validity of the latest DHT11 acquisition\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Light sensor raw ADC reading\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A1\",\n      \"initial\": 0,\n      \"meaning\": \"Soil moisture sensor raw ADC reading\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A2\",\n      \"initial\": 0,\n      \"meaning\": \"Manual actuator adjustment potentiometer raw ADC reading\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"Fan PWM command from 0 to 255\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D9\",\n      \"active_high\": true,\n      \"initial\": false,\n      \"meaning\": \"Supplemental light enabled\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D10\",\n      \"active_high\": true,\n      \"initial\": false,\n      \"meaning\": \"Water pump relay enabled\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"active_high\": false,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"Mode button pressed\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"active_high\": false,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"Manual actuator selection button pressed\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D8\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\",\n      \"initial\": 0,\n      \"meaning\": \"Selected temperature, light ADC, or soil moisture ADC display value\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"invalid_policy\": \"silence\",\n      \"initial\": 0,\n      \"meaning\": \"Sensor fault alarm frequency in Hz; zero silences the buzzer\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"semantics\": \"delta_since_previous_step\",\n      \"initial\": 0,\n      \"meaning\": \"Actual elapsed milliseconds since the previous control step\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Report on entry to a sensor fault condition and whenever the fault set changes while any fault remains active\"\n      },\n      \"values\": [\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"DHT11 acquisition fault\",\n          \"label\": \"DHT11 fault: \"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"Light sensor ADC endpoint fault\",\n          \"label\": \"Light sensor fault: \"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"Soil moisture sensor ADC endpoint fault\",\n          \"label\": \"Soil sensor fault: \"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Preserve all authoritative wiring, including the A1 soil sensor omitted from the partial device inventory. Empty supplied pins introduce no overrides.\",\n    \"Start in automatic mode with fan PWM zero, supplemental light off, pump off, alarm silent, and the temperature display selected. Manual mode initially selects the fan.\",\n    \"Buttons connect to ground using internal pullups. Their model values are already true when pressed. Implement debouncing and one action per press in SysML, maintaining the 250 ms command-response bound.\",\n    \"D2 toggles automatic/manual mode. In manual mode, successive D3 presses select light, pump, then fan. Manual updates affect only the selected actuator; other commands remain unchanged until selected or automatic mode resumes.\",\n    \"In automatic mode, clamp the fan command to zero at or below 25 degrees Celsius and 255 at or above 35 degrees Celsius, with a linear ramp between them. Enable the light below ADC 400 and the pump below soil ADC 400.\",\n    \"In manual mode, map A2 ADC 0..1023 linearly to fan PWM 0..255. For the selected light or pump, ADC values at or above 512 mean ON and lower values mean OFF. All conversion and selection logic belongs in SysML.\",\n    \"Cycle temperature, light, and soil display selection every 2000 ms using actual elapsed time. Display temperature as integer Celsius, assuming nearest-integer rounding, and light/soil as raw ADC counts. Reflect changes to the currently selected quantity within 250 ms.\",\n    \"Use the shared legal catalog-default DHT11 acquisition schedule, no faster than once per 2000 ms. Temperature and validity must describe the same acquisition; invalid acquisitions retain the last valid temperature.\",\n    \"A DHT validity failure or a light/soil ADC reading equal to 0 or 1023 is a sensor fault. The A2 potentiometer endpoints are valid manual commands, not sensor faults.\",\n    \"Assume a tone-driven buzzer and use a continuous 2000 Hz alarm while any sensor fault is active. Silence it when all faults clear.\",\n    \"Fault-report text and cadence were unspecified. Use the three labeled Boolean lines in one report group, emitted on fault entry or an active fault-set change; no periodic repeat is assumed.\",\n    \"Actuator behavior during sensor faults is unspecified. Assume the alarm and reports do not override actuator control; temperature control uses the retained last valid measurement. Before the first valid temperature acquisition, keep the automatic fan command zero.\",\n    \"The 5 ms period is scheduling granularity, not the display interval or a fabricated elapsed-time increment. Keep initialization within 500 ms without waiting for a valid DHT acquisition.\",\n    \"No serial receiver is required. All serial reporting uses 9600 baud; receive framing settings therefore do not introduce an additional interface.\"\n  ]\n}",
+        "construction": [
+          "catalog_interfaces_and_serial_channels_assembled"
+        ],
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        }
+      }
+    ],
+    "configuration_resolution": {
+      "version": "configuration-defaults-v3",
+      "board": "arduino:avr:uno",
+      "devices": [
+        {
+          "kind": "pwm_output",
+          "original": {
+            "pin": "D5"
+          },
+          "resolved": {
+            "pin": "D5"
+          }
+        },
+        {
+          "kind": "analog_input",
+          "original": {
+            "pin": "A2"
+          },
+          "resolved": {
+            "pin": "A2"
+          }
+        },
+        {
+          "kind": "analog_input",
+          "original": {
+            "pin": "A0"
+          },
+          "resolved": {
+            "pin": "A0"
+          }
+        },
+        {
+          "kind": "digital_input",
+          "original": {
+            "pin": "D2"
+          },
+          "resolved": {
+            "pin": "D2"
+          }
+        },
+        {
+          "kind": "digital_input",
+          "original": {
+            "pin": "D3"
+          },
+          "resolved": {
+            "pin": "D3"
+          }
+        },
+        {
+          "kind": "digital_output",
+          "original": {
+            "pin": "D10"
+          },
+          "resolved": {
+            "pin": "D10"
+          }
+        },
+        {
+          "kind": "digital_output",
+          "original": {
+            "pin": "D9"
+          },
+          "resolved": {
+            "pin": "D9"
+          }
+        },
+        {
+          "kind": "tone_output",
+          "original": {
+            "pin": "D6"
+          },
+          "resolved": {
+            "pin": "D6"
+          }
+        },
+        {
+          "kind": "dht",
+          "original": {
+            "pin": "D7"
+          },
+          "resolved": {
+            "pin": "D7"
+          }
+        },
+        {
+          "kind": "tm1637_number",
+          "original": {
+            "clk_pin": "D4",
+            "dio_pin": "D5"
+          },
+          "resolved": {
+            "clk_pin": "D4",
+            "dio_pin": "D8"
+          }
+        }
+      ],
+      "serial": {
+        "baud": 9600,
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20
+      },
+      "original_requirement": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative.",
+      "effective_requirement": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D8）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative.\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A2\"}, {\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D9\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D8\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+      "pins": {},
+      "changes": [
+        {
+          "field": "serial.baud",
+          "original": null,
+          "resolved": 9600,
+          "reason": "unspecified transport configuration"
+        },
+        {
+          "device": "tm1637_number",
+          "field": "dio_pin",
+          "original": "D5",
+          "resolved": "D8",
+          "reason": "conflict or incompatible pin"
+        }
+      ],
+      "circuit_preserved": false
+    }
+  },
+  "validation": {
+    "validator_version": "2026-08 / 0.62.0",
+    "attempts": [
+      {
+        "attempt": 1,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"controller\": {\n    \"states\": [\n      {\"name\":\"bootComplete\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"operational\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"automaticMode\",\"type\":\"bool\",\"initial\":true},\n      {\"name\":\"selectedActuator\",\"type\":\"i32\",\"initial\":0},\n      {\"name\":\"fanCommand\",\"type\":\"f64\",\"initial\":0.0},\n      {\"name\":\"lightCommand\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"pumpCommand\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"savedTemperature\",\"type\":\"f64\",\"initial\":0.0},\n      {\"name\":\"temperatureAvailable\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"modeCandidate\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"modeStable\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"modeStableMs\",\"type\":\"i32\",\"initial\":0},\n      {\"name\":\"modePressEvent\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"selectCandidate\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"selectStable\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"selectStableMs\",\"type\":\"i32\",\"initial\":0},\n      {\"name\":\"selectPressEvent\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"displayPhase\",\"type\":\"i32\",\"initial\":0},\n      {\"name\":\"displayDelta\",\"type\":\"i32\",\"initial\":0},\n      {\"name\":\"previousDhtFault\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"previousLightFault\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"previousSoilFault\",\"type\":\"bool\",\"initial\":false},\n      {\"name\":\"reportEvent\",\"type\":\"bool\",\"initial\":false}\n    ],\n    \"calculations\": [\n      {\"name\":\"dhtFault\",\"type\":\"bool\",\"expression\":{\"not\":\"io_1\"}},\n      {\"name\":\"lightFault\",\"type\":\"bool\",\"expression\":{\"or\":[{\"==\":[\"io_2\",0.0]},{\"==\":[\"io_2\",1023.0]}]}},\n      {\"name\":\"soilFault\",\"type\":\"bool\",\"expression\":{\"or\":[{\"==\":[\"io_3\",0.0]},{\"==\":[\"io_3\",1023.0]}]}},\n      {\"name\":\"anyFault\",\"type\":\"bool\",\"expression\":{\"or\":[\"dhtFault\",\"lightFault\",\"soilFault\"]}},\n      {\"name\":\"faultSetChanged\",\"type\":\"bool\",\"expression\":{\"or\":[{\"!=\":[\"dhtFault\",\"previousDhtFault\"]},{\"!=\":[\"lightFault\",\"previousLightFault\"]},{\"!=\":[\"soilFault\",\"previousSoilFault\"]}]}},\n      {\"name\":\"manualFanValue\",\"type\":\"f64\",\"expression\":\"io_4 * 255.0 / 1023.0\"}\n    ],\n    \"updates\": [\n      {\"assign\":\"operational\",\"value\":\"bootComplete\"},\n      {\"assign\":\"bootComplete\",\"value\":true},\n      {\"assign\":\"modePressEvent\",\"value\":false},\n      {\"assign\":\"selectPressEvent\",\"value\":false},\n      {\"assign\":\"reportEvent\",\"value\":false},\n      {\n        \"if\":\"io_1\",\n        \"then\":[\n          {\"assign\":\"savedTemperature\",\"value\":\"io_0\"},\n          {\"assign\":\"temperatureAvailable\",\"value\":true}\n        ]\n      },\n      {\n        \"if\":{\"!=\":[\"io_8\",\"modeCandidate\"]},\n        \"then\":[\n          {\"assign\":\"modeCandidate\",\"value\":\"io_8\"},\n          {\"assign\":\"modeStableMs\",\"value\":0}\n        ],\n        \"else\":[\n          {\n            \"if\":{\">=\":[\"io_12\",\"20 - modeStableMs\"]},\n            \"then\":[{\"assign\":\"modeStableMs\",\"value\":20}],\n            \"else\":[\n              {\n                \"if\":{\">\":[\"io_12\",0]},\n                \"then\":[{\"assign\":\"modeStableMs\",\"value\":\"modeStableMs + io_12\"}]\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\":{\"and\":[{\">=\":[\"modeStableMs\",20]},{\"!=\":[\"modeStable\",\"modeCandidate\"]}]},\n        \"then\":[\n          {\"assign\":\"modePressEvent\",\"value\":\"modeCandidate\"},\n          {\"assign\":\"modeStable\",\"value\":\"modeCandidate\"}\n        ]\n      },\n      {\n        \"if\":{\"!=\":[\"io_9\",\"selectCandidate\"]},\n        \"then\":[\n          {\"assign\":\"selectCandidate\",\"value\":\"io_9\"},\n          {\"assign\":\"selectStableMs\",\"value\":0}\n        ],\n        \"else\":[\n          {\n            \"if\":{\">=\":[\"io_12\",\"20 - selectStableMs\"]},\n            \"then\":[{\"assign\":\"selectStableMs\",\"value\":20}],\n            \"else\":[\n              {\n                \"if\":{\">\":[\"io_12\",0]},\n                \"then\":[{\"assign\":\"selectStableMs\",\"value\":\"selectStableMs + io_12\"}]\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\":{\"and\":[{\">=\":[\"selectStableMs\",20]},{\"!=\":[\"selectStable\",\"selectCandidate\"]}]},\n        \"then\":[\n          {\"assign\":\"selectPressEvent\",\"value\":\"selectCandidate\"},\n          {\"assign\":\"selectStable\",\"value\":\"selectCandidate\"}\n        ]\n      },\n      {\n        \"if\":\"modePressEvent\",\n        \"then\":[{\"assign\":\"automaticMode\",\"value\":{\"not\":\"automaticMode\"}}]\n      },\n      {\n        \"if\":{\"and\":[\"selectPressEvent\",{\"not\":\"automaticMode\"}]},\n        \"then\":[\n          {\n            \"assign\":\"selectedActuator\",\n            \"value\":{\"if\":{\"==\":[\"selectedActuator\",2]},\"then\":0,\"else\":\"selectedActuator + 1\"}\n          }\n        ]\n      },\n      {\n        \"if\":{\">\":[\"io_12\",0]},\n        \"then\":[\n          {\"assign\":\"displayDelta\",\"value\":\"io_12 - 6000 * RealFunctions::floor(io_12 / 6000)\"},\n          {\"assign\":\"displayPhase\",\"value\":\"displayPhase + displayDelta\"},\n          {\n            \"if\":{\">=\":[\"displayPhase\",6000]},\n            \"then\":[{\"assign\":\"displayPhase\",\"value\":\"displayPhase - 6000\"}]\n          }\n        ]\n      },\n      {\n        \"if\":\"operational\",\n        \"then\":[\n          {\n            \"if\":\"automaticMode\",\n            \"then\":[\n              {\n                \"assign\":\"fanCommand\",\n                \"value\":{\n                  \"if\":{\"or\":[{\"not\":\"temperatureAvailable\"},{\"<=\":[\"savedTemperature\",25.0]}]},\n                  \"then\":0.0,\n                  \"else\":{\n                    \"if\":{\">=\":[\"savedTemperature\",35.0]},\n                    \"then\":255.0,\n                    \"else\":\"(savedTemperature - 25.0) * 255.0 / 10.0\"\n                  }\n                }\n              },\n              {\"assign\":\"lightCommand\",\"value\":{\"<\":[\"io_2\",400.0]}},\n              {\"assign\":\"pumpCommand\",\"value\":{\"<\":[\"io_3\",400.0]}}\n            ],\n            \"else\":[\n              {\n                \"if\":{\"==\":[\"selectedActuator\",0]},\n                \"then\":[{\"assign\":\"fanCommand\",\"value\":\"manualFanValue\"}],\n                \"else\":[\n                  {\n                    \"if\":{\"==\":[\"selectedActuator\",1]},\n                    \"then\":[{\"assign\":\"lightCommand\",\"value\":{\">=\":[\"io_4\",512.0]}}],\n                    \"else\":[{\"assign\":\"pumpCommand\",\"value\":{\">=\":[\"io_4\",512.0]}}]\n                  }\n                ]\n              }\n            ]\n          },\n          {\"assign\":\"reportEvent\",\"value\":{\"and\":[\"anyFault\",\"faultSetChanged\"]}},\n          {\"assign\":\"previousDhtFault\",\"value\":\"dhtFault\"},\n          {\"assign\":\"previousLightFault\",\"value\":\"lightFault\"},\n          {\"assign\":\"previousSoilFault\",\"value\":\"soilFault\"}\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_5\":\"fanCommand\",\n      \"io_6\":\"lightCommand\",\n      \"io_7\":\"pumpCommand\",\n      \"io_10\":{\n        \"if\":{\"<\":[\"displayPhase\",2000]},\n        \"then\":\"RealFunctions::floor(savedTemperature + 0.5)\",\n        \"else\":{\n          \"if\":{\"<\":[\"displayPhase\",4000]},\n          \"then\":\"RealFunctions::floor(io_2)\",\n          \"else\":\"RealFunctions::floor(io_3)\"\n        }\n      },\n      \"io_11\":{\"if\":{\"and\":[\"operational\",\"anyFault\"]},\"then\":2000,\"else\":0},\n      \"serial_0_trigger\":\"reportEvent\",\n      \"serial_0_value_0\":\"dhtFault\",\n      \"serial_0_value_1\":\"lightFault\",\n      \"serial_0_value_2\":\"soilFault\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\":\"R1\",\n        \"test_point_id\":\"T1\",\n        \"test_method\":\"trace\",\n        \"stimulus\":\"Run the initial step with declared initial inputs. Then supply valid DHT temperatures 20, 25, 30, 35 and 40 degrees Celsius, and independently sweep light and soil ADC across 399 and 400. Subsequently fail DHT validity while changing its temperature input.\",\n        \"oracle\":\"The initial step commands fan zero, light and pump off, alarm silent, and temperature display selected. Subsequent automatic fan commands are 0, 0, 127.5, 255 and 255 PWM counts. Light and pump independently enable below 400 and disable at 400. Invalid DHT input retains the last valid temperature for control and display; before any valid acquisition the automatic fan remains zero. Faults do not override actuator decisions.\"\n      },\n      {\n        \"requirement_id\":\"R1\",\n        \"test_point_id\":\"T2\",\n        \"test_method\":\"trace\",\n        \"stimulus\":\"Apply brief D2/D3 contact bounce, then stable presses and releases lasting at least 20 ms, including long holds. Enter manual mode using D2; sweep A2 through 0, 511, 512 and 1023 while selecting fan, light, pump and fan with successive D3 presses. Return to automatic mode.\",\n        \"oracle\":\"Each debounced press causes exactly one action within 250 ms; holds cause no repeated toggles or selections. Manual mode initially selects fan. Fan maps A2 linearly from 0 to 255. Selected digital outputs are off below 512 and on at or above 512. Only the selected actuator changes in manual mode; all others retain their commands. D3 cycles light, pump, fan and does not select in automatic mode. Returning to automatic mode restores sensor-based control.\"\n      },\n      {\n        \"requirement_id\":\"R1\",\n        \"test_point_id\":\"T3\",\n        \"test_method\":\"trace\",\n        \"stimulus\":\"Advance io_12 through irregular positive deltas, testing cumulative times immediately before and at 2000, 4000 and 6000 ms, repeated cycles, and deltas spanning multiple cycles. Change each currently selected sensor value and provide valid and invalid DHT acquisitions.\",\n        \"oracle\":\"The display repeats temperature, light ADC and soil ADC in 2000 ms slots using actual elapsed time, preserving residual phase after large deltas. Temperature is rounded to nearest integer using floor(value + 0.5); analog values display raw counts. Selected quantity changes appear within 250 ms. Invalid DHT acquisitions preserve the last valid displayed temperature without freezing other sensors or display timing.\"\n      },\n      {\n        \"requirement_id\":\"R1\",\n        \"test_point_id\":\"T4\",\n        \"test_method\":\"trace\",\n        \"stimulus\":\"After initialization, independently fail DHT validity and drive A0/A1 to 0 and 1023; exercise overlapping faults, changes between active fault sets, stable faults and complete recovery. Sweep A2 through its endpoints during otherwise healthy operation.\",\n        \"oracle\":\"Any DHT validity failure or A0/A1 endpoint sentinel produces a continuous 2000 Hz alarm; full recovery silences it. A2 endpoints do not create faults. A one-step report gate emits exactly one three-line group on fault entry or an active fault-set change, with labels DHT11 fault: , Light sensor fault: , and Soil sensor fault:  and the corresponding Boolean values. Stable faults do not repeat reports and full recovery does not trigger a report.\"\n      },\n      {\n        \"requirement_id\":\"R1\",\n        \"test_point_id\":\"T5\",\n        \"test_method\":\"integration trace\",\n        \"stimulus\":\"Run the assembled controller on the frozen Arduino Uno adapter and inspect pin activity, setup duration, DHT acquisition intervals and serial transmission.\",\n        \"oracle\":\"Preserve DHT D7, light A0, soil A1, potentiometer A2, fan PWM D5, active-HIGH light D9 and pump D10, normalized pullup buttons D2/D3, buzzer D6, and authoritative TM1637 CLK D4/DIO D8 remap. Setup returns within 500 ms without waiting for DHT validity; DHT acquisitions are no faster than once per 2000 ms. Serial fault groups use 9600 baud. No fabricated clock increment or serial receiver is introduced.\"\n      }\n    ]\n  }\n}",
+        "issues": [],
+        "ok": true,
+        "usage": {
+          "completion_tokens": 3156,
+          "prompt_tokens": 15970,
+          "total_tokens": 19126,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 354,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 15967,
+            "video_tokens": 0
+          },
+          "cost": 0.0714835,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0714835,
+            "upstream_inference_prompt_cost": 0.0399235,
+            "upstream_inference_completions_cost": 0.03156
+          }
+        },
+        "structural_validation_passed": true,
+        "deterministic_behavior_passed": true,
+        "final_compile_passed": true,
+        "semantic_review": {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "dc545df0db2222e2c9b084ef34a4ccbeafca91aca9445a11eaef3a36e26e4aa3",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The existing pin conflict resolver and its recorded remaps are authoritative.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_0 : Real;\\n    in attribute io_1 : Boolean;\\n    in attribute io_2 : Real;\\n    in attribute io_3 : Real;\\n    in attribute io_4 : Real;\",\n      \"reason\": \"The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and TM1637 CLK D4/DIO D8. D8 is the authoritative remap, so the original DIO D5 text is not an unresolved wiring violation. The omitted A1 role in the partial configuration inventory is correctly retained in interfaces.3.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute automaticMode : Boolean := true;\\n    attribute selectedActuator : Integer := 0;\\n    attribute fanCommand : Real := 0.0;\\n    attribute lightCommand : Boolean := false;\\n    attribute pumpCommand : Boolean := false;\",\n      \"reason\": \"The model starts in automatic mode with zero fan command and both digital actuators off. Contract output initial values agree, and light/pump bindings are active HIGH. Temperature display uses integer rounding; light and soil display raw ADC counts. The first-step operational gate delays automatic actuator evaluation by one scheduled step, not beyond the supplied response bound.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then assign fanCommand := (if (((not temperatureAvailable)) or (((savedTemperature) <= (25.0)))) ? 0.0 else (if ((savedTemperature) >= (35.0)) ? 255.0 else (savedTemperature - 25.0) * 255.0 / 10.0));\\n          then assign lightCommand := ((io_2) < (400.0));\\n          then assign pumpCommand := ((io_3) < (400.0));\",\n      \"reason\": \"Automatic control clamps fan output at 0 and 255 with the required linear interior mapping. At 30 C the model commands 127.5 PWM counts, which the registered unit-scale adapter truncates to 127. Light and pump independently turn on at 399 and off at 400. ADC inputs have unit scale and zero offset, preserving the specified thresholds.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"D2 toggles auto/manual; D3 cycles fan,light,pump in manual\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if modePressEvent {\\n        first start;\\n        then assign automaticMode := (not automaticMode);\\n      }\\n      then if ((selectPressEvent) and ((not automaticMode))) {\\n        first start;\\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\\n      }\",\n      \"reason\": \"Each button has separate candidate, stable-state, and elapsed-time debounce history. A stable rising pressed state creates one event; a hold does not repeat it, and a stable release rearms it. False-initialized histories also recognize a button held at the first hardware sample. D2 toggles before selection and actuator updates; D3 affects selection only in the resulting manual mode. Selection starts at fan and cycles light, pump, fan.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then if ((selectedActuator) == (0)) {\\n            first start;\\n            then assign fanCommand := manualFanValue;\\n          } else {\\n            first start;\\n            then if ((selectedActuator) == (1)) {\\n              first start;\\n              then assign lightCommand := ((io_4) >= (512.0));\\n            } else {\\n              first start;\\n              then assign pumpCommand := ((io_4) >= (512.0));\\n            }\\n          }\",\n      \"reason\": \"The three actuator commands are persistent state. Each manual branch assigns only its selected command, preserving both others. Selection updates precede command updates, so the new selection takes effect immediately in that step. Returning to automatic mode recomputes all three commands from sensors.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute manualFanValue : Real = io_4 * 255.0 / 1023.0;\",\n      \"reason\": \"The registered A2 acquisition supplies raw 0..1023 counts. The expression maps endpoints to 0 and 255 without extra adapter scaling. Selected digital outputs use >=512, giving OFF at 511 and ON at 512. Fractional fan commands undergo the registered PWM truncation.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display cycles temperature/light/soil every 2s.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then assign displayDelta := io_12 - 6000 * RealFunctions::floor(io_12 / 6000);\\n        then assign displayPhase := displayPhase + displayDelta;\\n        then if ((displayPhase) >= (6000)) {\\n          first start;\\n          then assign displayPhase := displayPhase - 6000;\\n        }\",\n      \"reason\": \"io_12 is contractually actual elapsed milliseconds, not a fabricated tick increment. The model retains phase modulo 6000 ms, including residual time after multi-cycle deltas. io_10 selects temperature below 2000, light from 2000 through 3999, and soil from 4000 through 5999. Outputs observe the updated phase. Display values use the latest valid saved temperature or current raw analog counts.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute dhtFault : Boolean = (not io_1);\\n    attribute lightFault : Boolean = ((((io_2) == (0.0))) or (((io_2) == (1023.0))));\\n    attribute soilFault : Boolean = ((((io_3) == (0.0))) or (((io_3) == (1023.0))));\\n    attribute anyFault : Boolean = ((dhtFault) or (lightFault) or (soilFault));\",\n      \"reason\": \"Invalid DHT validity and either endpoint of either environmental analog sensor independently assert a fault. Interior values do not. A2 is the manual adjustment potentiometer rather than an environmental sensor, so its command endpoints remain usable. DHT temperature is saved only when validity is true, preventing invalid acquisitions from replacing the retained measurement.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Fault drives D6 and a Serial fault report.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then assign reportEvent := ((anyFault) and (faultSetChanged));\\n        then assign previousDhtFault := dhtFault;\\n        then assign previousLightFault := lightFault;\\n        then assign previousSoilFault := soilFault;\",\n      \"reason\": \"The report event is captured before fault history is updated, so ordered execution preserves a one-step gate on fault entry and changes to an active fault set. The registered level-sensitive report adapter emits the three labeled current fault Booleans on that gate. Stable faults do not repeatedly print. io_11 commands 2000 Hz while operational and any fault is active, and zero on recovery. The first-step initialization gate postpones fault handling only until the next scheduled step.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if ((io_8) != (modeCandidate)) {\\n        first start;\\n        then assign modeCandidate := io_8;\\n        then assign modeStableMs := 0;\",\n      \"reason\": \"Both button bindings specify pullups and active-low electrical acquisition, with true meaning pressed. The model consumes these normalized values directly rather than inverting them again. Light and pump bindings similarly map true to HIGH and initialize OFF.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if ((((modeStableMs) >= (20))) and (((modeStable) != (modeCandidate)))) {\\n        first start;\\n        then assign modePressEvent := modeCandidate;\\n        then assign modeStable := modeCandidate;\\n      }\",\n      \"reason\": \"The contract schedules control and analog/button sampling every 5 ms. Button actions follow 20 ms of sampled stability, while potentiometer commands update in the selected branch each operational step. There is no model delay approaching 250 ms. DHT control responds to published acquisitions rather than requiring faster sensor sampling. Display selection has an explicit 2-second period; within the selected slot the output directly reflects current model inputs each step.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute serial_0_trigger : Boolean = reportEvent;\\n    out attribute serial_0_value_0 : Boolean = dhtFault;\\n    out attribute serial_0_value_1 : Boolean = lightFault;\\n    out attribute serial_0_value_2 : Boolean = soilFault;\",\n      \"reason\": \"All three registered report bindings use 9600 baud, and the supplied transport facts specify Serial.begin at that baud. Configuration preserves line_or_idle framing and a 20 ms idle timeout. No receive behavior is requested or introduced. The conditional continuous-button-stream and continuous-DHT-report defaults do not apply to these fault-only reports.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign operational := bootComplete;\\n      then assign bootComplete := true;\",\n      \"reason\": \"The model has no blocking startup, warmup timer, or wait for valid DHT data. Its one-step operational gate is controller state progression, not a setup-completion wait. The contract does not require a contradictory setup delay. This is model-boundary consistency only; generated setup duration remains an execution obligation.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review, not final generated-code or runtime acceptance. The supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify actual setup completion within 500 ms, Serial.begin at 9600 baud, DHT/library initialization, and native peripheral initialization and output execution.\",\n    \"Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the contract. The model's timing conclusions assume the registered contract semantics are implemented.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 2820,
+                "prompt_tokens": 18357,
+                "total_tokens": 21177,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 106,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 18354,
+                  "video_tokens": 0
+                },
+                "cost": 0.074091,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.074091,
+                  "upstream_inference_prompt_cost": 0.045891,
+                  "upstream_inference_completions_cost": 0.0282
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"The existing pin conflict resolver and its recorded remaps are authoritative.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_12 : Integer;\\n    attribute bootComplete : Boolean := false;\\n    attribute operational : Boolean := false;\\n    attribute automaticMode : Boolean := true;\",\n      \"reason\": \"Reviewed the complete SOURCE-1 requirement, including its configuration and operational acceptance profile. The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and display CLK D4/DIO D8. The authoritative D8 remap resolves the original conflict; the partial inventory does not remove A1. Analog acquisition and PWM bindings have unit scale and zero offset. Light and pump are active HIGH and initially OFF; buttons use active-low INPUT_PULLUP acquisition normalized to true when pressed. The model starts automatic, initially selects fan, and implements the specified thresholds, manual mappings, retained commands, display cycle, and fault behavior as detailed in the R1 check. Actual elapsed time is provided by interfaces.12, and the display uses that input rather than counting scheduled ticks. With 5 ms sampling/control and 20 ms button debounce, commands have no model-imposed delay exceeding 250 ms; the first-step operational gate adds only one scheduled step. Selected display values are evaluated each step, while the explicit two-second selection period takes precedence over a default refresh period. Serial bindings specify 9600 baud, and the configuration retains line_or_idle framing and a 20 ms idle timeout; no receiver is required. Continuous button-state and continuous DHT-report defaults are inapplicable to fault-only reporting. No blocking initialization or wait for DHT validity contradicts the 500 ms setup bound. These are model-boundary consistency conclusions, not proof of generated execution.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if modePressEvent {\\n        first start;\\n        then assign automaticMode := (not automaticMode);\\n      }\\n      then if ((selectPressEvent) and ((not automaticMode))) {\\n        first start;\\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\\n      }\",\n      \"reason\": \"Reviewed all R1 clauses. Authoritative wiring is preserved, including the explicitly authorized TM1637 DIO D8 remap instead of the superseded D5 assignment. Automatic mode initializes true and manual selection initializes to fan. Separate candidate/stable histories generate one event after 20 ms of stable press, do not repeat during holds, and rearm on stable release; a press present at the first sample is also recognized. Ordered updates toggle mode before selection and actuator evaluation. Manual selection cycles fan to light to pump to fan and is ignored in automatic mode. The manual fan expression io_4 * 255.0 / 1023.0 maps both endpoints correctly; selected digital commands use >=512. Only the selected persistent actuator command is assigned in manual mode, retaining the others; automatic mode recomputes all three. Automatic fan output is zero at or below 25 C, linear between 25 and 35 C, and 255 at or above 35 C. The registered PWM adapter applies unit scaling and truncation. Light and pump independently use strict <400 thresholds. Valid DHT values update savedTemperature; invalid acquisitions retain it, and fan output remains zero before any valid acquisition, consistent with the contract's disclosed fault policy. Display phase accumulates actual elapsed milliseconds modulo 6000, retaining residual phase even for multi-cycle deltas. Output selects integer-rounded temperature below phase 2000, raw light counts below 4000, then raw soil counts. Fault logic detects invalid DHT validity and exactly 0/1023 endpoints on A0/A1, without treating valid potentiometer endpoints as faults. The buzzer commands 2000 Hz while operational and any fault is active, and zero after recovery. reportEvent captures an active fault-set change before previous-fault states are updated; the registered level-sensitive report adapter therefore emits one labeled three-value fault group on entry or an active fault-set change, without repeated stable-fault reports. The one-step initialization gate is consistent with the response bound. Relay polarity, units, initial output values, and contract boundaries agree with the supplied requirements.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review, not final code or runtime acceptance. Supplied test descriptions are not executed evidence.\",\n    \"After code generation, verify setup completion within 500 ms, actual Serial.begin at 9600 baud, DHT/library initialization, display initialization, and peripheral output execution.\",\n    \"Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the registered contract. Satisfied checks here establish model-boundary consistency, not runtime success.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1218,
+                "prompt_tokens": 21151,
+                "total_tokens": 22369,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 66,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 21148,
+                  "video_tokens": 0
+                },
+                "cost": 0.065056,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.065056,
+                  "upstream_inference_prompt_cost": 0.052876,
+                  "upstream_inference_completions_cost": 0.01218
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"The existing pin conflict resolver and its recorded remaps are authoritative.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_12 : Integer;\\n    attribute bootComplete : Boolean := false;\\n    attribute operational : Boolean := false;\\n    attribute automaticMode : Boolean := true;\",\n      \"reason\": \"Reviewed the complete SOURCE-1 requirement, including its configuration and operational acceptance profile. The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and display CLK D4/DIO D8. The authoritative D8 remap resolves the original conflict; the partial inventory does not remove A1. Analog acquisition and PWM bindings have unit scale and zero offset. Light and pump are active HIGH and initially OFF; buttons use active-low INPUT_PULLUP acquisition normalized to true when pressed. The model starts automatic, initially selects fan, and implements the specified thresholds, manual mappings, retained commands, display cycle, and fault behavior as detailed in the R1 check. Actual elapsed time is provided by interfaces.12, and the display uses that input rather than counting scheduled ticks. With 5 ms sampling/control and 20 ms button debounce, commands have no model-imposed delay exceeding 250 ms; the first-step operational gate adds only one scheduled step. Selected display values are evaluated each step, while the explicit two-second selection period takes precedence over a default refresh period. Serial bindings specify 9600 baud, and the configuration retains line_or_idle framing and a 20 ms idle timeout; no receiver is required. Continuous button-state and continuous DHT-report defaults are inapplicable to fault-only reporting. No blocking initialization or wait for DHT validity contradicts the 500 ms setup bound. These are model-boundary consistency conclusions, not proof of generated execution.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if modePressEvent {\\n        first start;\\n        then assign automaticMode := (not automaticMode);\\n      }\\n      then if ((selectPressEvent) and ((not automaticMode))) {\\n        first start;\\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\\n      }\",\n      \"reason\": \"Reviewed all R1 clauses. Authoritative wiring is preserved, including the explicitly authorized TM1637 DIO D8 remap instead of the superseded D5 assignment. Automatic mode initializes true and manual selection initializes to fan. Separate candidate/stable histories generate one event after 20 ms of stable press, do not repeat during holds, and rearm on stable release; a press present at the first sample is also recognized. Ordered updates toggle mode before selection and actuator evaluation. Manual selection cycles fan to light to pump to fan and is ignored in automatic mode. The manual fan expression io_4 * 255.0 / 1023.0 maps both endpoints correctly; selected digital commands use >=512. Only the selected persistent actuator command is assigned in manual mode, retaining the others; automatic mode recomputes all three. Automatic fan output is zero at or below 25 C, linear between 25 and 35 C, and 255 at or above 35 C. The registered PWM adapter applies unit scaling and truncation. Light and pump independently use strict <400 thresholds. Valid DHT values update savedTemperature; invalid acquisitions retain it, and fan output remains zero before any valid acquisition, consistent with the contract's disclosed fault policy. Display phase accumulates actual elapsed milliseconds modulo 6000, retaining residual phase even for multi-cycle deltas. Output selects integer-rounded temperature below phase 2000, raw light counts below 4000, then raw soil counts. Fault logic detects invalid DHT validity and exactly 0/1023 endpoints on A0/A1, without treating valid potentiometer endpoints as faults. The buzzer commands 2000 Hz while operational and any fault is active, and zero after recovery. reportEvent captures an active fault-set change before previous-fault states are updated; the registered level-sensitive report adapter therefore emits one labeled three-value fault group on entry or an active fault-set change, without repeated stable-fault reports. The one-step initialization gate is consistent with the response bound. Relay polarity, units, initial output values, and contract boundaries agree with the supplied requirements.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review, not final code or runtime acceptance. Supplied test descriptions are not executed evidence.\",\n    \"After code generation, verify setup completion within 500 ms, actual Serial.begin at 9600 baud, DHT/library initialization, display initialization, and peripheral output execution.\",\n    \"Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the registered contract. Satisfied checks here establish model-boundary consistency, not runtime success.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 1218,
+            "prompt_tokens": 21151,
+            "total_tokens": 22369,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 66,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 21148,
+              "video_tokens": 0
+            },
+            "cost": 0.065056,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.065056,
+              "upstream_inference_prompt_cost": 0.052876,
+              "upstream_inference_completions_cost": 0.01218
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "The existing pin conflict resolver and its recorded remaps are authoritative.",
+                "status": "satisfied",
+                "model_quote": "    in attribute io_12 : Integer;\n    attribute bootComplete : Boolean := false;\n    attribute operational : Boolean := false;\n    attribute automaticMode : Boolean := true;",
+                "reason": "Reviewed the complete SOURCE-1 requirement, including its configuration and operational acceptance profile. The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and display CLK D4/DIO D8. The authoritative D8 remap resolves the original conflict; the partial inventory does not remove A1. Analog acquisition and PWM bindings have unit scale and zero offset. Light and pump are active HIGH and initially OFF; buttons use active-low INPUT_PULLUP acquisition normalized to true when pressed. The model starts automatic, initially selects fan, and implements the specified thresholds, manual mappings, retained commands, display cycle, and fault behavior as detailed in the R1 check. Actual elapsed time is provided by interfaces.12, and the display uses that input rather than counting scheduled ticks. With 5 ms sampling/control and 20 ms button debounce, commands have no model-imposed delay exceeding 250 ms; the first-step operational gate adds only one scheduled step. Selected display values are evaluated each step, while the explicit two-second selection period takes precedence over a default refresh period. Serial bindings specify 9600 baud, and the configuration retains line_or_idle framing and a 20 ms idle timeout; no receiver is required. Continuous button-state and continuous DHT-report defaults are inapplicable to fault-only reporting. No blocking initialization or wait for DHT validity contradicts the 500 ms setup bound. These are model-boundary consistency conclusions, not proof of generated execution."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.",
+                "status": "satisfied",
+                "model_quote": "      then if modePressEvent {\n        first start;\n        then assign automaticMode := (not automaticMode);\n      }\n      then if ((selectPressEvent) and ((not automaticMode))) {\n        first start;\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\n      }",
+                "reason": "Reviewed all R1 clauses. Authoritative wiring is preserved, including the explicitly authorized TM1637 DIO D8 remap instead of the superseded D5 assignment. Automatic mode initializes true and manual selection initializes to fan. Separate candidate/stable histories generate one event after 20 ms of stable press, do not repeat during holds, and rearm on stable release; a press present at the first sample is also recognized. Ordered updates toggle mode before selection and actuator evaluation. Manual selection cycles fan to light to pump to fan and is ignored in automatic mode. The manual fan expression io_4 * 255.0 / 1023.0 maps both endpoints correctly; selected digital commands use >=512. Only the selected persistent actuator command is assigned in manual mode, retaining the others; automatic mode recomputes all three. Automatic fan output is zero at or below 25 C, linear between 25 and 35 C, and 255 at or above 35 C. The registered PWM adapter applies unit scaling and truncation. Light and pump independently use strict <400 thresholds. Valid DHT values update savedTemperature; invalid acquisitions retain it, and fan output remains zero before any valid acquisition, consistent with the contract's disclosed fault policy. Display phase accumulates actual elapsed milliseconds modulo 6000, retaining residual phase even for multi-cycle deltas. Output selects integer-rounded temperature below phase 2000, raw light counts below 4000, then raw soil counts. Fault logic detects invalid DHT validity and exactly 0/1023 endpoints on A0/A1, without treating valid potentiometer endpoints as faults. The buzzer commands 2000 Hz while operational and any fault is active, and zero after recovery. reportEvent captures an active fault-set change before previous-fault states are updated; the registered level-sensitive report adapter therefore emits one labeled three-value fault group on entry or an active fault-set change, without repeated stable-fault reports. The one-step initialization gate is consistent with the response bound. Relay polarity, units, initial output values, and contract boundaries agree with the supplied requirements."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is a model-boundary review, not final code or runtime acceptance. Supplied test descriptions are not executed evidence.",
+              "After code generation, verify setup completion within 500 ms, actual Serial.begin at 9600 baud, DHT/library initialization, display initialization, and peripheral output execution.",
+              "Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the registered contract. Satisfied checks here establish model-boundary consistency, not runtime success."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "dc545df0db2222e2c9b084ef34a4ccbeafca91aca9445a11eaef3a36e26e4aa3"
+          }
+        },
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "normalizations": [
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id"
+        ],
+        "generation_mode": "contract_assembly",
+        "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_8 : Boolean;\n    in attribute io_9 : Boolean;\n    in attribute io_12 : Integer;\n    attribute bootComplete : Boolean := false;\n    attribute operational : Boolean := false;\n    attribute automaticMode : Boolean := true;\n    attribute selectedActuator : Integer := 0;\n    attribute fanCommand : Real := 0.0;\n    attribute lightCommand : Boolean := false;\n    attribute pumpCommand : Boolean := false;\n    attribute savedTemperature : Real := 0.0;\n    attribute temperatureAvailable : Boolean := false;\n    attribute modeCandidate : Boolean := false;\n    attribute modeStable : Boolean := false;\n    attribute modeStableMs : Integer := 0;\n    attribute modePressEvent : Boolean := false;\n    attribute selectCandidate : Boolean := false;\n    attribute selectStable : Boolean := false;\n    attribute selectStableMs : Integer := 0;\n    attribute selectPressEvent : Boolean := false;\n    attribute displayPhase : Integer := 0;\n    attribute displayDelta : Integer := 0;\n    attribute previousDhtFault : Boolean := false;\n    attribute previousLightFault : Boolean := false;\n    attribute previousSoilFault : Boolean := false;\n    attribute reportEvent : Boolean := false;\n    attribute dhtFault : Boolean = (not io_1);\n    attribute lightFault : Boolean = ((((io_2) == (0.0))) or (((io_2) == (1023.0))));\n    attribute soilFault : Boolean = ((((io_3) == (0.0))) or (((io_3) == (1023.0))));\n    attribute anyFault : Boolean = ((dhtFault) or (lightFault) or (soilFault));\n    attribute faultSetChanged : Boolean = ((((dhtFault) != (previousDhtFault))) or (((lightFault) != (previousLightFault))) or (((soilFault) != (previousSoilFault))));\n    attribute manualFanValue : Real = io_4 * 255.0 / 1023.0;\n    perform action tick {\n      first start;\n      then assign operational := bootComplete;\n      then assign bootComplete := true;\n      then assign modePressEvent := false;\n      then assign selectPressEvent := false;\n      then assign reportEvent := false;\n      then if io_1 {\n        first start;\n        then assign savedTemperature := io_0;\n        then assign temperatureAvailable := true;\n      }\n      then if ((io_8) != (modeCandidate)) {\n        first start;\n        then assign modeCandidate := io_8;\n        then assign modeStableMs := 0;\n      } else {\n        first start;\n        then if ((io_12) >= (20 - modeStableMs)) {\n          first start;\n          then assign modeStableMs := 20;\n        } else {\n          first start;\n          then if ((io_12) > (0)) {\n            first start;\n            then assign modeStableMs := modeStableMs + io_12;\n          }\n        }\n      }\n      then if ((((modeStableMs) >= (20))) and (((modeStable) != (modeCandidate)))) {\n        first start;\n        then assign modePressEvent := modeCandidate;\n        then assign modeStable := modeCandidate;\n      }\n      then if ((io_9) != (selectCandidate)) {\n        first start;\n        then assign selectCandidate := io_9;\n        then assign selectStableMs := 0;\n      } else {\n        first start;\n        then if ((io_12) >= (20 - selectStableMs)) {\n          first start;\n          then assign selectStableMs := 20;\n        } else {\n          first start;\n          then if ((io_12) > (0)) {\n            first start;\n            then assign selectStableMs := selectStableMs + io_12;\n          }\n        }\n      }\n      then if ((((selectStableMs) >= (20))) and (((selectStable) != (selectCandidate)))) {\n        first start;\n        then assign selectPressEvent := selectCandidate;\n        then assign selectStable := selectCandidate;\n      }\n      then if modePressEvent {\n        first start;\n        then assign automaticMode := (not automaticMode);\n      }\n      then if ((selectPressEvent) and ((not automaticMode))) {\n        first start;\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\n      }\n      then if ((io_12) > (0)) {\n        first start;\n        then assign displayDelta := io_12 - 6000 * RealFunctions::floor(io_12 / 6000);\n        then assign displayPhase := displayPhase + displayDelta;\n        then if ((displayPhase) >= (6000)) {\n          first start;\n          then assign displayPhase := displayPhase - 6000;\n        }\n      }\n      then if operational {\n        first start;\n        then if automaticMode {\n          first start;\n          then assign fanCommand := (if (((not temperatureAvailable)) or (((savedTemperature) <= (25.0)))) ? 0.0 else (if ((savedTemperature) >= (35.0)) ? 255.0 else (savedTemperature - 25.0) * 255.0 / 10.0));\n          then assign lightCommand := ((io_2) < (400.0));\n          then assign pumpCommand := ((io_3) < (400.0));\n        } else {\n          first start;\n          then if ((selectedActuator) == (0)) {\n            first start;\n            then assign fanCommand := manualFanValue;\n          } else {\n            first start;\n            then if ((selectedActuator) == (1)) {\n              first start;\n              then assign lightCommand := ((io_4) >= (512.0));\n            } else {\n              first start;\n              then assign pumpCommand := ((io_4) >= (512.0));\n            }\n          }\n        }\n        then assign reportEvent := ((anyFault) and (faultSetChanged));\n        then assign previousDhtFault := dhtFault;\n        then assign previousLightFault := lightFault;\n        then assign previousSoilFault := soilFault;\n      }\n    }\n    out attribute io_5 : Real = fanCommand;\n    out attribute io_6 : Boolean = lightCommand;\n    out attribute io_7 : Boolean = pumpCommand;\n    out attribute io_10 : Integer = (if ((displayPhase) < (2000)) ? RealFunctions::floor(savedTemperature + 0.5) else (if ((displayPhase) < (4000)) ? RealFunctions::floor(io_2) else RealFunctions::floor(io_3)));\n    out attribute io_11 : Integer = (if ((operational) and (anyFault)) ? 2000 else 0);\n    out attribute serial_0_trigger : Boolean = reportEvent;\n    out attribute serial_0_value_0 : Boolean = dhtFault;\n    out attribute serial_0_value_1 : Boolean = lightFault;\n    out attribute serial_0_value_2 : Boolean = soilFault;\n  }\n  part system : Controller;\n}\n",
+        "stages": {
+          "sysml_generation": true,
+          "sysml_to_ir": true,
+          "ir_to_il": true
+        },
+        "focus_issues": [],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "diagnostic_fingerprint": [],
+        "no_progress": false,
+        "failed_obligation_keys": [],
+        "repeated_requirement": false,
+        "repair_locations": [],
+        "repair_example": null,
+        "failure_stage": null
+      }
+    ],
+    "coverage": {
+      "status": "structural_pass",
+      "issues": [],
+      "functional_status": "unverified",
+      "startup": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+      },
+      "pause": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+      },
+      "periodic": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+      },
+      "numeric": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+      },
+      "source_behavior": {
+        "status": "not_requested",
+        "checked": 0,
+        "traces": [],
+        "scope": "Only the exact source-derived scenarios; not full functionality proof"
+      },
+      "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+    },
+    "semantic_review": {
+      "enabled": true,
+      "policy_version": "sysml-semantic-review-v2-native-boundaries",
+      "review_calls": 2,
+      "max_review_calls": 6,
+      "repair_count": 0,
+      "rounds": [
+        {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "dc545df0db2222e2c9b084ef34a4ccbeafca91aca9445a11eaef3a36e26e4aa3",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The existing pin conflict resolver and its recorded remaps are authoritative.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_0 : Real;\\n    in attribute io_1 : Boolean;\\n    in attribute io_2 : Real;\\n    in attribute io_3 : Real;\\n    in attribute io_4 : Real;\",\n      \"reason\": \"The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and TM1637 CLK D4/DIO D8. D8 is the authoritative remap, so the original DIO D5 text is not an unresolved wiring violation. The omitted A1 role in the partial configuration inventory is correctly retained in interfaces.3.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute automaticMode : Boolean := true;\\n    attribute selectedActuator : Integer := 0;\\n    attribute fanCommand : Real := 0.0;\\n    attribute lightCommand : Boolean := false;\\n    attribute pumpCommand : Boolean := false;\",\n      \"reason\": \"The model starts in automatic mode with zero fan command and both digital actuators off. Contract output initial values agree, and light/pump bindings are active HIGH. Temperature display uses integer rounding; light and soil display raw ADC counts. The first-step operational gate delays automatic actuator evaluation by one scheduled step, not beyond the supplied response bound.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then assign fanCommand := (if (((not temperatureAvailable)) or (((savedTemperature) <= (25.0)))) ? 0.0 else (if ((savedTemperature) >= (35.0)) ? 255.0 else (savedTemperature - 25.0) * 255.0 / 10.0));\\n          then assign lightCommand := ((io_2) < (400.0));\\n          then assign pumpCommand := ((io_3) < (400.0));\",\n      \"reason\": \"Automatic control clamps fan output at 0 and 255 with the required linear interior mapping. At 30 C the model commands 127.5 PWM counts, which the registered unit-scale adapter truncates to 127. Light and pump independently turn on at 399 and off at 400. ADC inputs have unit scale and zero offset, preserving the specified thresholds.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"D2 toggles auto/manual; D3 cycles fan,light,pump in manual\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if modePressEvent {\\n        first start;\\n        then assign automaticMode := (not automaticMode);\\n      }\\n      then if ((selectPressEvent) and ((not automaticMode))) {\\n        first start;\\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\\n      }\",\n      \"reason\": \"Each button has separate candidate, stable-state, and elapsed-time debounce history. A stable rising pressed state creates one event; a hold does not repeat it, and a stable release rearms it. False-initialized histories also recognize a button held at the first hardware sample. D2 toggles before selection and actuator updates; D3 affects selection only in the resulting manual mode. Selection starts at fan and cycles light, pump, fan.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then if ((selectedActuator) == (0)) {\\n            first start;\\n            then assign fanCommand := manualFanValue;\\n          } else {\\n            first start;\\n            then if ((selectedActuator) == (1)) {\\n              first start;\\n              then assign lightCommand := ((io_4) >= (512.0));\\n            } else {\\n              first start;\\n              then assign pumpCommand := ((io_4) >= (512.0));\\n            }\\n          }\",\n      \"reason\": \"The three actuator commands are persistent state. Each manual branch assigns only its selected command, preserving both others. Selection updates precede command updates, so the new selection takes effect immediately in that step. Returning to automatic mode recomputes all three commands from sensors.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute manualFanValue : Real = io_4 * 255.0 / 1023.0;\",\n      \"reason\": \"The registered A2 acquisition supplies raw 0..1023 counts. The expression maps endpoints to 0 and 255 without extra adapter scaling. Selected digital outputs use >=512, giving OFF at 511 and ON at 512. Fractional fan commands undergo the registered PWM truncation.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Display cycles temperature/light/soil every 2s.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then assign displayDelta := io_12 - 6000 * RealFunctions::floor(io_12 / 6000);\\n        then assign displayPhase := displayPhase + displayDelta;\\n        then if ((displayPhase) >= (6000)) {\\n          first start;\\n          then assign displayPhase := displayPhase - 6000;\\n        }\",\n      \"reason\": \"io_12 is contractually actual elapsed milliseconds, not a fabricated tick increment. The model retains phase modulo 6000 ms, including residual time after multi-cycle deltas. io_10 selects temperature below 2000, light from 2000 through 3999, and soil from 4000 through 5999. Outputs observe the updated phase. Display values use the latest valid saved temperature or current raw analog counts.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute dhtFault : Boolean = (not io_1);\\n    attribute lightFault : Boolean = ((((io_2) == (0.0))) or (((io_2) == (1023.0))));\\n    attribute soilFault : Boolean = ((((io_3) == (0.0))) or (((io_3) == (1023.0))));\\n    attribute anyFault : Boolean = ((dhtFault) or (lightFault) or (soilFault));\",\n      \"reason\": \"Invalid DHT validity and either endpoint of either environmental analog sensor independently assert a fault. Interior values do not. A2 is the manual adjustment potentiometer rather than an environmental sensor, so its command endpoints remain usable. DHT temperature is saved only when validity is true, preventing invalid acquisitions from replacing the retained measurement.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Fault drives D6 and a Serial fault report.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then assign reportEvent := ((anyFault) and (faultSetChanged));\\n        then assign previousDhtFault := dhtFault;\\n        then assign previousLightFault := lightFault;\\n        then assign previousSoilFault := soilFault;\",\n      \"reason\": \"The report event is captured before fault history is updated, so ordered execution preserves a one-step gate on fault entry and changes to an active fault set. The registered level-sensitive report adapter emits the three labeled current fault Booleans on that gate. Stable faults do not repeatedly print. io_11 commands 2000 Hz while operational and any fault is active, and zero on recovery. The first-step initialization gate postpones fault handling only until the next scheduled step.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if ((io_8) != (modeCandidate)) {\\n        first start;\\n        then assign modeCandidate := io_8;\\n        then assign modeStableMs := 0;\",\n      \"reason\": \"Both button bindings specify pullups and active-low electrical acquisition, with true meaning pressed. The model consumes these normalized values directly rather than inverting them again. Light and pump bindings similarly map true to HIGH and initialize OFF.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if ((((modeStableMs) >= (20))) and (((modeStable) != (modeCandidate)))) {\\n        first start;\\n        then assign modePressEvent := modeCandidate;\\n        then assign modeStable := modeCandidate;\\n      }\",\n      \"reason\": \"The contract schedules control and analog/button sampling every 5 ms. Button actions follow 20 ms of sampled stability, while potentiometer commands update in the selected branch each operational step. There is no model delay approaching 250 ms. DHT control responds to published acquisitions rather than requiring faster sensor sampling. Display selection has an explicit 2-second period; within the selected slot the output directly reflects current model inputs each step.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute serial_0_trigger : Boolean = reportEvent;\\n    out attribute serial_0_value_0 : Boolean = dhtFault;\\n    out attribute serial_0_value_1 : Boolean = lightFault;\\n    out attribute serial_0_value_2 : Boolean = soilFault;\",\n      \"reason\": \"All three registered report bindings use 9600 baud, and the supplied transport facts specify Serial.begin at that baud. Configuration preserves line_or_idle framing and a 20 ms idle timeout. No receive behavior is requested or introduced. The conditional continuous-button-stream and continuous-DHT-report defaults do not apply to these fault-only reports.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign operational := bootComplete;\\n      then assign bootComplete := true;\",\n      \"reason\": \"The model has no blocking startup, warmup timer, or wait for valid DHT data. Its one-step operational gate is controller state progression, not a setup-completion wait. The contract does not require a contradictory setup delay. This is model-boundary consistency only; generated setup duration remains an execution obligation.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review, not final generated-code or runtime acceptance. The supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify actual setup completion within 500 ms, Serial.begin at 9600 baud, DHT/library initialization, and native peripheral initialization and output execution.\",\n    \"Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the contract. The model's timing conclusions assume the registered contract semantics are implemented.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 2820,
+                "prompt_tokens": 18357,
+                "total_tokens": 21177,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 106,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 18354,
+                  "video_tokens": 0
+                },
+                "cost": 0.074091,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.074091,
+                  "upstream_inference_prompt_cost": 0.045891,
+                  "upstream_inference_completions_cost": 0.0282
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"The existing pin conflict resolver and its recorded remaps are authoritative.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_12 : Integer;\\n    attribute bootComplete : Boolean := false;\\n    attribute operational : Boolean := false;\\n    attribute automaticMode : Boolean := true;\",\n      \"reason\": \"Reviewed the complete SOURCE-1 requirement, including its configuration and operational acceptance profile. The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and display CLK D4/DIO D8. The authoritative D8 remap resolves the original conflict; the partial inventory does not remove A1. Analog acquisition and PWM bindings have unit scale and zero offset. Light and pump are active HIGH and initially OFF; buttons use active-low INPUT_PULLUP acquisition normalized to true when pressed. The model starts automatic, initially selects fan, and implements the specified thresholds, manual mappings, retained commands, display cycle, and fault behavior as detailed in the R1 check. Actual elapsed time is provided by interfaces.12, and the display uses that input rather than counting scheduled ticks. With 5 ms sampling/control and 20 ms button debounce, commands have no model-imposed delay exceeding 250 ms; the first-step operational gate adds only one scheduled step. Selected display values are evaluated each step, while the explicit two-second selection period takes precedence over a default refresh period. Serial bindings specify 9600 baud, and the configuration retains line_or_idle framing and a 20 ms idle timeout; no receiver is required. Continuous button-state and continuous DHT-report defaults are inapplicable to fault-only reporting. No blocking initialization or wait for DHT validity contradicts the 500 ms setup bound. These are model-boundary consistency conclusions, not proof of generated execution.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if modePressEvent {\\n        first start;\\n        then assign automaticMode := (not automaticMode);\\n      }\\n      then if ((selectPressEvent) and ((not automaticMode))) {\\n        first start;\\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\\n      }\",\n      \"reason\": \"Reviewed all R1 clauses. Authoritative wiring is preserved, including the explicitly authorized TM1637 DIO D8 remap instead of the superseded D5 assignment. Automatic mode initializes true and manual selection initializes to fan. Separate candidate/stable histories generate one event after 20 ms of stable press, do not repeat during holds, and rearm on stable release; a press present at the first sample is also recognized. Ordered updates toggle mode before selection and actuator evaluation. Manual selection cycles fan to light to pump to fan and is ignored in automatic mode. The manual fan expression io_4 * 255.0 / 1023.0 maps both endpoints correctly; selected digital commands use >=512. Only the selected persistent actuator command is assigned in manual mode, retaining the others; automatic mode recomputes all three. Automatic fan output is zero at or below 25 C, linear between 25 and 35 C, and 255 at or above 35 C. The registered PWM adapter applies unit scaling and truncation. Light and pump independently use strict <400 thresholds. Valid DHT values update savedTemperature; invalid acquisitions retain it, and fan output remains zero before any valid acquisition, consistent with the contract's disclosed fault policy. Display phase accumulates actual elapsed milliseconds modulo 6000, retaining residual phase even for multi-cycle deltas. Output selects integer-rounded temperature below phase 2000, raw light counts below 4000, then raw soil counts. Fault logic detects invalid DHT validity and exactly 0/1023 endpoints on A0/A1, without treating valid potentiometer endpoints as faults. The buzzer commands 2000 Hz while operational and any fault is active, and zero after recovery. reportEvent captures an active fault-set change before previous-fault states are updated; the registered level-sensitive report adapter therefore emits one labeled three-value fault group on entry or an active fault-set change, without repeated stable-fault reports. The one-step initialization gate is consistent with the response bound. Relay polarity, units, initial output values, and contract boundaries agree with the supplied requirements.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review, not final code or runtime acceptance. Supplied test descriptions are not executed evidence.\",\n    \"After code generation, verify setup completion within 500 ms, actual Serial.begin at 9600 baud, DHT/library initialization, display initialization, and peripheral output execution.\",\n    \"Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the registered contract. Satisfied checks here establish model-boundary consistency, not runtime success.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1218,
+                "prompt_tokens": 21151,
+                "total_tokens": 22369,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 66,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 21148,
+                  "video_tokens": 0
+                },
+                "cost": 0.065056,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.065056,
+                  "upstream_inference_prompt_cost": 0.052876,
+                  "upstream_inference_completions_cost": 0.01218
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"The existing pin conflict resolver and its recorded remaps are authoritative.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_12 : Integer;\\n    attribute bootComplete : Boolean := false;\\n    attribute operational : Boolean := false;\\n    attribute automaticMode : Boolean := true;\",\n      \"reason\": \"Reviewed the complete SOURCE-1 requirement, including its configuration and operational acceptance profile. The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and display CLK D4/DIO D8. The authoritative D8 remap resolves the original conflict; the partial inventory does not remove A1. Analog acquisition and PWM bindings have unit scale and zero offset. Light and pump are active HIGH and initially OFF; buttons use active-low INPUT_PULLUP acquisition normalized to true when pressed. The model starts automatic, initially selects fan, and implements the specified thresholds, manual mappings, retained commands, display cycle, and fault behavior as detailed in the R1 check. Actual elapsed time is provided by interfaces.12, and the display uses that input rather than counting scheduled ticks. With 5 ms sampling/control and 20 ms button debounce, commands have no model-imposed delay exceeding 250 ms; the first-step operational gate adds only one scheduled step. Selected display values are evaluated each step, while the explicit two-second selection period takes precedence over a default refresh period. Serial bindings specify 9600 baud, and the configuration retains line_or_idle framing and a 20 ms idle timeout; no receiver is required. Continuous button-state and continuous DHT-report defaults are inapplicable to fault-only reporting. No blocking initialization or wait for DHT validity contradicts the 500 ms setup bound. These are model-boundary consistency conclusions, not proof of generated execution.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then if modePressEvent {\\n        first start;\\n        then assign automaticMode := (not automaticMode);\\n      }\\n      then if ((selectPressEvent) and ((not automaticMode))) {\\n        first start;\\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\\n      }\",\n      \"reason\": \"Reviewed all R1 clauses. Authoritative wiring is preserved, including the explicitly authorized TM1637 DIO D8 remap instead of the superseded D5 assignment. Automatic mode initializes true and manual selection initializes to fan. Separate candidate/stable histories generate one event after 20 ms of stable press, do not repeat during holds, and rearm on stable release; a press present at the first sample is also recognized. Ordered updates toggle mode before selection and actuator evaluation. Manual selection cycles fan to light to pump to fan and is ignored in automatic mode. The manual fan expression io_4 * 255.0 / 1023.0 maps both endpoints correctly; selected digital commands use >=512. Only the selected persistent actuator command is assigned in manual mode, retaining the others; automatic mode recomputes all three. Automatic fan output is zero at or below 25 C, linear between 25 and 35 C, and 255 at or above 35 C. The registered PWM adapter applies unit scaling and truncation. Light and pump independently use strict <400 thresholds. Valid DHT values update savedTemperature; invalid acquisitions retain it, and fan output remains zero before any valid acquisition, consistent with the contract's disclosed fault policy. Display phase accumulates actual elapsed milliseconds modulo 6000, retaining residual phase even for multi-cycle deltas. Output selects integer-rounded temperature below phase 2000, raw light counts below 4000, then raw soil counts. Fault logic detects invalid DHT validity and exactly 0/1023 endpoints on A0/A1, without treating valid potentiometer endpoints as faults. The buzzer commands 2000 Hz while operational and any fault is active, and zero after recovery. reportEvent captures an active fault-set change before previous-fault states are updated; the registered level-sensitive report adapter therefore emits one labeled three-value fault group on entry or an active fault-set change, without repeated stable-fault reports. The one-step initialization gate is consistent with the response bound. Relay polarity, units, initial output values, and contract boundaries agree with the supplied requirements.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review, not final code or runtime acceptance. Supplied test descriptions are not executed evidence.\",\n    \"After code generation, verify setup completion within 500 ms, actual Serial.begin at 9600 baud, DHT/library initialization, display initialization, and peripheral output execution.\",\n    \"Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the registered contract. Satisfied checks here establish model-boundary consistency, not runtime success.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 1218,
+            "prompt_tokens": 21151,
+            "total_tokens": 22369,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 66,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 21148,
+              "video_tokens": 0
+            },
+            "cost": 0.065056,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.065056,
+              "upstream_inference_prompt_cost": 0.052876,
+              "upstream_inference_completions_cost": 0.01218
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "The existing pin conflict resolver and its recorded remaps are authoritative.",
+                "status": "satisfied",
+                "model_quote": "    in attribute io_12 : Integer;\n    attribute bootComplete : Boolean := false;\n    attribute operational : Boolean := false;\n    attribute automaticMode : Boolean := true;",
+                "reason": "Reviewed the complete SOURCE-1 requirement, including its configuration and operational acceptance profile. The contract preserves DHT11 D7, light A0, soil A1, potentiometer A2, fan PWM D5, light D9, pump D10, buttons D2/D3, buzzer D6, and display CLK D4/DIO D8. The authoritative D8 remap resolves the original conflict; the partial inventory does not remove A1. Analog acquisition and PWM bindings have unit scale and zero offset. Light and pump are active HIGH and initially OFF; buttons use active-low INPUT_PULLUP acquisition normalized to true when pressed. The model starts automatic, initially selects fan, and implements the specified thresholds, manual mappings, retained commands, display cycle, and fault behavior as detailed in the R1 check. Actual elapsed time is provided by interfaces.12, and the display uses that input rather than counting scheduled ticks. With 5 ms sampling/control and 20 ms button debounce, commands have no model-imposed delay exceeding 250 ms; the first-step operational gate adds only one scheduled step. Selected display values are evaluated each step, while the explicit two-second selection period takes precedence over a default refresh period. Serial bindings specify 9600 baud, and the configuration retains line_or_idle framing and a 20 ms idle timeout; no receiver is required. Continuous button-state and continuous DHT-report defaults are inapplicable to fault-only reporting. No blocking initialization or wait for DHT validity contradicts the 500 ms setup bound. These are model-boundary consistency conclusions, not proof of generated execution."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output.",
+                "status": "satisfied",
+                "model_quote": "      then if modePressEvent {\n        first start;\n        then assign automaticMode := (not automaticMode);\n      }\n      then if ((selectPressEvent) and ((not automaticMode))) {\n        first start;\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\n      }",
+                "reason": "Reviewed all R1 clauses. Authoritative wiring is preserved, including the explicitly authorized TM1637 DIO D8 remap instead of the superseded D5 assignment. Automatic mode initializes true and manual selection initializes to fan. Separate candidate/stable histories generate one event after 20 ms of stable press, do not repeat during holds, and rearm on stable release; a press present at the first sample is also recognized. Ordered updates toggle mode before selection and actuator evaluation. Manual selection cycles fan to light to pump to fan and is ignored in automatic mode. The manual fan expression io_4 * 255.0 / 1023.0 maps both endpoints correctly; selected digital commands use >=512. Only the selected persistent actuator command is assigned in manual mode, retaining the others; automatic mode recomputes all three. Automatic fan output is zero at or below 25 C, linear between 25 and 35 C, and 255 at or above 35 C. The registered PWM adapter applies unit scaling and truncation. Light and pump independently use strict <400 thresholds. Valid DHT values update savedTemperature; invalid acquisitions retain it, and fan output remains zero before any valid acquisition, consistent with the contract's disclosed fault policy. Display phase accumulates actual elapsed milliseconds modulo 6000, retaining residual phase even for multi-cycle deltas. Output selects integer-rounded temperature below phase 2000, raw light counts below 4000, then raw soil counts. Fault logic detects invalid DHT validity and exactly 0/1023 endpoints on A0/A1, without treating valid potentiometer endpoints as faults. The buzzer commands 2000 Hz while operational and any fault is active, and zero after recovery. reportEvent captures an active fault-set change before previous-fault states are updated; the registered level-sensitive report adapter therefore emits one labeled three-value fault group on entry or an active fault-set change, without repeated stable-fault reports. The one-step initialization gate is consistent with the response bound. Relay polarity, units, initial output values, and contract boundaries agree with the supplied requirements."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is a model-boundary review, not final code or runtime acceptance. Supplied test descriptions are not executed evidence.",
+              "After code generation, verify setup completion within 500 ms, actual Serial.begin at 9600 baud, DHT/library initialization, display initialization, and peripheral output execution.",
+              "Verify generated scheduling, actual elapsed-time publication, paired DHT temperature/validity acquisition, and peripheral/report latency against the registered contract. Satisfied checks here establish model-boundary consistency, not runtime success."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "dc545df0db2222e2c9b084ef34a4ccbeafca91aca9445a11eaef3a36e26e4aa3"
+          }
+        }
+      ],
+      "final_status": "passed",
+      "failure_category": null
+    },
+    "call_counts": {
+      "generation_and_repair": 1,
+      "semantic_review": 2
+    },
+    "usage": {
+      "generation_and_repair": [
+        {
+          "completion_tokens": 3156,
+          "prompt_tokens": 15970,
+          "total_tokens": 19126,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 354,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 15967,
+            "video_tokens": 0
+          },
+          "cost": 0.0714835,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0714835,
+            "upstream_inference_prompt_cost": 0.0399235,
+            "upstream_inference_completions_cost": 0.03156
+          }
+        }
+      ],
+      "semantic_review": [
+        {
+          "completion_tokens": 1218,
+          "prompt_tokens": 21151,
+          "total_tokens": 22369,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 66,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 21148,
+            "video_tokens": 0
+          },
+          "cost": 0.065056,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.065056,
+            "upstream_inference_prompt_cost": 0.052876,
+            "upstream_inference_completions_cost": 0.01218
+          }
+        }
+      ]
+    },
+    "final_status": "accepted"
+  },
+  "status": "passed"
+}

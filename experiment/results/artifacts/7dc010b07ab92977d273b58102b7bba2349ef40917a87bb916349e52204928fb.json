@@ -1,0 +1,259 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevVehicleApproach",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevPedApproach",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevDanger",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "dangerActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "dangerElapsedMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "dangerMaxElapsedMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "io_0",
+                2.0
+              ]
+            },
+            "io_1"
+          ]
+        },
+        "then": [
+          {
+            "assign": "prevVehicleApproach",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "prevVehicleApproach",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "io_2",
+                2.0
+              ]
+            },
+            "io_3"
+          ]
+        },
+        "then": [
+          {
+            "assign": "prevPedApproach",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "prevPedApproach",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "prevVehicleApproach",
+            "prevPedApproach"
+          ]
+        },
+        "then": [
+          {
+            "assign": "dangerActive",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "dangerActive",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "dangerActive",
+            {
+              "not": "prevDanger"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "dangerElapsedMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "dangerActive",
+        "then": [
+          {
+            "assign": "dangerElapsedMs",
+            "value": "dangerElapsedMs"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "dangerActive"
+            },
+            "prevDanger"
+          ]
+        },
+        "then": [
+          {
+            "assign": "dangerMaxElapsedMs",
+            "value": {
+              "if": {
+                ">=": [
+                  "dangerElapsedMs",
+                  "dangerMaxElapsedMs"
+                ]
+              },
+              "then": "dangerElapsedMs",
+              "else": "dangerMaxElapsedMs"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevDanger",
+        "value": "dangerActive"
+      },
+      {
+        "if": {
+          "not": "dangerActive"
+        },
+        "then": [
+          {
+            "assign": "dangerElapsedMs",
+            "value": "dangerElapsedMs"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_4": {
+        "if": "dangerActive",
+        "then": true,
+        "else": false
+      },
+      "io_5": {
+        "if": {
+          "not": "dangerActive"
+        },
+        "then": true,
+        "else": false
+      },
+      "io_6": {
+        "if": "dangerActive",
+        "then": 2000,
+        "else": 0
+      },
+      "io_7": {
+        "if": {
+          "and": [
+            "dangerActive",
+            {
+              "<=": [
+                "io_0",
+                20.0
+              ]
+            }
+          ]
+        },
+        "then": 3,
+        "else": {
+          "if": {
+            "and": [
+              "dangerActive",
+              {
+                "<=": [
+                  "io_2",
+                  20.0
+                ]
+              }
+            ]
+          },
+          "then": 3,
+          "else": {
+            "if": "dangerActive",
+            "then": 2,
+            "else": 0
+          }
+        }
+      },
+      "io_8": false,
+      "serial_0_trigger": {
+        "and": [
+          {
+            "not": "dangerActive"
+          },
+          "prevDanger"
+        ]
+      },
+      "serial_0_value_0": {
+        "if": {
+          "and": [
+            {
+              "not": "dangerActive"
+            },
+            "prevDanger"
+          ]
+        },
+        "then": "dangerElapsedMs",
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Set io_1=true with io_0=10.0, and io_3=true with io_2=10.0 for one control step, then set io_1=false (or io_3=false) while keeping the other distance arbitrary in subsequent steps.",
+        "oracle": "During the simultaneous-approach step, io_4 becomes true and io_5 becomes false, io_6 becomes nonzero, and io_7 displays a nonzero danger level; on the step after one of the validity inputs is false, serial_0_trigger asserts and serial_0_value_0 reports the most recent danger event duration."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute prevVehicleApproach : Boolean := false;\n    attribute prevPedApproach : Boolean := false;\n    attribute prevDanger : Boolean := false;\n    attribute dangerActive : Boolean := false;\n    attribute dangerElapsedMs : Integer := 0;\n    attribute dangerMaxElapsedMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((((io_0) >= (2.0))) and (io_1)) {\n        first start;\n        then assign prevVehicleApproach := true;\n      } else {\n        first start;\n        then assign prevVehicleApproach := false;\n      }\n      then if ((((io_2) >= (2.0))) and (io_3)) {\n        first start;\n        then assign prevPedApproach := true;\n      } else {\n        first start;\n        then assign prevPedApproach := false;\n      }\n      then if ((prevVehicleApproach) and (prevPedApproach)) {\n        first start;\n        then assign dangerActive := true;\n      } else {\n        first start;\n        then assign dangerActive := false;\n      }\n      then if ((dangerActive) and ((not prevDanger))) {\n        first start;\n        then assign dangerElapsedMs := 0;\n      }\n      then if dangerActive {\n        first start;\n        then assign dangerElapsedMs := dangerElapsedMs;\n      }\n      then if (((not dangerActive)) and (prevDanger)) {\n        first start;\n        then assign dangerMaxElapsedMs := (if ((dangerElapsedMs) >= (dangerMaxElapsedMs)) ? dangerElapsedMs else dangerMaxElapsedMs);\n      }\n      then assign prevDanger := dangerActive;\n      then if (not dangerActive) {\n        first start;\n        then assign dangerElapsedMs := dangerElapsedMs;\n      }\n    }\n    out attribute io_4 : Boolean = (if dangerActive ? true else false);\n    out attribute io_5 : Boolean = (if (not dangerActive) ? true else false);\n    out attribute io_6 : Integer = (if dangerActive ? 2000 else 0);\n    out attribute io_7 : Integer = (if ((dangerActive) and (((io_0) <= (20.0)))) ? 3 else (if ((dangerActive) and (((io_2) <= (20.0)))) ? 3 else (if dangerActive ? 2 else 0)));\n    out attribute io_8 : Boolean = false;\n    out attribute serial_0_trigger : Boolean = (((not dangerActive)) and (prevDanger));\n    out attribute serial_0_value_0 : Integer = (if (((not dangerActive)) and (prevDanger)) ? dangerElapsedMs else 0);\n  }\n  part system : Controller;\n}\n"
+}

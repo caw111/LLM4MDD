@@ -1,0 +1,135 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"prevVehicleApproach\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevPedApproach\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDanger\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dangerActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dangerElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"dangerMaxElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"io_0\",\n                2.0\n              ]\n            },\n            \"io_1\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"prevVehicleApproach\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"prevVehicleApproach\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"io_2\",\n                2.0\n              ]\n            },\n            \"io_3\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"prevPedApproach\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"prevPedApproach\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"prevVehicleApproach\",\n            \"prevPedApproach\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerActive\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"dangerActive\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"dangerActive\",\n            {\n              \"not\": \"prevDanger\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerElapsedMs\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"dangerActive\",\n        \"then\": [\n          {\n            \"assign\": \"dangerElapsedMs\",\n            \"value\": \"dangerElapsedMs\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"dangerActive\"\n            },\n            \"prevDanger\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerMaxElapsedMs\",\n            \"value\": {\n              \"if\": {\n                \">=\": [\n                  \"dangerElapsedMs\",\n                  \"dangerMaxElapsedMs\"\n                ]\n              },\n              \"then\": \"dangerElapsedMs\",\n              \"else\": \"dangerMaxElapsedMs\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevDanger\",\n        \"value\": \"dangerActive\"\n      },\n      {\n        \"if\": {\n          \"not\": \"dangerActive\"\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerElapsedMs\",\n            \"value\": \"dangerElapsedMs\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": \"dangerActive\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_5\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"dangerActive\"\n            }\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_6\": {\n        \"if\": \"dangerActive\",\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_7\": {\n        \"if\": {\n          \"and\": [\n            \"dangerActive\",\n            {\n              \"<=\": [\n                \"io_0\",\n                20.0\n              ]\n            }\n          ]\n        },\n        \"then\": 3,\n        \"else\": {\n          \"if\": {\n            \"and\": [\n              \"dangerActive\",\n              {\n                \"<=\": [\n                  \"io_2\",\n                  20.0\n                ]\n              }\n            ]\n          },\n          \"then\": 3,\n          \"else\": {\n            \"if\": \"dangerActive\",\n            \"then\": 2,\n            \"else\": 0\n          }\n        }\n      },\n      \"io_8\": false,\n      \"serial_0_trigger\": {\n        \"and\": [\n          {\n            \"not\": \"dangerActive\"\n          },\n          \"prevDanger\"\n        ]\n      },\n      \"serial_0_value_0\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"dangerActive\"\n            },\n            \"prevDanger\"\n          ]\n        },\n        \"then\": \"dangerElapsedMs\",\n        \"else\": \"0\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_1=true with io_0=10.0, and io_3=true with io_2=10.0 for one control step, then set io_1=false (or io_3=false) while keeping the other distance arbitrary in subsequent steps.\",\n        \"oracle\": \"During the simultaneous-approach step, io_4 becomes true and io_5 becomes false, io_6 becomes nonzero, and io_7 displays a nonzero danger level; on the step after one of the validity inputs is false, serial_0_trigger asserts and serial_0_value_0 reports the most recent danger event duration.\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_5: Structured operator 'and' requires 2..256 expression operands; preserve every operand.",
+          "path": "/controller/outputs/io_5"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/outputs/io_5: Structured operator 'and' requires 2..256 expression operands; preserve every operand.",
+          "path": "/controller/outputs/io_5"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/outputs/io_5: Structured operator 'and' requires 2..256 expression operands; preserve every operand."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"prevVehicleApproach\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevPedApproach\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevDanger\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dangerActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"dangerElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"dangerMaxElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"io_0\",\n                2.0\n              ]\n            },\n            \"io_1\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"prevVehicleApproach\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"prevVehicleApproach\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"io_2\",\n                2.0\n              ]\n            },\n            \"io_3\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"prevPedApproach\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"prevPedApproach\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"prevVehicleApproach\",\n            \"prevPedApproach\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerActive\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"dangerActive\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"dangerActive\",\n            {\n              \"not\": \"prevDanger\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerElapsedMs\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"dangerActive\",\n        \"then\": [\n          {\n            \"assign\": \"dangerElapsedMs\",\n            \"value\": \"dangerElapsedMs\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"dangerActive\"\n            },\n            \"prevDanger\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerMaxElapsedMs\",\n            \"value\": {\n              \"if\": {\n                \">=\": [\n                  \"dangerElapsedMs\",\n                  \"dangerMaxElapsedMs\"\n                ]\n              },\n              \"then\": \"dangerElapsedMs\",\n              \"else\": \"dangerMaxElapsedMs\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevDanger\",\n        \"value\": \"dangerActive\"\n      },\n      {\n        \"if\": {\n          \"not\": \"dangerActive\"\n        },\n        \"then\": [\n          {\n            \"assign\": \"dangerElapsedMs\",\n            \"value\": \"dangerElapsedMs\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": \"dangerActive\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_5\": {\n        \"if\": {\n          \"not\": \"dangerActive\"\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_6\": {\n        \"if\": \"dangerActive\",\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_7\": {\n        \"if\": {\n          \"and\": [\n            \"dangerActive\",\n            {\n              \"<=\": [\n                \"io_0\",\n                20.0\n              ]\n            }\n          ]\n        },\n        \"then\": 3,\n        \"else\": {\n          \"if\": {\n            \"and\": [\n              \"dangerActive\",\n              {\n                \"<=\": [\n                  \"io_2\",\n                  20.0\n                ]\n              }\n            ]\n          },\n          \"then\": 3,\n          \"else\": {\n            \"if\": \"dangerActive\",\n            \"then\": 2,\n            \"else\": 0\n          }\n        }\n      },\n      \"io_8\": false,\n      \"serial_0_trigger\": {\n        \"and\": [\n          {\n            \"not\": \"dangerActive\"\n          },\n          \"prevDanger\"\n        ]\n      },\n      \"serial_0_value_0\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"dangerActive\"\n            },\n            \"prevDanger\"\n          ]\n        },\n        \"then\": \"dangerElapsedMs\",\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个道路行人警示原型系统，使用两个 HC-SR04，车辆方向 Trig=D8、Echo=D9，行人方向 Trig=D10、Echo=D11，LED 红灯 D12、绿灯 D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。当检测到行人与车辆同时接近时，红灯闪烁、蜂鸣器报警，并在数码管显示危险等级；无危险时绿灯常亮。串口输出最近一次危险事件持续时间。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_1=true with io_0=10.0, and io_3=true with io_2=10.0 for one control step, then set io_1=false (or io_3=false) while keeping the other distance arbitrary in subsequent steps.\",\n        \"oracle\": \"During the simultaneous-approach step, io_4 becomes true and io_5 becomes false, io_6 becomes nonzero, and io_7 displays a nonzero danger level; on the step after one of the validity inputs is false, serial_0_trigger asserts and serial_0_value_0 reports the most recent danger event duration.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute prevVehicleApproach : Boolean := false;\n    attribute prevPedApproach : Boolean := false;\n    attribute prevDanger : Boolean := false;\n    attribute dangerActive : Boolean := false;\n    attribute dangerElapsedMs : Integer := 0;\n    attribute dangerMaxElapsedMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((((io_0) >= (2.0))) and (io_1)) {\n        first start;\n        then assign prevVehicleApproach := true;\n      } else {\n        first start;\n        then assign prevVehicleApproach := false;\n      }\n      then if ((((io_2) >= (2.0))) and (io_3)) {\n        first start;\n        then assign prevPedApproach := true;\n      } else {\n        first start;\n        then assign prevPedApproach := false;\n      }\n      then if ((prevVehicleApproach) and (prevPedApproach)) {\n        first start;\n        then assign dangerActive := true;\n      } else {\n        first start;\n        then assign dangerActive := false;\n      }\n      then if ((dangerActive) and ((not prevDanger))) {\n        first start;\n        then assign dangerElapsedMs := 0;\n      }\n      then if dangerActive {\n        first start;\n        then assign dangerElapsedMs := dangerElapsedMs;\n      }\n      then if (((not dangerActive)) and (prevDanger)) {\n        first start;\n        then assign dangerMaxElapsedMs := (if ((dangerElapsedMs) >= (dangerMaxElapsedMs)) ? dangerElapsedMs else dangerMaxElapsedMs);\n      }\n      then assign prevDanger := dangerActive;\n      then if (not dangerActive) {\n        first start;\n        then assign dangerElapsedMs := dangerElapsedMs;\n      }\n    }\n    out attribute io_4 : Boolean = (if dangerActive ? true else false);\n    out attribute io_5 : Boolean = (if (not dangerActive) ? true else false);\n    out attribute io_6 : Integer = (if dangerActive ? 2000 else 0);\n    out attribute io_7 : Integer = (if ((dangerActive) and (((io_0) <= (20.0)))) ? 3 else (if ((dangerActive) and (((io_2) <= (20.0)))) ? 3 else (if dangerActive ? 2 else 0)));\n    out attribute io_8 : Boolean = false;\n    out attribute serial_0_trigger : Boolean = (((not dangerActive)) and (prevDanger));\n    out attribute serial_0_value_0 : Integer = (if (((not dangerActive)) and (prevDanger)) ? dangerElapsedMs else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

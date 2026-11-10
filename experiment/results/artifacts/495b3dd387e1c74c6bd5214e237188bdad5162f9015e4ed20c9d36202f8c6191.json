@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"countdownSeconds\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"started\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevAddPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevStartPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"beepActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"beepCounterMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"prevAddPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"countdownSeconds\",\n            \"value\": {\n              \"if\": \"started\",\n              \"then\": \"countdownSeconds + 10\",\n              \"else\": \"countdownSeconds\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"prevStartPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"started\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"countdownSeconds\",\n            \"value\": {\n              \"if\": \"countdownSeconds == 0\",\n              \"then\": 10,\n              \"else\": \"countdownSeconds\"\n            }\n          },\n          {\n            \"assign\": \"beepActive\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"beepCounterMs\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"started\",\n        \"then\": [\n          {\n            \"if\": \"countdownSeconds > 0\",\n            \"then\": [\n              {\n                \"assign\": \"countdownSeconds\",\n                \"value\": \"countdownSeconds - 1\"\n              }\n            ]\n          },\n          {\n            \"if\": {\n              \"and\": [\n                \"countdownSeconds == 0\",\n                {\n                  \"not\": \"beepActive\"\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"beepActive\",\n                \"value\": true\n              },\n              {\n                \"assign\": \"beepCounterMs\",\n                \"value\": 2000\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"beepActive\",\n        \"then\": [\n          {\n            \"assign\": \"beepCounterMs\",\n            \"value\": \"beepCounterMs - 5\"\n          },\n          {\n            \"if\": \"beepCounterMs <= 0\",\n            \"then\": [\n              {\n                \"assign\": \"beepActive\",\n                \"value\": false\n              },\n              {\n                \"assign\": \"beepCounterMs\",\n                \"value\": 0\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevAddPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevStartPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": \"beepActive\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_3\": \"countdownSeconds\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个倒计时提醒系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于增加倒计时时间（每次加 10 秒），D3 用于开始倒计时；数码管显示剩余秒数，结束时蜂鸣器连续鸣叫 2 秒。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持D2不按，保持D3按下并产生一次上升沿后释放；观察数码管从初始倒计值开始递减，且在倒计数到0后蜂鸣器输出为非零且持续约2秒，随后变为0\",\n        \"oracle\": \"D3触发开始；TM1637输出倒计剩余秒数；倒计到0时蜂鸣器输出在持续窗口内为非零，窗口结束后蜂鸣器输出为0\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个倒计时提醒系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于增加倒计时时间（每次加 10 秒），D3 用于开始倒计时；数码管显示剩余秒数，结束时蜂鸣器连续鸣叫 2 秒。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先按下D3启动后，在倒计过程中对D2产生一次或多次按压上升沿事件（每次加10秒）并观察数码管跳变与后续递减，以及最终鸣叫2秒\",\n        \"oracle\": \"每次D2上升沿使剩余秒数增加10；蜂鸣器只在倒计数到0后进入连续鸣叫2秒窗口，并在窗口结束后停止\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute countdownSeconds : Integer := 0;\n    attribute started : Boolean := false;\n    attribute prevAddPressed : Boolean := false;\n    attribute prevStartPressed : Boolean := false;\n    attribute beepActive : Boolean := false;\n    attribute beepCounterMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not prevAddPressed))) {\n        first start;\n        then assign countdownSeconds := (if started ? countdownSeconds + 10 else countdownSeconds);\n      }\n      then if ((io_1) and ((not prevStartPressed))) {\n        first start;\n        then assign started := true;\n        then assign countdownSeconds := (if countdownSeconds == 0 ? 10 else countdownSeconds);\n        then assign beepActive := false;\n        then assign beepCounterMs := 0;\n      }\n      then if started {\n        first start;\n        then if countdownSeconds > 0 {\n          first start;\n          then assign countdownSeconds := countdownSeconds - 1;\n        }\n        then if ((countdownSeconds == 0) and ((not beepActive))) {\n          first start;\n          then assign beepActive := true;\n          then assign beepCounterMs := 2000;\n        }\n      }\n      then if beepActive {\n        first start;\n        then assign beepCounterMs := beepCounterMs - 5;\n        then if beepCounterMs <= 0 {\n          first start;\n          then assign beepActive := false;\n          then assign beepCounterMs := 0;\n        }\n      }\n      then assign prevAddPressed := io_0;\n      then assign prevStartPressed := io_1;\n    }\n    out attribute io_2 : Integer = (if beepActive ? 1000 else 0);\n    out attribute io_3 : Integer = countdownSeconds;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

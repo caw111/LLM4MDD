@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"maxAdc\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"showMax\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"displayMaxRemaining\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_0 > maxAdc\",\n        \"then\": [\n          {\n            \"assign\": \"maxAdc\",\n            \"value\": \"io_0\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"showMax\",\n        \"value\": {\n          \"if\": \"showMax\",\n          \"then\": {\n            \"if\": \"displayMaxRemaining <= 1\",\n            \"then\": false,\n            \"else\": true\n          },\n          \"else\": \"showMax\"\n        }\n      },\n      {\n        \"assign\": \"displayMaxRemaining\",\n        \"value\": {\n          \"if\": \"showMax\",\n          \"then\": {\n            \"if\": \"displayMaxRemaining <= 1\",\n            \"then\": 0,\n            \"else\": \"displayMaxRemaining - 1\"\n          },\n          \"else\": {\n            \"if\": {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"not\": \"previousPressed\"\n                }\n              ]\n            },\n            \"then\": 3000,\n            \"else\": \"displayMaxRemaining\"\n          }\n        }\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"showMax\"\n            },\n            {\n              \"and\": [\n                {\n                  \">=\": [\n                    \"displayMaxRemaining\",\n                    1\n                  ]\n                },\n                {\n                  \"not\": \"io_1\"\n                }\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"displayMaxRemaining\",\n            \"value\": 0\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": \"showMax\",\n        \"then\": {\n          \"RealFunctions::floor\": \"maxAdc\"\n        },\n        \"else\": {\n          \"RealFunctions::floor\": \"io_0\"\n        }\n      },\n      \"serial_0_trigger\": \"true\",\n      \"serial_0_value_0\": {\n        \"if\": \"true\",\n        \"then\": \"io_0\",\n        \"else\": \"0.0\"\n      },\n      \"serial_0_value_1\": {\n        \"if\": \"true\",\n        \"then\": \"maxAdc\",\n        \"else\": \"0.0\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_0 increasing over multiple steps while io_1 remains false; then keep io_1 false after reaching a peak.\",\n        \"oracle\": \"serial_0_value_1 equals the maximum io_0 seen so far and serial_0_value_0 equals current io_0 each step; io_2 shows current temperature (not max) while io_1 is never pressed.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With io_0 held at a value below an already-recorded maxAdc, create a rising edge on io_1 (false->true for one step, then false). Continue stepping for at least 3000 control steps while varying io_0.\",\n        \"oracle\": \"On and after the press edge until displayMaxRemaining expires, io_2 displays the historical maximum; after expiry, io_2 returns to displaying current io_0 (while serial_0_value_0 and serial_0_value_1 keep reporting both values continuously).\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Raise io_0 to a new higher value while io_1 is pressed (true) and then release; repeat with no further peaks.\",\n        \"oracle\": \"maxAdc updates only from io_0 comparisons and is reflected in subsequent io_2 historical-max display window and serial_0_value_1 after the new peak is reached.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute maxAdc : Real := 0.0;\n    attribute previousPressed : Boolean := false;\n    attribute showMax : Boolean := false;\n    attribute displayMaxRemaining : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_0 > maxAdc {\n        first start;\n        then assign maxAdc := io_0;\n      }\n      then assign showMax := (if showMax ? (if displayMaxRemaining <= 1 ? false else true) else showMax);\n      then assign displayMaxRemaining := (if showMax ? (if displayMaxRemaining <= 1 ? 0 else displayMaxRemaining - 1) else (if ((io_1) and ((not previousPressed))) ? 3000 else displayMaxRemaining));\n      then if (((not showMax)) and (((((displayMaxRemaining) >= (1))) and ((not io_1))))) {\n        first start;\n        then assign displayMaxRemaining := 0;\n      }\n      then assign previousPressed := io_1;\n    }\n    out attribute io_2 : Integer = (if showMax ? RealFunctions::floor(maxAdc) else RealFunctions::floor(io_0));\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Real = (if true ? io_0 else 0.0);\n    out attribute serial_0_value_1 : Real = (if true ? maxAdc else 0.0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises READ with newline and 20 ms idle framing, changing distances, repeated requests, and return to an earlier distance. Checks require numeric distance reports and HC-SR04 trigger activity during each distinct measurement scenario. Quantitative distance accuracy is deliberately not asserted: units and precision are unspecified, and the permitted check schema has no unit-aware serial numeric normalization or serial relational comparison. Thus these checks cannot distinguish correct distance numbers from arbitrary numeric reports. They also do not prohibit unsolicited output, which the requirement does not explicitly forbid. Baud configuration is covered only if enforced by the host serial simulation.",
+  "assumptions": [
+    "The authoritative hardware mapping is HC-SR04 trigger D8 and echo D9; serial configuration is 9600 baud.",
+    "READ is sent exactly as specified. Both newline framing and idle framing after 20 ms are exercised.",
+    "Distance units, labels, and precision are missing parameters. Numeric-report checks accept arbitrary numeric values rather than imposing centimeters, meters, trailing zeros, or an invented accuracy tolerance.",
+    "The reference selects centimeters with two decimal places, but that choice is not required of candidates.",
+    "Only valid echoes are supplied; absent-echo behavior and unknown-command behavior are unspecified and not tested.",
+    "No LED, button, or analog bench defaults are needed for this supplied ultrasonic circuit."
+  ],
+  "horizon_ms": 6500,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 9,
+      "value": 25
+    },
+    {
+      "at_ms": 1300,
+      "kind": "distance",
+      "pin": 9,
+      "value": 80
+    },
+    {
+      "at_ms": 2500,
+      "kind": "distance",
+      "pin": 9,
+      "value": 150
+    },
+    {
+      "at_ms": 4500,
+      "kind": "distance",
+      "pin": 9,
+      "value": 25
+    }
+  ],
+  "serial_inputs": [
+    {
+      "at_ms": 500,
+      "text": "READ\n"
+    },
+    {
+      "at_ms": 1700,
+      "text": "READ"
+    },
+    {
+      "at_ms": 2900,
+      "text": "READ\n"
+    },
+    {
+      "at_ms": 3800,
+      "text": "READ\n"
+    },
+    {
+      "at_ms": 5000,
+      "text": "READ"
+    }
+  ],
+  "ultrasonic": [
+    {
+      "trigger_pin": 8,
+      "echo_pin": 9
+    }
+  ],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "newline_read_report",
+      "requirement_quote": "串口输入 READ：输出 HC-SR04（D8/D9）距离",
+      "from_ms": 500,
+      "to_ms": 1100,
+      "regex": "[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "idle_read_report",
+      "requirement_quote": "framing=line_or_idle; idle_timeout_ms=20",
+      "from_ms": 1700,
+      "to_ms": 2300,
+      "regex": "[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "far_read_report",
+      "requirement_quote": "串口输入 READ：输出 HC-SR04（D8/D9）距离",
+      "from_ms": 2900,
+      "to_ms": 3500,
+      "regex": "[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_read_report",
+      "requirement_quote": "串口输入 READ：输出 HC-SR04（D8/D9）距离",
+      "from_ms": 3800,
+      "to_ms": 4400,
+      "regex": "[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "return_distance_idle_report",
+      "requirement_quote": "串口输入 READ：输出 HC-SR04（D8/D9）距离",
+      "from_ms": 5000,
+      "to_ms": 5600,
+      "regex": "[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?",
+      "min_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "initial_measurement_trigger",
+      "requirement_quote": "HC-SR04（D8/D9）",
+      "pin": 8,
+      "from_ms": 0,
+      "to_ms": 1100,
+      "edge": "rising",
+      "min_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "changed_middle_measurement_trigger",
+      "requirement_quote": "HC-SR04（D8/D9）",
+      "pin": 8,
+      "from_ms": 1300,
+      "to_ms": 2300,
+      "edge": "rising",
+      "min_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "changed_far_measurement_trigger",
+      "requirement_quote": "HC-SR04（D8/D9）",
+      "pin": 8,
+      "from_ms": 2500,
+      "to_ms": 3500,
+      "edge": "rising",
+      "min_count": 1
+    },
+    {
+      "kind": "edges",
+      "id": "returned_distance_measurement_trigger",
+      "requirement_quote": "HC-SR04（D8/D9）",
+      "pin": 8,
+      "from_ms": 4500,
+      "to_ms": 5600,
+      "edge": "rising",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <string.h>\n\nchar command[32];\nunsigned int used = 0;\nunsigned long lastByte = 0;\nbool overflowed = false;\n\nvoid finishCommand() {\n  command[used] = '\\0';\n  if (!overflowed && strcmp(command, \"READ\") == 0) {\n    digitalWrite(8, LOW);\n    delayMicroseconds(2);\n    digitalWrite(8, HIGH);\n    delayMicroseconds(10);\n    digitalWrite(8, LOW);\n    unsigned long duration = pulseIn(9, HIGH, 30000UL);\n    if (duration != 0) {\n      Serial.print(duration / 58.0, 2);\n      Serial.println(\" cm\");\n    } else {\n      Serial.println(\"No echo\");\n    }\n  }\n  used = 0;\n  overflowed = false;\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(8, OUTPUT);\n  digitalWrite(8, LOW);\n  pinMode(9, INPUT);\n}\n\nvoid loop() {\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByte = millis();\n    if (c == '\\n' || c == '\\r') {\n      if (used || overflowed) finishCommand();\n    } else if (used < sizeof(command) - 1) {\n      command[used++] = c;\n    } else {\n      overflowed = true;\n    }\n  }\n  if ((used || overflowed) && millis() - lastByte >= 20UL) {\n    finishCommand();\n  }\n}\n"
+}

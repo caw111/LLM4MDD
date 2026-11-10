@@ -1,0 +1,316 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "armed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "nightMode",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "eventCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "alarmRemainingMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "or": [
+            {
+              "<": [
+                "io_2",
+                500.0
+              ]
+            },
+            {
+              "and": [
+                {
+                  ">=": [
+                    "io_2",
+                    500.0
+                  ]
+                },
+                false
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "nightMode",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": {
+            "or": [
+              {
+                "<": [
+                  "io_2",
+                  500.0
+                ]
+              },
+              {
+                "and": [
+                  {
+                    ">=": [
+                      "io_2",
+                      500.0
+                    ]
+                  },
+                  false
+                ]
+              }
+            ]
+          }
+        },
+        "then": [
+          {
+            "assign": "nightMode",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_6_valid",
+            {
+              "==": [
+                "io_6",
+                1
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "armed",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_6_valid",
+            {
+              "==": [
+                "io_6",
+                2
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "armed",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_6_valid",
+            {
+              "==": [
+                "io_6",
+                3
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "armed",
+            "value": false
+          },
+          {
+            "assign": "eventCount",
+            "value": 0
+          },
+          {
+            "assign": "alarmRemainingMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_6_valid",
+            {
+              "==": [
+                "io_6",
+                4
+              ]
+            }
+          ]
+        },
+        "then": []
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "and": [
+                "armed",
+                "nightMode"
+              ]
+            },
+            "io_1"
+          ]
+        },
+        "then": []
+      },
+      {
+        "if": {
+          "and": [
+            "armed",
+            {
+              "not": "nightMode"
+            },
+            "io_1"
+          ]
+        },
+        "then": []
+      },
+      {
+        "if": {
+          "and": [
+            "armed",
+            {
+              "and": [
+                "io_1",
+                {
+                  "and": [
+                    "io_0",
+                    {
+                      "not": "previousPressed"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "eventCount",
+            "value": "eventCount + 1"
+          },
+          {
+            "assign": "alarmRemainingMs",
+            "value": 5000
+          }
+        ]
+      },
+      {
+        "if": {
+          ">": [
+            "alarmRemainingMs",
+            0
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmRemainingMs",
+            "value": "alarmRemainingMs - 5"
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": {
+          "and": [
+            "armed",
+            {
+              ">": [
+                "alarmRemainingMs",
+                0
+              ]
+            }
+          ]
+        },
+        "then": 2000,
+        "else": 0
+      },
+      "io_4": {
+        "if": {
+          "and": [
+            "armed",
+            {
+              ">": [
+                "alarmRemainingMs",
+                0
+              ]
+            }
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "io_5": "eventCount"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Set io_2=400.0 (night threshold met), then send ARM via io_6_valid=true and io_6=1 for one step; then apply io_1=true (door opened) and make io_0 rise from false to true.",
+        "oracle": "After the PIR rising edge while armed and door opened, io_4 becomes true (LED on), io_3 becomes 2000 (buzzer active), and io_5 increments from 0."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "With armed=true and a previously set alarmRemainingMs>0, keep inputs constant (io_0=true, io_1=true) for multiple steps while io_6_valid remains false.",
+        "oracle": "io_4 remains true initially and then turns false once alarmRemainingMs reaches 0; io_3 becomes 0 when alarmRemainingMs is not >0."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Trigger one event to make eventCount>0, then send DISARM via io_6_valid=true and io_6=2 for one step.",
+        "oracle": "Immediately after DISARM, io_4 is false and io_3 is 0, while io_5 holds the last eventCount value (no reset)."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Trigger one or more events (eventCount>0, alarm may be active), then send RESET via io_6_valid=true and io_6=3 for one step.",
+        "oracle": "After RESET, armed is false, eventCount returns to 0 (io_5=0), and io_3=0 and io_4=false."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_6 : Integer;\n    in attribute io_6_valid : Boolean;\n    attribute armed : Boolean := false;\n    attribute nightMode : Boolean := false;\n    attribute eventCount : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute alarmRemainingMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((((io_2) < (500.0))) or (((((io_2) >= (500.0))) and (false)))) {\n        first start;\n        then assign nightMode := true;\n      }\n      then if (not ((((io_2) < (500.0))) or (((((io_2) >= (500.0))) and (false))))) {\n        first start;\n        then assign nightMode := false;\n      }\n      then if ((io_6_valid) and (((io_6) == (1)))) {\n        first start;\n        then assign armed := true;\n      }\n      then if ((io_6_valid) and (((io_6) == (2)))) {\n        first start;\n        then assign armed := false;\n      }\n      then if ((io_6_valid) and (((io_6) == (3)))) {\n        first start;\n        then assign armed := false;\n        then assign eventCount := 0;\n        then assign alarmRemainingMs := 0;\n      }\n      then if ((io_6_valid) and (((io_6) == (4)))) {\n        first start;\n        then done;\n      }\n      then if ((((armed) and (nightMode))) and (io_1)) {\n        first start;\n        then done;\n      }\n      then if ((armed) and ((not nightMode)) and (io_1)) {\n        first start;\n        then done;\n      }\n      then if ((armed) and (((io_1) and (((io_0) and ((not previousPressed))))))) {\n        first start;\n        then assign eventCount := eventCount + 1;\n        then assign alarmRemainingMs := 5000;\n      }\n      then if ((alarmRemainingMs) > (0)) {\n        first start;\n        then assign alarmRemainingMs := alarmRemainingMs - 5;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_3 : Integer = (if ((armed) and (((alarmRemainingMs) > (0)))) ? 2000 else 0);\n    out attribute io_4 : Boolean = (if ((armed) and (((alarmRemainingMs) > (0)))) ? true else false);\n    out attribute io_5 : Integer = eventCount;\n  }\n  part system : Controller;\n}\n"
+}

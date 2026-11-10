@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Preserve all specified wiring, including A0 and D2, which are not listed in the partial resolved device inventory. No actual source component IDs were supplied.",
+    "Analog requests expose raw ADC counts. The SysML model applies current_A = ADC * 10.0 / 1023.0 and temperature_C = ADC * 500.0 / 1023.0 using the disclosed 5 V ADC reference.",
+    "D2 uses the catalog default active-HIGH electrical semantics because no contrary switch polarity or pull-up wiring is supplied. A true model value means vibration is active; do not invert it again.",
+    "The SysML model assigns status 3 for active vibration, otherwise 2 for temperature above 60 C, otherwise 1 for current above 7 A, otherwise 0. Mechanical fault has priority over overheat, which has priority over overload.",
+    "Fan control remains independent of displayed status: command 255 whenever temperature exceeds 60 C and 0 otherwise, including during mechanical faults.",
+    "Mechanical faults activate the audible alarm and LED; otherwise both are off. Alarm frequency and any pulsing pattern are unspecified business parameters to resolve in the model. No adapter-side alarm timer is introduced.",
+    "Assume display rotation starts with integer current, then integer temperature, then status, switching every 2000 ms using actual elapsed time. Integer conversion rounding is unspecified and must be resolved in the model. Changes to the currently selected quantity should appear within 250 ms.",
+    "Assume fault reporting occurs once on each entry into mechanical fault, including a fault detected at startup. The unspecified serial format is chosen as the exact prefix \"Fault code: \" followed by integer 3 and a newline. No periodic telemetry or serial receiver is required.",
+    "Initial measurements and display command are zero; fan and alarms start off and are updated from acquired inputs. No startup delay is requested.",
+    "The 5 ms control step is scheduling granularity, not the display rotation period. Use actual elapsed deltas, with the first delta zero; keep setup within 500 ms and actuator reactions within 250 ms.",
+    "Temperature monitoring uses the disclosed absolute Celsius thresholds. No separate baseline-relative temperature-rise threshold was supplied."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "Motor current sensor raw ADC reading",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A0\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "LM35 temperature sensor raw ADC reading",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Normalized active vibration switch state",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Cooling fan PWM command in PWM counts",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Mechanical fault audible alarm frequency command",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Mechanical fault alarm LED command",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Selected integer current, integer temperature, or motor status number",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D3\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D3",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual elapsed milliseconds since the previous control step for display rotation",
+      "sample_period_ms": 5,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report entry into the mechanical fault state",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Mechanical fault code, set to 3 when reporting a mechanical fault",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"Fault code: \", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "Fault code: "
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D3"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.",
+    "effective_requirement": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D3）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个工业电机运行监测系统，使用电流传感器 A0、温度传感器 LM35（A1）、振动开关 D2、风扇 PWM D5、蜂鸣器 D6、LED D13 和串口。系统实时监测电机负载、温升和振动，给出正常、过载、过热、机械异常四种状态；过热时开启风扇冷却，机械异常时优先报警并输出 fault code。TM1637（CLK=D4，DIO=D5）用于轮流显示电流、温度和状态编号。\nDisclosed configurable bench calibration/thresholds: A0 current=ADC*10/1023 amperes; LM35 A1 Celsius=ADC*500/1023 with5V ADC reference. Overload current>7A, overheat>60C; vibration switch active uses the declared electrical input semantics. Status0 normal,1 overload, 2 overheat,3 mechanical fault; mechanical fault has highest priority, then overheat. Fan PWM255 above60C and0 otherwise. Mechanical fault drives audible/LED alarm and Serial fault code3. TM1637 rotates integer current in amperes, integer temperature Celsius, and status code every2s.",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  }
+}

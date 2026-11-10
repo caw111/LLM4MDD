@@ -1,0 +1,140 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "thresholdC",
+        "type": "f64",
+        "initial": 30.0
+      },
+      {
+        "name": "fanMinPwm",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "autoMode",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevOverheatCond",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3_valid and (io_3 == 10)",
+        "then": [
+          {
+            "assign": "thresholdC",
+            "value": 30.0
+          },
+          {
+            "assign": "fanMinPwm",
+            "value": 0.0
+          },
+          {
+            "assign": "autoMode",
+            "value": false
+          },
+          {
+            "assign": "prevOverheatCond",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": "io_3_valid and (io_3 == 7)",
+        "then": [
+          {
+            "assign": "thresholdC",
+            "value": 0.0
+          }
+        ]
+      },
+      {
+        "if": "io_3_valid and (io_3 == 8)",
+        "then": [
+          {
+            "assign": "fanMinPwm",
+            "value": 0.0
+          }
+        ]
+      },
+      {
+        "if": "io_3_valid and (io_3 == 11)",
+        "then": [
+          {
+            "assign": "autoMode",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": "io_3_valid and (io_3 == 12)",
+        "then": [
+          {
+            "assign": "autoMode",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "prevOverheatCond",
+        "value": {
+          "if": "io_0 >= (thresholdC + 5.0)",
+          "then": true,
+          "else": false
+        }
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "autoMode",
+        "then": {
+          "if": "io_0 >= thresholdC",
+          "then": {
+            "if": "io_0 >= (thresholdC + 5.0)",
+            "then": "fanMinPwm",
+            "else": "fanMinPwm"
+          },
+          "else": 0.0
+        },
+        "else": 0.0
+      },
+      "io_2": {
+        "if": "autoMode and (io_0 >= (thresholdC + 5.0))",
+        "then": true,
+        "else": false
+      },
+      "serial_0_trigger": {
+        "if": "autoMode and (io_0 >= (thresholdC + 5.0)) and (not prevOverheatCond)",
+        "then": true,
+        "else": false
+      },
+      "serial_0_value_0": "io_0"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "1) io_3_valid=true with io_3=7 then io_3_valid=true with io_3=8 (configure thresholdC and fanMinPwm); 2) io_3_valid=true with io_3=11 (AUTO_ON); 3) Sweep io_0 from below (thresholdC+5.0) to thresholdC+4.9 and hold for several steps; 4) Sweep io_0 to thresholdC+5.0 and hold; 5) Then sweep io_0 back below thresholdC+5.0.",
+        "oracle": "When io_0 < thresholdC+5.0, io_2 must be false and serial_0_trigger must be false. On the first control step when io_0 >= thresholdC+5.0 after being below, io_2 must become true and serial_0_trigger must be true exactly for that step (edge). When io_0 falls back below thresholdC+5.0, io_2 must return to false and subsequent steps must not keep serial_0_trigger asserted."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "1) io_3_valid=true with io_3=7 then io_3_valid=true with io_3=8; 2) io_3_valid=true with io_3=12 (AUTO_OFF); 3) Drive io_0 to values both below thresholdC and above thresholdC and (thresholdC+5.0).",
+        "oracle": "While autoMode is off (after AUTO_OFF), io_1 must remain 0.0 regardless of io_0 and io_2 must remain false, and serial_0_trigger must remain false."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_3 : Integer;\n    in attribute io_3_valid : Boolean;\n    attribute thresholdC : Real := 30.0;\n    attribute fanMinPwm : Real := 0.0;\n    attribute autoMode : Boolean := false;\n    attribute prevOverheatCond : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3_valid and (io_3 == 10) {\n        first start;\n        then assign thresholdC := 30.0;\n        then assign fanMinPwm := 0.0;\n        then assign autoMode := false;\n        then assign prevOverheatCond := false;\n      }\n      then if io_3_valid and (io_3 == 7) {\n        first start;\n        then assign thresholdC := 0.0;\n      }\n      then if io_3_valid and (io_3 == 8) {\n        first start;\n        then assign fanMinPwm := 0.0;\n      }\n      then if io_3_valid and (io_3 == 11) {\n        first start;\n        then assign autoMode := true;\n      }\n      then if io_3_valid and (io_3 == 12) {\n        first start;\n        then assign autoMode := false;\n      }\n      then assign prevOverheatCond := (if io_0 >= (thresholdC + 5.0) ? true else false);\n    }\n    out attribute io_1 : Real = (if autoMode ? (if io_0 >= thresholdC ? (if io_0 >= (thresholdC + 5.0) ? fanMinPwm else fanMinPwm) else 0.0) else 0.0);\n    out attribute io_2 : Boolean = (if autoMode and (io_0 >= (thresholdC + 5.0)) ? true else false);\n    out attribute serial_0_trigger : Boolean = (if autoMode and (io_0 >= (thresholdC + 5.0)) and (not prevOverheatCond) ? true else false);\n    out attribute serial_0_value_0 : Real = io_0;\n  }\n  part system : Controller;\n}\n"
+}

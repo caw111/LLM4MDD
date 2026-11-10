@@ -1,0 +1,341 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is Arduino Uno; physical wiring preserved exactly: D7->DHT11 data, D8 TRIG & D9 ECHO->HC-SR04, D4 CLK & D5 DIO->TM1637, D6->passive buzzer (tone output).",
+    "Control period chosen as 10ms for fine-grained buzzer 500ms/500ms phase and 200ms tolerances; sensor sampling cadence and display switching are handled in SysML using elapsed_ms.",
+    "Serial baud in the authoritative requirement is 115200 for alarm reporting; the provided device_role inventory mentioned 9600, but the requirement explicitly mandates 115200. The single serial channel uses 115200 as the physical baud.",
+    "TM1637 invalid display behavior ('blank when chosen measurement is invalid') is implemented in SysML by commanding tm1637_number with an appropriate blank/out-of-range behavior; the tm1637_number port is created with leading_zero=false and SysML controls the integer command.",
+    "Ultrasonic timeout_us is set to the minimum supported 25000us to satisfy the explicit 25000us timeout requirement; higher values could be chosen by SysML if needed, but are not required by the prose.",
+    "Required business rules (first sample within 200ms, 2s alternating display pages with 150ms page-switch tolerance, integer quantization with specified tolerances, alarm start/stop within 200ms, buzzer phase not restarting on reason changes, and serial reporting conditions) are intentionally not placed into ports; they belong in the model.",
+    "Serial reporting format is not fully specified beyond required content constraints ('report all currently成立原因' and not report not-成立 ones). Assumption: the implementation reports two Boolean fields (ALARM_TEMP, ALARM_DISTANCE) whenever the alarm-report trigger fires, omitting false causes by logic in SysML."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "DHT11 temperature (model keeps last valid; invalid reads treated as invalid for display/alarm logic)",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "DHT11 humidity (not used for alarm/display conditions unless model chooses)",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT11 validity for the latest coherent temperature/humidity acquisition",
+      "sample_period_ms": 2000,
+      "device": "dht_valid",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_valid",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "meaning": "Ultrasonic measured distance in cm (validity drives display/alarm; invalid reads retain last distance)",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_distance",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_distance\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Ultrasonic validity for the latest HC-SR04 distance acquisition",
+      "sample_period_ms": 60,
+      "device": "ultrasonic_valid",
+      "hardware": "{\"echo_pin\": \"D9\", \"invalid_policy\": \"hold_last_valid\", \"kind\": \"ultrasonic_valid\", \"sensor\": \"HC-SR04\", \"timeout_us\": 25000, \"trigger_pin\": \"D8\"}",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid",
+        "echo_pin": "D9",
+        "trigger_pin": "D8"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637 display number output (model selects which page: integer-quantized temperature or distance; invalid shows blank via this port’s invalid_policy behavior in the model)",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer tone gate/frequency control for 1000Hz intermittent alarm",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Control-step elapsed time delta used by the SysML model for acquisition cadence, display switching tolerance timing, and buzzer phase timing",
+      "sample_period_ms": 10,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Serial reporting gate when alarm reporting events occur (alarm start, reason changes within 200ms tolerance, and periodic ongoing reports every 1000ms with 200ms tolerance)",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "model",
+      "initial": false,
+      "meaning": "Reported ALARM_TEMP flag (true iff valid temperature is strictly > 32C at the report time)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 115200, \"kind\": \"serial_value\", \"label\": \"ALARM_TEMP\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 115200,
+        "label": "ALARM_TEMP"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "model",
+      "initial": false,
+      "meaning": "Reported ALARM_DISTANCE flag (true iff valid distance is strictly < 15cm at the report time)",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 115200, \"kind\": \"serial_value\", \"label\": \"ALARM_DISTANCE\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 115200,
+        "label": "ALARM_DISTANCE"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个智能环境监测与报警系统，使用 DHT11 温湿度传感器（数据引脚 D7）、HC-SR04 超声波模块（Trig=D8，Echo=D9）、TM1637 数码管（CLK=D4，DIO=D5）和蜂鸣器（D6）。默认每 2 秒轮流显示温度和距离；当温度高于 32℃ 或距离小于 15cm 时，蜂鸣器间歇报警，并通过串口输出报警原因。\n验收约定：目标Uno，DHT11数据D7，HC-SR04 TRIG=D8/ECHO=D9，TM1637 CLK=D4/DIO=D5，无源蜂鸣器D6。DHT采样开始间隔2000..2200ms；距离采样开始间隔60..180ms，回波等待必须有25000us超时，有效范围2..400cm，距离=回波微秒/58。温度默认先显示，之后每2000ms交替显示温度和距离，显示整数且量化容差1，页面切换容差150ms；所选测量无效时空白，初始温度无效须空白。每次新读数到输出的响应容差200ms，DHT缓存期间保留最近读数；失败必须标为无效，不能阻塞其他设备或模型计时。仅有效温度严格>32℃或有效距离严格<15cm触发报警，先比较原始测量再取显示整数；任一原因成立立即开始1000Hz鸣叫，500ms响/500ms静，完整周期1000ms，边沿容差100ms；所有原因消失后200ms内静音。持续报警时原因变化不重启蜂鸣相位。串口115200：报警开始、原因变化后200ms内，以及持续报警每1000ms（容差200ms）报告所有当前成立原因。温度原因包含ALARM_TEMP，距离原因包含ALARM_DISTANCE，可同行或分行；不得报告不成立原因，其余状态文本不限。首次采样200ms内开始；设备故障恢复后继续真实测量。以上补充约定对各组相同。",
+    "effective_requirement": "设计一个智能环境监测与报警系统，使用 DHT11 温湿度传感器（数据引脚 D7）、HC-SR04 超声波模块（Trig=D8，Echo=D9）、TM1637 数码管（CLK=D4，DIO=D5）和蜂鸣器（D6）。默认每 2 秒轮流显示温度和距离；当温度高于 32℃ 或距离小于 15cm 时，蜂鸣器间歇报警，并通过串口输出报警原因。\n验收约定：目标Uno，DHT11数据D7，HC-SR04 TRIG=D8/ECHO=D9，TM1637 CLK=D4/DIO=D5，无源蜂鸣器D6。DHT采样开始间隔2000..2200ms；距离采样开始间隔60..180ms，回波等待必须有25000us超时，有效范围2..400cm，距离=回波微秒/58。温度默认先显示，之后每2000ms交替显示温度和距离，显示整数且量化容差1，页面切换容差150ms；所选测量无效时空白，初始温度无效须空白。每次新读数到输出的响应容差200ms，DHT缓存期间保留最近读数；失败必须标为无效，不能阻塞其他设备或模型计时。仅有效温度严格>32℃或有效距离严格<15cm触发报警，先比较原始测量再取显示整数；任一原因成立立即开始1000Hz鸣叫，500ms响/500ms静，完整周期1000ms，边沿容差100ms；所有原因消失后200ms内静音。持续报警时原因变化不重启蜂鸣相位。串口115200：报警开始、原因变化后200ms内，以及持续报警每1000ms（容差200ms）报告所有当前成立原因。温度原因包含ALARM_TEMP，距离原因包含ALARM_DISTANCE，可同行或分行；不得报告不成立原因，其余状态文本不限。首次采样200ms内开始；设备故障恢复后继续真实测量。以上补充约定对各组相同。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个智能环境监测与报警系统，使用 DHT11 温湿度传感器（数据引脚 D7）、HC-SR04 超声波模块（Trig=D8，Echo=D9）、TM1637 数码管（CLK=D4，DIO=D5）和蜂鸣器（D6）。默认每 2 秒轮流显示温度和距离；当温度高于 32℃ 或距离小于 15cm 时，蜂鸣器间歇报警，并通过串口输出报警原因。\n验收约定：目标Uno，DHT11数据D7，HC-SR04 TRIG=D8/ECHO=D9，TM1637 CLK=D4/DIO=D5，无源蜂鸣器D6。DHT采样开始间隔2000..2200ms；距离采样开始间隔60..180ms，回波等待必须有25000us超时，有效范围2..400cm，距离=回波微秒/58。温度默认先显示，之后每2000ms交替显示温度和距离，显示整数且量化容差1，页面切换容差150ms；所选测量无效时空白，初始温度无效须空白。每次新读数到输出的响应容差200ms，DHT缓存期间保留最近读数；失败必须标为无效，不能阻塞其他设备或模型计时。仅有效温度严格>32℃或有效距离严格<15cm触发报警，先比较原始测量再取显示整数；任一原因成立立即开始1000Hz鸣叫，500ms响/500ms静，完整周期1000ms，边沿容差100ms；所有原因消失后200ms内静音。持续报警时原因变化不重启蜂鸣相位。串口115200：报警开始、原因变化后200ms内，以及持续报警每1000ms（容差200ms）报告所有当前成立原因。温度原因包含ALARM_TEMP，距离原因包含ALARM_DISTANCE，可同行或分行；不得报告不成立原因，其余状态文本不限。首次采样200ms内开始；设备故障恢复后继续真实测量。以上补充约定对各组相同。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      }
+    ]
+  }
+}

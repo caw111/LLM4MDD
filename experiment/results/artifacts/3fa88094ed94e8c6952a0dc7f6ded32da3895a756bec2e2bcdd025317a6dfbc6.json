@@ -1,0 +1,184 @@
+{
+  "contract_sha256": "dad3076b063744756ce9d9026794ccfa40be9c30cbe8630f06771a5e849d642d",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"servo1 angle command (btn1 -> 90 deg, conflict -> 0 deg)\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"servo2 angle command (btn2 -> 180 deg, conflict -> 0 deg)\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"led1 state (btn1 on, btn2 off; conflict causes 0.25 Hz flash via model gating)\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"active_high\": false,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"btn1 pressed state (model true when pressed)\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D4\",\n      \"active_high\": false,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"btn2 pressed state (model true when pressed)\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step for enforcing minimum 2s state maintenance and 0.25 Hz flashing cadence\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Wiring preserved from circuit: led1->D2; btn1->D3 with pull-up and active_high=false (pressed maps to model true); btn2->D4 with pull-up and active_high=false (pressed maps to model true); servo1 control->D5; servo2 control->D6.\",\n    \"Business logic assumptions (implemented in SysML model, not ports): initial state after reset is servo1=0, servo2=0, led1=off; pressing btn1 maintains servo1=90 and led on for at least 2s unless btn2 is pressed causing conflict mode; pressing btn2 maintains servo2=180 and led off for at least 2s unless btn1 is pressed causing conflict mode; conflict mode sets both servos back to 0 and flashes LED with 0.25 Hz (2s on / 2s off) until either btn1 or btn2 is pressed again.\",\n    \"To achieve the 0.25 Hz flash and 2-second minimum maintenance, the SysML model will accumulate elapsed_ms deltas from the requested elapsed_ms port and gate the led1 digital output accordingly.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two servos (servo1, servo2) and an LED (led1) using two push buttons (btn1, btn2). The servos will rotate to specific angles based on the button presses, and the LED will indicate the state of the system. The system should behave as follows:\n- Pressing btn1 will rotate servo1 to 90 degrees and turn on the LED.\n- Pressing btn2 will rotate servo2 to 180 degrees and turn off the LED.\n- -If one button has already been pressed and the other button is pressed, both servo systems will return to their initial position (0 degrees) and the LED will flash at a frequency of 0.25 Hz. (2 second on, one 2 off)\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both servos should be at 0 degrees, and the LED should be off.\nButton Interaction:\n1. Pressing btn1 will rotate servo1 to 90 degrees and turn on the LED. This state should be maintained for at least 2 seconds.\n2. Pressing btn2 will rotate servo2 to 180 degrees and turn off the LED. This state should be maintained for at least 2 seconds.\n3. If one button has already been pressed and the other button is pressed, both servo systems will return to 0 degrees and the LED will flash at a frequency of 025 Hz (on for 2 second, off for 2 second). This state should be maintained until btn1 or btn2 is pressed again.\nState Maintenance: Each state (servo angles and LED state) should be maintained for at least 2 seconds to allow for verification.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:3\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:4\", \"btn2:1.l\", \"green\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two servos (servo1, servo2) and an LED (led1) using two push buttons (btn1, btn2). The servos will rotate to specific angles based on the button presses, and the LED will indicate the state of the system. The system should behave as follows:\n- Pressing btn1 will rotate servo1 to 90 degrees and turn on the LED.\n- Pressing btn2 will rotate servo2 to 180 degrees and turn off the LED.\n- -If one button has already been pressed and the other button is pressed, both servo systems will return to their initial position (0 degrees) and the LED will flash at a frequency of 0.25 Hz. (2 second on, one 2 off)\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both servos should be at 0 degrees, and the LED should be off.\nButton Interaction:\n1. Pressing btn1 will rotate servo1 to 90 degrees and turn on the LED. This state should be maintained for at least 2 seconds.\n2. Pressing btn2 will rotate servo2 to 180 degrees and turn off the LED. This state should be maintained for at least 2 seconds.\n3. If one button has already been pressed and the other button is pressed, both servo systems will return to 0 degrees and the LED will flash at a frequency of 025 Hz (on for 2 second, off for 2 second). This state should be maintained until btn1 or btn2 is pressed again.\nState Maintenance: Each state (servo angles and LED state) should be maintained for at least 2 seconds to allow for verification.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:3\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:4\", \"btn2:1.l\", \"green\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led1",
+            "top": -70.8,
+            "left": 13.4,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn1",
+            "top": -195.4,
+            "left": 19.2,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn2",
+            "top": -195.4,
+            "left": 105.0,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "led1:C",
+            "black"
+          ],
+          [
+            "led1:A",
+            "mega:2",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "btn1:2.r",
+            "black"
+          ],
+          [
+            "mega:3",
+            "btn1:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "btn2:2.r",
+            "black"
+          ],
+          [
+            "mega:4",
+            "btn2:1.l",
+            "green"
+          ],
+          [
+            "mega:5",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:6",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

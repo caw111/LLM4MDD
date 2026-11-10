@@ -1,0 +1,155 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "pageIndex",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "dhtTempLastValid",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "dhtHumLastValid",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "reportAccumMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_4",
+        "then": [
+          {
+            "assign": "dhtTempLastValid",
+            "value": "io_2"
+          },
+          {
+            "assign": "dhtHumLastValid",
+            "value": "io_3"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "pageIndex",
+            "value": {
+              "if": "pageIndex == 0",
+              "then": 1,
+              "else": {
+                "if": "pageIndex == 1",
+                "then": 2,
+                "else": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_1"
+      },
+      {
+        "assign": "reportAccumMs",
+        "value": "reportAccumMs + io_6"
+      },
+      {
+        "if": "reportAccumMs >= 2000",
+        "then": [
+          {
+            "assign": "reportAccumMs",
+            "value": "reportAccumMs - 2000"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_5": {
+        "if": "pageIndex == 0",
+        "then": {
+          "if": "io_0 >= 1000.0",
+          "then": 9999,
+          "else": {
+            "if": "io_0 <= 0.0",
+            "then": 0,
+            "else": "RealFunctions::floor(io_0)"
+          }
+        },
+        "else": {
+          "if": "pageIndex == 1",
+          "then": {
+            "if": "io_4",
+            "then": "RealFunctions::floor(io_2)",
+            "else": "RealFunctions::floor(dhtTempLastValid)"
+          },
+          "else": {
+            "if": "io_4",
+            "then": "RealFunctions::floor(io_3)",
+            "else": "RealFunctions::floor(dhtHumLastValid)"
+          }
+        }
+      },
+      "serial_0_trigger": "reportAccumMs >= 2000",
+      "serial_0_value_0": "io_0",
+      "serial_0_value_1": {
+        "if": "io_4",
+        "then": "io_2",
+        "else": "dhtTempLastValid"
+      },
+      "serial_0_value_2": {
+        "if": "io_4",
+        "then": "io_3",
+        "else": "dhtHumLastValid"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Initialize pageIndex=0; apply io_1 rising edge (io_1: false->true once, then false) with constant io_0 and constant io_4=true; repeat for two more presses.",
+        "oracle": "After each rising edge, io_5 changes in order: light page (pageIndex=0) then temperature page (pageIndex=1) then humidity page (pageIndex=2) and wraps back to light page on next press."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Keep io_6=10 for 201 steps (total >2000ms). Hold io_0, io_4=true with io_2 and io_3 constant.",
+        "oracle": "serial_0_trigger becomes true at the first control step where accumulated elapsed time reaches/exceeds 2000ms, and the reported serial_0_value_0/1/2 match the current sensor values (io_0, io_2, io_3) on that step."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Set io_4=false for several steps after previously having io_4=true with io_2=25.0, io_3=60.0. Then let io_6 advance until a serial_0_trigger time point.",
+        "oracle": "serial_0_value_1 and serial_0_value_2 equal the last valid held values (25.0 and 60.0) even while io_4 is false; serial_0_value_0 still equals io_0."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_6 : Integer;\n    attribute pageIndex : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute dhtTempLastValid : Real := 0.0;\n    attribute dhtHumLastValid : Real := 0.0;\n    attribute reportAccumMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_4 {\n        first start;\n        then assign dhtTempLastValid := io_2;\n        then assign dhtHumLastValid := io_3;\n      }\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign pageIndex := (if pageIndex == 0 ? 1 else (if pageIndex == 1 ? 2 else 0));\n      }\n      then assign previousPressed := io_1;\n      then assign reportAccumMs := reportAccumMs + io_6;\n      then if reportAccumMs >= 2000 {\n        first start;\n        then assign reportAccumMs := reportAccumMs - 2000;\n      }\n    }\n    out attribute io_5 : Integer = (if pageIndex == 0 ? (if io_0 >= 1000.0 ? 9999 else (if io_0 <= 0.0 ? 0 else RealFunctions::floor(io_0))) else (if pageIndex == 1 ? (if io_4 ? RealFunctions::floor(io_2) else RealFunctions::floor(dhtTempLastValid)) else (if io_4 ? RealFunctions::floor(io_3) else RealFunctions::floor(dhtHumLastValid))));\n    out attribute serial_0_trigger : Boolean = reportAccumMs >= 2000;\n    out attribute serial_0_value_0 : Real = io_0;\n    out attribute serial_0_value_1 : Real = (if io_4 ? io_2 else dhtTempLastValid);\n    out attribute serial_0_value_2 : Real = (if io_4 ? io_3 else dhtHumLastValid);\n  }\n  part system : Controller;\n}\n"
+}

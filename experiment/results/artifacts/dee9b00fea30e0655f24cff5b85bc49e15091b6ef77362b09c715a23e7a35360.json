@@ -1,0 +1,58 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accumulated",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "serialTrig",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "accumulated",
+        "value": "accumulated + io_1"
+      },
+      {
+        "if": "accumulated >= 1000",
+        "then": [
+          {
+            "assign": "accumulated",
+            "value": "accumulated - 1000"
+          },
+          {
+            "assign": "serialTrig",
+            "value": "true"
+          }
+        ],
+        "else": [
+          {
+            "assign": "serialTrig",
+            "value": "false"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": "serialTrig",
+      "serial_0_value_0": "io_0"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "每秒通过串口输出 A0 电位器的模拟值。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Set io_0 to a fixed f64 value; drive io_1 deltas such that the accumulated sum reaches exactly 1000ms (e.g., ten 10ms steps) and then continue one more control step with io_1=0 or any small delta without reaching another 1000ms threshold.",
+        "oracle": "serial_0_trigger is true exactly on the control step where accumulated reaches >=1000ms and serial_0_value_0 equals the contemporaneous io_0 sample at that same step; serial_0_trigger is false on all other steps until the next accumulated 1000ms crossing."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Integer;\n    attribute accumulated : Integer := 0;\n    attribute serialTrig : Boolean := false;\n    perform action tick {\n      first start;\n      then assign accumulated := accumulated + io_1;\n      then if accumulated >= 1000 {\n        first start;\n        then assign accumulated := accumulated - 1000;\n        then assign serialTrig := true;\n      } else {\n        first start;\n        then assign serialTrig := false;\n      }\n    }\n    out attribute serial_0_trigger : Boolean = serialTrig;\n    out attribute serial_0_value_0 : Real = io_0;\n  }\n  part system : Controller;\n}\n"
+}

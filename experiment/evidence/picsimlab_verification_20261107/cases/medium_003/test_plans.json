@@ -1,0 +1,234 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "full",
+      "coverage_explanation": "Tests fan-off and fan-on behavior, the two ADC codes bracketing 30°C, a higher temperature, repeated threshold crossings, and return to cold. Uses the authoritative analog-input remapping to A0. Fan-on duty cycle is not specified, so any nonzero PWM output is accepted.",
+      "assumptions": [
+        "The authoritative hardware configuration remaps the source's A1 temperature input to A0; the fan remains on D5.",
+        "The LM35 uses its nominal 10 mV/°C conversion. The disclosed bench default ADC reference is 5 V with raw readings 0..1023.",
+        "The fan control is active HIGH: zero PWM is off and nonzero PWM is on. No particular on-state duty cycle is specified.",
+        "Exactly 30°C is not representable as an integer ADC code under this conversion. ADC 61 is approximately 29.81°C and ADC 62 is approximately 30.30°C, bracketing the strict threshold."
+      ],
+      "horizon_ms": 6500,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 0
+        },
+        {
+          "at_ms": 900,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 61
+        },
+        {
+          "at_ms": 1800,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 62
+        },
+        {
+          "at_ms": 2700,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 102
+        },
+        {
+          "at_ms": 3600,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 61
+        },
+        {
+          "at_ms": 4500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 62
+        },
+        {
+          "at_ms": 5400,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 0
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pwm",
+          "id": "cold_start_off",
+          "requirement_quote": "否则关闭",
+          "pin": 5,
+          "at_ms": 600,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "just_below_threshold_off",
+          "requirement_quote": "否则关闭",
+          "pin": 5,
+          "at_ms": 1500,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "just_above_threshold_on",
+          "requirement_quote": "温度 > 30℃ 时风扇（D5 PWM）开启",
+          "pin": 5,
+          "at_ms": 2400,
+          "min": 1,
+          "max": 255
+        },
+        {
+          "kind": "pwm",
+          "id": "higher_temperature_on",
+          "requirement_quote": "温度 > 30℃ 时风扇（D5 PWM）开启",
+          "pin": 5,
+          "at_ms": 3300,
+          "min": 1,
+          "max": 255
+        },
+        {
+          "kind": "pwm",
+          "id": "cooling_below_threshold_off",
+          "requirement_quote": "否则关闭",
+          "pin": 5,
+          "at_ms": 4200,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "repeated_heating_on",
+          "requirement_quote": "温度 > 30℃ 时风扇（D5 PWM）开启",
+          "pin": 5,
+          "at_ms": 5100,
+          "min": 1,
+          "max": 255
+        },
+        {
+          "kind": "pwm",
+          "id": "return_to_cold_off",
+          "requirement_quote": "否则关闭",
+          "pin": 5,
+          "at_ms": 6000,
+          "expected": 0,
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n\nconst int temperaturePin = A0;\nconst int fanPin = 5;\n\nvoid setup() {\n  pinMode(temperaturePin, INPUT);\n  pinMode(fanPin, OUTPUT);\n  analogWrite(fanPin, 0);\n}\n\nvoid loop() {\n  int raw = analogRead(temperaturePin);\n  float temperatureC = raw * (5.0f / 1023.0f) * 100.0f;\n  analogWrite(fanPin, temperatureC > 30.0f ? 255 : 0);\n  delay(20);\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Tests fan-off and fan-on behavior, the two ADC codes bracketing 30°C, a higher temperature, repeated threshold crossings, and return to cold. Uses the authoritative analog-input remapping to A0. Fan-on duty cycle is not specified, so any nonzero PWM output is accepted.",
+      "assumptions": [
+        "The authoritative hardware configuration remaps the source's A1 temperature input to A0; the fan remains on D5.",
+        "The LM35 uses its nominal 10 mV/°C conversion. The disclosed bench default ADC reference is 5 V with raw readings 0..1023.",
+        "The fan control is active HIGH: zero PWM is off and nonzero PWM is on. No particular on-state duty cycle is specified.",
+        "Exactly 30°C is not representable as an integer ADC code under this conversion. ADC 61 is approximately 29.81°C and ADC 62 is approximately 30.30°C, bracketing the strict threshold."
+      ],
+      "horizon_ms": 7000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "pin": "A0",
+          "value": 1023,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 0,
+          "pin": "A1",
+          "value": 30,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 1000,
+          "pin": "A1",
+          "value": 61,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 2000,
+          "pin": "A1",
+          "value": 62,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 3500,
+          "pin": "A1",
+          "value": 95,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 5000,
+          "pin": "A1",
+          "value": 30,
+          "kind": "analog"
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pwm",
+          "id": "pwm_5_500",
+          "at_ms": 500,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_1500",
+          "at_ms": 1500,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_2700",
+          "at_ms": 2700,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_4200",
+          "at_ms": 4200,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_5700",
+          "at_ms": 5700,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5
+        }
+      ],
+      "experimental_condition": "LM35 input values are 10-bit ADC counts, converted using the declared 5V reference, not already-converted Celsius.",
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

@@ -1,0 +1,64 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "lastValidTempC",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "lastUpdatedMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "assign": "lastValidTempC",
+            "value": "io_0"
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": "io_2",
+        "then": {
+          "if": "io_0 < 0.0",
+          "then": 0,
+          "else": {
+            "if": "io_0 > 2147483647.0",
+            "then": 2147483647,
+            "else": "RealFunctions::floor(io_0)"
+          }
+        },
+        "else": {
+          "if": "lastValidTempC < 0.0",
+          "then": 0,
+          "else": {
+            "if": "lastValidTempC > 2147483647.0",
+            "then": 2147483647,
+            "else": "RealFunctions::floor(lastValidTempC)"
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 TM1637 + DHT11（D7）：显示温度，每 2 秒刷新",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Provide a sequence of DHT temperature readings on io_0 with validity io_2 true at least once every 2 seconds; interleave steps with io_2 false while holding io_0 to new (possibly different) values.",
+        "oracle": "Whenever io_2 is true, io_3 updates to the integer floor of the new io_0 temperature (clamped to [0, 2147483647]); whenever io_2 is false, io_3 retains the last displayed valid temperature (same floor/clamp) despite io_0 changing."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    attribute lastValidTempC : Real := 0.0;\n    attribute lastUpdatedMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_2 {\n        first start;\n        then assign lastValidTempC := io_0;\n      }\n    }\n    out attribute io_3 : Integer = (if io_2 ? (if io_0 < 0.0 ? 0 else (if io_0 > 2147483647.0 ? 2147483647 else RealFunctions::floor(io_0))) else (if lastValidTempC < 0.0 ? 0 else (if lastValidTempC > 2147483647.0 ? 2147483647 else RealFunctions::floor(lastValidTempC))));\n  }\n  part system : Controller;\n}\n"
+}

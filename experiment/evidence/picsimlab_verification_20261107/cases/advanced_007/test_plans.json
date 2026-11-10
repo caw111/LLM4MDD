@@ -1,0 +1,454 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "验证连续开门计时不能跨门状态变化累计：两种门磁电平都只保持9秒，在启动、转换后及接近10秒处检查蜂鸣器静音。另检查继电器和LED引脚具有驱动输出所需的OUTPUT模式，使完全无输出、未配置硬件的空程序不能通过。门磁极性、温控上下限、继电器有效电平、闪烁周期及显示编码均未规定，故不据此编造报警后的确定输出或显示内容。此测试仍不覆盖持续开门后的正向报警、温控决策、显示及超限串口报告，也不声称拒绝所有保留初始化但删除业务逻辑的程序。",
+      "assumptions": [
+        "连续开门时间从程序启动后开始计算，不计上电前的时间。",
+        "蜂鸣器用于要求中的开门报警，在尚未连续开门超过10秒时不报警。未指定主动蜂鸣器，采用载波静音检查。",
+        "不假定D2的开门极性；每9秒切换物理电平，保证任一种极性都不会连续开门超过10秒。",
+        "使用台架默认5V ADC参考及LM35的10mV/摄氏度换算。温控上下限缺失，不要求某个温度下的继电器状态。",
+        "LED采用台架默认D13阳极、阴极经电阻接地的高电平点亮接法，需要OUTPUT模式。D10直接作为继电器控制输出，同样需要OUTPUT模式。",
+        "参考程序对缺失参数采用一种允许的选择：门磁接地闭合、D2上拉且HIGH为开门，继电器高有效，8摄氏度启动制冷、4摄氏度停止，LED每500ms翻转，每秒交替显示整数温度和开门秒数。这些选择不是对被测程序的断言。"
+      ],
+      "horizon_ms": 36500,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 10
+        },
+        {
+          "at_ms": 9000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 11000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 41
+        },
+        {
+          "at_ms": 18000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 22000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 10
+        },
+        {
+          "at_ms": 27000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 36000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pin_mode",
+          "id": "relay_is_driven_output",
+          "requirement_quote": "风扇/制冷继电器 D10",
+          "pin": 10,
+          "expected": 1
+        },
+        {
+          "kind": "pin_mode",
+          "id": "led_is_driven_output",
+          "requirement_quote": "闪烁 LED",
+          "pin": 13,
+          "expected": 1
+        },
+        {
+          "kind": "tone",
+          "id": "startup_before_limit",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 1000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "first_state_near_limit",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 8700,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "first_transition",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 9400,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "second_state_near_limit",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 17700,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "first_return_resets_duration",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 21000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "third_state_near_limit",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 26700,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "opposite_return_resets_duration",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 30000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "fourth_state_near_limit",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 35700,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "final_transition",
+          "requirement_quote": "当门连续打开超过 10 秒时蜂鸣器报警",
+          "pin": 6,
+          "at_ms": 36400,
+          "expected": 0,
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nconst float upperC = 8.0f;\nconst float lowerC = 4.0f;\nbool cooling = false;\nbool previousOpen = false;\nbool alarmActive = false;\nbool firstDisplay = true;\nunsigned long openedAt = 0;\nunsigned long lastReport = 0;\nunsigned long lastDisplay = 0;\n\nvoid setup() {\n  pinMode(A1, INPUT);\n  pinMode(2, INPUT_PULLUP);\n  pinMode(10, OUTPUT);\n  pinMode(6, OUTPUT);\n  pinMode(13, OUTPUT);\n  digitalWrite(10, LOW);\n  digitalWrite(13, LOW);\n  noTone(6);\n  Serial.begin(9600);\n  display.setBrightness(5);\n  display.clear();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  float temperature = analogRead(A1) * (500.0f / 1023.0f);\n  bool doorOpen = digitalRead(2) == HIGH;\n  if (doorOpen && !previousOpen) openedAt = now;\n  previousOpen = doorOpen;\n  unsigned long duration = doorOpen ? now - openedAt : 0;\n\n  if (temperature > upperC) cooling = true;\n  else if (temperature < lowerC) cooling = false;\n  digitalWrite(10, cooling ? HIGH : LOW);\n\n  bool alarm = doorOpen && duration > 10000UL;\n  if (alarm != alarmActive) {\n    if (alarm) tone(6, 2000);\n    else noTone(6);\n    alarmActive = alarm;\n  }\n  digitalWrite(13, alarm && ((duration / 500UL) % 2UL) ? HIGH : LOW);\n\n  if (doorOpen && temperature > upperC && now - lastReport >= 1000UL) {\n    Serial.println(\"critical cooling loss\");\n    lastReport = now;\n  }\n\n  if (firstDisplay || now - lastDisplay >= 200UL) {\n    firstDisplay = false;\n    lastDisplay = now;\n    if ((now / 1000UL) % 2UL == 0) {\n      display.showNumberDec((int)(temperature + 0.5f), false);\n    } else {\n      unsigned long seconds = duration / 1000UL;\n      if (seconds > 9999UL) seconds = 9999UL;\n      display.showNumberDec((int)seconds, false);\n    }\n  }\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "验证连续开门计时不能跨门状态变化累计：两种门磁电平都只保持9秒，在启动、转换后及接近10秒处检查蜂鸣器静音。另检查继电器和LED引脚具有驱动输出所需的OUTPUT模式，使完全无输出、未配置硬件的空程序不能通过。门磁极性、温控上下限、继电器有效电平、闪烁周期及显示编码均未规定，故不据此编造报警后的确定输出或显示内容。此测试仍不覆盖持续开门后的正向报警、温控决策、显示及超限串口报告，也不声称拒绝所有保留初始化但删除业务逻辑的程序。",
+      "assumptions": [
+        "连续开门时间从程序启动后开始计算，不计上电前的时间。",
+        "蜂鸣器用于要求中的开门报警，在尚未连续开门超过10秒时不报警。未指定主动蜂鸣器，采用载波静音检查。",
+        "不假定D2的开门极性；每9秒切换物理电平，保证任一种极性都不会连续开门超过10秒。",
+        "使用台架默认5V ADC参考及LM35的10mV/摄氏度换算。温控上下限缺失，不要求某个温度下的继电器状态。",
+        "LED采用台架默认D13阳极、阴极经电阻接地的高电平点亮接法，需要OUTPUT模式。D10直接作为继电器控制输出，同样需要OUTPUT模式。",
+        "参考程序对缺失参数采用一种允许的选择：门磁接地闭合、D2上拉且HIGH为开门，继电器高有效，8摄氏度启动制冷、4摄氏度停止，LED每500ms翻转，每秒交替显示整数温度和开门秒数。这些选择不是对被测程序的断言。"
+      ],
+      "horizon_ms": 18500,
+      "input_steps": [
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 0,
+          "value": 8
+        },
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 2000,
+          "value": 22
+        },
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 7500,
+          "value": 14
+        },
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 10000,
+          "value": 25
+        },
+        {
+          "kind": "analog",
+          "pin": "A1",
+          "at_ms": 14000,
+          "value": 8
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 0,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 1000,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 12300,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 15500,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 17500,
+          "value": 0
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "gpio",
+          "id": "gpio_10_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_10_2400",
+          "at_ms": 2400,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_10_7800",
+          "at_ms": 7800,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_10_14400",
+          "at_ms": 14400,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_9800",
+          "at_ms": 9800,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_10950",
+          "at_ms": 10950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_11250",
+          "at_ms": 11250,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_11950",
+          "at_ms": 11950,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_12550",
+          "at_ms": 12550,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_17000",
+          "at_ms": 17000,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_11250",
+          "at_ms": 11250,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_11750",
+          "at_ms": 11750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_12550",
+          "at_ms": 12550,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_4500",
+          "at_ms": 4500,
+          "expected": "10",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_5500",
+          "at_ms": 5500,
+          "expected": "10",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_6400",
+          "at_ms": 6400,
+          "expected": "5",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_13500",
+          "at_ms": 13500,
+          "expected": "12",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_14500",
+          "at_ms": 14500,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "serial",
+          "id": "warning_2000",
+          "from_ms": 2000,
+          "to_ms": 2200,
+          "regex": "^critical cooling loss:",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "warning_3000",
+          "from_ms": 3000,
+          "to_ms": 3200,
+          "regex": "^critical cooling loss:",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "warning_4000",
+          "from_ms": 4000,
+          "to_ms": 4200,
+          "regex": "^critical cooling loss:",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "warning_5000",
+          "from_ms": 5000,
+          "to_ms": 5200,
+          "regex": "^critical cooling loss:",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "no_warning_while_closed",
+          "from_ms": 12400,
+          "to_ms": 15300,
+          "regex": "^critical cooling loss:",
+          "min_count": 0,
+          "max_count": 0,
+          "requirement_quote": "Required serial output for the scenario"
+        }
+      ],
+      "experimental_condition": "The unspecified cooling band is 6–8 Celsius. The normally closed door contact grounds D2 when shut.",
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

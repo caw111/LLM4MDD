@@ -1,0 +1,127 @@
+--- original.ino
++++ repaired.ino
+@@ -52,88 +52,17 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_0, bool io_1, int32_t* io_2, int32_t* io_3) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    bool sysml_conditional_2 = 0;
+-    bool sysml_conditional_3 = 0;
+-    bool sysml_lazy_4 = 0;
+-    bool sysml_lazy_5 = 0;
+-    bool sysml_lazy_6 = 0;
+-    int32_t sysml_conditional_7 = 0;
+-    if (io_1) {
+-        sysml_lazy_0 = io_1;
+-        if (sysml_lazy_0) {
+-            sysml_lazy_0 = !sysml_state_previousResetPressed;
+-        }
+-        if (sysml_lazy_0) {
+-            sysml_state_seconds = 0;
+-            sysml_state_beepRemainingSeconds = 0;
+-            sysml_state_running = false;
+-        }
+-    }
+-    if (io_0) {
+-        sysml_lazy_1 = io_0;
+-        if (sysml_lazy_1) {
+-            sysml_lazy_1 = !sysml_state_previousStartPausePressed;
+-        }
+-        if (sysml_lazy_1) {
+-            if (sysml_state_running) {
+-                sysml_conditional_2 = false;
+-            }
+-            else {
+-                sysml_conditional_2 = true;
+-            }
+-            if (sysml_conditional_2) {
+-                sysml_conditional_3 = false;
+-            }
+-            else {
+-                sysml_conditional_3 = true;
+-            }
+-            sysml_state_running = sysml_conditional_3;
+-        }
+-    }
+-    sysml_lazy_4 = sysml_state_running;
+-    if (sysml_lazy_4) {
+-        sysml_lazy_4 = sysml_state_beepRemainingSeconds == 0;
+-    }
+-    if (sysml_lazy_4) {
+-        sysml_state_seconds = (sysml_state_seconds + 1);
+-        if ((sysml_state_seconds == 60)) {
+-            sysml_state_beepRemainingSeconds = 1;
+-        }
+-    }
+-    else {
+-        sysml_lazy_5 = sysml_state_running;
+-        if (sysml_lazy_5) {
+-            sysml_lazy_5 = sysml_state_beepRemainingSeconds > 0;
+-        }
+-        if (sysml_lazy_5) {
+-            sysml_state_beepRemainingSeconds = (sysml_state_beepRemainingSeconds - 1);
+-            sysml_state_seconds = (sysml_state_seconds + 1);
+-            if ((sysml_state_seconds == 60)) {
+-                sysml_state_beepRemainingSeconds = 1;
+-            }
+-        }
+-    }
+-    sysml_state_previousStartPausePressed = io_0;
+-    sysml_state_previousResetPressed = io_1;
+-    int32_t sysml_value_0 = 0;
+-    sysml_lazy_6 = sysml_state_running;
+-    if (sysml_lazy_6) {
+-        sysml_lazy_6 = sysml_state_beepRemainingSeconds > 0;
+-    }
+-    if (sysml_lazy_6) {
+-        sysml_conditional_7 = 1000;
+-    }
+-    else {
+-        sysml_conditional_7 = 0;
+-    }
+-    sysml_value_0 = sysml_conditional_7;
+-    int32_t sysml_value_1 = 0;
+-    sysml_value_1 = sysml_state_seconds;
+-    *io_2 = sysml_value_0;
+-    *io_3 = sysml_value_1;
++    static uint32_t elapsed=0,last=millis(),beepStart=0;
++    static bool running=false,previous[2]={},beeping=false;
++    uint32_t now=millis(),dt=now-last;last=now;
++    uint32_t old=elapsed;
++    if(running) elapsed+=dt;
++    if(old<60000UL && elapsed>=60000UL) {beeping=true;beepStart=now;}
++    if(io_0&&!previous[0]) running=!running;
++    if(io_1&&!previous[1]) {elapsed=0;running=false;beeping=false;}
++    if(beeping && (uint32_t)(now-beepStart)>=1000) beeping=false;
++    *io_2=beeping ? 1000 : 0;*io_3=elapsed/1000UL;
++    previous[0]=io_0;previous[1]=io_1;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -160,8 +89,8 @@
+ 
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+-  pinMode(2, INPUT);
+-  pinMode(3, INPUT);
++  pinMode(2, INPUT_PULLUP);
++  pinMode(3, INPUT_PULLUP);
+   pinMode(6, OUTPUT);
+   int32_t hw_tone_command_io_2 = (hw_value_io_2 >= 31 && hw_value_io_2 <= 65535) ? hw_value_io_2 : 0;
+   if (hw_tone_command_io_2 != hw_tone_io_2) {
+@@ -184,11 +113,11 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(2) == HIGH);
++    hw_value_io_0 = (digitalRead(2) == LOW);
+   }
+   if (!hw_attempted_io_1 || (uint32_t)(hw_now - hw_sampled_io_1) >= 5UL) {
+     hw_attempted_io_1 = true; hw_sampled_io_1 = hw_now;
+-    hw_value_io_1 = (digitalRead(3) == HIGH);
++    hw_value_io_1 = (digitalRead(3) == LOW);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

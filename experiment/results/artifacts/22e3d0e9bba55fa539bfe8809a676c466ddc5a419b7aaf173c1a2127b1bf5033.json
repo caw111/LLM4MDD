@@ -1,0 +1,128 @@
+{
+  "contract_sha256": "1e8716e76a3c6ae27a0f963217403cebf8cc142b828a72dfa6e7496d1a6862ed",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_8": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_9": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"入口模块测得距离（cm）\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"入口模块距离有效性\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D11\",\n      \"echo_pin\": \"D12\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"车位模块测得距离（cm）\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D11\",\n      \"echo_pin\": \"D12\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"车位模块距离有效性\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 显示：入口距离/车位距离/占用计数（由模型选择）\",\n      \"leading_zero\": false\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"红色 LED 提示（由模型占用/报警状态决定）\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D10\",\n      \"initial\": false,\n      \"meaning\": \"绿色 LED 引导提示（由模型入口靠近/允许进入状态决定）\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"蜂鸣器报警/提示音（由模型根据距离分级或倒车小于5cm持续报警）\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"按钮：切换 TM1637 显示内容（入口距离/车位距离/占用计数）\",\n      \"active_high\": true,\n      \"pullup\": true\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"用于模型节拍与报告/提示的上一控制步增量（delta_since_previous_step）\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"目标板：arduino:avr:uno；物理引脚按原始要求/权威映射使用：入口HC-SR04 Trig=D8 Echo=D9；车位HC-SR04 Trig=D11 Echo=D12；TM1637 CLK=D4 DIO=D5；红LED=D13；绿LED=D10；蜂鸣器=D6；按钮=D2。\",\n    \"未提供明确的超声波采样周期要求；为满足目录约束（sample_period_ms需为控制周期倍数且>=ceil((timeout_us+12)/1000)且>=60ms），采用timeout_us=30000us并由应用按控制步倍数匹配；失效保持上一次距离（valid=false）。\",\n    \"TM1637显示“入口距离/车位距离/占用计数”的具体切换逻辑与显示分配由SysML模型完成；设备请求仅提供数值输出接口。\",\n    \"蜂鸣器频率调节与倒车持续报警（距离<5cm）属于模型逻辑；tone_output由模型在控制步更新。\",\n    \"按钮为数字输入；未给出外部上拉/下拉接法细节，假设使用内部上拉（pullup=true），且按钮按下对应模型为true（不额外反相）。\",\n    \"红绿LED初始均为关闭；倒车持续报警初始也为静音（由模型触发后开启）。\",\n    \"本需求未要求串口接收/发送，因此 serial_channels 为空。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D10"
+        },
+        "resolved": {
+          "pin": "D10"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。",
+    "effective_requirement": "实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  }
+}

@@ -1,0 +1,138 @@
+[
+  {
+    "name": "baseline",
+    "plan": {
+      "supported": true,
+      "coverage": "full",
+      "coverage_explanation": "Checks initial OFF, both sides of the first three scheduled transitions with the specified 10ms allowance, recurring 500ms transitions, and exactly one rising edge per second over a finite observation window.",
+      "assumptions": [
+        "Relies on the disclosed bench default: the D12 LED is active HIGH, with its cathode connected through a resistor to GND.",
+        "Times are measured from sketch startup. The requirement explicitly supplies the initial state, phase, period, and 10ms timing tolerance; no application parameters are missing."
+      ],
+      "horizon_ms": 6000,
+      "input_steps": [],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "gpio",
+          "id": "initial_off",
+          "requirement_quote": "初始熄灭",
+          "pin": 12,
+          "at_ms": 100,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "before_first_on",
+          "requirement_quote": "500ms时首次点亮",
+          "pin": 12,
+          "at_ms": 489,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "after_first_on",
+          "requirement_quote": "500ms时首次点亮",
+          "pin": 12,
+          "at_ms": 511,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "before_first_off",
+          "requirement_quote": "此后每500ms翻转",
+          "pin": 12,
+          "at_ms": 989,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "after_first_off",
+          "requirement_quote": "此后每500ms翻转",
+          "pin": 12,
+          "at_ms": 1011,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "before_second_on",
+          "requirement_quote": "此后每500ms翻转",
+          "pin": 12,
+          "at_ms": 1489,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "after_second_on",
+          "requirement_quote": "此后每500ms翻转",
+          "pin": 12,
+          "at_ms": 1511,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "interval",
+          "id": "half_period",
+          "requirement_quote": "此后每500ms翻转",
+          "source": "gpio",
+          "pin": 12,
+          "from_ms": 100,
+          "to_ms": 5900,
+          "expected_ms": 500,
+          "tolerance_ms": 10,
+          "min_count": 10
+        },
+        {
+          "kind": "edges",
+          "id": "total_transitions",
+          "requirement_quote": "此后每500ms翻转",
+          "pin": 12,
+          "from_ms": 100,
+          "to_ms": 5900,
+          "min_count": 11,
+          "max_count": 11
+        },
+        {
+          "kind": "edges",
+          "id": "complete_cycles",
+          "requirement_quote": "完整周期为1000ms",
+          "pin": 12,
+          "from_ms": 100,
+          "to_ms": 5900,
+          "edge": "rising",
+          "min_count": 6,
+          "max_count": 6
+        },
+        {
+          "kind": "gpio",
+          "id": "later_off",
+          "requirement_quote": "此后每500ms翻转",
+          "pin": 12,
+          "at_ms": 5250,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "later_on",
+          "requirement_quote": "此后每500ms翻转",
+          "pin": 12,
+          "at_ms": 5750,
+          "expected": 1,
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n\nconst uint8_t LED_PIN = 12;\nunsigned long lastToggle;\nbool ledOn = false;\n\nvoid setup() {\n  digitalWrite(LED_PIN, LOW);\n  pinMode(LED_PIN, OUTPUT);\n  lastToggle = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  while ((unsigned long)(now - lastToggle) >= 500UL) {\n    lastToggle += 500UL;\n    ledOn = !ledOn;\n    digitalWrite(LED_PIN, ledOn ? HIGH : LOW);\n  }\n}\n"
+    },
+    "engine": "host"
+  }
+]

@@ -1,0 +1,349 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"paused\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prev_buttonPauseToggle\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"accumRunMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"soundRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"firstSoundPending\",\n        \"type\": \"bool\",\n        \"initial\": \"true\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"and: [buttonPauseToggle, not: [prev_buttonPauseToggle]]\",\n        \"then\": [\n          {\n            \"assign\": \"paused\",\n            \"value\": \"not paused\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"prev_buttonPauseToggle\",\n        \"value\": \"buttonPauseToggle\"\n      },\n      {\n        \"if\": \"not paused\",\n        \"then\": [\n          {\n            \"if\": \"soundRemainingMs > 0\",\n            \"then\": [\n              {\n                \"assign\": \"soundRemainingMs\",\n                \"value\": \"soundRemainingMs - elapsedMilliseconds\"\n              },\n              {\n                \"if\": \"soundRemainingMs <= elapsedMilliseconds\",\n                \"then\": [\n                  {\n                    \"assign\": \"soundRemainingMs\",\n                    \"value\": \"0\"\n                  }\n                ]\n              }\n            ]\n          },\n          {\n            \"if\": \"soundRemainingMs == 0\",\n            \"then\": [\n              {\n                \"assign\": \"accumRunMs\",\n                \"value\": \"accumRunMs + elapsedMilliseconds\"\n              },\n              {\n                \"if\": \"accumRunMs >= 3000\",\n                \"then\": [\n                  {\n                    \"assign\": \"accumRunMs\",\n                    \"value\": \"0\"\n                  },\n                  {\n                    \"assign\": \"soundRemainingMs\",\n                    \"value\": \"100\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"buzzerToneHz\": {\n        \"if\": \"and: [not paused, soundRemainingMs > 0]\",\n        \"then\": \"1000\",\n        \"else\": \"0\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"buttonPauseToggle: held LOW for a short moment to create one rising edge (press) at 500ms, then released HIGH at 700ms; elapsedMilliseconds provided as 10ms steps continuously (with no pause input toggles after initial press); total trace 6200ms\",\n        \"oracle\": \"buzzerToneHz starts at 0; first beep occurs once after accumulated running time reaches 3000ms since start (allowing 20ms tolerance); buzzerToneHz is 1000Hz for 100ms (allowing 20ms tolerance) then 0; subsequent beeps occur every 3000ms of accumulated running time. At the pause toggled by the press edge, buzzerToneHz becomes 0 immediately and remains 0 while paused; accumulated time and remaining sound time are preserved. After releasing (only one press edge caused toggle), buzzerToneHz resumes beeping continuing any remaining portion and then continues the 3000ms schedule without restarting the full cycle.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"elapsedMilliseconds as 10ms steps; buttonPauseToggle rising edge toggled to pause exactly 2950ms (i.e., press LOW at 2950ms..3005ms then release HIGH after 3050ms, with no additional press edges); then a second press edge toggled to resume at 4100ms; total trace 7000ms\",\n        \"oracle\": \"Before 3000ms accumulated run time reaches the first beep start: buzzerToneHz remains 0 until first eligible beep timing within 20ms tolerance. Because pause occurs shortly before the first beep, buzzerToneHz must be 0 immediately at the pause edge and must not start a beep while paused. When resumed, buzzerToneHz should continue according to preserved accumulated timing such that the first beep still occurs once accumulated running time reaches 3000ms threshold (within 20ms tolerance), with 100ms duration (within 20ms tolerance). Subsequent beeps follow every 3000ms of accumulated running time.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"elapsedMilliseconds as 10ms steps; create press edge at 3050ms (when first beep is in progress), hold LOW for 80ms then release HIGH; create another press edge at 3300ms to resume; total trace 5000ms\",\n        \"oracle\": \"At 3050ms press-edge, buzzerToneHz must immediately go to 0 (within 20ms tolerance) even if a beep was active; remaining beep time must be preserved such that after resume at 3300ms, buzzerToneHz returns to 1000Hz for the remaining portion to complete the 100ms total beep duration (within 20ms tolerance). After completing that beep, the next beep should occur based on preserved accumulated running time continuing with 3000ms intervals (not restarting the full cycle).\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Invalid expression 'and: [buttonPauseToggle, not: [prev_buttonPauseToggle]]'. For conditionals return an expression object {\"if\":\"condition\",\"then\":\"yesValue\",\"else\":\"noValue\"}; the application renders SysML syntax. Use not/and/or, not !/&&/||."
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Invalid expression 'and: [buttonPauseToggle, not: [prev_buttonPauseToggle]]'. For conditionals return an expression object {\"if\":\"condition\",\"then\":\"yesValue\",\"else\":\"noValue\"}; the application renders SysML syntax. Use not/and/or, not !/&&/||."
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Invalid expression 'and: [buttonPauseToggle, not: [prev_buttonPauseToggle]]'. For conditionals return an expression object {\"if\":\"condition\",\"then\":\"yesValue\",\"else\":\"noValue\"}; the application renders SysML syntax. Use not/and/or, not !/&&/||."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"paused\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prev_buttonPauseToggle\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"accumRunMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"soundRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"firstSoundPending\",\n        \"type\": \"bool\",\n        \"initial\": \"true\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"buttonPauseToggle\",\n            {\n              \"not\": \"prev_buttonPauseToggle\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"paused\",\n            \"value\": {\n              \"not\": \"paused\"\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"prev_buttonPauseToggle\",\n        \"value\": \"buttonPauseToggle\"\n      },\n      {\n        \"if\": {\n          \"not\": \"paused\"\n        },\n        \"then\": [\n          {\n            \"if\": {\n              \">\": [\n                \"soundRemainingMs\",\n                \"0\"\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"soundRemainingMs\",\n                \"value\": \"soundRemainingMs - elapsedMilliseconds\"\n              },\n              {\n                \"if\": {\n                  \"<=\": [\n                    \"soundRemainingMs\",\n                    \"elapsedMilliseconds\"\n                  ]\n                },\n                \"then\": [\n                  {\n                    \"assign\": \"soundRemainingMs\",\n                    \"value\": \"0\"\n                  }\n                ]\n              }\n            ]\n          },\n          {\n            \"if\": {\n              \"==\": [\n                \"soundRemainingMs\",\n                \"0\"\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"accumRunMs\",\n                \"value\": \"accumRunMs + elapsedMilliseconds\"\n              },\n              {\n                \"if\": {\n                  \">=\": [\n                    \"accumRunMs\",\n                    \"3000\"\n                  ]\n                },\n                \"then\": [\n                  {\n                    \"assign\": \"accumRunMs\",\n                    \"value\": \"0\"\n                  },\n                  {\n                    \"assign\": \"soundRemainingMs\",\n                    \"value\": \"100\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"buzzerToneHz\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"paused\"\n            },\n            {\n              \">\": [\n                \"soundRemainingMs\",\n                \"0\"\n              ]\n            }\n          ]\n        },\n        \"then\": \"1000\",\n        \"else\": \"0\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"buttonPauseToggle: held LOW for a short moment to create one rising edge (press) at 500ms, then released HIGH at 700ms; elapsedMilliseconds provided as 10ms steps continuously (with no pause input toggles after initial press); total trace 6200ms\",\n        \"oracle\": \"buzzerToneHz starts at 0; first beep occurs once after accumulated running time reaches 3000ms since start (allowing 20ms tolerance); buzzerToneHz is 1000Hz for 100ms (allowing 20ms tolerance) then 0; subsequent beeps occur every 3000ms of accumulated running time. At the pause toggled by the press edge, buzzerToneHz becomes 0 immediately and remains 0 while paused; accumulated time and remaining sound time are preserved. After releasing (only one press edge caused toggle), buzzerToneHz resumes beeping continuing any remaining portion and then continues the 3000ms schedule without restarting the full cycle.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"elapsedMilliseconds as 10ms steps; buttonPauseToggle rising edge toggled to pause exactly 2950ms (i.e., press LOW at 2950ms..3005ms then release HIGH after 3050ms, with no additional press edges); then a second press edge toggled to resume at 4100ms; total trace 7000ms\",\n        \"oracle\": \"Before 3000ms accumulated run time reaches the first beep start: buzzerToneHz remains 0 until first eligible beep timing within 20ms tolerance. Because pause occurs shortly before the first beep, buzzerToneHz must be 0 immediately at the pause edge and must not start a beep while paused. When resumed, buzzerToneHz should continue according to preserved accumulated timing such that the first beep still occurs once accumulated running time reaches 3000ms threshold (within 20ms tolerance), with 100ms duration (within 20ms tolerance). Subsequent beeps follow every 3000ms of accumulated running time.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"elapsedMilliseconds as 10ms steps; create press edge at 3050ms (when first beep is in progress), hold LOW for 80ms then release HIGH; create another press edge at 3300ms to resume; total trace 5000ms\",\n        \"oracle\": \"At 3050ms press-edge, buzzerToneHz must immediately go to 0 (within 20ms tolerance) even if a beep was active; remaining beep time must be preserved such that after resume at 3300ms, buzzerToneHz returns to 1000Hz for the remaining portion to complete the 100ms total beep duration (within 20ms tolerance). After completing that beep, the next beep should occur based on preserved accumulated running time continuing with 3000ms intervals (not restarting the full cycle).\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "CONTRACT_PERIODIC",
+          "stage": "requirements",
+          "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"buzzerToneHz\", \"period_ms\": 3000, \"pulse_ms\": 100, \"first_pulse\": \"after_period\", \"active_value\": 1000, \"inactive_value\": 0, \"tolerance_ms\": 20, \"evidence\": \"此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长\", \"pause_input\": \"buttonPauseToggle\", \"initial_running\": true, \"pause_policy\": \"preserve\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 5960, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5970, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5980, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5990, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 6000, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6010, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6020, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6030, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}]}"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute buttonPauseToggle : Boolean;\n    in attribute elapsedMilliseconds : Integer;\n    attribute paused : Boolean := false;\n    attribute prev_buttonPauseToggle : Boolean := false;\n    attribute accumRunMs : Integer := 0;\n    attribute soundRemainingMs : Integer := 0;\n    attribute firstSoundPending : Boolean := true;\n    perform action tick {\n      first start;\n      then if ((buttonPauseToggle) and ((not prev_buttonPauseToggle))) {\n        first start;\n        then assign paused := (not paused);\n      }\n      then assign prev_buttonPauseToggle := buttonPauseToggle;\n      then if (not paused) {\n        first start;\n        then if ((soundRemainingMs) > (0)) {\n          first start;\n          then assign soundRemainingMs := soundRemainingMs - elapsedMilliseconds;\n          then if ((soundRemainingMs) <= (elapsedMilliseconds)) {\n            first start;\n            then assign soundRemainingMs := 0;\n          }\n        }\n        then if ((soundRemainingMs) == (0)) {\n          first start;\n          then assign accumRunMs := accumRunMs + elapsedMilliseconds;\n          then if ((accumRunMs) >= (3000)) {\n            first start;\n            then assign accumRunMs := 0;\n            then assign soundRemainingMs := 100;\n          }\n        }\n      }\n    }\n    out attribute buzzerToneHz : Integer = (if (((not paused)) and (((soundRemainingMs) > (0)))) ? 1000 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "CONTRACT_PERIODIC",
+          "stage": "requirements",
+          "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"buzzerToneHz\", \"period_ms\": 3000, \"pulse_ms\": 100, \"first_pulse\": \"after_period\", \"active_value\": 1000, \"inactive_value\": 0, \"tolerance_ms\": 20, \"evidence\": \"此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长\", \"pause_input\": \"buttonPauseToggle\", \"initial_running\": true, \"pause_policy\": \"preserve\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 5960, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5970, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5980, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5990, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 6000, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6010, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6020, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6030, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}]}"
+        }
+      ],
+      "coverage": {
+        "status": "failed",
+        "issues": [
+          {
+            "severity": "error",
+            "code": "CONTRACT_PERIODIC",
+            "stage": "requirements",
+            "message": "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"buzzerToneHz\", \"period_ms\": 3000, \"pulse_ms\": 100, \"first_pulse\": \"after_period\", \"active_value\": 1000, \"inactive_value\": 0, \"tolerance_ms\": 20, \"evidence\": \"此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长\", \"pause_input\": \"buttonPauseToggle\", \"initial_running\": true, \"pause_policy\": \"preserve\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 5960, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5970, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5980, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5990, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 6000, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6010, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6020, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6030, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}]}"
+          }
+        ],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "passed",
+          "checked": 1,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof.",
+          "inputs": {
+            "buttonPauseToggle": false,
+            "elapsedMilliseconds": 0
+          },
+          "observed": {
+            "buzzerToneHz": 0
+          }
+        },
+        "pause": {
+          "status": "passed",
+          "checked": 34,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "failed",
+          "checked": 589,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof.",
+          "counterexample": {
+            "check": {
+              "delta": "elapsedMilliseconds",
+              "output": "buzzerToneHz",
+              "period_ms": 3000,
+              "pulse_ms": 100,
+              "first_pulse": "after_period",
+              "active_value": 1000,
+              "inactive_value": 0,
+              "tolerance_ms": 20,
+              "evidence": "此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长",
+              "pause_input": "buttonPauseToggle",
+              "initial_running": true,
+              "pause_policy": "preserve"
+            },
+            "paused": false,
+            "jitter": false,
+            "pause_offset_ms": null,
+            "history": [
+              {
+                "at_ms": 5960,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 0,
+                "actual": 0
+              },
+              {
+                "at_ms": 5970,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 0,
+                "actual": 0
+              },
+              {
+                "at_ms": 5980,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 0,
+                "actual": 0
+              },
+              {
+                "at_ms": 5990,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 0,
+                "actual": 0
+              },
+              {
+                "at_ms": 6000,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 1000,
+                "actual": 0
+              },
+              {
+                "at_ms": 6010,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 1000,
+                "actual": 0
+              },
+              {
+                "at_ms": 6020,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 1000,
+                "actual": 0
+              },
+              {
+                "at_ms": 6030,
+                "inputs": {
+                  "buttonPauseToggle": false,
+                  "elapsedMilliseconds": 10
+                },
+                "expected": 1000,
+                "actual": 0
+              }
+            ]
+          }
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [
+        [
+          "CONTRACT_PERIODIC",
+          "Public period/pulse/pause assertion violated: {\"check\": {\"delta\": \"elapsedMilliseconds\", \"output\": \"buzzerToneHz\", \"period_ms\": 3000, \"pulse_ms\": 100, \"first_pulse\": \"after_period\", \"active_value\": 1000, \"inactive_value\": 0, \"tolerance_ms\": 20, \"evidence\": \"此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长\", \"pause_input\": \"buttonPauseToggle\", \"initial_running\": true, \"pause_policy\": \"preserve\"}, \"paused\": false, \"jitter\": false, \"pause_offset_ms\": null, \"history\": [{\"at_ms\": 5960, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5970, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5980, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 5990, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 0, \"actual\": 0}, {\"at_ms\": 6000, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6010, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6020, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}, {\"at_ms\": 6030, \"inputs\": {\"buttonPauseToggle\": false, \"elapsedMilliseconds\": 10}, \"expected\": 1000, \"actual\": 0}]}"
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [
+        "{\"check\": {\"active_value\": 1000, \"delta\": \"elapsedMilliseconds\", \"evidence\": \"\\u6b64\\u540e\\u6bcf\\u7d2f\\u8ba1\\u8fd0\\u884c3000ms\\u5f00\\u59cb\\u4e00\\u6b21; \\u7d2f\\u8ba1\\u8fd0\\u884c3000ms\\u540e\\u9996\\u6b21\\u53d1\\u58f0; \\u6bcf\\u6b21\\u6301\\u7eed100ms; \\u97f3\\u8c031000Hz; \\u54cd\\u5e94\\u53ca\\u9e23\\u53eb\\u65f6\\u95f4\\u5bb9\\u5dee20ms; \\u521d\\u59cb\\u8fd0\\u884c; \\u6309\\u4e0b\\u6cbf\\u5207\\u6362\\u6682\\u505c/\\u6062\\u590d; \\u6682\\u505c\\u7acb\\u5373\\u9759\\u97f3; \\u4fdd\\u7559\\u8ba1\\u65f6\\u548c\\u5269\\u4f59\\u9e23\\u53eb\\u65f6\\u957f\", \"first_pulse\": \"after_period\", \"inactive_value\": 0, \"initial_running\": true, \"output\": \"buzzerToneHz\", \"pause_input\": \"buttonPauseToggle\", \"pause_policy\": \"preserve\", \"period_ms\": 3000, \"pulse_ms\": 100, \"tolerance_ms\": 20}, \"code\": \"CONTRACT_PERIODIC\"}"
+      ],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": {
+        "target_output": "buzzerToneHz",
+        "evidence": "此后每累计运行3000ms开始一次; 累计运行3000ms后首次发声; 每次持续100ms; 音调1000Hz; 响应及鸣叫时间容差20ms; 初始运行; 按下沿切换暂停/恢复; 暂停立即静音; 保留计时和剩余鸣叫时长",
+        "controller_fragment": {
+          "components": [
+            {
+              "kind": "edge_toggle",
+              "name": "repairRun0",
+              "input": "buttonPauseToggle",
+              "edge": "rising",
+              "initial": true,
+              "previous_input": false
+            },
+            {
+              "kind": "periodic_pulse",
+              "name": "repairPulse0",
+              "delta": "elapsedMilliseconds",
+              "enabled": "component_repairRun0_value",
+              "period_ms": 3000,
+              "pulse_ms": 100,
+              "first_pulse": "after_period",
+              "pause": "preserve"
+            }
+          ],
+          "outputs": {
+            "buzzerToneHz": {
+              "if": "component_repairPulse0_value",
+              "then": 1000,
+              "else": 0
+            }
+          }
+        },
+        "instructions": "This is a partial controller fragment for the cited periodic obligation, not a full replacement model. Use its exact frozen input/output names, values and timing parameters. Replace the faulty timer implementation for this output with these components when it has exactly these required semantics; do not keep a second timer that overrides the same behavior. Preserve every other required output, dependency, state, guard and requirement mapping. If other requirements add behavior not expressed here, integrate it explicitly or retain a correct full state machine. Return the complete controller and req_test_map; all parser, IR, contract and later functional checks still apply."
+      },
+      "failure_stage": "requirements"
+    },
+    {
+      "attempt": 3,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [],\n    \"updates\": [],\n    \"outputs\": {\n      \"buzzerToneHz\": {\n        \"if\": \"component_beep_value\",\n        \"then\": \"1000\",\n        \"else\": \"0\"\n      }\n    },\n    \"components\": [\n      {\n        \"kind\": \"edge_toggle\",\n        \"name\": \"run\",\n        \"input\": \"buttonPauseToggle\",\n        \"edge\": \"rising\",\n        \"initial\": true,\n        \"previous_input\": false\n      },\n      {\n        \"kind\": \"periodic_pulse\",\n        \"name\": \"beep\",\n        \"delta\": \"elapsedMilliseconds\",\n        \"enabled\": \"component_run_value\",\n        \"period_ms\": 3000,\n        \"pulse_ms\": 100,\n        \"first_pulse\": \"after_period\",\n        \"pause\": \"preserve\"\n      }\n    ]\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"buttonPauseToggle: held LOW for a short moment to create one rising edge (press) at 500ms, then released HIGH at 700ms; elapsedMilliseconds provided as 10ms steps continuously (with no pause input toggles after initial press); total trace 6200ms\",\n        \"oracle\": \"buzzerToneHz starts at 0; first beep occurs once after accumulated running time reaches 3000ms since start (allowing 20ms tolerance); buzzerToneHz is 1000Hz for 100ms (allowing 20ms tolerance) then 0; subsequent beeps occur every 3000ms of accumulated running time. At the pause toggled by the press edge, buzzerToneHz becomes 0 immediately and remains 0 while paused; accumulated time and remaining sound time are preserved. After releasing (only one press edge caused toggle), buzzerToneHz resumes beeping continuing any remaining portion and then continues the 3000ms schedule without restarting the full cycle.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"elapsedMilliseconds as 10ms steps; buttonPauseToggle rising edge toggled to pause exactly 2950ms (i.e., press LOW at 2950ms..3005ms then release HIGH after 3050ms, with no additional press edges); then a second press edge toggled to resume at 4100ms; total trace 7000ms\",\n        \"oracle\": \"Before 3000ms accumulated run time reaches the first beep start: buzzerToneHz remains 0 until first eligible beep timing within 20ms tolerance. Because pause occurs shortly before the first beep, buzzerToneHz must be 0 immediately at the pause edge and must not start a beep while paused. When resumed, buzzerToneHz should continue according to preserved accumulated timing such that the first beep still occurs once accumulated running time reaches 3000ms threshold (within 20ms tolerance), with 100ms duration (within 20ms tolerance). Subsequent beeps follow every 3000ms of accumulated running time.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复。验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"elapsedMilliseconds as 10ms steps; create press edge at 3050ms (when first beep is in progress), hold LOW for 80ms then release HIGH; create another press edge at 3300ms to resume; total trace 5000ms\",\n        \"oracle\": \"At 3050ms press-edge, buzzerToneHz must immediately go to 0 (within 20ms tolerance) even if a beep was active; remaining beep time must be preserved such that after resume at 3300ms, buzzerToneHz returns to 1000Hz for the remaining portion to complete the 100ms total beep duration (within 20ms tolerance). After completing that beep, the next beep should occur based on preserved accumulated running time continuing with 3000ms intervals (not restarting the full cycle).\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute buttonPauseToggle : Boolean;\n    in attribute elapsedMilliseconds : Integer;\n    attribute component_run_value : Boolean := true;\n    attribute component_run_previous : Boolean := false;\n    attribute component_beep_phase : Integer := 0;\n    attribute component_beep_started : Boolean := false;\n    attribute component_beep_enabled : Boolean := false;\n    attribute component_beep_remainder : Integer := 0;\n    attribute component_beep_value : Boolean := false;\n    perform action tick {\n      first start;\n      then if buttonPauseToggle and not component_run_previous {\n        first start;\n        then assign component_run_value := not component_run_value;\n      }\n      then assign component_run_previous := buttonPauseToggle;\n      then if component_beep_enabled and elapsedMilliseconds > 0 {\n        first start;\n        then if elapsedMilliseconds >= 3000 - component_beep_phase {\n          first start;\n          then assign component_beep_started := true;\n        }\n        then assign component_beep_remainder := elapsedMilliseconds;\n        then if component_beep_remainder >= 1572864000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 1572864000;\n        }\n        then if component_beep_remainder >= 786432000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 786432000;\n        }\n        then if component_beep_remainder >= 393216000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 393216000;\n        }\n        then if component_beep_remainder >= 196608000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 196608000;\n        }\n        then if component_beep_remainder >= 98304000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 98304000;\n        }\n        then if component_beep_remainder >= 49152000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 49152000;\n        }\n        then if component_beep_remainder >= 24576000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 24576000;\n        }\n        then if component_beep_remainder >= 12288000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 12288000;\n        }\n        then if component_beep_remainder >= 6144000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 6144000;\n        }\n        then if component_beep_remainder >= 3072000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 3072000;\n        }\n        then if component_beep_remainder >= 1536000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 1536000;\n        }\n        then if component_beep_remainder >= 768000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 768000;\n        }\n        then if component_beep_remainder >= 384000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 384000;\n        }\n        then if component_beep_remainder >= 192000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 192000;\n        }\n        then if component_beep_remainder >= 96000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 96000;\n        }\n        then if component_beep_remainder >= 48000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 48000;\n        }\n        then if component_beep_remainder >= 24000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 24000;\n        }\n        then if component_beep_remainder >= 12000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 12000;\n        }\n        then if component_beep_remainder >= 6000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 6000;\n        }\n        then if component_beep_remainder >= 3000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 3000;\n        }\n        then if component_beep_remainder >= 3000 - component_beep_phase {\n          first start;\n          then assign component_beep_phase := component_beep_remainder - (3000 - component_beep_phase);\n        } else {\n          first start;\n          then assign component_beep_phase := component_beep_phase + component_beep_remainder;\n        }\n      }\n      then assign component_beep_value := (component_run_value) and component_beep_started and component_beep_phase < 100;\n      then assign component_beep_enabled := component_run_value;\n    }\n    out attribute buzzerToneHz : Integer = (if component_beep_value ? 1000 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "passed",
+          "checked": 1,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof.",
+          "inputs": {
+            "buttonPauseToggle": false,
+            "elapsedMilliseconds": 0
+          },
+          "observed": {
+            "buzzerToneHz": 0
+          }
+        },
+        "pause": {
+          "status": "passed",
+          "checked": 64,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "passed",
+          "checked": 12427,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "passed",
+      "checked": 1,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof.",
+      "inputs": {
+        "buttonPauseToggle": false,
+        "elapsedMilliseconds": 0
+      },
+      "observed": {
+        "buzzerToneHz": 0
+      }
+    },
+    "pause": {
+      "status": "passed",
+      "checked": 64,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "passed",
+      "checked": 12427,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

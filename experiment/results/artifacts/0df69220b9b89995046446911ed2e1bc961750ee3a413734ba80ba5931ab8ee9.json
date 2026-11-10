@@ -1,0 +1,273 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "count",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "alarmLocked",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevD2Pressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevD3Pressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "d3PressAccumMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            {
+              "==": [
+                "alarmLocked",
+                true
+              ]
+            },
+            {
+              "==": [
+                "io_1",
+                true
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmLocked",
+            "value": false
+          },
+          {
+            "assign": "count",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "alarmLocked",
+            false
+          ]
+        },
+        "then": [
+          {
+            "if": {
+              "and": [
+                "io_0",
+                {
+                  "not": "prevD2Pressed"
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "count",
+                "value": "count + 1"
+              },
+              {
+                "if": {
+                  ">=": [
+                    "count + 1",
+                    15
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "count",
+                    "value": 15
+                  },
+                  {
+                    "assign": "alarmLocked",
+                    "value": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "if": {
+              "and": [
+                "io_1",
+                {
+                  "not": "prevD3Pressed"
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "d3PressAccumMs",
+                "value": 0
+              }
+            ],
+            "else": []
+          },
+          {
+            "if": {
+              "==": [
+                "io_1",
+                true
+              ]
+            },
+            "then": [
+              {
+                "assign": "d3PressAccumMs",
+                "value": "d3PressAccumMs + io_5"
+              },
+              {
+                "if": {
+                  ">=": [
+                    "d3PressAccumMs",
+                    1000
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "d3PressAccumMs",
+                    "value": 0
+                  },
+                  {
+                    "assign": "count",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "if": {
+              "and": [
+                {
+                  "not": "io_1"
+                },
+                "prevD3Pressed"
+              ]
+            },
+            "then": [
+              {
+                "if": {
+                  ">=": [
+                    "d3PressAccumMs",
+                    1000
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "d3PressAccumMs",
+                    "value": 0
+                  }
+                ],
+                "else": [
+                  {
+                    "assign": "count",
+                    "value": "count - 1"
+                  },
+                  {
+                    "if": {
+                      "<": [
+                        "count - 1",
+                        0
+                      ]
+                    },
+                    "then": [
+                      {
+                        "assign": "count",
+                        "value": 15
+                      }
+                    ],
+                    "else": []
+                  }
+                ]
+              }
+            ],
+            "else": []
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "prevD2Pressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevD3Pressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": {
+          "==": [
+            "alarmLocked",
+            true
+          ]
+        },
+        "then": {
+          "==": [
+            "count",
+            15
+          ]
+        },
+        "else": {
+          "==": [
+            "count",
+            2
+          ]
+        }
+      },
+      "io_3": {
+        "if": {
+          "==": [
+            "alarmLocked",
+            true
+          ]
+        },
+        "then": 2000,
+        "else": 0
+      },
+      "io_4": "count"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "初始保持，连续触发D2上升沿按下一步（io_0从false到true一次），观察一个控制周期后再释放。",
+        "oracle": "count计数增加，TM1637显示为新count；蜂鸣器保持静音且不锁定，LED输出与新count的奇偶关系一致。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "从count=14开始（通过D2触发或按要求预置），触发一次D2按下上升沿使count到15，然后在后续多周期持续不进行D3长按。",
+        "oracle": "到达15的那一步起，蜂鸣器输出为报警频率且alarmLocked为真；此期间count不再因D2/D3短按变化；TM1637持续显示15。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个交互式计数与报警系统，使用按钮 D2、按钮 D3、TM1637（CLK=D4，DIO=D5）、LED D13 和蜂鸣器 D6。D2 加一，D3 减一，数码管显示当前值；当计数为偶数时 LED 亮，为奇数时 LED 灭；当计数达到 15 时蜂鸣器报警并锁定计数，直到长按 D3 复位。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在alarmLocked已为真时，对D3保持按下（io_1为true并持续超过长按阈值后保持），观察长按期间以及释放后的若干周期。",
+        "oracle": "长按D3达到复位条件后，alarmLocked被清除、count复位到0；蜂鸣器输出回到0；TM1637显示0；LED与count奇偶状态一致。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_5 : Integer;\n    attribute count : Integer := 0;\n    attribute alarmLocked : Boolean := false;\n    attribute prevD2Pressed : Boolean := false;\n    attribute prevD3Pressed : Boolean := false;\n    attribute d3PressAccumMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((((alarmLocked) == (true))) and (((io_1) == (true)))) {\n        first start;\n        then assign alarmLocked := false;\n        then assign count := 0;\n      }\n      then if ((alarmLocked) == (false)) {\n        first start;\n        then if ((io_0) and ((not prevD2Pressed))) {\n          first start;\n          then assign count := count + 1;\n          then if ((count + 1) >= (15)) {\n            first start;\n            then assign count := 15;\n            then assign alarmLocked := true;\n          }\n        }\n        then if ((io_1) and ((not prevD3Pressed))) {\n          first start;\n          then assign d3PressAccumMs := 0;\n        }\n        then if ((io_1) == (true)) {\n          first start;\n          then assign d3PressAccumMs := d3PressAccumMs + io_5;\n          then if ((d3PressAccumMs) >= (1000)) {\n            first start;\n            then assign d3PressAccumMs := 0;\n            then assign count := 0;\n          }\n        }\n        then if (((not io_1)) and (prevD3Pressed)) {\n          first start;\n          then if ((d3PressAccumMs) >= (1000)) {\n            first start;\n            then assign d3PressAccumMs := 0;\n          } else {\n            first start;\n            then assign count := count - 1;\n            then if ((count - 1) < (0)) {\n              first start;\n              then assign count := 15;\n            }\n          }\n        }\n      }\n      then assign prevD2Pressed := io_0;\n      then assign prevD3Pressed := io_1;\n    }\n    out attribute io_2 : Boolean = (if ((alarmLocked) == (true)) ? ((count) == (15)) else ((count) == (2)));\n    out attribute io_3 : Integer = (if ((alarmLocked) == (true)) ? 2000 else 0);\n    out attribute io_4 : Integer = count;\n  }\n  part system : Controller;\n}\n"
+}

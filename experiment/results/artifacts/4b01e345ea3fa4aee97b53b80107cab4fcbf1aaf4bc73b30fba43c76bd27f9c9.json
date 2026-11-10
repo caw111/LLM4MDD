@@ -1,0 +1,133 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\"controller\":{\"states\":[],\"updates\":[{\"if\":\"io_0\",\"then\":[{\"assign\":\"io_2\",\"value\":\"true\"}]},{\"if\":\"io_1\",\"then\":[{\"assign\":\"io_2\",\"value\":\"false\"}]}],\"outputs\":{\"io_2\":\"io_2\"}},\"req_test_map\":{\"requirements_to_testpoints\":[{\"requirement_id\":\"R1\",\"requirement_text\":\"使用两个按钮控制 D13 LED，其中 D2 按钮用于开灯，D3 按钮用于关灯。\",\"test_point_id\":\"T1\",\"test_method\":\"trace\",\"stimulus\":\"io_0 pressed rising (io_0 becomes true) while io_1 remains false; then hold io_0 true for one step and release\",\"oracle\":\"io_2 becomes true when io_0 is pressed, and remains true until a D3 press sets it false\"} ,{\"requirement_id\":\"R1\",\"requirement_text\":\"使用两个按钮控制 D13 LED，其中 D2 按钮用于开灯，D3 按钮用于关灯。\",\"test_point_id\":\"T2\",\"test_method\":\"trace\",\"stimulus\":\"Start with io_2 true; then press io_1 (io_1 becomes true) while io_0 remains false; then hold and release\",\"oracle\":\"io_2 becomes false when io_1 is pressed, and remains false until a D2 press sets it true\"} ,{\"requirement_id\":\"R1\",\"requirement_text\":\"使用两个按钮控制 D13 LED，其中 D2 按钮用于开灯，D3 按钮用于关灯。\",\"test_point_id\":\"T3\",\"test_method\":\"trace\",\"stimulus\":\"Simultaneous press: both io_0 and io_1 become true in the same control step, then keep both true for one step\",\"oracle\":\"io_2 is false after the step (D3关灯 dominates in the same control step)\"}]}}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Assignment target must be initialized internal state: io_2. For stateless behavior, put the input expression directly in outputs."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [],\n    \"updates\": [],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": \"io_1\",\n        \"then\": false,\n        \"else\": {\n          \"if\": \"io_0\",\n          \"then\": true,\n          \"else\": false\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用两个按钮控制 D13 LED，其中 D2 按钮用于开灯，D3 按钮用于关灯。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0 pressed rising (io_0 becomes true) while io_1 remains false; then hold and release\",\n        \"oracle\": \"io_2 becomes true when io_0 is pressed and io_1 remains false; io_2 returns to false after io_0 is released (io_1 still false)\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用两个按钮控制 D13 LED，其中 D2 按钮用于开灯，D3 按钮用于关灯。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_0 pressed (io_0 true) and io_1 false; then press io_1 (io_1 becomes true) while io_0 remains false; then hold and release\",\n        \"oracle\": \"io_2 becomes false when io_1 is pressed; io_2 remains false until a subsequent D2 press makes io_0 true again while io_1 is false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用两个按钮控制 D13 LED，其中 D2 按钮用于开灯，D3 按钮用于关灯。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Simultaneous press: in one control step both io_0 and io_1 become true; then keep both true for one step and release\",\n        \"oracle\": \"In the simultaneous-press step, io_2 is false (D3 off dominates when io_1 is true)\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    out attribute io_2 : Boolean = (if io_1 ? false else (if io_0 ? true else false));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,485 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "已在 serial_command_input 的 commands 中补全 io_8.commands：1..32 映射到 i32 代码，键为 1..31 字节范围内的可打印 ASCII token。",
+    "D2(PIR) 与 D3(门磁)、D7(释放) 均按 active_high=true 且 pullup=true 配置其“被触发/被按下时为 true”；若实际硬件为低有效，应在 SysML 逻辑层处理而非此处反接。",
+    "D8 输出角色未在需求中进一步细化：保留由模型决定其在 occupied/unoccupied/release 等状态下的实际含义与驱动时序。",
+    "串口发送通道保持原 baud=9600、framing=line_or_idle、idle_timeout_ms=20；该合同未增加新的串口发送/接收通道以避免遗漏或冲突。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "人工释放房间按钮（被按下时为 true）",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "门磁/占用状态相关输出（受模型控制）",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D8\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D8"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "蜂鸣器提示（overtime 提示使用）",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "显示预约状态/剩余或占用提示",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 3, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 3,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "clk_pin": "D4",
+        "dio_pin": "D5"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "PIR 人体红外（检测到人体时为 true）",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "门磁（门开启/触发时为 true）",
+      "sample_period_ms": 10,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "绿色灯：预约开始前 1 分钟闪烁提醒 / 或其它模型状态",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D12"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "红色灯：有人进入后显示 occupied 并点亮 / 或 overtime 等模型状态",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "串口命令到达后触发处理（输入预约开始和结束时间；协议字段在模型中定义）",
+      "sample_period_ms": 10,
+      "device": "serial_command_input",
+      "hardware": "{\"baud\": 9600, \"commands\": {\"T1\": 1, \"T10\": 10, \"T11\": 11, \"T12\": 12, \"T13\": 13, \"T14\": 14, \"T15\": 15, \"T16\": 16, \"T17\": 17, \"T18\": 18, \"T19\": 19, \"T2\": 2, \"T20\": 20, \"T21\": 21, \"T22\": 22, \"T23\": 23, \"T24\": 24, \"T25\": 25, \"T26\": 26, \"T27\": 27, \"T28\": 28, \"T29\": 29, \"T3\": 3, \"T30\": 30, \"T31\": 31, \"T32\": 32, \"T4\": 4, \"T5\": 5, \"T6\": 6, \"T7\": 7, \"T8\": 8, \"T9\": 9}, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_command_input\"}",
+      "binding": {
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600,
+        "commands": {
+          "T1": 1,
+          "T2": 2,
+          "T3": 3,
+          "T4": 4,
+          "T5": 5,
+          "T6": 6,
+          "T7": 7,
+          "T8": 8,
+          "T9": 9,
+          "T10": 10,
+          "T11": 11,
+          "T12": 12,
+          "T13": 13,
+          "T14": 14,
+          "T15": 15,
+          "T16": 16,
+          "T17": 17,
+          "T18": 18,
+          "T19": 19,
+          "T20": 20,
+          "T21": 21,
+          "T22": 22,
+          "T23": 23,
+          "T24": 24,
+          "T25": 25,
+          "T26": 26,
+          "T27": 27,
+          "T28": 28,
+          "T29": 29,
+          "T30": 30,
+          "T31": 31,
+          "T32": 32
+        }
+      }
+    },
+    {
+      "name": "io_8_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 10,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_8\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_8"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "串口报告触发条件（与模型业务报文门控绑定）",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "minute",
+      "initial": 0,
+      "meaning": "预约开始时间（模型解析的分钟偏移/编码，用于串口输出）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"start_min\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "start_min"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "i32",
+      "unit": "minute",
+      "initial": 0,
+      "meaning": "预约结束时间（模型解析的分钟偏移/编码，用于串口输出）",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"end_min\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "end_min"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {},
+        "resolved": {
+          "pin": "D8"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个会议室预约占用提示系统，使用 PIR 人体红外 D2、门磁 D3、TM1637（CLK=D4，DIO=D5）、LED 绿色 D12、红色 D13、蜂鸣器 D6 和串口。串口可输入预约开始和结束时间；到预约开始前 1 分钟闪烁绿灯提醒，有人进入后显示 occupied 并点亮红灯；预约结束后若仍有人在内则蜂鸣提示并输出 overtime use。按钮 D7 用于人工释放房间。",
+    "effective_requirement": "设计一个会议室预约占用提示系统，使用 PIR 人体红外 D2、门磁 D3、TM1637（CLK=D4，DIO=D5）、LED 绿色 D12、红色 D13、蜂鸣器 D6 和串口。串口可输入预约开始和结束时间；到预约开始前 1 分钟闪烁绿灯提醒，有人进入后显示 occupied 并点亮红灯；预约结束后若仍有人在内则蜂鸣提示并输出 overtime use。按钮 D7 用于人工释放房间。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D7\"}, {\"device_role\": \"digital_output\", \"pin\": \"D8\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "digital_output",
+        "field": "pin",
+        "original": null,
+        "resolved": "D8",
+        "reason": "unspecified wiring"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个会议室预约占用提示系统，使用 PIR 人体红外 D2、门磁 D3、TM1637（CLK=D4，DIO=D5）、LED 绿色 D12、红色 D13、蜂鸣器 D6 和串口。串口可输入预约开始和结束时间；到预约开始前 1 分钟闪烁绿灯提醒，有人进入后显示 occupied 并点亮红灯；预约结束后若仍有人在内则蜂鸣提示并输出 overtime use。按钮 D7 用于人工释放房间。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_8_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      }
+    ],
+    "serial_inputs": [
+      {
+        "id": "io_8",
+        "value_port": "io_8",
+        "valid_port": "io_8_valid",
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600,
+        "commands": {
+          "T1": 1,
+          "T2": 2,
+          "T3": 3,
+          "T4": 4,
+          "T5": 5,
+          "T6": 6,
+          "T7": 7,
+          "T8": 8,
+          "T9": 9,
+          "T10": 10,
+          "T11": 11,
+          "T12": 12,
+          "T13": 13,
+          "T14": 14,
+          "T15": 15,
+          "T16": 16,
+          "T17": 17,
+          "T18": 18,
+          "T19": 19,
+          "T20": 20,
+          "T21": 21,
+          "T22": 22,
+          "T23": 23,
+          "T24": 24,
+          "T25": 25,
+          "T26": 26,
+          "T27": 27,
+          "T28": 28,
+          "T29": 29,
+          "T30": 30,
+          "T31": 31,
+          "T32": 32
+        }
+      }
+    ]
+  }
+}

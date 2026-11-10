@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"displayMode\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"occupiedCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"prevInPositionOccupied\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prevOccupied\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"entryDistanceCm\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"parkingDistanceCm\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"entryDistanceCm\",\n        \"value\": {\n          \"if\": \"io_1\",\n          \"then\": \"io_0\",\n          \"else\": \"entryDistanceCm\"\n        }\n      },\n      {\n        \"assign\": \"parkingDistanceCm\",\n        \"value\": {\n          \"if\": \"io_3\",\n          \"then\": \"io_2\",\n          \"else\": \"parkingDistanceCm\"\n        }\n      },\n      {\n        \"assign\": \"displayMode\",\n        \"value\": {\n          \"if\": {\n            \"and\": [\n              \"io_8\",\n              {\n                \"not\": \"previousPressed\"\n              }\n            ]\n          },\n          \"then\": {\n            \"+\": [\n              {\n                \"+\": [\n                  \"displayMode\",\n                  1\n                ]\n              },\n              0\n            ]\n          },\n          \"else\": \"displayMode\"\n        }\n      },\n      {\n        \"if\": \"displayMode >= 3\",\n        \"then\": [\n          {\n            \"assign\": \"displayMode\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"assign\": \"occupiedCount\",\n        \"value\": {\n          \"if\": {\n            \"and\": [\n              \"not prevInPositionOccupied\",\n              {\n                \"and\": [\n                  \"parkingDistanceCm <= 20.0\",\n                  \"io_3\"\n                ]\n              }\n            ]\n          },\n          \"then\": \"occupiedCount + 1\",\n          \"else\": \"occupiedCount\"\n        }\n      },\n      {\n        \"assign\": \"prevInPositionOccupied\",\n        \"value\": {\n          \"and\": [\n            \"parkingDistanceCm <= 20.0\",\n            \"io_3\"\n          ]\n        }\n      },\n      {\n        \"assign\": \"prevOccupied\",\n        \"value\": {\n          \"and\": [\n            \"parkingDistanceCm <= 20.0\",\n            \"io_3\"\n          ]\n        }\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_8\"\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": {\n        \"if\": {\n          \"==\": [\n            \"displayMode\",\n            0\n          ]\n        },\n        \"then\": {\n          \"if\": \"io_1\",\n          \"then\": \"RealFunctions::floor(entryDistanceCm)\",\n          \"else\": 0\n        },\n        \"else\": {\n          \"if\": {\n            \"==\": [\n              \"displayMode\",\n              1\n            ]\n          },\n          \"then\": {\n            \"if\": \"io_3\",\n            \"then\": \"RealFunctions::floor(parkingDistanceCm)\",\n            \"else\": 0\n          },\n          \"else\": {\n            \"if\": {\n              \"==\": [\n                \"displayMode\",\n                2\n              ]\n            },\n            \"then\": \"occupiedCount\",\n            \"else\": \"occupiedCount\"\n          }\n        }\n      },\n      \"io_5\": {\n        \"if\": {\n          \"and\": [\n            \"io_3\",\n            \"parkingDistanceCm < 5.0\"\n          ]\n        },\n        \"then\": true,\n        \"else\": {\n          \"if\": {\n            \"and\": [\n              \"io_3\",\n              \"parkingDistanceCm <= 20.0\"\n            ]\n          },\n          \"then\": {\n            \"or\": [\n              {\n                \">=\": [\n                  \"parkingDistanceCm\",\n                  5.0\n                ]\n              },\n              true\n            ]\n          },\n          \"else\": false\n        }\n      },\n      \"io_6\": {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"<\": [\n                \"entryDistanceCm\",\n                30.0\n              ]\n            },\n            {\n              \"not\": {\n                \"and\": [\n                  \"io_3\",\n                  {\n                    \"<=\": [\n                      \"parkingDistanceCm\",\n                      20.0\n                    ]\n                  }\n                ]\n              }\n            }\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_7\": {\n        \"if\": {\n          \"and\": [\n            \"io_3\",\n            {\n              \"<\": [\n                \"parkingDistanceCm\",\n                5.0\n              ]\n            }\n          ]\n        },\n        \"then\": 2000,\n        \"else\": {\n          \"if\": {\n            \"and\": [\n              \"io_3\",\n              {\n                \"<=\": [\n                  \"parkingDistanceCm\",\n                  20.0\n                ]\n              }\n            ]\n          },\n          \"then\": {\n            \"if\": {\n              \"<\": [\n                \"parkingDistanceCm\",\n                10.0\n              ]\n            },\n            \"then\": 1800,\n            \"else\": {\n              \"if\": {\n                \"<\": [\n                  \"parkingDistanceCm\",\n                  15.0\n                ]\n              },\n              \"then\": 1200,\n              \"else\": 700\n            }\n          },\n          \"else\": 0\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下按钮D2产生一次上升沿（io_8从false变true），保持io_1与io_3有效，trace显示模式切换。\",\n        \"oracle\": \"TM1637显示从模式0切到模式1，再次按下切到模式2；连续三次按下后回到模式0（在有效距离时分别显示入口/车位的整数距离与占用计数）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"设置io_1有效且entryDistanceCm=25.0（io_0=25.0，io_1=true）；同时设置io_3有效且parkingDistanceCm=30.0（io_2=30.0，io_3=true）。\",\n        \"oracle\": \"绿色LED（io_6）为true，红色LED（io_5）为false，蜂鸣器频率输出（io_7）为0。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"设置io_3有效且parkingDistanceCm=18.0（io_2=18.0，io_3=true）；设置io_1无效或无关（io_1=false）。\",\n        \"oracle\": \"蜂鸣器输出（io_7）为700（<=20且>=15分级），红色LED（io_5）为true，绿色LED（io_6）为false。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"倒车持续报警场景：保持io_3=true，parkingDistanceCm从6.0逐步减小到4.9（io_2=6.0,4.9），其间多步trace。\",\n        \"oracle\": \"当parkingDistanceCm<5.0时，红色LED（io_5）持续为true，蜂鸣器输出（io_7）持续为2000；当parkingDistanceCm>=5.0时蜂鸣器不为2000并按距离分级。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个智能停车引导与安全保护系统，使用两个 HC-SR04 超声波模块，入口模块 Trig=D8、Echo=D9，车位模块 Trig=D11、Echo=D12，配合 TM1637（CLK=D4，DIO=D5）、红色 LED（D13）、绿色 LED（D10）、蜂鸣器（D6）和按钮 D2。系统应显示车位距离和占用状态，车辆靠近入口时绿灯引导；当进入车位时根据距离分级调节蜂鸣器频率和 LED 提示；若检测到倒车距离小于 5cm 则持续报警。按钮可切换显示入口距离、车位距离和占用计数。\",\n        \"test_point_id\": \"T5\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"占用计数：令parkingDistanceCm由21.0降到19.0且io_3=true（一次进入车位），随后保持在19.0多步，再令parkingDistanceCm回到21.0（离开），最后再从21.0降到19.0（第二次进入）。\",\n        \"oracle\": \"占用计数（displayMode=2时的io_4）在每次由>20cm进入<=20cm时各自增加1；停留在<=20cm期间不重复增加；离开后再次进入才再次增加。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_8 : Boolean;\n    in attribute io_9 : Integer;\n    attribute previousPressed : Boolean := false;\n    attribute displayMode : Integer := 0;\n    attribute occupiedCount : Integer := 0;\n    attribute prevInPositionOccupied : Boolean := false;\n    attribute prevOccupied : Boolean := false;\n    attribute entryDistanceCm : Real := 0.0;\n    attribute parkingDistanceCm : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign entryDistanceCm := (if io_1 ? io_0 else entryDistanceCm);\n      then assign parkingDistanceCm := (if io_3 ? io_2 else parkingDistanceCm);\n      then assign displayMode := (if ((io_8) and ((not previousPressed))) ? ((((displayMode) + (1))) + (0)) else displayMode);\n      then if displayMode >= 3 {\n        first start;\n        then assign displayMode := 0;\n      }\n      then assign occupiedCount := (if ((not prevInPositionOccupied) and (((parkingDistanceCm <= 20.0) and (io_3)))) ? occupiedCount + 1 else occupiedCount);\n      then assign prevInPositionOccupied := ((parkingDistanceCm <= 20.0) and (io_3));\n      then assign prevOccupied := ((parkingDistanceCm <= 20.0) and (io_3));\n      then assign previousPressed := io_8;\n    }\n    out attribute io_4 : Integer = (if ((displayMode) == (0)) ? (if io_1 ? RealFunctions::floor(entryDistanceCm) else 0) else (if ((displayMode) == (1)) ? (if io_3 ? RealFunctions::floor(parkingDistanceCm) else 0) else (if ((displayMode) == (2)) ? occupiedCount else occupiedCount)));\n    out attribute io_5 : Boolean = (if ((io_3) and (parkingDistanceCm < 5.0)) ? true else (if ((io_3) and (parkingDistanceCm <= 20.0)) ? ((((parkingDistanceCm) >= (5.0))) or (true)) else false));\n    out attribute io_6 : Boolean = (if ((io_1) and (((entryDistanceCm) < (30.0))) and ((not ((io_3) and (((parkingDistanceCm) <= (20.0))))))) ? true else false);\n    out attribute io_7 : Integer = (if ((io_3) and (((parkingDistanceCm) < (5.0)))) ? 2000 else (if ((io_3) and (((parkingDistanceCm) <= (20.0)))) ? (if ((parkingDistanceCm) < (10.0)) ? 1800 else (if ((parkingDistanceCm) < (15.0)) ? 1200 else 700)) else 0));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

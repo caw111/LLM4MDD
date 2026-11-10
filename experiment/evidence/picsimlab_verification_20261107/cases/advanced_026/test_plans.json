@@ -1,0 +1,423 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests the necessary motion gate independently of the unspecified ambient-light threshold: with both PIR inputs inactive, sweeping the entire ADC range must never illuminate the lamp, change the passage count, or accumulate illuminated time. Full behavioral coverage is not reliable because the light-sensor polarity and threshold, illumination hold time, passage-direction/counting algorithm, and serial reporting cadence and units are unspecified. Consequently, motion-triggered illumination, timeout extension, and directional counting are not assigned invented expected results.",
+      "assumptions": [
+        "The authoritative remapping places the PWM lamp on D6, overriding the original D9 assignment.",
+        "The lamp uses the disclosed active-HIGH bench convention, so PWM 0 means off.",
+        "PIR outputs are interpreted as active-HIGH digital motion signals; both inputs are explicitly held LOW throughout this negative-gating test.",
+        "A0 uses raw ADC values 0..1023. Neither the dark/bright polarity nor the application threshold is supplied; the checks do not assume either.",
+        "The initial passage-count value is not prescribed; only its invariance without any motion is checked.",
+        "The reference chooses ADC below 512 as dark, a five-second retriggerable hold, ordered opposite-PIR activations as one passage, and one-second reports in milliseconds. These unspecified choices are illustrative and are not imposed by the checks.",
+        "No serial reporting cadence is specified, so the suite does not require a report within an invented deadline."
+      ],
+      "horizon_ms": 9000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 3,
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 0
+        },
+        {
+          "at_ms": 1500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 1023
+        },
+        {
+          "at_ms": 3000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 256
+        },
+        {
+          "at_ms": 4500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 768
+        },
+        {
+          "at_ms": 6000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 512
+        },
+        {
+          "at_ms": 7500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 0
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pwm",
+          "id": "no_motion_adc_zero",
+          "requirement_quote": "只有在环境光较暗且任一端检测到人时才开启照明",
+          "pin": 6,
+          "at_ms": 1000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "no_motion_adc_max",
+          "requirement_quote": "只有在环境光较暗且任一端检测到人时才开启照明",
+          "pin": 6,
+          "at_ms": 2500,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "no_motion_adc_low",
+          "requirement_quote": "只有在环境光较暗且任一端检测到人时才开启照明",
+          "pin": 6,
+          "at_ms": 4000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "no_motion_adc_high",
+          "requirement_quote": "只有在环境光较暗且任一端检测到人时才开启照明",
+          "pin": 6,
+          "at_ms": 5500,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "no_motion_adc_midpoint",
+          "requirement_quote": "只有在环境光较暗且任一端检测到人时才开启照明",
+          "pin": 6,
+          "at_ms": 7000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "no_motion_return_to_zero",
+          "requirement_quote": "只有在环境光较暗且任一端检测到人时才开启照明",
+          "pin": 6,
+          "at_ms": 8500,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "relation",
+          "id": "ambient_changes_do_not_create_passages",
+          "requirement_quote": "数码管显示今日通行计数",
+          "source": "display",
+          "name": "tm:4:5",
+          "at_ms": [
+            1000,
+            2500,
+            4000,
+            5500,
+            7000,
+            8500
+          ],
+          "relation": "equal",
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nconst uint8_t lampPin = 6;\nconst unsigned long holdMs = 5000;\nunsigned long lastMotion = 0;\nunsigned long previousMs = 0;\nunsigned long illuminatedMs = 0;\nunsigned long lastReport = 0;\nunsigned long firstSeenMs = 0;\nunsigned int passages = 0;\nbool haveMotion = false;\nbool lampOn = false;\nbool oldLeft = false;\nbool oldRight = false;\nuint8_t firstSide = 0;\nbool waitClear = false;\n\nvoid setup() {\n  pinMode(2, INPUT);\n  pinMode(3, INPUT);\n  pinMode(lampPin, OUTPUT);\n  analogWrite(lampPin, 0);\n  Serial.begin(9600);\n  display.setBrightness(7);\n  display.showNumberDec(0);\n  previousMs = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (lampOn) illuminatedMs += now - previousMs;\n  previousMs = now;\n  bool left = digitalRead(2) == HIGH;\n  bool right = digitalRead(3) == HIGH;\n  bool riseLeft = left && !oldLeft;\n  bool riseRight = right && !oldRight;\n\n  if (waitClear) {\n    if (!left && !right) waitClear = false;\n  } else {\n    if (firstSide && now - firstSeenMs > 10000UL) firstSide = 0;\n    if (firstSide == 0) {\n      if (riseLeft != riseRight) {\n        firstSide = riseLeft ? 1 : 2;\n        firstSeenMs = now;\n      }\n    } else if ((firstSide == 1 && riseRight) || (firstSide == 2 && riseLeft)) {\n      ++passages;\n      display.showNumberDec(passages % 10000);\n      firstSide = 0;\n      waitClear = true;\n    }\n  }\n  oldLeft = left;\n  oldRight = right;\n\n  bool dark = analogRead(A0) < 512;\n  if (dark && (left || right)) {\n    lastMotion = now;\n    haveMotion = true;\n  }\n  lampOn = dark && haveMotion && (now - lastMotion < holdMs);\n  analogWrite(lampPin, lampOn ? 255 : 0);\n  if (now - lastReport >= 1000UL) {\n    lastReport = now;\n    Serial.print(\"Illuminated milliseconds: \");\n    Serial.println(illuminatedMs);\n  }\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Tests the necessary motion gate independently of the unspecified ambient-light threshold: with both PIR inputs inactive, sweeping the entire ADC range must never illuminate the lamp, change the passage count, or accumulate illuminated time. Full behavioral coverage is not reliable because the light-sensor polarity and threshold, illumination hold time, passage-direction/counting algorithm, and serial reporting cadence and units are unspecified. Consequently, motion-triggered illumination, timeout extension, and directional counting are not assigned invented expected results.",
+      "assumptions": [
+        "The authoritative remapping places the PWM lamp on D6, overriding the original D9 assignment.",
+        "The lamp uses the disclosed active-HIGH bench convention, so PWM 0 means off.",
+        "PIR outputs are interpreted as active-HIGH digital motion signals; both inputs are explicitly held LOW throughout this negative-gating test.",
+        "A0 uses raw ADC values 0..1023. Neither the dark/bright polarity nor the application threshold is supplied; the checks do not assume either.",
+        "The initial passage-count value is not prescribed; only its invariance without any motion is checked.",
+        "The reference chooses ADC below 512 as dark, a five-second retriggerable hold, ordered opposite-PIR activations as one passage, and one-second reports in milliseconds. These unspecified choices are illustrative and are not imposed by the checks.",
+        "No serial reporting cadence is specified, so the suite does not require a report within an invented deadline."
+      ],
+      "horizon_ms": 17500,
+      "input_steps": [
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 0,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 900,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 1500,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 10200,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 10900,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 15800,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 16200,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 0,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 3000,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 3900,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 8200,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 3,
+          "at_ms": 8800,
+          "value": 0
+        },
+        {
+          "kind": "analog",
+          "pin": "A0",
+          "at_ms": 0,
+          "value": 200
+        },
+        {
+          "kind": "analog",
+          "pin": "A0",
+          "at_ms": 7400,
+          "value": 800
+        },
+        {
+          "kind": "analog",
+          "pin": "A0",
+          "at_ms": 9700,
+          "value": 200
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pwm",
+          "id": "pwm_9_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_1150",
+          "at_ms": 1150,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_3200",
+          "at_ms": 3200,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_6600",
+          "at_ms": 6600,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_7150",
+          "at_ms": 7150,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_8450",
+          "at_ms": 8450,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_10450",
+          "at_ms": 10450,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_14250",
+          "at_ms": 14250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_16050",
+          "at_ms": 16050,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_250",
+          "at_ms": 250,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_1200",
+          "at_ms": 1200,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_3300",
+          "at_ms": 3300,
+          "expected": "1",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_7300",
+          "at_ms": 7300,
+          "expected": "1",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_10450",
+          "at_ms": 10450,
+          "expected": "2",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "display",
+          "id": "display_tm:4:5_16500",
+          "at_ms": 16500,
+          "expected": "2",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "tm:4:5"
+        },
+        {
+          "kind": "serial",
+          "id": "elapsed_5000",
+          "prefix": "illuminated_on_time_ms",
+          "expected": 4100,
+          "tolerance": 120,
+          "from_ms": 5000,
+          "to_ms": 5200,
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Report only time during which the hall light was enabled."
+        },
+        {
+          "kind": "serial",
+          "id": "elapsed_10000",
+          "prefix": "illuminated_on_time_ms",
+          "expected": 6300,
+          "tolerance": 120,
+          "from_ms": 10000,
+          "to_ms": 10200,
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Report only time during which the hall light was enabled."
+        },
+        {
+          "kind": "serial",
+          "id": "elapsed_15000",
+          "prefix": "illuminated_on_time_ms",
+          "expected": 10200,
+          "tolerance": 120,
+          "from_ms": 15000,
+          "to_ms": 15200,
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Report only time during which the hall light was enabled."
+        }
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

@@ -1,0 +1,154 @@
+{
+  "horizon_ms": 6500,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": "2",
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": "3",
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": "4",
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [
+    {
+      "data_pin": "A0",
+      "clock_pin": "A2",
+      "latch_pin": "A1",
+      "registers": 2,
+      "displays": [
+        {
+          "name": "sevseg1",
+          "register_index": 0,
+          "segment_bits": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "common_anode": true
+        },
+        {
+          "name": "sevseg2",
+          "register_index": 1,
+          "segment_bits": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "common_anode": true
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "native_1_0",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a two-digit number using three pushbuttons (btn1, btn2, btn3), displayed on two 7-segment displays (sevseg1, s",
+      "name": "sevseg1",
+      "at_ms": 500,
+      "expected": "0",
+      "numeric": true
+    },
+    {
+      "id": "native_1_1",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a two-digit number using three pushbuttons (btn1, btn2, btn3), displayed on two 7-segment displays (sevseg1, s",
+      "name": "sevseg2",
+      "at_ms": 500,
+      "expected": "3",
+      "numeric": true
+    },
+    {
+      "id": "native_2_2",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a two-digit number using three pushbuttons (btn1, btn2, btn3), displayed on two 7-segment displays (sevseg1, s",
+      "name": "sevseg1",
+      "at_ms": 3000,
+      "expected": "1",
+      "numeric": true
+    },
+    {
+      "id": "native_2_3",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a two-digit number using three pushbuttons (btn1, btn2, btn3), displayed on two 7-segment displays (sevseg1, s",
+      "name": "sevseg2",
+      "at_ms": 3000,
+      "expected": "8",
+      "numeric": true
+    },
+    {
+      "id": "native_3_4",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a two-digit number using three pushbuttons (btn1, btn2, btn3), displayed on two 7-segment displays (sevseg1, s",
+      "name": "sevseg1",
+      "at_ms": 5500,
+      "expected": "0",
+      "numeric": true
+    },
+    {
+      "id": "native_3_5",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a two-digit number using three pushbuttons (btn1, btn2, btn3), displayed on two 7-segment displays (sevseg1, s",
+      "name": "sevseg2",
+      "at_ms": 5500,
+      "expected": "0",
+      "numeric": true
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\nconst int SHCP_PIN = A2;  \nconst int STCP_PIN = A1;  \nconst int DS_PIN = A0;    \nconst int BTN1_PIN = 2;  \nconst int BTN2_PIN = 3;  \nconst int BTN3_PIN = 4;  \nconst int BARGRAPH_START = 5;  \nconst int BARGRAPH_COUNT = 10;\nconst byte segmentCodes[] = {\n  0b11000000, \n  0b11111001, \n  0b10100100, \n  0b10110000, \n  0b10011001, \n  0b10010010, \n  0b10000010, \n  0b11111000, \n  0b10000000, \n  0b10010000  \n};\nint currentNumber = 0;\n\nvoid setup();\nvoid loop();\nvoid checkButton(int pin, int increment);\nvoid displayNumber(int num);\nvoid updateBargraph(int num);\nvoid setup() {\n  pinMode(SHCP_PIN, OUTPUT);\n  pinMode(STCP_PIN, OUTPUT);\n  pinMode(DS_PIN, OUTPUT);\n  pinMode(BTN1_PIN, INPUT_PULLUP);\n  pinMode(BTN2_PIN, INPUT_PULLUP);\n  pinMode(BTN3_PIN, INPUT_PULLUP);\n  for (int i = 0; i < BARGRAPH_COUNT; i++) {\n    pinMode(BARGRAPH_START + i, OUTPUT);\n    digitalWrite(BARGRAPH_START + i, LOW);\n  }\n  displayNumber(currentNumber);\n  updateBargraph(currentNumber);\n}\nvoid loop() {\n  checkButton(BTN1_PIN, 1);\n  checkButton(BTN2_PIN, 5);\n  checkButton(BTN3_PIN, 0);\n}\nvoid checkButton(int pin, int increment) {\n  if (digitalRead(pin) == LOW) {\n    delay(150);\n    if (digitalRead(pin) == LOW) {\n      if (increment == 0) {\n        currentNumber = 0;\n      } else {\n        currentNumber += increment;\n        if (currentNumber > 99) currentNumber = 0;\n      }\n      displayNumber(currentNumber);\n      updateBargraph(currentNumber);\n      while (digitalRead(pin) == LOW);\n    }\n  }\n}\nvoid displayNumber(int num) {\n  int tens = num / 10;\n  int ones = num % 10;\n  shiftOut(DS_PIN, SHCP_PIN, MSBFIRST, segmentCodes[ones]);\n  shiftOut(DS_PIN, SHCP_PIN, MSBFIRST, segmentCodes[tens]);\n  digitalWrite(STCP_PIN, HIGH);\n  digitalWrite(STCP_PIN, LOW);\n}\nvoid updateBargraph(int num) {\n  int tens = num / 10;\n  for (int i = 0; i < BARGRAPH_COUNT; i++) {\n    digitalWrite(BARGRAPH_START + i, (i < tens) ? HIGH : LOW);\n  }\n}",
+  "coverage": "partial",
+  "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+  "native_test_entries": [
+    "test1: {'time': 0.5, 'state': {'sevseg1': '0', 'sevseg2': '3', 'bargraph1': '0 LEDs lit'}, 'description': 'After three clicks of btn1 (increment by 1 each). The number should be 3, so tens digit is 0 (no LEDs lit).'}",
+    "test2: {'time': 0.5, 'state': {'sevseg1': '1', 'sevseg2': '8', 'bargraph1': '1 LED lit'}, 'description': 'After three additional clicks of btn2 (increment by 5 each). The number should be 18 (3 + 15), so tens digit is 1 (one LED lit).'}",
+    "test3: {'time': 0.5, 'state': {'sevseg1': '0', 'sevseg2': '0', 'bargraph1': '0 LEDs lit'}, 'description': 'After one click of btn3 (reset). The number should be 0, so tens digit is 0 (no LEDs lit).'}"
+  ],
+  "skipped_conditions": [
+    {
+      "test": 0,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "0 LEDs lit"
+    },
+    {
+      "test": 1,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "1 LED lit"
+    },
+    {
+      "test": 2,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "0 LEDs lit"
+    }
+  ],
+  "assumptions": [
+    "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+    "Normalized potentiometer positions0..1 map to ADC0..1023.",
+    "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+    "Reference preflight required; no claim that reference consistency proves all prose requirements."
+  ]
+}

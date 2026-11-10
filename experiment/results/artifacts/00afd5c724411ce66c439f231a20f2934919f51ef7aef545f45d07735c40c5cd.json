@@ -1,0 +1,82 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "doorOpenMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevDoorOpen",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "doorOpenMs",
+            "value": "doorOpenMs"
+          }
+        ]
+      },
+      {
+        "if": {
+          "not": "io_1"
+        },
+        "then": [
+          {
+            "assign": "doorOpenMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "io_1"
+            },
+            "prevDoorOpen"
+          ]
+        },
+        "then": []
+      },
+      {
+        "assign": "prevDoorOpen",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": "false",
+      "io_3": 0,
+      "io_4": 0,
+      "io_5": "false",
+      "serial_0_trigger": "false",
+      "serial_0_value_0": 0.0
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_1=true（门打开），io_0任意，保持若干控制步不变",
+        "oracle": "蜂鸣器(io_3)=0，LED(io_5)=false；门打开时长指示(io_4)为0；串口触发(serial_0_trigger)=false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_1=false（门关闭），io_0任意，保持若干控制步不变",
+        "oracle": "蜂鸣器(io_3)=0，LED(io_5)=false；制冷继电器(io_2)=false；串口触发(serial_0_trigger)=false；显示与串口温度值保持为0（io_4=0，serial_0_value_0=0.0）"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute doorOpenMs : Integer := 0;\n    attribute prevDoorOpen : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign doorOpenMs := doorOpenMs;\n      }\n      then if (not io_1) {\n        first start;\n        then assign doorOpenMs := 0;\n      }\n      then if (((not io_1)) and (prevDoorOpen)) {\n        first start;\n        then done;\n      }\n      then assign prevDoorOpen := io_1;\n    }\n    out attribute io_2 : Boolean = false;\n    out attribute io_3 : Integer = 0;\n    out attribute io_4 : Integer = 0;\n    out attribute io_5 : Boolean = false;\n    out attribute serial_0_trigger : Boolean = false;\n    out attribute serial_0_value_0 : Real = 0.0;\n  }\n  part system : Controller;\n}\n"
+}

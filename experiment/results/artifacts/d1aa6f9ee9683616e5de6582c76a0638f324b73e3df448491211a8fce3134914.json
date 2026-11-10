@@ -1,0 +1,195 @@
+{
+  "contract_sha256": "00bd632eafc87a13426cec9835e9f7e7bb8932af53fbc891a9fcd79a28e194f8",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D9\",\n      \"initial\": 90,\n      \"meaning\": \"Servo angle command\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"Pushbutton state (true when pressed)\",\n      \"active_high\": false,\n      \"pullup\": true\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Delta time since previous control step\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Report current servo angle while running\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"deg\",\n          \"initial\": 90,\n          \"meaning\": \"Current servo angle\",\n          \"label\": \"Servo angle\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Wiring preserved: servo signal PWM at Arduino D9; pushbutton with 10k pull-up connected so that Arduino D3 reads LOW when pressed and HIGH when not pressed; model uses true when pressed, therefore digital_input is configured with active_high=false and pullup=true.\",\n    \"Servo is a positional servo controlled via servo_angle on D9. Startup model angle is set to servo_angle_2=90 until the first button sample updates it.\",\n    \"Serial monitor initialization at 9600 is implemented via the serial channel baud. Report cadence and business logic belong to the SysML model; this proposal only declares the port(s) and a trigger gate.\",\n    \"All other required behavior items (continuous reading and mapping pressed->180, not pressed->90) are implemented in SysML; no additional timing/control logic is encoded in device requests.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Button Servo Motor\n\n## Project Description\nThis is a simple Arduino project that controls servo motor with a pushbutton.\n\n## Hardware Components\n- Arduino Uno\n- Servo Motor\n- Push Button\n- 10kΩ resistor\n\n## Circuit Description\nButton is connected to Arduino pin pin3 with 10kΩ pull up resistor. PWM pin of the servo motor is connected to pin9, and V+ pin to 5V. All GND pins are connected to gnd1.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial monitor as baud rate 9600\n2. Attaches the servo on pin pin9 to the servo object\n3. Set button pin mode as INPUT\n4. Continuously print the angle of the servo motor to serial monitor\n5. Continuously read the button value, and set the servo motor to 180 degrees when the button is pressed, and to 90 degrees when it is not\n\n## Success Criteria\nThe test is successful when:\n1. The pressed button and the corresponding servo motor angle line up perfectly.\n\n## Notes for Implementation\n- Use the Servo library to create and control a servo object.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the servo motor, button, GND connected to different pins, and the angle of the servo motor.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Control servo motor with push button\",\n    \"config\": {\n        \"servo_pin\": 9,\n        \"button_pin\": 3,\n        \"servo_angle_1\": 180,\n        \"servo_angle_2\": 90,\n        \"gnd_pin\": \"GND.1\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 200,\n            \"left\": 20,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-servo\",\n            \"id\": \"servo motor1\",\n            \"top\": 200,\n            \"left\": 400,\n            \"attrs\": {\n                \"hornColor\": \"black\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 57,\n            \"left\": 147,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 128.75,\n            \"left\": 192,\n            \"attrs\": {\n                \"value\": \"1000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:9\",\n            \"servo motor1:PWM\",\n            \"orange\",\n            [\n                \"v-20\",\n                \"*\",\n                \"h0\",\n                \"h-52\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"servo motor1:V+\",\n            \"red\",\n            [\n                \"v20\",\n                \"h0\",\n                \"*\",\n                \"h-20\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.1\",\n            \"servo motor1:GND\",\n            \"black\",\n            [\n                \"v-28\",\n                \"h240\",\n                \"*\",\n                \"h-20\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h56.4\"\n            ]\n        ],\n        [\n            \"push button1:1.l\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v38.4\",\n                \"h115.2\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:GND.1\",\n            \"green\",\n            [\n                \"v0\",\n                \"h-38.6\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "effective_requirement": "# Button Servo Motor\n\n## Project Description\nThis is a simple Arduino project that controls servo motor with a pushbutton.\n\n## Hardware Components\n- Arduino Uno\n- Servo Motor\n- Push Button\n- 10kΩ resistor\n\n## Circuit Description\nButton is connected to Arduino pin pin3 with 10kΩ pull up resistor. PWM pin of the servo motor is connected to pin9, and V+ pin to 5V. All GND pins are connected to gnd1.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial monitor as baud rate 9600\n2. Attaches the servo on pin pin9 to the servo object\n3. Set button pin mode as INPUT\n4. Continuously print the angle of the servo motor to serial monitor\n5. Continuously read the button value, and set the servo motor to 180 degrees when the button is pressed, and to 90 degrees when it is not\n\n## Success Criteria\nThe test is successful when:\n1. The pressed button and the corresponding servo motor angle line up perfectly.\n\n## Notes for Implementation\n- Use the Servo library to create and control a servo object.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n\n## Variants\nThis project may have different variants with the servo motor, button, GND connected to different pins, and the angle of the servo motor.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Control servo motor with push button\",\n    \"config\": {\n        \"servo_pin\": 9,\n        \"button_pin\": 3,\n        \"servo_angle_1\": 180,\n        \"servo_angle_2\": 90,\n        \"gnd_pin\": \"GND.1\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 200,\n            \"left\": 20,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-servo\",\n            \"id\": \"servo motor1\",\n            \"top\": 200,\n            \"left\": 400,\n            \"attrs\": {\n                \"hornColor\": \"black\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": 57,\n            \"left\": 147,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": 128.75,\n            \"left\": 192,\n            \"attrs\": {\n                \"value\": \"1000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"arduino uno1:9\",\n            \"servo motor1:PWM\",\n            \"orange\",\n            [\n                \"v-20\",\n                \"*\",\n                \"h0\",\n                \"h-52\"\n            ]\n        ],\n        [\n            \"arduino uno1:5V\",\n            \"servo motor1:V+\",\n            \"red\",\n            [\n                \"v20\",\n                \"h0\",\n                \"*\",\n                \"h-20\"\n            ]\n        ],\n        [\n            \"arduino uno1:GND.1\",\n            \"servo motor1:GND\",\n            \"black\",\n            [\n                \"v-28\",\n                \"h240\",\n                \"*\",\n                \"h-20\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"v0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h56.4\"\n            ]\n        ],\n        [\n            \"push button1:1.l\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"v38.4\",\n                \"h115.2\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:GND.1\",\n            \"green\",\n            [\n                \"v0\",\n                \"h-38.6\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Control servo motor with push button",
+        "config": {
+          "servo_pin": 9,
+          "button_pin": 3,
+          "servo_angle_1": 180,
+          "servo_angle_2": 90,
+          "gnd_pin": "GND.1"
+        },
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 200,
+            "left": 20,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo motor1",
+            "top": 200,
+            "left": 400,
+            "attrs": {
+              "hornColor": "black"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "push button1",
+            "top": 57,
+            "left": 147,
+            "rotate": 90,
+            "attrs": {
+              "color": "green",
+              "xray": "1"
+            }
+          },
+          {
+            "type": "wokwi-resistor",
+            "id": "resistor1",
+            "top": 128.75,
+            "left": 192,
+            "attrs": {
+              "value": "1000"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "arduino uno1:9",
+            "servo motor1:PWM",
+            "orange",
+            [
+              "v-20",
+              "*",
+              "h0",
+              "h-52"
+            ]
+          ],
+          [
+            "arduino uno1:5V",
+            "servo motor1:V+",
+            "red",
+            [
+              "v20",
+              "h0",
+              "*",
+              "h-20"
+            ]
+          ],
+          [
+            "arduino uno1:GND.1",
+            "servo motor1:GND",
+            "black",
+            [
+              "v-28",
+              "h240",
+              "*",
+              "h-20"
+            ]
+          ],
+          [
+            "push button1:1.r",
+            "resistor1:1",
+            "green",
+            [
+              "v0"
+            ]
+          ],
+          [
+            "resistor1:2",
+            "arduino uno1:5V",
+            "green",
+            [
+              "v0",
+              "h56.4"
+            ]
+          ],
+          [
+            "push button1:1.l",
+            "arduino uno1:3",
+            "green",
+            [
+              "v38.4",
+              "h115.2"
+            ]
+          ],
+          [
+            "push button1:2.l",
+            "arduino uno1:GND.1",
+            "green",
+            [
+              "v0",
+              "h-38.6"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

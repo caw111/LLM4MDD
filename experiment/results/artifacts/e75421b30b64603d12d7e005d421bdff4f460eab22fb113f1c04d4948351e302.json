@@ -1,0 +1,61 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "targetCm",
+        "type": "i32",
+        "initial": 400
+      },
+      {
+        "name": "lastDistanceCm",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_2_valid",
+        "then": [
+          {
+            "assign": "targetCm",
+            "value": "io_2"
+          }
+        ]
+      },
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "lastDistanceCm",
+            "value": "RealFunctions::floor(io_0)"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": "io_1 and io_2_valid",
+      "serial_0_value_0": {
+        "if": "lastDistanceCm > targetCm",
+        "then": 1,
+        "else": {
+          "if": "lastDistanceCm == targetCm",
+          "then": 2,
+          "else": 3
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "# Distance Sensor\n\n## Project Description\nThis is an Arduino project that uses Ultrasonic distance sensor to measure the distance, and compare with the input distance.\n\n## Hardware Components\n- Arduino Uno\n- HC-SR04 Ultrasonic Distance Sensor\n\n## Circuit Description\nThe ultrasonic distance sensor is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the TRIG pin to pin3, and the ECHO pin to pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial communication\n2. Continuously trigger and read the Ultrasonic distance sensor\n3. Print \"Enter a distance in cm to compare: \" and read the serial input\n4. Change the measured value to the integer centimeter, compare with the input value, and print one of these: \"Measured distance is greater\", \"Measured distance is equal to the target\", \"Measured distance is less\"\n\n## Success Criteria\nThe test is successful when:\n1. Measured distance is correctly calculated, compared, and correct result is printed to serial monitor.\n\n## Notes for Implementation\n- In the loop function, trigger and read the distance sensor, read the serial input, compare, and print result to the serial monitor.\n- Distance is calculated by dividing the duration by 58.\n\n## Variants\nThere may be variants with ECHO, TRIG, GND pin number.\n\n## Test Inputs\nTest input values are: 200, 400, 403, 500, 600\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read value of distance sensor\",\n    \"config\": {\n        \"distance_echo_pin\": \"2\",\n        \"distance_trig_pin\": \"3\",\n        \"gnd_pin\": \"GND.3\",\n        \"distance_init\": \"400\"\n    },\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": -9,\n            \"left\": -19.8,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-hc-sr04\",\n            \"id\": \"ultrasonic distance sensor1\",\n            \"top\": 43.5,\n            \"left\": 288.9,\n            \"rotate\": 90,\n            \"attrs\": {\n                \"distance\": \"400\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"ultrasonic distance sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"ultrasonic distance sensor1:GND\",\n            \"arduino uno1:GND.3\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"ultrasonic distance sensor1:TRIG\",\n            \"arduino uno1:3\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"ultrasonic distance sensor1:ECHO\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "For each target in {200,400,403,500,600}, drive io_2_valid=true for one step with io_2=target, and drive io_1=true with io_0 set such that floor(io_0) is {target-1, target, target+1} across separate traces.",
+        "oracle": "On each trace step where io_2_valid=true and io_1=true, the reported serial comparison result must correspond to whether the integer centimeter distance is less than, equal to, or greater than the target, and the serial output must update using that measured integer centimeter distance."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Integer;\n    in attribute io_2_valid : Boolean;\n    attribute targetCm : Integer := 400;\n    attribute lastDistanceCm : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_2_valid {\n        first start;\n        then assign targetCm := io_2;\n      }\n      then if io_1 {\n        first start;\n        then assign lastDistanceCm := RealFunctions::floor(io_0);\n      }\n    }\n    out attribute serial_0_trigger : Boolean = io_1 and io_2_valid;\n    out attribute serial_0_value_0 : Integer = (if lastDistanceCm > targetCm ? 1 else (if lastDistanceCm == targetCm ? 2 else 3));\n  }\n  part system : Controller;\n}\n"
+}

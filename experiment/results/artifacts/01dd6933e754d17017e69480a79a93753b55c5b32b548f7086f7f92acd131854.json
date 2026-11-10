@@ -1,0 +1,168 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "displayMode",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": "displayMode == 2",
+            "then": [
+              {
+                "assign": "displayMode",
+                "value": 0
+              }
+            ],
+            "else": [
+              {
+                "assign": "displayMode",
+                "value": "displayMode + 1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "accumulatedMs",
+        "value": "accumulatedMs + io_6"
+      },
+      {
+        "if": "accumulatedMs >= 2000",
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs - 2000"
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_5": {
+        "if": "displayMode == 0",
+        "then": "RealFunctions::floor(io_0)",
+        "else": {
+          "if": "displayMode == 1",
+          "then": "RealFunctions::floor(io_2)",
+          "else": "RealFunctions::floor(io_3)"
+        }
+      },
+      "serial_0_trigger": {
+        "and": [
+          {
+            ">=": [
+              "accumulatedMs",
+              0
+            ]
+          },
+          {
+            "<": [
+              "accumulatedMs",
+              10
+            ]
+          }
+        ]
+      },
+      "serial_0_value_0": "io_0",
+      "serial_0_value_1": "io_2",
+      "serial_0_value_2": "io_3",
+      "serial_1_trigger": {
+        "and": [
+          "io_4",
+          {
+            "and": [
+              {
+                "<=": [
+                  "io_0",
+                  300.0
+                ]
+              },
+              {
+                ">=": [
+                  "io_2",
+                  35.0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "serial_1_value_0": {
+        "and": [
+          "io_4",
+          {
+            "and": [
+              {
+                "<=": [
+                  "io_0",
+                  300.0
+                ]
+              },
+              {
+                ">=": [
+                  "io_2",
+                  35.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持 io_2/io_3/io_4 与 io_0 不变；对 io_1 产生一次按下上升沿（从 false 到 true）并在下一控制步维持按下，期间采样 io_5。",
+        "oracle": "displayMode 在按下上升沿后切换一次，io_5 从显示上一项切换为下一项（按顺序：光照->温度->湿度）且值来自对应输入的离散化（floor）。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "让 io_6 在控制步间累计，使 elapsed_ms 从 0 逐步推进并跨越 2000ms（例如每步 10ms，运行 200步），同时维持 io_0/io_2/io_3 任意固定值。",
+        "oracle": "serial_0_trigger 在每个满 2 秒周期的触发步骤为 true，并且该步 serial_0_value_0/io_1_value_1/io_1_value_2 同时反映当前 io_0/io_2/io_3。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个环境状态综合展示系统，使用光敏电阻 A0、DHT11（D7）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。按钮每按一次切换显示光照值、温度值或湿度值；串口每 2 秒输出三项完整数据，并在光照过低且温度过高时输出环境异常提示。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在某一控制步设置 io_4=true；并使 io_0 满足“光照过低”的条件且 io_2 满足“温度过高”的条件（其阈值按实现约定）。保持条件持续至少一个控制步。",
+        "oracle": "serial_1_value_0 为 true，且 serial_1_trigger 为 true（提示网关开启）。当任一条件不满足或 io_4=false 时，提示输出为 false。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_6 : Integer;\n    attribute previousPressed : Boolean := false;\n    attribute displayMode : Integer := 0;\n    attribute accumulatedMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then if displayMode == 2 {\n          first start;\n          then assign displayMode := 0;\n        } else {\n          first start;\n          then assign displayMode := displayMode + 1;\n        }\n      }\n      then assign accumulatedMs := accumulatedMs + io_6;\n      then if accumulatedMs >= 2000 {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 2000;\n      }\n      then assign previousPressed := io_1;\n    }\n    out attribute io_5 : Integer = (if displayMode == 0 ? RealFunctions::floor(io_0) else (if displayMode == 1 ? RealFunctions::floor(io_2) else RealFunctions::floor(io_3)));\n    out attribute serial_0_trigger : Boolean = ((((accumulatedMs) >= (0))) and (((accumulatedMs) < (10))));\n    out attribute serial_0_value_0 : Real = io_0;\n    out attribute serial_0_value_1 : Real = io_2;\n    out attribute serial_0_value_2 : Real = io_3;\n    out attribute serial_1_trigger : Boolean = ((io_4) and (((((io_0) <= (300.0))) and (((io_2) >= (35.0))))));\n    out attribute serial_1_value_0 : Boolean = ((io_4) and (((((io_0) <= (300.0))) and (((io_2) >= (35.0))))));\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,227 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises numeric temperature/distance reporting, a near-distance interval shorter than two polling periods (so at most two qualifying polls for any startup phase), interruption at the strict 20 cm boundary, and a fresh sustained near-distance run that must activate both LED and alarm. All negative alarm assertions precede any possible legitimate detection, so unspecified LED latching is permitted. Exact polling cadence is not independently verified: the available interval check cannot select arbitrary-format numeric reports without imposing a serial format. Alarm repetition, LED clearing, and invalid-sensor handling are unspecified and not constrained.",
+  "assumptions": [
+    "The bench default active-HIGH LED wiring applies to D13.",
+    "DHT11 uses D7; HC-SR04 uses trigger D8 and echo D9.",
+    "Reported temperature and distance are numeric degrees Celsius and centimetres; labels and line layout are unrestricted.",
+    "The periodic polling sequence begins within the first 3 seconds, with no fixed startup phase.",
+    "Exactly 20 cm is not less than 20 cm and interrupts a qualifying sequence.",
+    "LED clearing and alarm repetition are unspecified. The reference latches the LED and emits the alarm once per qualifying run."
+  ],
+  "horizon_ms": 35000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 24
+    },
+    {
+      "at_ms": 0,
+      "kind": "humidity",
+      "pin": 7,
+      "value": 50
+    },
+    {
+      "at_ms": 0,
+      "kind": "distance",
+      "pin": 9,
+      "value": 45
+    },
+    {
+      "at_ms": 10000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 28
+    },
+    {
+      "at_ms": 10000,
+      "kind": "distance",
+      "pin": 9,
+      "value": 10
+    },
+    {
+      "at_ms": 15500,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 32
+    },
+    {
+      "at_ms": 15500,
+      "kind": "distance",
+      "pin": 9,
+      "value": 20
+    },
+    {
+      "at_ms": 22000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 36
+    },
+    {
+      "at_ms": 22000,
+      "kind": "distance",
+      "pin": 9,
+      "value": 10
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [
+    {
+      "trigger_pin": 8,
+      "echo_pin": 9
+    }
+  ],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "initial_temperature",
+      "requirement_quote": "系统每 3 秒轮询一次温度与距离并通过串口输出",
+      "from_ms": 200,
+      "to_ms": 9700,
+      "expected": 24,
+      "tolerance": 0.5,
+      "min_count": 3
+    },
+    {
+      "kind": "serial",
+      "id": "initial_distance",
+      "requirement_quote": "系统每 3 秒轮询一次温度与距离并通过串口输出",
+      "from_ms": 200,
+      "to_ms": 9700,
+      "expected": 45,
+      "tolerance": 1,
+      "min_count": 3
+    },
+    {
+      "kind": "gpio",
+      "id": "initial_far_led",
+      "requirement_quote": "若连续 3 次距离都小于 20cm，则点亮 LED",
+      "pin": 13,
+      "at_ms": 9500,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "serial",
+      "id": "first_near_temperature",
+      "requirement_quote": "轮询一次温度与距离并通过串口输出",
+      "from_ms": 12300,
+      "to_ms": 15400,
+      "expected": 28,
+      "tolerance": 0.5,
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "first_near_distance",
+      "requirement_quote": "轮询一次温度与距离并通过串口输出",
+      "from_ms": 10300,
+      "to_ms": 15400,
+      "expected": 10,
+      "tolerance": 0.5,
+      "min_count": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "short_near_run_insufficient",
+      "requirement_quote": "若连续 3 次距离都小于 20cm，则点亮 LED",
+      "pin": 13,
+      "at_ms": 15400,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "serial",
+      "id": "boundary_distance",
+      "requirement_quote": "轮询一次温度与距离并通过串口输出",
+      "from_ms": 15800,
+      "to_ms": 21900,
+      "expected": 20,
+      "tolerance": 0.5,
+      "min_count": 2
+    },
+    {
+      "kind": "serial",
+      "id": "boundary_temperature",
+      "requirement_quote": "轮询一次温度与距离并通过串口输出",
+      "from_ms": 18000,
+      "to_ms": 21900,
+      "expected": 32,
+      "tolerance": 0.5,
+      "min_count": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "boundary_does_not_detect",
+      "requirement_quote": "连续 3 次距离都小于 20cm",
+      "pin": 13,
+      "at_ms": 21800,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "fresh_run_requires_three",
+      "requirement_quote": "连续 3 次距离都小于 20cm",
+      "pin": 13,
+      "at_ms": 27200,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "serial",
+      "id": "no_premature_alarm",
+      "requirement_quote": "若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected",
+      "from_ms": 0,
+      "to_ms": 27200,
+      "contains": "persistent object detected",
+      "min_count": 0,
+      "max_count": 0
+    },
+    {
+      "kind": "serial",
+      "id": "final_temperature",
+      "requirement_quote": "轮询一次温度与距离并通过串口输出",
+      "from_ms": 24500,
+      "to_ms": 34500,
+      "expected": 36,
+      "tolerance": 0.5,
+      "min_count": 3
+    },
+    {
+      "kind": "serial",
+      "id": "final_distance",
+      "requirement_quote": "轮询一次温度与距离并通过串口输出",
+      "from_ms": 22300,
+      "to_ms": 34500,
+      "expected": 10,
+      "tolerance": 0.5,
+      "min_count": 3
+    },
+    {
+      "kind": "gpio",
+      "id": "persistent_led",
+      "requirement_quote": "则点亮 LED",
+      "pin": 13,
+      "at_ms": 31500,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "serial",
+      "id": "persistent_alarm",
+      "requirement_quote": "输出 persistent object detected",
+      "from_ms": 27200,
+      "to_ms": 31500,
+      "contains": "persistent object detected",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <math.h>\n\nDHT dht(7, DHT11);\nunsigned long lastPoll = 0;\nunsigned int consecutiveNear = 0;\nbool reportedRun = false;\n\nfloat readDistanceCm() {\n  digitalWrite(8, LOW);\n  delayMicroseconds(2);\n  digitalWrite(8, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(8, LOW);\n  unsigned long duration = pulseIn(9, HIGH, 30000UL);\n  if (duration == 0) return NAN;\n  return duration / 58.0f;\n}\n\nvoid setup() {\n  pinMode(8, OUTPUT);\n  digitalWrite(8, LOW);\n  pinMode(9, INPUT);\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n  Serial.begin(9600);\n  dht.begin();\n  lastPoll = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if ((unsigned long)(now - lastPoll) < 3000UL) return;\n  lastPoll += 3000UL;\n  float temperature = dht.readTemperature();\n  float distance = readDistanceCm();\n  Serial.print(\"Temperature C: \");\n  Serial.println(temperature);\n  Serial.print(\"Distance cm: \");\n  Serial.println(distance);\n  if (!isnan(distance) && distance < 20.0f) {\n    if (consecutiveNear < 3) ++consecutiveNear;\n    if (consecutiveNear >= 3) {\n      digitalWrite(13, HIGH);\n      if (!reportedRun) {\n        Serial.println(\"persistent object detected\");\n        reportedRun = true;\n      }\n    }\n  } else {\n    consecutiveNear = 0;\n    reportedRun = false;\n  }\n}\n",
+  "electrical_led_pins": {}
+}

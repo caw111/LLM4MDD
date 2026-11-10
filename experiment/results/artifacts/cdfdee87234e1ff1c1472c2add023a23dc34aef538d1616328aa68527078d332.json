@@ -1,0 +1,117 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "count",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "count",
+            "value": {
+              "if": {
+                ">=": [
+                  "count",
+                  9
+                ]
+              },
+              "then": 0,
+              "else": "count + 1"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": "count",
+      "io_2": {
+        "if": {
+          "==": [
+            {
+              "-": [
+                "count",
+                {
+                  "*": [
+                    2,
+                    {
+                      "RealFunctions::floor": {
+                        "/": [
+                          "count",
+                          2
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            0
+          ]
+        },
+        "then": 0.0,
+        "else": 90.0
+      },
+      "io_3": {
+        "if": {
+          "==": [
+            {
+              "-": [
+                "count",
+                {
+                  "*": [
+                    2,
+                    {
+                      "RealFunctions::floor": {
+                        "/": [
+                          "count",
+                          2
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            0
+          ]
+        },
+        "then": 0.0,
+        "else": 90.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) using a shift register (sr1), two servo motors (servo1, servo2), and a push button (btn1). The 7-segment display will show a number that increments by 1 each time the button is pressed. Simultaneously, the two servo motors will rotate to specific angles based on the displayed number. The servos should move to 0° when the number is even and to 90° when the number is odd.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment display should show \"0\", and both servo motors (servo1, servo2) should be at 0°.\nButton Interaction: Each press of the button (btn1) should increment the displayed number by 1. The number should be displayed on the 7-segment display (sevseg1).\nServo Movement: After each button press, the two servo motors (servo1, servo2) should move to 0° if the displayed number is even or to 90° if the displayed number is odd.\nReset Condition: If the number exceeds 9 after incrementing, it should reset to 0.\nDisplay Update: The 7-segment display should immediately update to reflect the new number after each button press.\nServo Update: The servo motors should move to their new positions immediately after the number is updated.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"mega:3\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:4\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Apply a rising edge on io_0 (button press) repeatedly long enough for at least one full control step per press, starting from steady unpressed, and include enough presses to wrap past 9 back to 0.",
+        "oracle": "On startup, io_1==0 and io_2==0.0 and io_3==0.0. After each valid press edge, io_1 increments by 1 modulo 10. After each update, io_2 and io_3 are 0.0 when the displayed io_1 is even and 90.0 when io_1 is odd."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute count : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign count := (if ((count) >= (9)) ? 0 else count + 1);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Integer = count;\n    out attribute io_2 : Real = (if ((((count) - (((2) * (RealFunctions::floor(((count) / (2)))))))) == (0)) ? 0.0 else 90.0);\n    out attribute io_3 : Real = (if ((((count) - (((2) * (RealFunctions::floor(((count) / (2)))))))) == (0)) ? 0.0 else 90.0);\n  }\n  part system : Controller;\n}\n"
+}

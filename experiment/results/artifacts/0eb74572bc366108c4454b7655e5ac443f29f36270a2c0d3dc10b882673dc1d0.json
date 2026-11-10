@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"menuIndex\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"confirmedIndex\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousMenuPressed\",\n        \"type\": \"bool\",\n        \"initial\": true\n      },\n      {\n        \"name\": \"previousConfirmPressed\",\n        \"type\": \"bool\",\n        \"initial\": true\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousMenuPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"menuIndex\",\n            \"value\": \"if menuIndex == 2 ? 0 else menuIndex + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousConfirmPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"confirmedIndex\",\n            \"value\": \"menuIndex\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousMenuPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"previousConfirmPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_6\": {\n        \"if\": \"confirmedIndex == 0\",\n        \"then\": {\n          \"if\": \"io_4\",\n          \"then\": \"RealFunctions::floor(io_2)\",\n          \"else\": 0\n        },\n        \"else\": {\n          \"if\": \"confirmedIndex == 1\",\n          \"then\": {\n            \"if\": \"io_4\",\n            \"then\": \"RealFunctions::floor(io_3)\",\n            \"else\": 0\n          },\n          \"else\": \"RealFunctions::floor(io_5)\"\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Hold D3 pressed edge to confirm initial menuIndex; keep io_4 true with stable io_2/io_3/io_5; keep D2 not pressed; observe io_6 over several control steps.\",\n        \"oracle\": \"After D3 rising edge, io_6 equals floor(io_2) when confirmedIndex==0 and remains unchanged while D2 has no rising edges, regardless of menuIndex changes.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With confirmedIndex already set (by a prior D3 rising edge) and io_4 true, press D2 to generate two successive rising edges; do not press D3.\",\n        \"oracle\": \"io_6 does not change after D2 presses alone; it changes only on D3 rising edges by copying menuIndex into confirmedIndex.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Drive D2 rising edges three times (0->1->2->0) while generating a D3 rising edge after each D2 rising edge; keep io_4 true and set distinct io_2/io_3/io_5 values.\",\n        \"oracle\": \"After each D3 rising edge, io_6 equals floor(io_2) for confirmedIndex==0, floor(io_3) for confirmedIndex==1, and floor(io_5) for confirmedIndex==2, matching the selected menu item.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set confirmedIndex to temperature (menuIndex==0 then D3 rising). Then set io_4=false while keeping io_2/io_3 possibly changed, and keep D2/D3 not pressed.\",\n        \"oracle\": \"When confirmedIndex==0 and io_4 is false, io_6 becomes 0 and remains 0 until either io_4 becomes true again or confirmedIndex changes via D3.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T5\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set confirmedIndex to humidity (menuIndex==1 then D3 rising). Toggle io_4 from true to false and then back to true without pressing D2 or D3.\",\n        \"oracle\": \"On io_4=false, io_6 becomes 0; on io_4=true, io_6 returns to floor(io_3) for humidity while confirmedIndex remains humidity.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Real;\n    attribute menuIndex : Integer := 0;\n    attribute confirmedIndex : Integer := 0;\n    attribute previousMenuPressed : Boolean := true;\n    attribute previousConfirmPressed : Boolean := true;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousMenuPressed))) {\n        first start;\n        then assign menuIndex := if menuIndex == 2 ? 0 else menuIndex + 1;\n      }\n      then if ((io_1) and ((not previousConfirmPressed))) {\n        first start;\n        then assign confirmedIndex := menuIndex;\n      }\n      then assign previousMenuPressed := io_0;\n      then assign previousConfirmPressed := io_1;\n    }\n    out attribute io_6 : Integer = (if confirmedIndex == 0 ? (if io_4 ? RealFunctions::floor(io_2) else 0) else (if confirmedIndex == 1 ? (if io_4 ? RealFunctions::floor(io_3) else 0) else RealFunctions::floor(io_5)));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

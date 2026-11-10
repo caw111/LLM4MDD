@@ -1,0 +1,66 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "brightness",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "brightness",
+        "value": {
+          "if": "brightness >= 255",
+          "then": {
+            "if": "brightness == 255",
+            "then": {
+              "if": "io_1 > 0",
+              "then": 0,
+              "else": 0
+            },
+            "else": 0
+          },
+          "else": "brightness + io_1"
+        }
+      },
+      {
+        "if": "brightness > 255",
+        "then": [
+          {
+            "assign": "brightness",
+            "value": "0"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "brightness <= 255",
+        "then": "brightness",
+        "else": 0.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "让 D9 PWM LED 的亮度随时间从 0 逐渐变化到 255，然后循环重复。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_1 = 1 for 256 control steps (starting from initial model step), then continue for another 10 control steps with io_1 = 1 each step",
+        "oracle": "io_0 starts at 0, then increases by 1 each step until reaching 255, then after completing the ramp it wraps back to 0 and continues increasing again (repeating the same 0..255 cycle)."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "让 D9 PWM LED 的亮度随时间从 0 逐渐变化到 255，然后循环重复。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_1 values alternate: 0,1,0,1,... for 600 control steps",
+        "oracle": "Whenever io_1 is 0, io_0 remains unchanged; whenever io_1 is 1, io_0 increments by 1, still clamped to the 0..255 ramp and wrapping back to 0 after reaching 255, continuing the repeating cycle."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute brightness : Integer := 0;\n    perform action tick {\n      first start;\n      then assign brightness := (if brightness >= 255 ? (if brightness == 255 ? (if io_1 > 0 ? 0 else 0) else 0) else brightness + io_1);\n      then if brightness > 255 {\n        first start;\n        then assign brightness := 0;\n      }\n    }\n    out attribute io_0 : Real = (if brightness <= 255 ? brightness else 0.0);\n  }\n  part system : Controller;\n}\n"
+}

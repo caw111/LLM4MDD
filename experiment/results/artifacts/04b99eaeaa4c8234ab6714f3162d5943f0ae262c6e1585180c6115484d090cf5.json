@@ -1,0 +1,106 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "phase_ms",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "led1",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "led2",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "phase_ms",
+        "value": "phase_ms + io_2"
+      },
+      {
+        "if": "phase_ms >= 15000",
+        "then": [
+          {
+            "assign": "phase_ms",
+            "value": "phase_ms - 15000"
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "phase_ms >= 15000",
+        "then": [
+          {
+            "assign": "phase_ms",
+            "value": "phase_ms - 15000"
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "phase_ms < 5000",
+        "then": [
+          {
+            "assign": "led1",
+            "value": false
+          },
+          {
+            "assign": "led2",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "phase_ms >= 5000 and phase_ms < 10000",
+        "then": [
+          {
+            "assign": "led1",
+            "value": true
+          },
+          {
+            "assign": "led2",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "phase_ms >= 10000 and phase_ms < 15000",
+        "then": [
+          {
+            "assign": "led1",
+            "value": false
+          },
+          {
+            "assign": "led2",
+            "value": false
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_0": "led1",
+      "io_1": "led2"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two LEDs (led1 and led2) in a specific sequence.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both LEDs (led1 and led2) should be off.\nSequence of Operation:\n1. After 5 seconds, LED1 (led1) should turn on.\n2. After another 5 seconds (total of 10 seconds from start), LED2 (led2) should turn on.\n3. After another 5 seconds (total of 15 seconds from start), both LEDs (led1 and led2) should turn off simultaneously.\n4. The sequence should then repeat after a 5-second delay.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Drive io_2 with a stepwise delta sequence that advances simulated time by 0 ms, then 5000 ms, then 5000 ms, then 5000 ms repeatedly (with control_period_ms=10 ms implied between steps), starting from power-on/reset with initial model state.",
+        "oracle": "Initially (t=0): io_0=false and io_1=false. At t=5s: io_0=true, io_1=false. At t=10s: io_0=true, io_1=true. At t=15s: io_0=false and io_1=false simultaneously. At t=20s (repeat after 5s delay): io_0=true and io_1=false again."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_2 : Integer;\n    attribute phase_ms : Integer := 0;\n    attribute led1 : Boolean := false;\n    attribute led2 : Boolean := false;\n    perform action tick {\n      first start;\n      then assign phase_ms := phase_ms + io_2;\n      then if phase_ms >= 15000 {\n        first start;\n        then assign phase_ms := phase_ms - 15000;\n      }\n      then if phase_ms >= 15000 {\n        first start;\n        then assign phase_ms := phase_ms - 15000;\n      }\n      then if phase_ms < 5000 {\n        first start;\n        then assign led1 := false;\n        then assign led2 := false;\n      }\n      then if phase_ms >= 5000 and phase_ms < 10000 {\n        first start;\n        then assign led1 := true;\n        then assign led2 := false;\n      }\n      then if phase_ms >= 10000 and phase_ms < 15000 {\n        first start;\n        then assign led1 := false;\n        then assign led2 := false;\n      }\n    }\n    out attribute io_0 : Boolean = led1;\n    out attribute io_1 : Boolean = led2;\n  }\n  part system : Controller;\n}\n"
+}

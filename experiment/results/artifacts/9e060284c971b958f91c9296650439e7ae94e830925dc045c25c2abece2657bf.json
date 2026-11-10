@@ -1,0 +1,335 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [],
+  "outputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    },
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "((int)(arg0) - ((arg0) < (double)((int)(arg0)) ? 1 : 0))"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "servoAngleDeg"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "reportPending"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "servoAngleDeg"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "servoAngleDeg",
+      "type": "f64",
+      "initial": "0.0"
+    },
+    {
+      "name": "directionUp",
+      "type": "bool",
+      "initial": "true"
+    },
+    {
+      "name": "started",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "reportPending",
+      "type": "bool",
+      "initial": "true"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(!arg0)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "started"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "started",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "directionUp",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "servoAngleDeg",
+                "expression": "0.0",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "reportPending",
+                "expression": "true",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "directionUp"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "servoAngleDeg",
+                "expression": "((arg0 >= 180.0) ? 180.0 : (arg0 + 1.0))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "servoAngleDeg"
+                  }
+                ]
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 >= 179.0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "servoAngleDeg"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "directionUp",
+                      "expression": "false",
+                      "sources": []
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "reportPending",
+                      "expression": "true",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "reportPending",
+                      "expression": "false",
+                      "sources": []
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "servoAngleDeg",
+                "expression": "((arg0 <= 0.0) ? 0.0 : (arg0 - 1.0))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "servoAngleDeg"
+                  }
+                ]
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 <= 1.0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "servoAngleDeg"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "directionUp",
+                      "expression": "true",
+                      "sources": []
+                    },
+                    {
+                      "kind": "assign",
+                      "state": "reportPending",
+                      "expression": "true",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "reportPending",
+                      "expression": "false",
+                      "sources": []
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

@@ -1,0 +1,174 @@
+{
+  "contract_sha256": "4868c0b7195e605d99e5629b5fbe7278204aa5eaa6bffd13fb43e3ecc65f9a11",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_3": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2",
+          "serial_0_value_3"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"光电计数传感器：产品通过脉冲/计数触发\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"人工停线按钮/停线指示\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D7\",\n      \"initial\": false,\n      \"meaning\": \"切换显示目标、实际与停机次数\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED：报警/运行状态指示\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"蜂鸣器：报警鸣叫\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637：显示累计产量/达成率目标/停机与实际计数（由SysML选择）\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"节拍监控报告条件满足时输出状态与事件（由SysML决定）\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"count\",\n          \"initial\": 0,\n          \"meaning\": \"累计产量数\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"percent\",\n          \"initial\": 0,\n          \"meaning\": \"达成率\"\n        },\n        {\n          \"type\": \"i32\",\n          \"unit\": \"count\",\n          \"initial\": 0,\n          \"meaning\": \"停机次数\"\n        },\n        {\n          \"type\": \"i32\",\n          \"unit\": \"count\",\n          \"initial\": 0,\n          \"meaning\": \"目标切换下的实际计数/或显示所需的实际次数\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"flag\",\n          \"initial\": false,\n          \"meaning\": \"报警状态（连续无通过或人工停线触发）\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Uno：D3/D7/TM1637 的 D4/D5 与 D2/D13/D6 的原始功能保留；未引入额外GPIO/传感器/输出设备。\",\n    \"由于需求未给出“光电计数传感器 D2”信号形态（脉冲宽度/是否需要上拉/极性），digital_input 的默认 active_high 未被显式指定，按目录默认使用；计数去抖与脉冲辨识逻辑放在SysML。\",\n    \"‘若连续 30 秒无产品通过或人工停线，则报警并记录停机事件’中的 30 秒判定、报警/停机事件计数、达成率计算、按钮 D7 的显示切换与串口报告节拍均属于SysML业务逻辑；控制周期取 10ms 作为调度粒度。\",\n    \"TM1637 显示内容（累计产量/达成率/停机次数）由 SysML 根据按钮 D7 选择与业务状态决定；tm1637_number 只提供数值输出。\",\n    \"串口输出未指定具体格式/字段名/报告周期；因此假设单一串口报告触发条件（由SysML控制）在同一组内输出：累计产量(i32)、达成率(f64 percent)、停机次数(i32)、实际/显示所需实际计数(i32)以及报警状态(bool)。\",\n    \"serial_channels 使用同一 baud=9600，与给定串口参数一致；接收命令未在原始需求中定义，因此未创建 serial_command_input/serial_integer_input。\"\n  ],\n  \"unsupported\": []\n}",
+      "error": "serial_channels[0].values: missing fields ['label']; unknown fields []; allowed fields ['initial', 'label', 'meaning', 'required_inputs', 'type', 'unit']. Configuration keys belong directly on this object, not inside optional/binding.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"光电计数传感器：产品通过计数输入（每次通过产生有效脉冲）\",\n      \"pullup\": false,\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"人工停线按钮：按下表示停线\",\n      \"pullup\": false,\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D7\",\n      \"initial\": false,\n      \"meaning\": \"切换显示模式按钮：在目标/实际/停机次数之间切换\",\n      \"pullup\": false,\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED：报警/运行状态指示\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"蜂鸣器：报警声输出\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637：累计产量/达成率/停机次数/目标（按模式显示）\",\n      \"leading_zero\": false,\n      \"brightness\": 7,\n      \"invalid_policy\": \"blank\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"initial\": 0,\n      \"meaning\": \"Actual delta since previous control step\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"到达业务上报条件：周期性上报节拍监控状态\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"count\",\n          \"initial\": 0,\n          \"meaning\": \"累计产量（通过数）\",\n          \"label\": \"cumulative_count\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"percent\",\n          \"initial\": 0,\n          \"meaning\": \"达成率（相对目标产量）\",\n          \"label\": \"achievement_rate_percent\"\n        },\n        {\n          \"type\": \"i32\",\n          \"unit\": \"count\",\n          \"initial\": 0,\n          \"meaning\": \"停机次数\",\n          \"label\": \"stop_count\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"state\",\n          \"initial\": false,\n          \"meaning\": \"报警状态（由30秒无产品/或人工停线触发）\",\n          \"label\": \"alarm_active\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"光电计数传感器：假设D2为脉冲/电平翻转都可被计数模型处理；电气极性未给出，按active_high=true、pullup=false配置。\",\n    \"按钮D3与D7未给出上拉/下拉与是否为常闭/常开，按active_high=true、pullup=false配置；去抖与“按下/释放”边沿逻辑放在SysML模型中。\",\n    \"TM1637默认使用leading_zero=false、invalid_policy=blank；TM1637亮度(7)为目录合法值的假设，若需固定请在模型/工程参数中调整。\",\n    \"串口上报触发条件与上报周期未在需求中明确给出；serial_channels.trigger用于“业务上报条件”，上报字段格式与单位假设已落在typed values中（cumulative_count为i32；达成率为百分比f64；停机次数为i32；报警为bool）。\",\n    \"要求的“若连续30秒无产品通过或人工停线则报警并记录停机事件”属于业务时间与状态机逻辑，未在端口层定义；本端口仅提供D2计数输入、D3停线按钮输入与elapsed_ms时间基准。\",\n    \"未出现PWM/模拟传感器/超声/移位寄存器/DHT/伺服/另外GPIO的明确接线信息；因此不新增对应catalog请求。\"\n  ],\n  \"unsupported\": []\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。",
+    "effective_requirement": "构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_input\", \"pin\": \"D7\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

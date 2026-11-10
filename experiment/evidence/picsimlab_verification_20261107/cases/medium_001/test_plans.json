@@ -1,0 +1,174 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests inverse PWM brightness across several light levels, repeatability after returning to the original input, silence below and at the strict >800 boundary, and buzzer activity on two transitions above that boundary. The requirement does not specify the brightness transfer function, beep frequency, beep duration, or repeat cadence. Consequently, exact PWM values and beep timing are not prescribed, and the brevity of each beep is not independently verified.",
+      "assumptions": [
+        "A0 raw ADC readings represent increasing light intensity, consistent with the explicit >800 condition.",
+        "Relies on bench defaults: the D9 LED is active HIGH, with its cathode connected through a resistor to GND.",
+        "D6 is treated as a passive tone output; no active-buzzer wiring is specified.",
+        "No behavior is specified for the inventory-only D13 digital output, so it is not checked.",
+        "PWM mapping, beep frequency, beep duration, and retrigger policy are missing parameters. The reference chooses a linear inverse PWM mapping and a 120 ms, 2000 Hz beep on entry into the >800 region; checks do not require those particular choices.",
+        "The test allows up to approximately two seconds to observe a threshold-triggered beep because no exact response latency is specified."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 100
+        },
+        {
+          "at_ms": 1000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 350
+        },
+        {
+          "at_ms": 2000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 650
+        },
+        {
+          "at_ms": 3000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 800
+        },
+        {
+          "at_ms": 4000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 801
+        },
+        {
+          "at_ms": 6500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 700
+        },
+        {
+          "at_ms": 8000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 950
+        },
+        {
+          "at_ms": 10500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 100
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "relation",
+          "id": "brightness_decreases",
+          "requirement_quote": "光线越强 LED 越暗",
+          "source": "pwm",
+          "pin": 9,
+          "at_ms": [
+            700,
+            1700,
+            2700,
+            3700
+          ],
+          "relation": "decreasing",
+          "tolerance": 0
+        },
+        {
+          "kind": "relation",
+          "id": "brightness_returns",
+          "requirement_quote": "光线越强 LED 越暗",
+          "source": "pwm",
+          "pin": 9,
+          "at_ms": [
+            700,
+            11500
+          ],
+          "relation": "equal",
+          "tolerance": 1
+        },
+        {
+          "kind": "relation",
+          "id": "bright_to_dim_light_recovery",
+          "requirement_quote": "光线越强 LED 越暗",
+          "source": "pwm",
+          "pin": 9,
+          "at_ms": [
+            10000,
+            11500
+          ],
+          "relation": "increasing",
+          "tolerance": 0
+        },
+        {
+          "kind": "edges",
+          "id": "no_beep_below_threshold",
+          "requirement_quote": "当光线极强时（>800）蜂鸣器（D6）短鸣提示",
+          "pin": 6,
+          "from_ms": 300,
+          "to_ms": 2900,
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "edges",
+          "id": "no_beep_at_800",
+          "requirement_quote": "当光线极强时（>800）蜂鸣器（D6）短鸣提示",
+          "pin": 6,
+          "from_ms": 3300,
+          "to_ms": 3900,
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "edges",
+          "id": "beep_just_above_boundary",
+          "requirement_quote": "当光线极强时（>800）蜂鸣器（D6）短鸣提示",
+          "pin": 6,
+          "from_ms": 4000,
+          "to_ms": 6200,
+          "min_count": 2
+        },
+        {
+          "kind": "tone",
+          "id": "quiet_after_lowering_light",
+          "requirement_quote": "当光线极强时（>800）蜂鸣器（D6）短鸣提示",
+          "pin": 6,
+          "at_ms": 7700,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "edges",
+          "id": "beep_on_second_bright_transition",
+          "requirement_quote": "当光线极强时（>800）蜂鸣器（D6）短鸣提示",
+          "pin": 6,
+          "from_ms": 8000,
+          "to_ms": 10300,
+          "min_count": 2
+        },
+        {
+          "kind": "tone",
+          "id": "quiet_on_final_return",
+          "requirement_quote": "当光线极强时（>800）蜂鸣器（D6）短鸣提示",
+          "pin": 6,
+          "at_ms": 11700,
+          "expected": 0,
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n\nbool wasExtreme = false;\nbool beeping = false;\nunsigned long beepStart = 0;\n\nvoid setup() {\n  pinMode(A0, INPUT);\n  pinMode(9, OUTPUT);\n  pinMode(6, OUTPUT);\n  digitalWrite(6, LOW);\n}\n\nvoid loop() {\n  const int light = analogRead(A0);\n  const int brightness = 255 - (int)((long)light * 255L / 1023L);\n  analogWrite(9, brightness);\n\n  const bool extreme = light > 800;\n  const unsigned long now = millis();\n  if (extreme && !wasExtreme) {\n    tone(6, 2000);\n    beeping = true;\n    beepStart = now;\n  }\n  if (beeping && (!extreme || now - beepStart >= 120UL)) {\n    noTone(6);\n    digitalWrite(6, LOW);\n    beeping = false;\n  }\n  wasExtreme = extreme;\n  delay(5);\n}\n"
+    },
+    "engine": null
+  }
+]

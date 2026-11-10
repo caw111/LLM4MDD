@@ -1,0 +1,502 @@
+{
+  "contract_sha256": "c465e9e874bef1cf3ecce5147390ff723a09aa6780d17953ad6aa426ae4d233f",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_1_segment_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_9": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\"version\":1,\"board\":\"arduino:avr:mega\",\"control_period_ms\":10,\"interface_requests\":[{\"kind\":\"shift595_number\",\"initial\":0,\"meaning\":\"Two-digit number display (tens=sevseg1, units=sevseg2) for main increment/reset count 0..99\",\"data_pin\":\"A0\",\"clock_pin\":\"A2\",\"latch_pin\":\"A1\",\"leading_zero\":true,\"invalid_policy\":\"blank\",\"unit\":\"count\",\"registers\":[{\"register\":\"sr1\",\"display\":\"sevseg1\",\"digit\":1,\"segment_bits\":[0,1,2,3,4,5,6],\"active_low\":true},{\"register\":\"sr2\",\"display\":\"sevseg2\",\"digit\":0,\"segment_bits\":[0,1,2,3,4,5,6],\"active_low\":true}]},{\"kind\":\"led_bar_graph\",\"initial\":false,\"meaning\":\"LED bar graph percentage for main increment/reset count mapped to 0..10 segments (0%..100%)\",\"pins\":[\"D2\",\"D3\",\"D4\",\"D5\",\"D6\",\"D7\",\"D8\",\"D9\",\"D10\",\"D11\"],\"active_high\":true},{\"kind\":\"servo_angle\",\"initial\":0,\"meaning\":\"Servo1 angle corresponding to (count * 1.8) degrees, where count is 0..99\",\"pin\":\"D12\"},{\"kind\":\"servo_angle\",\"initial\":0,\"meaning\":\"Servo2 angle corresponding to (count * 1.8) degrees, where count is 0..99\",\"pin\":\"D13\"},{\"kind\":\"elapsed_ms\",\"initial\":0,\"meaning\":\"Actual delta since previous control step\"}],\"serial_channels\":[],\"planning_notes\":[\"Board must be Arduino Mega 2560 (as specified).\",\"Preserve wiring from the provided circuit: shift-register pins use A0(DATA), A2(CLOCK), A1(LATCH); bar graph uses Mega digital pins D2..D11; servo1 uses D12 (PWM) and servo2 uses D13 (PWM).\",\"Control-period scheduling granularity is 10 ms; the SysML model accumulates elapsed_ms deltas to implement the required 2-second increment cadence and the reset at >99.\",\"7-segment displays show a two-digit number with initial display \\\"00\\\" at startup; leading_zero=true ensures the tens digit is rendered as 0.\",\"shift595_number invalid_policy=blank and initial=0 imply startup blanking behavior only if the model requests out-of-range; counting logic in SysML ensures requests stay within 0..99.\",\"LED bar graph percentage for count maps 0..99 to 0..100%, then to 0..10 LEDs (5 LEDs lit example for 50). SysML handles rounding (e.g., floor) and saturation at 0..10.\",\"Servo angles are commanded as (count * 1.8) degrees, with count clamped to 0..99; output requests are kept within 0..180; SysML handles wrap/reset.\",\"The provided shift-register segment mapping includes active_low=true and segment_bits [0..6] for A..G; digit assignment uses digit=0 as leftmost and digit=1 as rightmost; mapping to sevseg1/sevseg2 is set accordingly.\",\"No serial I/O is required by the given requirements; therefore serial_channels is empty.\",\"The provided circuit does not include any buttons/sensors/serial receive; no additional input interfaces are requested beyond elapsed_ms.\"]}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2), a 10-segment LED bar graph (bargraph1), and two servo motors (servo1, servo2). The 7-segment displays will show a two-digit number, the LED bar graph will visually represent the number as a percentage (0-100%), and the servo motors will rotate to positions corresponding to the number. The number will increment every 2 seconds, and the system should reset to 0 after reaching 99.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", the LED bar graph should be off, and both servo motors should be at their 0-degree position.\nNumber Increment: Every 2 seconds, the displayed number should increment by 1. The number should be displayed on the two 7-segment displays, with the tens digit on one display (sevseg1) and the units digit on the other (sevseg2).\nLED Bar Graph: The LED bar graph (bargraph1) should light up a number of LEDs proportional to the displayed number. For example, if the number is 50, 5 LEDs should be lit.\nServo Motors: The two servo motors (servo1, servo2) should rotate to positions corresponding to the displayed number. The angle of each servo should be calculated as (number * 1.8) degrees, providing a range of 0 to 178.2 degrees.\nReset Condition: If the number exceeds 99, it should reset to 0, and all components should update accordingly.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"top\": -14.2, \"left\": 417.6, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"top\": -30.8, \"left\": -201.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"top\": 79.4, \"left\": -201.6, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\", []], [\"mega:A2\", \"sr1:SHCP\", \"gray\", []], [\"mega:A1\", \"sr1:STCP\", \"purple\", []], [\"mega:A0\", \"sr1:DS\", \"blue\", []], [\"sr1:VCC\", \"sr1:MR\", \"red\", []], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\", []], [\"sr1:Q1\", \"sevseg1:B\", \"green\", []], [\"sr1:Q2\", \"sevseg1:C\", \"green\", []], [\"sr1:Q3\", \"sevseg1:D\", \"green\", []], [\"sr1:Q4\", \"sevseg1:E\", \"green\", []], [\"mega:GND.3\", \"sr1:GND\", \"black\", []], [\"sr1:GND\", \"sr1:OE\", \"black\", []], [\"sr1:Q0\", \"sevseg1:A\", \"green\", []], [\"sr1:Q5\", \"sevseg1:F\", \"green\", []], [\"sr1:Q6\", \"sevseg1:G\", \"green\", []], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\", []], [\"sr1:STCP\", \"sr2:STCP\", \"purple\", []], [\"sr1:Q7S\", \"sr2:DS\", \"blue\", []], [\"sr1:VCC\", \"sr2:MR\", \"red\", []], [\"sr1:VCC\", \"sr2:VCC\", \"red\", []], [\"sr1:OE\", \"sr2:OE\", \"black\", []], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\", []], [\"sr2:Q0\", \"sevseg2:A\", \"green\", []], [\"sr2:Q1\", \"sevseg2:B\", \"green\", []], [\"sr2:Q2\", \"sevseg2:C\", \"green\", []], [\"sr2:Q3\", \"sevseg2:D\", \"green\", []], [\"sr2:Q4\", \"sevseg2:E\", \"green\", []], [\"sr2:Q5\", \"sevseg2:F\", \"green\", []], [\"sr2:Q6\", \"sevseg2:G\", \"green\", []], [\"sr1:GND\", \"sr2:GND\", \"black\", []], [\"mega:2\", \"bargraph1:A1\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C1\", \"black\", []], [\"mega:3\", \"bargraph1:A2\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C2\", \"black\", []], [\"mega:4\", \"bargraph1:A3\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C3\", \"black\", []], [\"mega:5\", \"bargraph1:A4\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C4\", \"black\", []], [\"mega:6\", \"bargraph1:A5\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C5\", \"black\", []], [\"mega:7\", \"bargraph1:A6\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C6\", \"black\", []], [\"mega:8\", \"bargraph1:A7\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C7\", \"black\", []], [\"mega:9\", \"bargraph1:A8\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C8\", \"black\", []], [\"mega:10\", \"bargraph1:A9\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C9\", \"black\", []], [\"mega:11\", \"bargraph1:A10\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C10\", \"black\", []], [\"mega:12\", \"servo1:PWM\", \"orange\", []], [\"mega:5V\", \"servo1:V+\", \"red\", []], [\"mega:GND.1\", \"servo1:GND\", \"black\", []], [\"mega:13\", \"servo2:PWM\", \"orange\", []], [\"mega:5V\", \"servo2:V+\", \"red\", []], [\"mega:GND.1\", \"servo2:GND\", \"black\", []]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2), a 10-segment LED bar graph (bargraph1), and two servo motors (servo1, servo2). The 7-segment displays will show a two-digit number, the LED bar graph will visually represent the number as a percentage (0-100%), and the servo motors will rotate to positions corresponding to the number. The number will increment every 2 seconds, and the system should reset to 0 after reaching 99.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", the LED bar graph should be off, and both servo motors should be at their 0-degree position.\nNumber Increment: Every 2 seconds, the displayed number should increment by 1. The number should be displayed on the two 7-segment displays, with the tens digit on one display (sevseg1) and the units digit on the other (sevseg2).\nLED Bar Graph: The LED bar graph (bargraph1) should light up a number of LEDs proportional to the displayed number. For example, if the number is 50, 5 LEDs should be lit.\nServo Motors: The two servo motors (servo1, servo2) should rotate to positions corresponding to the displayed number. The angle of each servo should be calculated as (number * 1.8) degrees, providing a range of 0 to 178.2 degrees.\nReset Condition: If the number exceeds 99, it should reset to 0, and all components should update accordingly.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"top\": -14.2, \"left\": 417.6, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"top\": -30.8, \"left\": -201.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"top\": 79.4, \"left\": -201.6, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\", []], [\"mega:A2\", \"sr1:SHCP\", \"gray\", []], [\"mega:A1\", \"sr1:STCP\", \"purple\", []], [\"mega:A0\", \"sr1:DS\", \"blue\", []], [\"sr1:VCC\", \"sr1:MR\", \"red\", []], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\", []], [\"sr1:Q1\", \"sevseg1:B\", \"green\", []], [\"sr1:Q2\", \"sevseg1:C\", \"green\", []], [\"sr1:Q3\", \"sevseg1:D\", \"green\", []], [\"sr1:Q4\", \"sevseg1:E\", \"green\", []], [\"mega:GND.3\", \"sr1:GND\", \"black\", []], [\"sr1:GND\", \"sr1:OE\", \"black\", []], [\"sr1:Q0\", \"sevseg1:A\", \"green\", []], [\"sr1:Q5\", \"sevseg1:F\", \"green\", []], [\"sr1:Q6\", \"sevseg1:G\", \"green\", []], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\", []], [\"sr1:STCP\", \"sr2:STCP\", \"purple\", []], [\"sr1:Q7S\", \"sr2:DS\", \"blue\", []], [\"sr1:VCC\", \"sr2:MR\", \"red\", []], [\"sr1:VCC\", \"sr2:VCC\", \"red\", []], [\"sr1:OE\", \"sr2:OE\", \"black\", []], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\", []], [\"sr2:Q0\", \"sevseg2:A\", \"green\", []], [\"sr2:Q1\", \"sevseg2:B\", \"green\", []], [\"sr2:Q2\", \"sevseg2:C\", \"green\", []], [\"sr2:Q3\", \"sevseg2:D\", \"green\", []], [\"sr2:Q4\", \"sevseg2:E\", \"green\", []], [\"sr2:Q5\", \"sevseg2:F\", \"green\", []], [\"sr2:Q6\", \"sevseg2:G\", \"green\", []], [\"sr1:GND\", \"sr2:GND\", \"black\", []], [\"mega:2\", \"bargraph1:A1\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C1\", \"black\", []], [\"mega:3\", \"bargraph1:A2\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C2\", \"black\", []], [\"mega:4\", \"bargraph1:A3\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C3\", \"black\", []], [\"mega:5\", \"bargraph1:A4\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C4\", \"black\", []], [\"mega:6\", \"bargraph1:A5\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C5\", \"black\", []], [\"mega:7\", \"bargraph1:A6\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C6\", \"black\", []], [\"mega:8\", \"bargraph1:A7\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C7\", \"black\", []], [\"mega:9\", \"bargraph1:A8\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C8\", \"black\", []], [\"mega:10\", \"bargraph1:A9\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C9\", \"black\", []], [\"mega:11\", \"bargraph1:A10\", \"green\", []], [\"mega:GND.1\", \"bargraph1:C10\", \"black\", []], [\"mega:12\", \"servo1:PWM\", \"orange\", []], [\"mega:5V\", \"servo1:V+\", \"red\", []], [\"mega:GND.1\", \"servo1:GND\", \"black\", []], [\"mega:13\", \"servo2:PWM\", \"orange\", []], [\"mega:5V\", \"servo2:V+\", \"red\", []], [\"mega:GND.1\", \"servo2:GND\", \"black\", []]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg2",
+            "top": -196.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr2",
+            "top": -87.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led-bar-graph",
+            "id": "bargraph1",
+            "top": -14.2,
+            "left": 417.6,
+            "attrs": {
+              "color": "lime"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "top": -30.8,
+            "left": -201.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "top": 79.4,
+            "left": -201.6,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red",
+            []
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray",
+            []
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple",
+            []
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue",
+            []
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red",
+            []
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red",
+            []
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green",
+            []
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green",
+            []
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green",
+            []
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black",
+            []
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black",
+            []
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green",
+            []
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green",
+            []
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green",
+            []
+          ],
+          [
+            "sr1:SHCP",
+            "sr2:SHCP",
+            "gray",
+            []
+          ],
+          [
+            "sr1:STCP",
+            "sr2:STCP",
+            "purple",
+            []
+          ],
+          [
+            "sr1:Q7S",
+            "sr2:DS",
+            "blue",
+            []
+          ],
+          [
+            "sr1:VCC",
+            "sr2:MR",
+            "red",
+            []
+          ],
+          [
+            "sr1:VCC",
+            "sr2:VCC",
+            "red",
+            []
+          ],
+          [
+            "sr1:OE",
+            "sr2:OE",
+            "black",
+            []
+          ],
+          [
+            "sevseg1:COM.1",
+            "sevseg2:COM.1",
+            "red",
+            []
+          ],
+          [
+            "sr2:Q0",
+            "sevseg2:A",
+            "green",
+            []
+          ],
+          [
+            "sr2:Q1",
+            "sevseg2:B",
+            "green",
+            []
+          ],
+          [
+            "sr2:Q2",
+            "sevseg2:C",
+            "green",
+            []
+          ],
+          [
+            "sr2:Q3",
+            "sevseg2:D",
+            "green",
+            []
+          ],
+          [
+            "sr2:Q4",
+            "sevseg2:E",
+            "green",
+            []
+          ],
+          [
+            "sr2:Q5",
+            "sevseg2:F",
+            "green",
+            []
+          ],
+          [
+            "sr2:Q6",
+            "sevseg2:G",
+            "green",
+            []
+          ],
+          [
+            "sr1:GND",
+            "sr2:GND",
+            "black",
+            []
+          ],
+          [
+            "mega:2",
+            "bargraph1:A1",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C1",
+            "black",
+            []
+          ],
+          [
+            "mega:3",
+            "bargraph1:A2",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C2",
+            "black",
+            []
+          ],
+          [
+            "mega:4",
+            "bargraph1:A3",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C3",
+            "black",
+            []
+          ],
+          [
+            "mega:5",
+            "bargraph1:A4",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C4",
+            "black",
+            []
+          ],
+          [
+            "mega:6",
+            "bargraph1:A5",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C5",
+            "black",
+            []
+          ],
+          [
+            "mega:7",
+            "bargraph1:A6",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C6",
+            "black",
+            []
+          ],
+          [
+            "mega:8",
+            "bargraph1:A7",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C7",
+            "black",
+            []
+          ],
+          [
+            "mega:9",
+            "bargraph1:A8",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C8",
+            "black",
+            []
+          ],
+          [
+            "mega:10",
+            "bargraph1:A9",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C9",
+            "black",
+            []
+          ],
+          [
+            "mega:11",
+            "bargraph1:A10",
+            "green",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C10",
+            "black",
+            []
+          ],
+          [
+            "mega:12",
+            "servo1:PWM",
+            "orange",
+            []
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black",
+            []
+          ],
+          [
+            "mega:13",
+            "servo2:PWM",
+            "orange",
+            []
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red",
+            []
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black",
+            []
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

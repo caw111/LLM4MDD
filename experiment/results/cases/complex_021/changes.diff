@@ -1,0 +1,60 @@
+--- original.ino
++++ repaired.ino
+@@ -151,34 +151,30 @@
+ }
+ 
+ void loop() {
+-  uint32_t hw_now = (uint32_t)millis();
+-  uint32_t hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_started && hw_elapsed < 10UL) return;
+-  if (hw_elapsed > 2147483647UL) return;
+-  uint32_t hw_dht_0_now = (uint32_t)millis();
+-  if (!hw_dht_0_attempted || (uint32_t)(hw_dht_0_now - hw_dht_0_sampled) >= 2000UL) {
+-    hw_dht_0_attempted = true; hw_dht_0_sampled = hw_dht_0_now;
+-    bool hw_dht_0_valid = hw_dht_0.read();
+-    double hw_dht_0_io_1 = hw_dht_0_valid ? hw_dht_0.readTemperature() : NAN;
+-    double hw_dht_0_io_2 = hw_dht_0_valid ? hw_dht_0.readHumidity() : NAN;
+-    hw_dht_0_valid = hw_dht_0_valid && isfinite(hw_dht_0_io_1) && isfinite(hw_dht_0_io_2);
+-    if (hw_dht_0_valid) {
+-      hw_value_io_1 = hw_dht_0_io_1;
+-      hw_value_io_2 = hw_dht_0_io_2;
+-      hw_dht_0_ready = true;
++  static bool valid=false;
++  static uint32_t lastRead=0,phaseStart=0;
++  uint32_t now=millis();
++  if (!hw_dht_0_attempted || (uint32_t)(now-lastRead)>=2000) {
++    bool previous=valid;
++    bool first=!hw_dht_0_attempted;
++    hw_dht_0_attempted=true;
++    lastRead=now;
++    valid=hw_dht_0.read();
++    if (valid) {
++      hw_value_io_1=hw_dht_0.readTemperature();
++      hw_value_io_2=hw_dht_0.readHumidity();
++      valid=isfinite(hw_value_io_1) && isfinite(hw_value_io_2);
++    }
++    if (first || previous!=valid) {
++      phaseStart=now;
++      if (!valid) Serial.println("sensor error");
+     }
+   }
+-  if (!hw_dht_0_ready) return;
+-  hw_now = (uint32_t)millis();
+-  hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_elapsed > 2147483647UL) return;
+-  hw_last_step = hw_now; hw_started = true;
+-  ProgramPage1(hw_value_io_1, hw_value_io_2, &hw_value_io_0, &hw_value_io_3, &hw_value_serial_0_trigger, &hw_value_serial_0_value_0);
+-  digitalWrite(13, hw_value_io_0 ? HIGH : LOW);
+-  if (hw_value_io_3 != hw_display_previous_io_3) {
+-    if (hw_value_io_3 < -999 || hw_value_io_3 > 9999) hw_display_io_3.clear();
+-    else hw_display_io_3.showNumberDec((int)hw_value_io_3, false, 4, 0);
+-    hw_display_previous_io_3 = hw_value_io_3;
++  uint32_t phase=(uint32_t)(now-phaseStart);
++  digitalWrite(13,!valid && phase%1000<500 ? HIGH : LOW);
++  int value=valid ? (int)(phase/2000%2 ? hw_value_io_2 : hw_value_io_1) : 0;
++  if (value!=hw_display_previous_io_3 || (phase<20 && now==phaseStart)) {
++    hw_display_io_3.showNumberDec(value,!valid,4,0);
++    hw_display_previous_io_3=value;
+   }
+-  if (hw_value_serial_0_trigger) { Serial.print("sensor_error_numeric_placeholder"); Serial.println(hw_value_serial_0_value_0); }
+ }

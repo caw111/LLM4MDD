@@ -1,0 +1,126 @@
+{
+  "contract_sha256": "2fb320ecbe24587aa5b0b3ede2784ccbffbbc9684ef7c5783970a1f8ccfcc35f",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button request to toggle mute/unmute\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"LED indicator: ON when muted\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"Buzzer drive tone frequency (model-controlled)\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"Measured distance from HC-SR04 (cm)\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"Validity of last ultrasonic distance measurement\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": true,\n        \"meaning\": \"Periodic distance reporting (even while muted)\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"cm\",\n          \"initial\": 0,\n          \"meaning\": \"Reported ultrasonic distance (cm)\",\n          \"label\": \"distance_cm\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Control period set to 10 ms as a reasonable scheduling granularity; actual report cadence and buzzer frequency timing are handled in the SysML model using elapsed_ms.\",\n    \"No explicit active_high/pullup polarity was provided for the button (D2). Catalog default applies; model should treat io as true when the button is pressed per requirements, without adding extra inversion.\",\n    \"LED (D13) defaulted to false (off) at startup; model will drive it ON during mute.\",\n    \"Ultrasonic timeouts and sampling alignment: timeout_us fixed to 30000 within the allowed 25000..60000 range; model must sample at or above the ultrasonic minimums and align to control-period multiple.\",\n    \"Serial reporting format assumption: a single numeric line containing the distance value only, emitted when the trigger condition is true; exact textual formatting (e.g., separators, decimals) is delegated to SysML/serial formatter.\",\n    \"Button behavior (mute/unmute toggle vs. hold-to-mute) and buzzer frequency mapping vs. distance thresholds are not specified in electrical wiring and therefore remain SysML model decisions.\"\n  ],\n  \"unsupported\": []\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。",
+    "effective_requirement": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

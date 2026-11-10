@@ -1,0 +1,235 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "i32"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_1",
+      "type": "f64"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_1",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "positionDeg"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_1",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_1",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_1"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "accumulatedMs",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "positionDeg",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "direction",
+      "type": "bool",
+      "initial": "true"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "assign",
+          "state": "accumulatedMs",
+          "expression": "(arg0 + arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "accumulatedMs"
+            },
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 >= 2000)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "accumulatedMs"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "accumulatedMs",
+                "expression": "(arg0 - 2000)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "accumulatedMs"
+                  }
+                ]
+              },
+              {
+                "kind": "if",
+                "condition": "arg0",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "direction"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "if",
+                      "condition": "((arg0 + 10) <= 180)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "positionDeg"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "positionDeg",
+                            "expression": "(arg0 + 10)",
+                            "sources": [
+                              {
+                                "kind": "state",
+                                "name": "positionDeg"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "else": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "positionDeg",
+                            "expression": "180",
+                            "sources": []
+                          },
+                          {
+                            "kind": "assign",
+                            "state": "direction",
+                            "expression": "false",
+                            "sources": []
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "else": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "if",
+                      "condition": "((arg0 - 10) >= 0)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "positionDeg"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "positionDeg",
+                            "expression": "(arg0 - 10)",
+                            "sources": [
+                              {
+                                "kind": "state",
+                                "name": "positionDeg"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "else": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "positionDeg",
+                            "expression": "0",
+                            "sources": []
+                          },
+                          {
+                            "kind": "assign",
+                            "state": "direction",
+                            "expression": "true",
+                            "sources": []
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "else": null
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

@@ -1,0 +1,499 @@
+{
+  "supported": true,
+  "coverage": "full",
+  "coverage_explanation": "Exercises initial OFF, falling-edge start/stop, sustained presses, release immunity, repeated blinking, stopping while illuminated, and restart with a fresh timer. Successive blinking intervals are checked against 500±20ms. First-edge windows allow both the 20ms input-recognition delay and the toggle tolerance; later absolute windows expand cumulatively rather than imposing a fixed phase error.",
+  "assumptions": [
+    "Relies on the disclosed bench defaults: the D13 LED is active HIGH to GND, and the D2 button connects to GND.",
+    "D2 INPUT_PULLUP and active-LOW pressing are explicitly required.",
+    "Inputs are stable and bounce-free; no particular debounce implementation is required.",
+    "The first toggle may occur 480..540ms after a start input, allowing up to 20ms input recognition plus a 500±20ms timer interval. Each subsequent interval independently permits 480..520ms.",
+    "Edge-free state windows begin after the latest permitted boundary transition. No application parameters are missing."
+  ],
+  "horizon_ms": 9000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 1000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 2700,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 2800,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 2900,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 3600,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 3800,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4350,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 4500,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 5000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 7300,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 7750,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 7950,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "setup",
+      "id": "setup_bound",
+      "requirement_quote": "setup() must return within 500ms",
+      "max_ms": 500
+    },
+    {
+      "kind": "pin_mode",
+      "id": "pullup",
+      "requirement_quote": "D2使用INPUT_PULLUP",
+      "pin": 2,
+      "expected": 2
+    },
+    {
+      "kind": "state_invariant",
+      "id": "initial_off",
+      "requirement_quote": "初始停止且D13熄灭",
+      "origin": "setup_complete",
+      "from_ms": 0,
+      "to_ms": 400,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "state_invariant",
+      "id": "first_start_dark",
+      "requirement_quote": "启动时从熄灭开始",
+      "from_ms": 521,
+      "to_ms": 1479,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "first_rise",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 1480,
+      "to_ms": 1540,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "first_high",
+      "requirement_quote": "长按或松开不切换",
+      "from_ms": 1541,
+      "to_ms": 1959,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "first_fall",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 1960,
+      "to_ms": 2060,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "first_low",
+      "requirement_quote": "每500ms翻转",
+      "from_ms": 2061,
+      "to_ms": 2439,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "second_rise",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 2440,
+      "to_ms": 2580,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "interval",
+      "id": "first_run_intervals",
+      "requirement_quote": "输入响应及翻转时间容差20ms",
+      "source": "gpio",
+      "pin": 13,
+      "from_ms": 1400,
+      "to_ms": 2799,
+      "expected_ms": 500,
+      "tolerance_ms": 20,
+      "min_count": 2
+    },
+    {
+      "kind": "state_invariant",
+      "id": "release_keeps_running",
+      "requirement_quote": "长按或松开不切换",
+      "from_ms": 2581,
+      "to_ms": 2799,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "stop_one",
+      "requirement_quote": "停止立即熄灭",
+      "pin": 13,
+      "from_ms": 2800,
+      "to_ms": 2820,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "stopped_one",
+      "requirement_quote": "停止立即熄灭",
+      "from_ms": 2821,
+      "to_ms": 3599,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "state_invariant",
+      "id": "restart_one_dark",
+      "requirement_quote": "再启动重新计时",
+      "from_ms": 3621,
+      "to_ms": 4079,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "restart_one_rise",
+      "requirement_quote": "再启动重新计时",
+      "pin": 13,
+      "from_ms": 4080,
+      "to_ms": 4140,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "restart_one_high",
+      "requirement_quote": "每500ms翻转",
+      "from_ms": 4141,
+      "to_ms": 4349,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "stop_two",
+      "requirement_quote": "停止立即熄灭",
+      "pin": 13,
+      "from_ms": 4350,
+      "to_ms": 4370,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "stopped_two",
+      "requirement_quote": "停止立即熄灭",
+      "from_ms": 4371,
+      "to_ms": 4999,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "state_invariant",
+      "id": "restart_two_dark",
+      "requirement_quote": "再启动重新计时",
+      "from_ms": 5021,
+      "to_ms": 5479,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "third_run_edge_one",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 5480,
+      "to_ms": 5540,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "third_run_high_one",
+      "requirement_quote": "长按或松开不切换",
+      "from_ms": 5541,
+      "to_ms": 5959,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "third_run_edge_two",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 5960,
+      "to_ms": 6060,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "third_run_low_one",
+      "requirement_quote": "每500ms翻转",
+      "from_ms": 6061,
+      "to_ms": 6439,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "third_run_edge_three",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 6440,
+      "to_ms": 6580,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "third_run_high_two",
+      "requirement_quote": "长按或松开不切换",
+      "from_ms": 6581,
+      "to_ms": 6919,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "third_run_edge_four",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 6920,
+      "to_ms": 7100,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "release_during_low",
+      "requirement_quote": "长按或松开不切换",
+      "from_ms": 7101,
+      "to_ms": 7399,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "third_run_edge_five",
+      "requirement_quote": "每500ms翻转",
+      "pin": 13,
+      "from_ms": 7400,
+      "to_ms": 7620,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "interval",
+      "id": "third_run_intervals",
+      "requirement_quote": "输入响应及翻转时间容差20ms",
+      "source": "gpio",
+      "pin": 13,
+      "from_ms": 5400,
+      "to_ms": 7749,
+      "expected_ms": 500,
+      "tolerance_ms": 20,
+      "min_count": 4
+    },
+    {
+      "kind": "state_invariant",
+      "id": "third_run_final_high",
+      "requirement_quote": "每500ms翻转",
+      "from_ms": 7621,
+      "to_ms": 7749,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "kind": "edges",
+      "id": "stop_three",
+      "requirement_quote": "停止立即熄灭",
+      "pin": 13,
+      "from_ms": 7750,
+      "to_ms": 7770,
+      "min_count": 1,
+      "max_count": 1
+    },
+    {
+      "kind": "state_invariant",
+      "id": "final_stop_hold",
+      "requirement_quote": "长按或松开不切换",
+      "from_ms": 7771,
+      "to_ms": 8900,
+      "when": [],
+      "conditions": [
+        {
+          "source": "gpio",
+          "pin": 13,
+          "expected": 0
+        }
+      ]
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n\nbool running = false;\nbool ledOn = false;\nint previousButton = HIGH;\nunsigned long lastToggle = 0;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  int button = digitalRead(2);\n  if (previousButton == HIGH && button == LOW) {\n    running = !running;\n    ledOn = false;\n    digitalWrite(13, LOW);\n    lastToggle = now;\n  }\n  previousButton = button;\n  if (running && now - lastToggle >= 500UL) {\n    lastToggle = now;\n    ledOn = !ledOn;\n    digitalWrite(13, ledOn ? HIGH : LOW);\n  }\n}\n",
+  "electrical_led_pins": {}
+}

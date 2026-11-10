@@ -1,0 +1,144 @@
+{
+  "supported": true,
+  "coverage": "full",
+  "coverage_explanation": "Tests ON and OFF using both newline termination and idle termination, repeated commands, and multiple state reversals. Checks the D13 LED state after settling and persistence between commands. Baud configuration is implemented in the reference; the available checks do not independently inspect UART baud.",
+  "assumptions": [
+    "The bench-default D13 LED is active HIGH, with its anode at D13 and cathode through a resistor to GND.",
+    "ON turns the LED on and OFF turns it off. The authoritative command mapping does not reverse these meanings.",
+    "A newline terminates a command; an unterminated command is completed after 20 ms of serial inactivity, as explicitly specified.",
+    "Startup LED state, acknowledgments, and handling of invalid commands are unspecified and are not asserted."
+  ],
+  "horizon_ms": 6000,
+  "input_steps": [],
+  "serial_inputs": [
+    {
+      "at_ms": 300,
+      "text": "ON\n"
+    },
+    {
+      "at_ms": 1000,
+      "text": "OFF\n"
+    },
+    {
+      "at_ms": 1700,
+      "text": "ON"
+    },
+    {
+      "at_ms": 2400,
+      "text": "ON\n"
+    },
+    {
+      "at_ms": 3100,
+      "text": "OFF"
+    },
+    {
+      "at_ms": 3800,
+      "text": "OFF\n"
+    },
+    {
+      "at_ms": 4500,
+      "text": "ON\n"
+    },
+    {
+      "at_ms": 5200,
+      "text": "OFF"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "gpio",
+      "id": "line_on",
+      "requirement_quote": "接收字符串 ON 或 OFF，控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 550,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "on_persists",
+      "requirement_quote": "控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 900,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "line_off",
+      "requirement_quote": "接收字符串 ON 或 OFF，控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 1250,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "idle_on",
+      "requirement_quote": "framing=line_or_idle; idle_timeout_ms=20",
+      "pin": 13,
+      "at_ms": 1950,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "repeated_on",
+      "requirement_quote": "接收字符串 ON 或 OFF，控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 2650,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "idle_off",
+      "requirement_quote": "framing=line_or_idle; idle_timeout_ms=20",
+      "pin": 13,
+      "at_ms": 3350,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "repeated_off",
+      "requirement_quote": "接收字符串 ON 或 OFF，控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 4050,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "return_on",
+      "requirement_quote": "接收字符串 ON 或 OFF，控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 4750,
+      "expected": 1,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "return_off",
+      "requirement_quote": "接收字符串 ON 或 OFF，控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 5450,
+      "expected": 0,
+      "tolerance": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "off_persists",
+      "requirement_quote": "控制 D13 LED 开关",
+      "pin": 13,
+      "at_ms": 5900,
+      "expected": 0,
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <string.h>\n\nchar command[16];\nunsigned int length = 0;\nbool overflowed = false;\nunsigned long lastByte = 0;\n\nvoid finishCommand() {\n  command[length] = '\\0';\n  if (!overflowed) {\n    if (strcmp(command, \"ON\") == 0) digitalWrite(13, HIGH);\n    else if (strcmp(command, \"OFF\") == 0) digitalWrite(13, LOW);\n  }\n  length = 0;\n  overflowed = false;\n}\n\nvoid setup() {\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByte = millis();\n    if (c == '\\n' || c == '\\r') {\n      finishCommand();\n    } else if (length < sizeof(command) - 1) {\n      command[length++] = c;\n    } else {\n      overflowed = true;\n    }\n  }\n  if ((length > 0 || overflowed) && (unsigned long)(millis() - lastByte) >= 20) {\n    finishCommand();\n  }\n}\n",
+  "electrical_led_pins": {}
+}

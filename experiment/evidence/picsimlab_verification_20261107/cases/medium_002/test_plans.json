@@ -1,0 +1,176 @@
+[
+  {
+    "name": "baseline",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Exercises the LED's near/far behavior, strict 20 cm boundary, repeated transitions, and buzzer shutdown. Each state is held for 15 seconds, with observations late in the dwell rather than imposing the previous 300 ms response deadline. These are practical finite observation budgets, not requirement-derived timing limits; arbitrarily slow implementations cannot be conclusively judged. Active-alarm checks are omitted because the available schema has no windowed tone-activity check: instantaneous tone checks would incorrectly require a particular alarm cadence. Consequently, this suite does not independently verify that the buzzer sounds below 20 cm.",
+      "assumptions": [
+        "Relies on the disclosed bench default for D13: LED anode at D13 and cathode through a resistor to GND, so HIGH means illuminated.",
+        "Uses the authoritative HC-SR04 mapping Trig=D8 and Echo=D9, and the authoritative D6 tone-output role.",
+        "The requirement specifies neither measurement/update period nor maximum response latency. Fifteen-second stimulus dwells are practical test observation budgets, not additional application requirements.",
+        "Alarm frequency and cadence are unspecified. The reference chooses continuous 1000 Hz; candidates are not required to make that choice.",
+        "Only valid echoes are supplied; missing-echo behavior is unspecified.",
+        "Exact 20 cm is tested using the host's nominal HC-SR04 pulse-width conversion."
+      ],
+      "horizon_ms": 105000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "distance",
+          "pin": 9,
+          "value": 100
+        },
+        {
+          "at_ms": 15000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 10
+        },
+        {
+          "at_ms": 30000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 20
+        },
+        {
+          "at_ms": 45000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 19
+        },
+        {
+          "at_ms": 60000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 21
+        },
+        {
+          "at_ms": 75000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 5
+        },
+        {
+          "at_ms": 90000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 100
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [
+        {
+          "trigger_pin": 8,
+          "echo_pin": 9
+        }
+      ],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "gpio",
+          "id": "initial_far_led",
+          "requirement_quote": "否则关闭",
+          "pin": 13,
+          "at_ms": 14000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "initial_far_silent",
+          "requirement_quote": "否则关闭",
+          "pin": 6,
+          "at_ms": 14000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "near_led",
+          "requirement_quote": "距离 < 20cm 时 LED（D13）亮",
+          "pin": 13,
+          "at_ms": 29000,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "exact_boundary_led",
+          "requirement_quote": "距离 < 20cm 时 LED（D13）亮且蜂鸣器（D6）报警，否则关闭",
+          "pin": 13,
+          "at_ms": 44000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "exact_boundary_silent",
+          "requirement_quote": "否则关闭",
+          "pin": 6,
+          "at_ms": 44000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "below_boundary_led",
+          "requirement_quote": "距离 < 20cm 时 LED（D13）亮",
+          "pin": 13,
+          "at_ms": 59000,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "above_boundary_led",
+          "requirement_quote": "否则关闭",
+          "pin": 13,
+          "at_ms": 74000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "above_boundary_silent",
+          "requirement_quote": "否则关闭",
+          "pin": 6,
+          "at_ms": 74000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "closer_led",
+          "requirement_quote": "距离 < 20cm 时 LED（D13）亮",
+          "pin": 13,
+          "at_ms": 89000,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "return_far_led",
+          "requirement_quote": "否则关闭",
+          "pin": 13,
+          "at_ms": 104000,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "tone",
+          "id": "return_far_silent",
+          "requirement_quote": "否则关闭",
+          "pin": 6,
+          "at_ms": 104000,
+          "expected": 0,
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n\nvoid setup() {\n  pinMode(8, OUTPUT);\n  pinMode(9, INPUT);\n  pinMode(13, OUTPUT);\n  pinMode(6, OUTPUT);\n  digitalWrite(8, LOW);\n  digitalWrite(13, LOW);\n  noTone(6);\n}\n\nvoid loop() {\n  digitalWrite(8, LOW);\n  delayMicroseconds(2);\n  digitalWrite(8, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(8, LOW);\n  unsigned long duration = pulseIn(9, HIGH, 30000UL);\n  float distanceCm = duration / 58.0f;\n  bool alarm = duration != 0 && distanceCm < 20.0f;\n  digitalWrite(13, alarm ? HIGH : LOW);\n  if (alarm) {\n    tone(6, 1000);\n  } else {\n    noTone(6);\n    digitalWrite(6, LOW);\n  }\n  delay(60);\n}\n",
+      "core_criterion": "D13 LED 与 D6 蜂鸣器同时响应 20 cm 阈值"
+    },
+    "engine": "host"
+  }
+]

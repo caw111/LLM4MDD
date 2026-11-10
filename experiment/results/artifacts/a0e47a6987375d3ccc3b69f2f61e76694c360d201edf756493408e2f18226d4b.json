@@ -1,0 +1,69 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "ledState",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pwmValue",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "buzzerHz",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3 and not prevPressed",
+        "then": [
+          {
+            "assign": "prevPressed",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "prevPressed",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": "not (io_3 and not prevPressed)",
+        "then": []
+      }
+    ],
+    "outputs": {
+      "io_0": "ledState",
+      "io_1": "pwmValue * 1.0",
+      "io_2": "buzzerHz",
+      "serial_0_trigger": "io_3 and not prevPressed",
+      "serial_0_value_0": "ledState",
+      "serial_0_value_1": "pwmValue",
+      "serial_0_value_2": "buzzerHz"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个串口命令控制的综合执行系统，使用 LED D13、PWM LED D9、蜂鸣器 D6 和按钮 D2。系统支持串口命令 ON、OFF、BLINK、PWM:数值、BUZZ 和 STATUS；按钮按下时通过串口输出当前 LED 状态和 PWM 值。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持串口命令不触发，仅将按钮 D2 产生一次按下上升沿（io_3 从 false 变为 true）。",
+        "oracle": "serial_0_trigger 在该控制步为 true，serial_0_value_0 输出当前 ledState，serial_0_value_1 输出当前 pwmValue。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_3 : Boolean;\n    attribute ledState : Boolean := false;\n    attribute pwmValue : Integer := 0;\n    attribute buzzerHz : Integer := 0;\n    attribute prevPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3 and not prevPressed {\n        first start;\n        then assign prevPressed := true;\n      } else {\n        first start;\n        then assign prevPressed := false;\n      }\n      then if not (io_3 and not prevPressed) {\n        first start;\n        then done;\n      }\n    }\n    out attribute io_0 : Boolean = ledState;\n    out attribute io_1 : Real = pwmValue * 1.0;\n    out attribute io_2 : Integer = buzzerHz;\n    out attribute serial_0_trigger : Boolean = io_3 and not prevPressed;\n    out attribute serial_0_value_0 : Boolean = ledState;\n    out attribute serial_0_value_1 : Integer = pwmValue;\n    out attribute serial_0_value_2 : Integer = buzzerHz;\n  }\n  part system : Controller;\n}\n"
+}

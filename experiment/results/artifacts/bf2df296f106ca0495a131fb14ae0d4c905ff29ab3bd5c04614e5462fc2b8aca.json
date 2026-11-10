@@ -1,0 +1,125 @@
+{
+  "contract_sha256": "0f423b5829339d2e15951b5c0983a2101309a5a9aa46ba102ca81dcc38b42263",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"Light-dependent resistor (ambient light) ADC reading\",\n      \"scale\": 1.0\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button state for forced-ON/auto-mode toggle\",\n      \"active_high\": true,\n      \"pullup\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"Status LED output (may indicate auto/forced mode or activity)\"\n    },\n    {\n      \"kind\": \"pwm_output\",\n      \"pin\": \"D9\",\n      \"initial\": 0,\n      \"meaning\": \"PWM LED brightness for energy-saving automatic illumination\",\n      \"scale\": 1.0\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"Person proximity distance (HC-SR04) in centimeters\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"sample_period_ms\": 75\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"Ultrasonic distance validity (true when last reading is within range and not timed out)\",\n      \"timeout_us\": 30000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"sample_period_ms\": 75\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Board is fixed to Arduino Uno (arduino:avr:uno). Pin mapping is preserved as provided: LDR A0, button D2, ultrasonic Trig D8/Echo D3, PWM LED D9, and D13 as a digital output/status LED.\",\n    \"No explicit serial behavior was provided; serial_channels is left empty.\",\n    \"Ultrasonic measurement uses HC-SR04 with timeout_us=30000us and a sample period rounded up to a control-period multiple (control_period_ms=5 => sample_period_ms=75). Validity is represented separately and held on invalid reads.\",\n    \"Button is configured with pullup enabled and active_high=true so the model boolean is true when the (debounced/in-model) pressed state is active; no additional inversion is applied here.\",\n    \"Energy-saving decision thresholds (ambient-dark condition and proximity condition) and the auto/forced-mode logic belong in the SysML model, not in these device requests.\"\n  ],\n  \"unsupported\": [\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D9"
+        },
+        "resolved": {
+          "pin": "D9"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {},
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D3"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+    "effective_requirement": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D3）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D9\"}, {\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D3\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [
+      {
+        "device": "digital_output",
+        "field": "pin",
+        "original": null,
+        "resolved": "D13",
+        "reason": "unspecified wiring"
+      },
+      {
+        "device": "ultrasonic",
+        "field": "echo_pin",
+        "original": "D9",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

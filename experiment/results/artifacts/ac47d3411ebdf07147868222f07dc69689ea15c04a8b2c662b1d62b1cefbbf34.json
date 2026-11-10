@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"armed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"nightMode\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"eventCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"alarmRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"or\": [\n            {\n              \"<\": [\n                \"io_2\",\n                500.0\n              ]\n            },\n            {\n              \"and\": [\n                {\n                  \">=\": [\n                    \"io_2\",\n                    500.0\n                  ]\n                },\n                false\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"nightMode\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"not\": {\n            \"or\": [\n              {\n                \"<\": [\n                  \"io_2\",\n                  500.0\n                ]\n              },\n              {\n                \"and\": [\n                  {\n                    \">=\": [\n                      \"io_2\",\n                      500.0\n                    ]\n                  },\n                  false\n                ]\n              }\n            ]\n          }\n        },\n        \"then\": [\n          {\n            \"assign\": \"nightMode\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_6_valid\",\n            {\n              \"==\": [\n                \"io_6\",\n                1\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_6_valid\",\n            {\n              \"==\": [\n                \"io_6\",\n                2\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_6_valid\",\n            {\n              \"==\": [\n                \"io_6\",\n                3\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"eventCount\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"alarmRemainingMs\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_6_valid\",\n            {\n              \"==\": [\n                \"io_6\",\n                4\n              ]\n            }\n          ]\n        },\n        \"then\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"and\": [\n                \"armed\",\n                \"nightMode\"\n              ]\n            },\n            \"io_1\"\n          ]\n        },\n        \"then\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"armed\",\n            {\n              \"not\": \"nightMode\"\n            },\n            \"io_1\"\n          ]\n        },\n        \"then\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"armed\",\n            {\n              \"and\": [\n                \"io_1\",\n                {\n                  \"and\": [\n                    \"io_0\",\n                    {\n                      \"not\": \"previousPressed\"\n                    }\n                  ]\n                }\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"eventCount\",\n            \"value\": \"eventCount + 1\"\n          },\n          {\n            \"assign\": \"alarmRemainingMs\",\n            \"value\": 5000\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \">\": [\n            \"alarmRemainingMs\",\n            0\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmRemainingMs\",\n            \"value\": \"alarmRemainingMs - 5\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \"and\": [\n            \"armed\",\n            {\n              \">\": [\n                \"alarmRemainingMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_4\": {\n        \"if\": {\n          \"and\": [\n            \"armed\",\n            {\n              \">\": [\n                \"alarmRemainingMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_5\": \"eventCount\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_2=400.0 (night threshold met), then send ARM via io_6_valid=true and io_6=1 for one step; then apply io_1=true (door opened) and make io_0 rise from false to true.\",\n        \"oracle\": \"After the PIR rising edge while armed and door opened, io_4 becomes true (LED on), io_3 becomes 2000 (buzzer active), and io_5 increments from 0.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"With armed=true and a previously set alarmRemainingMs>0, keep inputs constant (io_0=true, io_1=true) for multiple steps while io_6_valid remains false.\",\n        \"oracle\": \"io_4 remains true initially and then turns false once alarmRemainingMs reaches 0; io_3 becomes 0 when alarmRemainingMs is not >0.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Trigger one event to make eventCount>0, then send DISARM via io_6_valid=true and io_6=2 for one step.\",\n        \"oracle\": \"Immediately after DISARM, io_4 is false and io_3 is 0, while io_5 holds the last eventCount value (no reset).\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Trigger one or more events (eventCount>0, alarm may be active), then send RESET via io_6_valid=true and io_6=3 for one step.\",\n        \"oracle\": \"After RESET, armed is false, eventCount returns to 0 (io_5=0), and io_3=0 and io_4=false.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_6 : Integer;\n    in attribute io_6_valid : Boolean;\n    attribute armed : Boolean := false;\n    attribute nightMode : Boolean := false;\n    attribute eventCount : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute alarmRemainingMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((((io_2) < (500.0))) or (((((io_2) >= (500.0))) and (false)))) {\n        first start;\n        then assign nightMode := true;\n      }\n      then if (not ((((io_2) < (500.0))) or (((((io_2) >= (500.0))) and (false))))) {\n        first start;\n        then assign nightMode := false;\n      }\n      then if ((io_6_valid) and (((io_6) == (1)))) {\n        first start;\n        then assign armed := true;\n      }\n      then if ((io_6_valid) and (((io_6) == (2)))) {\n        first start;\n        then assign armed := false;\n      }\n      then if ((io_6_valid) and (((io_6) == (3)))) {\n        first start;\n        then assign armed := false;\n        then assign eventCount := 0;\n        then assign alarmRemainingMs := 0;\n      }\n      then if ((io_6_valid) and (((io_6) == (4)))) {\n        first start;\n        then done;\n      }\n      then if ((((armed) and (nightMode))) and (io_1)) {\n        first start;\n        then done;\n      }\n      then if ((armed) and ((not nightMode)) and (io_1)) {\n        first start;\n        then done;\n      }\n      then if ((armed) and (((io_1) and (((io_0) and ((not previousPressed))))))) {\n        first start;\n        then assign eventCount := eventCount + 1;\n        then assign alarmRemainingMs := 5000;\n      }\n      then if ((alarmRemainingMs) > (0)) {\n        first start;\n        then assign alarmRemainingMs := alarmRemainingMs - 5;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_3 : Integer = (if ((armed) and (((alarmRemainingMs) > (0)))) ? 2000 else 0);\n    out attribute io_4 : Boolean = (if ((armed) and (((alarmRemainingMs) > (0)))) ? true else false);\n    out attribute io_5 : Integer = eventCount;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

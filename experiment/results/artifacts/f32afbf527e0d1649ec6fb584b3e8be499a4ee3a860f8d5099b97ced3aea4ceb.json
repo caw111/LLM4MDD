@@ -1,0 +1,79 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "lastValidTemp",
+        "type": "f64",
+        "initial": "0.0"
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "assign": "lastValidTemp",
+            "value": "io_1"
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "accumulatedMs",
+        "value": "accumulatedMs + io_0"
+      },
+      {
+        "if": "accumulatedMs >= 5000",
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs - 5000"
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": "accumulatedMs >= 5000",
+      "serial_0_value_0": {
+        "if": "io_2",
+        "then": "io_1",
+        "else": "lastValidTemp"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "每 5 秒读取 DHT11（D7）温度并串口输出",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Drive io_0 with 5ms deltas for 5000ms total (first value 0 then 999 more steps), set io_2=true and io_1 to a fixed degC value during each acquisition, keep io_2=true at every step for a coherent sample.",
+        "oracle": "serial_0_trigger becomes true exactly on the control step where accumulatedMs reaches 5000ms, and serial_0_value_0 equals the DHT temperature used for that reporting step."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "每 5 秒读取 DHT11（D7）温度并串口输出",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Run time to 5000ms as in T1, but set io_2=false for a failed DHT read at the reporting step while last valid was earlier (set io_2=true with io_1=Vold before the failure).",
+        "oracle": "serial_0_trigger asserts at the 5-second boundary, while serial_0_value_0 retains the most recent last valid temperature (Vold) when io_2=false."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "每 5 秒读取 DHT11（D7）温度并串口输出",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Run for 10000ms total (two 5-second windows) with io_0 5ms deltas; alternate DHT validity by setting io_2=true for the first window (io_1=V1) and io_2=false for the second window at its reporting boundary (io_1=V2 but invalid).",
+        "oracle": "serial_0_trigger asserts at both 5000ms and 10000ms boundaries; serial_0_value_0 equals V1 at the first boundary and retains the last valid temperature from the first window at the second boundary."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    attribute accumulatedMs : Integer := 0;\n    attribute lastValidTemp : Real := 0.0;\n    perform action tick {\n      first start;\n      then if io_2 {\n        first start;\n        then assign lastValidTemp := io_1;\n      }\n      then assign accumulatedMs := accumulatedMs + io_0;\n      then if accumulatedMs >= 5000 {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 5000;\n      }\n    }\n    out attribute serial_0_trigger : Boolean = accumulatedMs >= 5000;\n    out attribute serial_0_value_0 : Real = (if io_2 ? io_1 else lastValidTemp);\n  }\n  part system : Controller;\n}\n"
+}

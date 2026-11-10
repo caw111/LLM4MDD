@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"accumulated\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"serialTrig\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"accumulated\",\n        \"value\": \"accumulated + io_1\"\n      },\n      {\n        \"if\": \"accumulated >= 1000\",\n        \"then\": [\n          {\n            \"assign\": \"accumulated\",\n            \"value\": \"accumulated - 1000\"\n          },\n          {\n            \"assign\": \"serialTrig\",\n            \"value\": \"true\"\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"serialTrig\",\n            \"value\": \"false\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"serialTrig\",\n      \"serial_0_value_0\": \"io_0\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"每秒通过串口输出 A0 电位器的模拟值。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_0 to a fixed f64 value; drive io_1 deltas such that the accumulated sum reaches exactly 1000ms (e.g., ten 10ms steps) and then continue one more control step with io_1=0 or any small delta without reaching another 1000ms threshold.\",\n        \"oracle\": \"serial_0_trigger is true exactly on the control step where accumulated reaches >=1000ms and serial_0_value_0 equals the contemporaneous io_0 sample at that same step; serial_0_trigger is false on all other steps until the next accumulated 1000ms crossing.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Integer;\n    attribute accumulated : Integer := 0;\n    attribute serialTrig : Boolean := false;\n    perform action tick {\n      first start;\n      then assign accumulated := accumulated + io_1;\n      then if accumulated >= 1000 {\n        first start;\n        then assign accumulated := accumulated - 1000;\n        then assign serialTrig := true;\n      } else {\n        first start;\n        then assign serialTrig := false;\n      }\n    }\n    out attribute serial_0_trigger : Boolean = serialTrig;\n    out attribute serial_0_value_0 : Real = io_0;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

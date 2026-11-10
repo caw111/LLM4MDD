@@ -1,0 +1,18 @@
+#ifndef _DEFINE_H_
+#define _DEFINE_H_
+struct ProgramPage1_state;
+struct ProgramPage1_state {
+};
+/* Global Variable define of  */
+extern struct ProgramPage1_state ProgramPage1_instance;
+/* Global Variable define of  */
+extern int sysml_state_t_ms;
+/* Global Variable define of  */
+extern int sysml_state_s1_step;
+/* Global Variable define of  */
+extern int sysml_state_s2_step;
+/* Init function of CompositeActor named "ProgramPage1" */
+void ProgramPage1_Init(struct ProgramPage1_state* self);
+/* Update function of CompositeActor named "ProgramPage1" */
+void ProgramPage1(double* io_0, double* io_1, bool* io_2, bool* io_3, bool* io_4_segment_0, bool* io_4_segment_1, bool* io_4_segment_2, bool* io_4_segment_3, bool* io_4_segment_4, bool* io_4_segment_5, bool* io_4_segment_6, bool* io_4_segment_7, bool* io_4_segment_8, bool* io_4_segment_9);
+#endif

@@ -1,0 +1,183 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "countdownSeconds",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "started",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevAddPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevStartPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "beepActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "beepCounterMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevAddPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "countdownSeconds",
+            "value": {
+              "if": "started",
+              "then": "countdownSeconds + 10",
+              "else": "countdownSeconds"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "prevStartPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "started",
+            "value": true
+          },
+          {
+            "assign": "countdownSeconds",
+            "value": {
+              "if": "countdownSeconds == 0",
+              "then": 10,
+              "else": "countdownSeconds"
+            }
+          },
+          {
+            "assign": "beepActive",
+            "value": false
+          },
+          {
+            "assign": "beepCounterMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "started",
+        "then": [
+          {
+            "if": "countdownSeconds > 0",
+            "then": [
+              {
+                "assign": "countdownSeconds",
+                "value": "countdownSeconds - 1"
+              }
+            ]
+          },
+          {
+            "if": {
+              "and": [
+                "countdownSeconds == 0",
+                {
+                  "not": "beepActive"
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "beepActive",
+                "value": true
+              },
+              {
+                "assign": "beepCounterMs",
+                "value": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "beepActive",
+        "then": [
+          {
+            "assign": "beepCounterMs",
+            "value": "beepCounterMs - 5"
+          },
+          {
+            "if": "beepCounterMs <= 0",
+            "then": [
+              {
+                "assign": "beepActive",
+                "value": false
+              },
+              {
+                "assign": "beepCounterMs",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "prevAddPressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "prevStartPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "beepActive",
+        "then": 1000,
+        "else": 0
+      },
+      "io_3": "countdownSeconds"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个倒计时提醒系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于增加倒计时时间（每次加 10 秒），D3 用于开始倒计时；数码管显示剩余秒数，结束时蜂鸣器连续鸣叫 2 秒。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持D2不按，保持D3按下并产生一次上升沿后释放；观察数码管从初始倒计值开始递减，且在倒计数到0后蜂鸣器输出为非零且持续约2秒，随后变为0",
+        "oracle": "D3触发开始；TM1637输出倒计剩余秒数；倒计到0时蜂鸣器输出在持续窗口内为非零，窗口结束后蜂鸣器输出为0"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个倒计时提醒系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于增加倒计时时间（每次加 10 秒），D3 用于开始倒计时；数码管显示剩余秒数，结束时蜂鸣器连续鸣叫 2 秒。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "先按下D3启动后，在倒计过程中对D2产生一次或多次按压上升沿事件（每次加10秒）并观察数码管跳变与后续递减，以及最终鸣叫2秒",
+        "oracle": "每次D2上升沿使剩余秒数增加10；蜂鸣器只在倒计数到0后进入连续鸣叫2秒窗口，并在窗口结束后停止"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute countdownSeconds : Integer := 0;\n    attribute started : Boolean := false;\n    attribute prevAddPressed : Boolean := false;\n    attribute prevStartPressed : Boolean := false;\n    attribute beepActive : Boolean := false;\n    attribute beepCounterMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not prevAddPressed))) {\n        first start;\n        then assign countdownSeconds := (if started ? countdownSeconds + 10 else countdownSeconds);\n      }\n      then if ((io_1) and ((not prevStartPressed))) {\n        first start;\n        then assign started := true;\n        then assign countdownSeconds := (if countdownSeconds == 0 ? 10 else countdownSeconds);\n        then assign beepActive := false;\n        then assign beepCounterMs := 0;\n      }\n      then if started {\n        first start;\n        then if countdownSeconds > 0 {\n          first start;\n          then assign countdownSeconds := countdownSeconds - 1;\n        }\n        then if ((countdownSeconds == 0) and ((not beepActive))) {\n          first start;\n          then assign beepActive := true;\n          then assign beepCounterMs := 2000;\n        }\n      }\n      then if beepActive {\n        first start;\n        then assign beepCounterMs := beepCounterMs - 5;\n        then if beepCounterMs <= 0 {\n          first start;\n          then assign beepActive := false;\n          then assign beepCounterMs := 0;\n        }\n      }\n      then assign prevAddPressed := io_0;\n      then assign prevStartPressed := io_1;\n    }\n    out attribute io_2 : Integer = (if beepActive ? 1000 else 0);\n    out attribute io_3 : Integer = countdownSeconds;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,100 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests the explicitly required retention of the displayed period setting across repeated start/stop button operations, with A0 held constant throughout. Unlike the previous test, no observation depends on potentiometer tracking while stopped, and no settings captured at different potentiometer inputs are compared. The initial running state, period mapping, display units, and maximum period are unspecified. The available unconditional checks therefore do not establish which button operation stops the system or impose a finite blinking interval. Actual LED blinking, LED LOW while stopped, adjustment of blink timing, and correspondence between timing and the displayed number remain unverified. A constant display could pass this intentionally limited retention test.",
+  "assumptions": [
+    "Relies on disclosed bench defaults: the D13 LED is active HIGH, and the D2 button connects to GND with INPUT_PULLUP and is pressed LOW.",
+    "Authoritative assignments are potentiometer A0 and TM1637 CLK=D4, DIO=D5.",
+    "A0 is held at the same value before and throughout all button operations, so the checks do not require live potentiometer updates while stopped.",
+    "The requirement leaves initial running state, potentiometer-to-period mapping, period limits, display units, and debounce timing unspecified.",
+    "Button presses last 200 ms, with observations well after release; no specific debounce algorithm is asserted.",
+    "The reference makes permitted implementation choices: initially stopped, a 200–2000 ms full-cycle mapping, milliseconds on the display, live potentiometer sampling, and 30 ms debounce. These choices are not imposed on candidates."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 512
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 2000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 2200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 4200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 6000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 6200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 8000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 8200,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "relation",
+      "id": "retain_accepted_period_across_repeated_toggles",
+      "requirement_quote": "停止时 LED 熄灭但保留当前周期设置",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        3500,
+        5500,
+        7500,
+        9500,
+        11500
+      ],
+      "relation": "equal",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nbool running = false;\nbool ledOn = false;\nint previousRaw = HIGH;\nint stableButton = HIGH;\nunsigned long changedAt = 0;\nunsigned long toggledAt = 0;\nint displayedPeriod = -1;\n\nvoid setup() {\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n  pinMode(2, INPUT_PULLUP);\n  display.setBrightness(7);\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  unsigned long period = 200UL + (unsigned long)analogRead(A0) * 1800UL / 1023UL;\n  if ((int)period != displayedPeriod) {\n    display.showNumberDec((int)period, false);\n    displayedPeriod = (int)period;\n  }\n\n  int raw = digitalRead(2);\n  if (raw != previousRaw) {\n    previousRaw = raw;\n    changedAt = now;\n  }\n  if (raw != stableButton && now - changedAt >= 30UL) {\n    stableButton = raw;\n    if (stableButton == LOW) {\n      running = !running;\n      ledOn = running;\n      digitalWrite(13, ledOn ? HIGH : LOW);\n      toggledAt = now;\n    }\n  }\n\n  if (running && now - toggledAt >= period / 2UL) {\n    toggledAt = now;\n    ledOn = !ledOn;\n    digitalWrite(13, ledOn ? HIGH : LOW);\n  }\n}\n",
+  "electrical_led_pins": {}
+}

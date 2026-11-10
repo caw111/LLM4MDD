@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"missedDoseCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"alarmActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_6_valid\",\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": false\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"alarmActive\",\n            {\n              \"and\": [\n                \"io_0\",\n                {\n                  \"not\": \"previousPressed\"\n                }\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": false\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"and\": [\n                \"io_0\",\n                {\n                  \"not\": \"previousPressed\"\n                }\n              ]\n            },\n            {\n              \"not\": \"alarmActive\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmActive\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"missedDoseCount\",\n            \"value\": \"missedDoseCount\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"alarmActive\",\n      \"io_4\": 0,\n      \"io_5\": 0,\n      \"serial_0_trigger\": \"false\",\n      \"serial_0_value_0\": \"missedDoseCount\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在未收到有效 io_6_valid 且 io_0 初始为 false 的情况下，将 io_0 从 false 变为 true（一次上升沿）。\",\n        \"oracle\": \"io_3 变为 true，serial_0_trigger 为 false，serial_0_value_0 保持不变。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 alarmActive（先触发一次 io_0 上升沿使其为 true），然后将 io_0 从 true 变为 false，再从 false 变为 true（再次上升沿）。\",\n        \"oracle\": \"第二次上升沿后 io_3 变为 false，serial_0_trigger 为 false。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将 io_6_valid 置为 true 且保持 io_0 任意值（例如 io_0=false）。\",\n        \"oracle\": \"在该控制步结束后 io_3 为 false，serial_0_trigger 为 false。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_6 : Integer;\n    in attribute io_6_valid : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute missedDoseCount : Integer := 0;\n    attribute alarmActive : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_6_valid {\n        first start;\n        then assign alarmActive := false;\n      }\n      then if ((alarmActive) and (((io_0) and ((not previousPressed))))) {\n        first start;\n        then assign alarmActive := false;\n      }\n      then if ((((io_0) and ((not previousPressed)))) and ((not alarmActive))) {\n        first start;\n        then assign alarmActive := true;\n        then assign missedDoseCount := missedDoseCount;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_3 : Boolean = alarmActive;\n    out attribute io_4 : Integer = 0;\n    out attribute io_5 : Integer = 0;\n    out attribute serial_0_trigger : Boolean = false;\n    out attribute serial_0_value_0 : Integer = missedDoseCount;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

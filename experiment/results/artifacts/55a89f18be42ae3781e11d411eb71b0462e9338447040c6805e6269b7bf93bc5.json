@@ -1,0 +1,73 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "startupBlank",
+        "type": "bool",
+        "initial": true
+      }
+    ],
+    "updates": [
+      {
+        "if": "startupBlank and io_2",
+        "then": [
+          {
+            "assign": "startupBlank",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "not startupBlank and io_2 and io_1 < 10.0",
+        "then": true,
+        "else": false
+      },
+      "io_3": {
+        "if": "startupBlank or not io_2",
+        "then": 10000,
+        "else": {
+          "if": "io_1 < 2.0 or io_1 > 400.0",
+          "then": 10000,
+          "else": {
+            "if": "io_2",
+            "then": {
+              "floor": "io_1"
+            },
+            "else": 10000
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 HC-SR04 + TM1637 + LED：显示距离，小于10cm LED（D13）亮\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5，LED=D13，高电平亮。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。有效距离严格小于10cm时LED亮，等于或大于10cm时灭；阈值判断使用测量距离而非显示取整值。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白且LED灭，恢复后继续响应。初始显示空白且LED灭；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的传感器及显示引脚采用上述公开接线，各组相同。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Startup step with io_2=false (io_1 any), then first valid step with io_2=true and io_1=9.9, then step with io_2=true and io_1=10.0",
+        "oracle": "Initial: io_0=false and io_3=10000 (blank). After first valid with io_1<10: io_0=true and io_3=floor(9.9)=9. With io_1==10: io_0=false and io_3=floor(10.0)=10."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 HC-SR04 + TM1637 + LED：显示距离，小于10cm LED（D13）亮\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5，LED=D13，高电平亮。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。有效距离严格小于10cm时LED亮，等于或大于10cm时灭；阈值判断使用测量距离而非显示取整值。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白且LED灭，恢复后继续响应。初始显示空白且LED灭；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的传感器及显示引脚采用上述公开接线，各组相同。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "With io_2=true and io_1=2.0, then set io_2=false while holding io_1 at 2.0, then restore io_2=true with io_1=401.0, then set io_2=true with io_1=399.9",
+        "oracle": "When io_2=false: io_0=false and io_3=10000 (blank) regardless of retained io_1. For out-of-range valid reading (io_1=401 with io_2=true): io_0=false and io_3=10000. For in-range (io_1=399.9 with io_2=true): io_0=false (since >=10) and io_3=floor(399.9)=399."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 HC-SR04 + TM1637 + LED：显示距离，小于10cm LED（D13）亮\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5，LED=D13，高电平亮。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。有效距离严格小于10cm时LED亮，等于或大于10cm时灭；阈值判断使用测量距离而非显示取整值。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白且LED灭，恢复后继续响应。初始显示空白且LED灭；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的传感器及显示引脚采用上述公开接线，各组相同。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "With io_2=true set io_1=9.0, then io_1=9.99, then io_1=10.01, with io_2 staying true for all steps",
+        "oracle": "LED uses raw measurement: io_0=true for io_1=9.0 and 9.99, then io_0=false for io_1=10.01. Display is integer quantized: io_3 values are floor(9.0)=9, floor(9.99)=9, floor(10.01)=10."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    attribute startupBlank : Boolean := true;\n    perform action tick {\n      first start;\n      then if startupBlank and io_2 {\n        first start;\n        then assign startupBlank := false;\n      }\n    }\n    out attribute io_0 : Boolean = (if not startupBlank and io_2 and io_1 < 10.0 ? true else false);\n    out attribute io_3 : Integer = (if startupBlank or not io_2 ? 10000 else (if io_1 < 2.0 or io_1 > 400.0 ? 10000 else (if io_2 ? RealFunctions::floor(io_1) else 10000)));\n  }\n  part system : Controller;\n}\n"
+}

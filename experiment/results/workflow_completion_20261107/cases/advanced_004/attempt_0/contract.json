@@ -1,0 +1,394 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "The RTC is a simulated time source supplied through Serial, not an additional physical RTC device. All explicit source wiring is retained; no component IDs were supplied.",
+    "The disclosed bench command grammar and codes override the conflicting inferred command map in configuration defaults. Frames use COMMAND INTEGER at 9600 baud with line-or-idle framing and a 20 ms idle timeout.",
+    "Decode the packed command using integer division and subtraction. Validate HHMM in the model, rejecting minute fields of 60 or greater without modifying the clock or reminder settings.",
+    "Initialize reminder settings to 07:00, 12:00 and 18:00 and the missed-dose counter to zero. Assume startup displays 0000 and the simulated clock remains unset until the first valid TIME command; do not trigger reminders while unset.",
+    "After TIME, advance the simulated clock using actual elapsed milliseconds. Model daily rollover, alarm matching, one activation per reminder per day, confirmations and today's reminder states. Retain the cumulative missed count across daily rollovers; persistence across power loss is not specified.",
+    "Generate the 500 ms intermittent buzzer and LED phases in the model. Assume synchronized 500 ms ON and 500 ms OFF phases, starting ON, with a 2000 Hz buzzer tone because pitch is unspecified.",
+    "Confirmation stops signaling. Assume expiration at 30 seconds also stops signaling, marks that reminder missed, increments the retained missed counter and emits exactly one 'missed dose' line.",
+    "Use edge-based button actions with model-level debouncing. The active-low pull-up inputs already yield true when pressed and must not be inverted again.",
+    "Live HHMM is the default display page. The exact numeric encoding of browsed reminder status, navigation wrap behavior and return-to-live action remain model/UI parameters to resolve; the display request supports their numeric presentation.",
+    "Coincident reminders, confirmation exactly at the timeout boundary and the effect of TIME changes on already processed daily reminders require explicit model policies. They do not require additional hardware interfaces.",
+    "Implement all clock progression, scheduling, page selection, counters, reporting gates and timing in SysML. Changed commands and display contents must satisfy the 250 ms response bound."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Accepted simulated-clock or reminder-setting command; apply only on the accompanying valid event",
+      "sample_period_ms": 5,
+      "device": "serial_packet_input",
+      "hardware": "{\"baud\": 9600, \"commands\": {\"SET1\": 2, \"SET2\": 3, \"SET3\": 4, \"TIME\": 1}, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_packet_input\", \"max\": 2359, \"min\": 0}",
+      "binding": {
+        "kind": "serial_packet_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "min": 0,
+        "max": 2359,
+        "baud": 9600,
+        "commands": {
+          "TIME": 1,
+          "SET1": 2,
+          "SET2": 3,
+          "SET3": 4
+        }
+      }
+    },
+    {
+      "name": "io_0_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 5,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_0\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Confirm the active medication reminder; true when pressed",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Browse the previous reminder-status page; true when pressed",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Browse the next reminder-status page; true when pressed",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D4\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Medication-reminder buzzer frequency; zero silences the buzzer",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Medication-reminder LED command",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Live HHMM or the selected reminder-status page",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D7\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": true}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D7"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Emit the missed-dose warning once when an unconfirmed reminder reaches its 30-second deadline",
+      "sample_period_ms": 5,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"missed dose\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "missed dose"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual elapsed milliseconds since the previous control step for simulated time, reminder deadlines and intermittent signaling",
+      "sample_period_ms": 5,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D7",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D4"
+        },
+        "resolved": {
+          "pin": "D4"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D7",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20,
+      "commands": {
+        "CLK": 1,
+        "COMMAND": 2,
+        "DIO": 3,
+        "HHMM": 4,
+        "INTEGER": 5,
+        "SET1": 6,
+        "SET2": 7,
+        "SET3": 8,
+        "TIME": 9
+      }
+    },
+    "original_requirement": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML.",
+    "effective_requirement": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D7，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML.\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_input\", \"pin\": \"D4\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D7\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"commands\": {\"CLK\": 1, \"COMMAND\": 2, \"DIO\": 3, \"HHMM\": 4, \"INTEGER\": 5, \"SET1\": 6, \"SET2\": 7, \"SET3\": 8, \"TIME\": 9}}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+    "pins": {},
+    "changes": [
+      {
+        "device": "tm1637_number",
+        "field": "clk_pin",
+        "original": "D4",
+        "resolved": "D7",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个智能药盒提醒系统，使用 RTC 模拟时间源（通过串口输入当前时间）、TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D4、蜂鸣器 D6 和 LED D13。系统支持设置三个服药提醒时刻，数码管平时显示当前时间；到达提醒时间时蜂鸣器间歇鸣叫、LED 闪烁，并等待用户通过按钮确认。若 30 秒内未确认则通过串口输出 missed dose 警告并累计漏服次数，按钮可浏览今日提醒状态。\nDisclosed bench UI/transport: one serial_packet_input at 9600 baud, commands TIME,SET1,SET2,SET3 with codes1,2,3,4; each frame is COMMAND INTEGER, e.g. TIME 930 or SET1 945. Values0..2359 encode HHMM; reject a minute field >=60 in the model. Advance the simulated current time using elapsed milliseconds after TIME. Default alarms07:00,12:00,18:00, editable by SET1..3. D2 confirms the active reminder, D3/D4 browse previous/next reminder status; live HHMM is the default page. At each daily alarm start intermittent 500ms sound/LED; confirmation stops it; after30s unconfirmed emit missed dose once and increment a retained missed counter. All business clock/alarm/UI logic belongs in SysML.",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_0_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [],
+    "serial_inputs": [
+      {
+        "id": "io_0",
+        "value_port": "io_0",
+        "valid_port": "io_0_valid",
+        "kind": "serial_packet_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "min": 0,
+        "max": 2359,
+        "baud": 9600,
+        "commands": {
+          "TIME": 1,
+          "SET1": 2,
+          "SET2": 3,
+          "SET3": 4
+        }
+      }
+    ],
+    "serial_text_outputs": [
+      {
+        "id": "io_7",
+        "trigger_port": "io_7",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "missed dose"
+      }
+    ]
+  }
+}

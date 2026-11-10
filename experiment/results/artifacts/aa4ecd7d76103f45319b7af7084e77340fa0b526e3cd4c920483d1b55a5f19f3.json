@@ -1,0 +1,798 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is Arduino Mega 2560 as specified; preserved servo pins (D12, D13, D44), 74HC595 chain pins (A0 DS->A0, A2 SHCP->A2, A1 STCP->A1), and LED bar graph pins (D2..D11).",
+    "The two 7-segment displays are driven via the single shift-register number interface (shift595_number) using the extracted nearest-MCU-to-nearest-display digit mapping: sr1 (sevseg1) is digit 0 (left/tens) and sr2 (sevseg2) is digit 1 (right/units).",
+    "The LED bar graph interface is modeled as a 10-segment boolean output bus; SysML must translate the tens digit of the current number into segment on/off count (light exactly that many segments).",
+    "The prose says the number increments by 1 every 2 seconds and updates immediately; all counting/reset, the 99->0 wrap, and the special behavior at '9' (hold displays for 2 seconds then rotate all servos to 0 degrees) are implemented in SysML using the elapsed_ms delta.",
+    "No serial I/O was specified; serial_channels is empty."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Two 7-segment digits value (00..99) derived from the model number; register chain drives both displays",
+      "sample_period_ms": 10,
+      "device": "shift595_number",
+      "hardware": "{\"clock_pin\": \"A2\", \"data_pin\": \"A0\", \"invalid_policy\": \"blank\", \"kind\": \"shift595_number\", \"latch_pin\": \"A1\", \"leading_zero\": true, \"registers\": [{\"active_low\": true, \"digit\": 0, \"display\": \"sevseg1\", \"register\": \"sr1\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}, {\"active_low\": true, \"digit\": 1, \"display\": \"sevseg2\", \"register\": \"sr2\", \"segment_bits\": [0, 1, 2, 3, 4, 5, 6]}]}",
+      "binding": {
+        "kind": "shift595_number",
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "clock_pin": "A2",
+        "data_pin": "A0",
+        "registers": [
+          {
+            "register": "sr1",
+            "display": "sevseg1",
+            "digit": 0,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          },
+          {
+            "register": "sr2",
+            "display": "sevseg2",
+            "digit": 1,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          }
+        ],
+        "latch_pin": "A1"
+      }
+    },
+    {
+      "name": "io_1_segment_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D2\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D2",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D3\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D3",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D4\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D4",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D5\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D5",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D6",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D7\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D7",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D8\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D8",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D9\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D9",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_8",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D10",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1_segment_9",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED bar graph segments representing tens-digit count (0..9) from the current number",
+      "sample_period_ms": 10,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D11\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D11",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Servo1 angle derived from units digit (units*18), with special 0-degree rotation after displaying 9 for 2 seconds",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D12"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Servo2 angle derived from units digit (units*18+60), with special 0-degree rotation after displaying 9 for 2 seconds",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D13"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "Servo3 angle derived from units digit (units*18+120), with special 0-degree rotation after displaying 9 for 2 seconds",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D44\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D44"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual delta since previous control step",
+      "sample_period_ms": 10,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a system that includes two 7-segment displays (sevseg1, sevseg2), a 10-segment LED bar graph (bargraph1), and three servos (servo1, servo2, servo3). The 7-segment displays will show a two-digit number, the LED bar graph will visually represent the number's value, and the servos will rotate to specific angles based on the number. The number will increment by 1 every 2 seconds, and the system should update all components accordingly.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", the LED bar graph should be off, and all servos should be at 0 degrees.\nNumber Increment: Every 2 seconds, the number displayed on the 7-segment displays should increment by 1. If the number exceeds 99, it should reset to 0.\nLED Bar Graph: The LED bar graph (bargraph1) should light up a number of LEDs equal to the tens digit of the current number. For example, if the number is 37, 3 LEDs should be lit.\nServo Control: The servos (servo1, servo2, servo3) should rotate to angles based on the units digit of the current number. The angle for each servo is calculated as follows:\n- servo1: units digit * 18 degrees\n- servo2: units digit * 18 degrees + 60 degrees\n- servo3: units digit * 18 degrees + 120 degrees\nWhen sevseg displays 9, hold this state for 2 seconds, then rotate servo 1, servo 2, servo 3 to 0 degrees.\nDisplay Update: The 7-segment displays, LED bar graph, and servos should update immediately after each number increment.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"mega:2\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:3\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:4\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:5\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:6\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:7\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:8\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:9\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:10\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:11\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"], [\"mega:12\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:13\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:44\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a system that includes two 7-segment displays (sevseg1, sevseg2), a 10-segment LED bar graph (bargraph1), and three servos (servo1, servo2, servo3). The 7-segment displays will show a two-digit number, the LED bar graph will visually represent the number's value, and the servos will rotate to specific angles based on the number. The number will increment by 1 every 2 seconds, and the system should update all components accordingly.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", the LED bar graph should be off, and all servos should be at 0 degrees.\nNumber Increment: Every 2 seconds, the number displayed on the 7-segment displays should increment by 1. If the number exceeds 99, it should reset to 0.\nLED Bar Graph: The LED bar graph (bargraph1) should light up a number of LEDs equal to the tens digit of the current number. For example, if the number is 37, 3 LEDs should be lit.\nServo Control: The servos (servo1, servo2, servo3) should rotate to angles based on the units digit of the current number. The angle for each servo is calculated as follows:\n- servo1: units digit * 18 degrees\n- servo2: units digit * 18 degrees + 60 degrees\n- servo3: units digit * 18 degrees + 120 degrees\nWhen sevseg displays 9, hold this state for 2 seconds, then rotate servo 1, servo 2, servo 3 to 0 degrees.\nDisplay Update: The 7-segment displays, LED bar graph, and servos should update immediately after each number increment.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"mega:2\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:3\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:4\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:5\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:6\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:7\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:8\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:9\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:10\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:11\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"], [\"mega:12\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:13\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:44\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg2",
+            "top": -196.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr2",
+            "top": -87.6,
+            "left": 494.7,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led-bar-graph",
+            "id": "bargraph1",
+            "left": 417.6,
+            "top": -14.2,
+            "attrs": {
+              "color": "lime"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo3",
+            "left": -201.6,
+            "top": 170.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ],
+          [
+            "sr1:SHCP",
+            "sr2:SHCP",
+            "gray"
+          ],
+          [
+            "sr1:STCP",
+            "sr2:STCP",
+            "purple"
+          ],
+          [
+            "sr1:Q7S",
+            "sr2:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:MR",
+            "red"
+          ],
+          [
+            "sr1:VCC",
+            "sr2:VCC",
+            "red"
+          ],
+          [
+            "sr1:OE",
+            "sr2:OE",
+            "black"
+          ],
+          [
+            "sevseg1:COM.1",
+            "sevseg2:COM.1",
+            "red"
+          ],
+          [
+            "sr2:Q0",
+            "sevseg2:A",
+            "green"
+          ],
+          [
+            "sr2:Q1",
+            "sevseg2:B",
+            "green"
+          ],
+          [
+            "sr2:Q2",
+            "sevseg2:C",
+            "green"
+          ],
+          [
+            "sr2:Q3",
+            "sevseg2:D",
+            "green"
+          ],
+          [
+            "sr2:Q4",
+            "sevseg2:E",
+            "green"
+          ],
+          [
+            "sr2:Q5",
+            "sevseg2:F",
+            "green"
+          ],
+          [
+            "sr2:Q6",
+            "sevseg2:G",
+            "green"
+          ],
+          [
+            "sr1:GND",
+            "sr2:GND",
+            "black"
+          ],
+          [
+            "mega:2",
+            "bargraph1:A1",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C1",
+            "black"
+          ],
+          [
+            "mega:3",
+            "bargraph1:A2",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C2",
+            "black"
+          ],
+          [
+            "mega:4",
+            "bargraph1:A3",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C3",
+            "black"
+          ],
+          [
+            "mega:5",
+            "bargraph1:A4",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C4",
+            "black"
+          ],
+          [
+            "mega:6",
+            "bargraph1:A5",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C5",
+            "black"
+          ],
+          [
+            "mega:7",
+            "bargraph1:A6",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C6",
+            "black"
+          ],
+          [
+            "mega:8",
+            "bargraph1:A7",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C7",
+            "black"
+          ],
+          [
+            "mega:9",
+            "bargraph1:A8",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C8",
+            "black"
+          ],
+          [
+            "mega:10",
+            "bargraph1:A9",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C9",
+            "black"
+          ],
+          [
+            "mega:11",
+            "bargraph1:A10",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C10",
+            "black"
+          ],
+          [
+            "mega:12",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:13",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:44",
+            "servo3:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo3:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo3:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a system that includes two 7-segment displays (sevseg1, sevseg2), a 10-segment LED bar graph (bargraph1), and three servos (servo1, servo2, servo3). The 7-segment displays will show a two-digit number, the LED bar graph will visually represent the number's value, and the servos will rotate to specific angles based on the number. The number will increment by 1 every 2 seconds, and the system should update all components accordingly.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show \"00\", the LED bar graph should be off, and all servos should be at 0 degrees.\nNumber Increment: Every 2 seconds, the number displayed on the 7-segment displays should increment by 1. If the number exceeds 99, it should reset to 0.\nLED Bar Graph: The LED bar graph (bargraph1) should light up a number of LEDs equal to the tens digit of the current number. For example, if the number is 37, 3 LEDs should be lit.\nServo Control: The servos (servo1, servo2, servo3) should rotate to angles based on the units digit of the current number. The angle for each servo is calculated as follows:\n- servo1: units digit * 18 degrees\n- servo2: units digit * 18 degrees + 60 degrees\n- servo3: units digit * 18 degrees + 120 degrees\nWhen sevseg displays 9, hold this state for 2 seconds, then rotate servo 1, servo 2, servo 3 to 0 degrees.\nDisplay Update: The 7-segment displays, LED bar graph, and servos should update immediately after each number increment.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"mega:2\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:3\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:4\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:5\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:6\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:7\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:8\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:9\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"], [\"mega:10\", \"bargraph1:A9\", \"green\"], [\"mega:GND.1\", \"bargraph1:C9\", \"black\"], [\"mega:11\", \"bargraph1:A10\", \"green\"], [\"mega:GND.1\", \"bargraph1:C10\", \"black\"], [\"mega:12\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:13\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:44\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_1_segment_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_7": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1_segment_9": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

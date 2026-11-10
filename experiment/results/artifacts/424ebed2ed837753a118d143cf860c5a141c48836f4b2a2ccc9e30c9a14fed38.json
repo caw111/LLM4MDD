@@ -1,0 +1,125 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "modeForced",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeForced",
+            "value": {
+              "not": "modeForced"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "modeForced",
+        "then": true,
+        "else": {
+          "and": [
+            {
+              ">=": [
+                "io_0",
+                0.0
+              ]
+            },
+            "io_5",
+            {
+              ">": [
+                "io_4",
+                0.0
+              ]
+            }
+          ]
+        }
+      },
+      "io_3": {
+        "if": "modeForced",
+        "then": 255.0,
+        "else": {
+          "if": {
+            "and": [
+              {
+                ">=": [
+                  "io_0",
+                  0.0
+                ]
+              },
+              "io_5",
+              {
+                ">": [
+                  "io_4",
+                  0.0
+                ]
+              }
+            ]
+          },
+          "then": 255.0,
+          "else": 0.0
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_1 rises once (false->true), with io_0 arbitrary and io_4/io_5 arbitrary",
+        "oracle": "io_2 becomes true and io_3 becomes 255.0 (forced-ON after button toggle)"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_1 does not have a rising edge (held constant), set modeForced already true; vary io_0/io_4 while keeping io_5 true/false",
+        "oracle": "io_2 stays true and io_3 stays 255.0 for all steps while no button rising edge occurs"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Toggle button once to enter auto mode (modeForced false), then keep io_5=false while varying io_0 and io_4",
+        "oracle": "io_2 is false and io_3 is 0.0 while ultrasonic validity is false in auto mode"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "In auto mode (modeForced false), set io_5=true, set io_0 and io_4 such that proximity condition is not met (e.g., io_4<=0.0), and keep io_1 stable",
+        "oracle": "io_2 is false and io_3 is 0.0 when proximity condition is not satisfied in auto mode"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute modeForced : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign modeForced := (not modeForced);\n      }\n      then assign previousPressed := io_1;\n    }\n    out attribute io_2 : Boolean = (if modeForced ? true else ((((io_0) >= (0.0))) and (io_5) and (((io_4) > (0.0)))));\n    out attribute io_3 : Real = (if modeForced ? 255.0 else (if ((((io_0) >= (0.0))) and (io_5) and (((io_4) > (0.0)))) ? 255.0 else 0.0));\n  }\n  part system : Controller;\n}\n"
+}

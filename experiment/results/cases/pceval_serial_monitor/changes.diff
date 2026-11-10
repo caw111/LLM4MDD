@@ -1,0 +1,35 @@
+--- original.ino
++++ repaired.ino
+@@ -64,15 +64,21 @@
+ }
+ 
+ void loop() {
+-  uint32_t hw_now = (uint32_t)millis();
+-  uint32_t hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_started && hw_elapsed < 5UL) return;
+-  if (hw_elapsed > 2147483647UL) return;
+-  hw_now = (uint32_t)millis();
+-  hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+-  if (hw_elapsed > 2147483647UL) return;
+-  hw_last_step = hw_now; hw_started = true;
+-  ProgramPage1(&hw_value_io_0, &hw_value_serial_0_trigger, &hw_value_serial_0_value_0);
+-  if (hw_value_io_0) Serial.println("Received: ");
+-  if (hw_value_serial_0_trigger) { Serial.print("Received value"); Serial.println(hw_value_serial_0_value_0); }
++  static char line[256];
++  static unsigned size=0;
++  static bool overflow=false;
++  static unsigned long lastByte=0;
++  while(Serial.available()>0) {
++    int ch=Serial.read();lastByte=millis();
++    if(ch=='\r') continue;
++    if(ch=='\n') {
++      if(!overflow && size) {line[size]='\0';Serial.print("Received: ");Serial.println(line);}
++      size=0;overflow=false;
++    } else if(size<sizeof(line)-1) line[size++]=(char)ch;
++    else overflow=true;
++  }
++  if(size && (unsigned long)(millis()-lastByte)>=20UL) {
++    if(!overflow) {line[size]='\0';Serial.print("Received: ");Serial.println(line);}
++    size=0;overflow=false;
++  }
+ }

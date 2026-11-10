@@ -1,0 +1,340 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "stage",
+        "type": "i32",
+        "initial": 1
+      },
+      {
+        "name": "inFault",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevButton",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "silenceRun",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "faultLatched",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "prevButton",
+        "value": "io_0"
+      },
+      {
+        "if": "inFault",
+        "then": [
+          {
+            "assign": "stage",
+            "value": 1
+          },
+          {
+            "assign": "inFault",
+            "value": false
+          },
+          {
+            "assign": "faultLatched",
+            "value": false
+          },
+          {
+            "assign": "silenceRun",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "silenceRun",
+                50
+              ]
+            },
+            {
+              "or": [
+                {
+                  "<": [
+                    "io_5",
+                    10.0
+                  ]
+                },
+                {
+                  ">": [
+                    "io_5",
+                    950.0
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "faultLatched",
+            "value": true
+          },
+          {
+            "assign": "inFault",
+            "value": true
+          },
+          {
+            "assign": "stage",
+            "value": 1
+          }
+        ],
+        "else": [
+          {
+            "assign": "faultLatched",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "silenceRun",
+        "value": {
+          "if": {
+            "not": "io_4"
+          },
+          "then": "silenceRun + 1",
+          "else": 0
+        }
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "io_5",
+                10.0
+              ]
+            },
+            {
+              "<=": [
+                "io_5",
+                950.0
+              ]
+            },
+            {
+              ">=": [
+                "silenceRun",
+                20
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "stage",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": {
+                "==": [
+                  "stage",
+                  4
+                ]
+              }
+            },
+            {
+              "<": [
+                "io_5",
+                10.0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "stage",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": {
+                "==": [
+                  "stage",
+                  4
+                ]
+              }
+            },
+            {
+              ">=": [
+                "io_5",
+                10.0
+              ]
+            },
+            {
+              "<=": [
+                "io_5",
+                950.0
+              ]
+            },
+            {
+              "not": "io_4"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "stage",
+            "value": 2
+          }
+        ],
+        "else": [
+          {
+            "assign": "stage",
+            "value": {
+              "if": {
+                "not": {
+                  "==": [
+                    "stage",
+                    4
+                  ]
+                }
+              },
+              "then": {
+                "if": {
+                  ">=": [
+                    "silenceRun",
+                    20
+                  ]
+                },
+                "then": 3,
+                "else": "stage"
+              },
+              "else": "stage"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "==": [
+                "stage",
+                4
+              ]
+            },
+            "io_0",
+            {
+              "not": "prevButton"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "stage",
+            "value": 1
+          },
+          {
+            "assign": "faultLatched",
+            "value": false
+          },
+          {
+            "assign": "inFault",
+            "value": false
+          },
+          {
+            "assign": "silenceRun",
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": {
+          "and": [
+            {
+              "==": [
+                "stage",
+                4
+              ]
+            },
+            {
+              "not": "faultLatched"
+            }
+          ]
+        },
+        "then": {
+          "if": {
+            "==": [
+              "silenceRun - 2 * RealFunctions::floor(silenceRun / 2)",
+              0
+            ]
+          },
+          "then": true,
+          "else": false
+        },
+        "else": false
+      },
+      "io_2": {
+        "if": {
+          "and": [
+            {
+              "==": [
+                "stage",
+                4
+              ]
+            },
+            {
+              "not": "faultLatched"
+            }
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_3": "stage",
+      "serial_0_trigger": "inFault",
+      "serial_0_value_0": {
+        "if": "inFault",
+        "then": 1,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持io_5在10.0..950.0，先让io_4为false并持续足够多的控制步以触发stage=4，再在stage=4期间保持io_0为false，随后将io_0从false变为true一次",
+        "oracle": "在stage=4期间io_1周期性闪烁、io_2为非零蜂鸣；按下确认后stage回到1，io_1为false且io_2为0，且io_3显示1"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "将io_4保持为false，并在io_5取值为异常(小于10.0或大于950.0)的同时持续足够多控制步",
+        "oracle": "serial_0_trigger置为true，serial_0_value_0输出wash fault code；同时stage被拉回到进水(1)"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Real;\n    attribute stage : Integer := 1;\n    attribute inFault : Boolean := false;\n    attribute prevButton : Boolean := false;\n    attribute silenceRun : Integer := 0;\n    attribute faultLatched : Boolean := false;\n    perform action tick {\n      first start;\n      then assign prevButton := io_0;\n      then if inFault {\n        first start;\n        then assign stage := 1;\n        then assign inFault := false;\n        then assign faultLatched := false;\n        then assign silenceRun := 0;\n      }\n      then if ((((silenceRun) >= (50))) and (((((io_5) < (10.0))) or (((io_5) > (950.0)))))) {\n        first start;\n        then assign faultLatched := true;\n        then assign inFault := true;\n        then assign stage := 1;\n      } else {\n        first start;\n        then assign faultLatched := false;\n      }\n      then assign silenceRun := (if (not io_4) ? silenceRun + 1 else 0);\n      then if ((((io_5) >= (10.0))) and (((io_5) <= (950.0))) and (((silenceRun) >= (20)))) {\n        first start;\n        then assign stage := 4;\n      }\n      then if (((not ((stage) == (4)))) and (((io_5) < (10.0)))) {\n        first start;\n        then assign stage := 1;\n      }\n      then if (((not ((stage) == (4)))) and (((io_5) >= (10.0))) and (((io_5) <= (950.0))) and ((not io_4))) {\n        first start;\n        then assign stage := 2;\n      } else {\n        first start;\n        then assign stage := (if (not ((stage) == (4))) ? (if ((silenceRun) >= (20)) ? 3 else stage) else stage);\n      }\n      then if ((((stage) == (4))) and (io_0) and ((not prevButton))) {\n        first start;\n        then assign stage := 1;\n        then assign faultLatched := false;\n        then assign inFault := false;\n        then assign silenceRun := 0;\n      }\n    }\n    out attribute io_1 : Boolean = (if ((((stage) == (4))) and ((not faultLatched))) ? (if ((silenceRun - 2 * RealFunctions::floor(silenceRun / 2)) == (0)) ? true else false) else false);\n    out attribute io_2 : Integer = (if ((((stage) == (4))) and ((not faultLatched))) ? 1000 else 0);\n    out attribute io_3 : Integer = stage;\n    out attribute serial_0_trigger : Boolean = inFault;\n    out attribute serial_0_value_0 : Integer = (if inFault ? 1 else 0);\n  }\n  part system : Controller;\n}\n"
+}

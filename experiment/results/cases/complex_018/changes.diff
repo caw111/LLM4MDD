@@ -1,0 +1,159 @@
+--- original.ino
++++ repaired.ino
+@@ -1,5 +1,6 @@
+ #ifdef ARDUINO
+ #include <Arduino.h>
++#include <stdlib.h>
+ #endif
+ // BEGIN COMPILED SYSML MODEL
+ #include <stdint.h>
+@@ -47,120 +48,19 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, int32_t io_3, bool io_3_valid, double* io_1, bool* io_2, bool* serial_0_trigger, double* serial_0_value_0) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    bool sysml_lazy_2 = 0;
+-    bool sysml_lazy_3 = 0;
+-    bool sysml_lazy_4 = 0;
+-    bool sysml_conditional_5 = 0;
+-    double sysml_conditional_6 = 0;
+-    double sysml_conditional_7 = 0;
+-    double sysml_conditional_8 = 0;
+-    bool sysml_lazy_9 = 0;
+-    bool sysml_conditional_10 = 0;
+-    bool sysml_lazy_11 = 0;
+-    bool sysml_lazy_12 = 0;
+-    bool sysml_conditional_13 = 0;
+-    sysml_lazy_0 = io_3_valid;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = io_3 == 10;
++    if (io_3_valid) {
++        if (io_3>=2000) sysml_state_fanMinPwm=io_3-2000;
++        else if (io_3>=1000) sysml_state_thresholdC=io_3-1000;
++        else if (io_3==10) {sysml_state_thresholdC=30;sysml_state_fanMinPwm=0;}
+     }
+-    if (sysml_lazy_0) {
+-        sysml_state_thresholdC = 30.0;
+-        sysml_state_fanMinPwm = 0.0;
+-        sysml_state_autoMode = false;
+-        sysml_state_prevOverheatCond = false;
+-    }
+-    sysml_lazy_1 = io_3_valid;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = io_3 == 7;
+-    }
+-    if (sysml_lazy_1) {
+-        sysml_state_thresholdC = 0.0;
+-    }
+-    sysml_lazy_2 = io_3_valid;
+-    if (sysml_lazy_2) {
+-        sysml_lazy_2 = io_3 == 8;
+-    }
+-    if (sysml_lazy_2) {
+-        sysml_state_fanMinPwm = 0.0;
+-    }
+-    sysml_lazy_3 = io_3_valid;
+-    if (sysml_lazy_3) {
+-        sysml_lazy_3 = io_3 == 11;
+-    }
+-    if (sysml_lazy_3) {
+-        sysml_state_autoMode = true;
+-    }
+-    sysml_lazy_4 = io_3_valid;
+-    if (sysml_lazy_4) {
+-        sysml_lazy_4 = io_3 == 12;
+-    }
+-    if (sysml_lazy_4) {
+-        sysml_state_autoMode = false;
+-    }
+-    if (io_0 >= (sysml_state_thresholdC + 5.0)) {
+-        sysml_conditional_5 = true;
+-    }
+-    else {
+-        sysml_conditional_5 = false;
+-    }
+-    sysml_state_prevOverheatCond = sysml_conditional_5;
+-    double sysml_value_0 = 0;
+-    if (sysml_state_autoMode) {
+-        if (io_0 >= sysml_state_thresholdC) {
+-            if (io_0 >= (sysml_state_thresholdC + 5.0)) {
+-                sysml_conditional_8 = sysml_state_fanMinPwm;
+-            }
+-            else {
+-                sysml_conditional_8 = sysml_state_fanMinPwm;
+-            }
+-            sysml_conditional_7 = sysml_conditional_8;
+-        }
+-        else {
+-            sysml_conditional_7 = 0.0;
+-        }
+-        sysml_conditional_6 = sysml_conditional_7;
+-    }
+-    else {
+-        sysml_conditional_6 = 0.0;
+-    }
+-    sysml_value_0 = sysml_conditional_6;
+-    bool sysml_value_1 = 0;
+-    sysml_lazy_9 = sysml_state_autoMode;
+-    if (sysml_lazy_9) {
+-        sysml_lazy_9 = io_0 >= (sysml_state_thresholdC + 5.0);
+-    }
+-    if (sysml_lazy_9) {
+-        sysml_conditional_10 = true;
+-    }
+-    else {
+-        sysml_conditional_10 = false;
+-    }
+-    sysml_value_1 = sysml_conditional_10;
+-    bool sysml_value_2 = 0;
+-    sysml_lazy_11 = sysml_state_autoMode;
+-    if (sysml_lazy_11) {
+-        sysml_lazy_11 = io_0 >= (sysml_state_thresholdC + 5.0);
+-    }
+-    sysml_lazy_12 = sysml_lazy_11;
+-    if (sysml_lazy_12) {
+-        sysml_lazy_12 = !sysml_state_prevOverheatCond;
+-    }
+-    if (sysml_lazy_12) {
+-        sysml_conditional_13 = true;
+-    }
+-    else {
+-        sysml_conditional_13 = false;
+-    }
+-    sysml_value_2 = sysml_conditional_13;
+-    double sysml_value_3 = 0;
+-    sysml_value_3 = io_0;
+-    *io_1 = sysml_value_0;
+-    *io_2 = sysml_value_1;
+-    *serial_0_trigger = sysml_value_2;
+-    *serial_0_value_0 = sysml_value_3;
++    double temperature=io_0*500.0/1023.0;
++    double difference=temperature-sysml_state_thresholdC;
++    double speed=sysml_state_fanMinPwm+max(0.0,difference)*25.0;
++    *io_1=min(255.0,speed);
++    *io_2=difference>=5.0;
++    *serial_0_trigger=*io_2 && !sysml_state_prevOverheatCond;
++    *serial_0_value_0=temperature;
++    sysml_state_prevOverheatCond=*io_2;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -190,6 +90,16 @@
+   char* end = hw_rx_buffer + hw_rx_size;
+   while (end > begin && (end[-1] == ' ' || end[-1] == '\t')) *--end = '\0';
+   if (!*begin) return false;
++  bool threshold=strncmp(begin,"SET_THRESHOLD:",14)==0;
++  bool minimum=strncmp(begin,"SET_FAN_MIN:",12)==0;
++  if (threshold || minimum) {
++    char* number=begin+(threshold ? 14 : 12);
++    char* tail;
++    long parsed=strtol(number,&tail,10);
++    if (number==tail || *tail || parsed<0 || parsed>(threshold ? 100 : 255)) return false;
++    *value=(threshold ? 1000 : 2000)+parsed;
++    return true;
++  }
+   if (strcmp(begin, "TEMP_UP") == 0) { *value = 1L; return true; }
+   if (strcmp(begin, "TEMP_DOWN") == 0) { *value = 2L; return true; }
+   if (strcmp(begin, "THRESH_UP") == 0) { *value = 3L; return true; }

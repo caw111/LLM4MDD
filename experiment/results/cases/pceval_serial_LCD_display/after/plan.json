@@ -1,0 +1,132 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests serial-to-LCD text forwarding and serial echo for newline-delimited and idle-delimited input, including spaces, punctuation, mixed case, and repeated input. The available LCD checks observe text API output only; they cannot verify black clearing, white text, text size, cursor position, or landscape rotation.",
+  "assumptions": [
+    "Use the explicitly supplied wiring: D/C=9, CS=10, MOSI=11, MISO=12, SCK=13; no bench-default wiring is needed.",
+    "Serial baud is 9600 and messages are framed by newline or 20 ms of inactivity, as specified in the case data.",
+    "Newline is treated as a framing delimiter; checks do not require the delimiter itself to appear in output.",
+    "No exact response deadline is specified; observation windows allow serial transmission, idle framing, and display updates.",
+    "LCD checks validate API text output, not physical pixels or graphical styling."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [],
+  "serial_inputs": [
+    {
+      "at_ms": 1000,
+      "text": "Hello LCD\n"
+    },
+    {
+      "at_ms": 3000,
+      "text": "MiXeD 123 !?"
+    },
+    {
+      "at_ms": 5000,
+      "text": "Short\n"
+    },
+    {
+      "at_ms": 7000,
+      "text": "spaces inside text\n"
+    },
+    {
+      "at_ms": 9000,
+      "text": "Hello LCD\n"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "lcd",
+      "id": "lcd_first_line",
+      "requirement_quote": "print the input string",
+      "from_ms": 1000,
+      "to_ms": 2400,
+      "contains": "Hello LCD",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "echo_first_line",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 1000,
+      "to_ms": 2400,
+      "contains": "Hello LCD",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "lcd_idle_frame",
+      "requirement_quote": "print the input string",
+      "from_ms": 3000,
+      "to_ms": 4400,
+      "contains": "MiXeD 123 !?",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "echo_idle_frame",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 3000,
+      "to_ms": 4400,
+      "contains": "MiXeD 123 !?",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "lcd_shorter_message",
+      "requirement_quote": "print the input string",
+      "from_ms": 5000,
+      "to_ms": 6400,
+      "contains": "Short",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "echo_shorter_message",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 5000,
+      "to_ms": 6400,
+      "contains": "Short",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "lcd_spaces",
+      "requirement_quote": "print the input string",
+      "from_ms": 7000,
+      "to_ms": 8400,
+      "contains": "spaces inside text",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "echo_spaces",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 7000,
+      "to_ms": 8400,
+      "contains": "spaces inside text",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "lcd_repeated_input",
+      "requirement_quote": "Continuously read the serial monitor",
+      "from_ms": 9000,
+      "to_ms": 10400,
+      "contains": "Hello LCD",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "echo_repeated_input",
+      "requirement_quote": "Also print the input string to the serial monitor",
+      "from_ms": 9000,
+      "to_ms": 10400,
+      "contains": "Hello LCD",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <SPI.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_ILI9341.h>\n\nAdafruit_ILI9341 display(10, 9);\nString pending;\nunsigned long lastByteMs = 0;\n\nvoid showMessage() {\n  display.fillScreen(ILI9341_BLACK);\n  display.setCursor(0, 0);\n  display.setTextColor(ILI9341_WHITE);\n  display.setTextSize(2);\n  display.print(pending);\n  Serial.println(pending);\n  pending = \"\";\n}\n\nvoid setup() {\n  display.begin();\n  display.setRotation(1);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByteMs = millis();\n    if (c == '\\n') {\n      if (pending.endsWith(\"\\r\")) pending.remove(pending.length() - 1);\n      showMessage();\n    } else {\n      pending += c;\n    }\n  }\n  if (pending.length() > 0 && (unsigned long)(millis() - lastByteMs) >= 20) {\n    showMessage();\n  }\n}\n"
+}

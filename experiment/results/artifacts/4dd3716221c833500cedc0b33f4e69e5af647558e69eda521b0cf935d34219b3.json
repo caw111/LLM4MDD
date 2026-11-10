@@ -1,0 +1,568 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board is Arduino Mega 2560 with wiring preserved: RGB to D2/D3/D4, servos to D5/D6/D7, and bargraph segments A1..A8 to D8..D13 then D44..D45 respectively (common cathode).",
+    "Startup requirement: all servos at 0°, RGB off, and bargraph off. RGB off implemented via PWM outputs initial=0; bargraph initial=false.",
+    "Every 2 seconds, one servo toggles between 0° and 180° in order servo1 -> servo2 -> servo3 -> servo1 ...; the model handles the 2s scheduling using elapsed_ms.",
+    "RGB PWM brightness is driven from servo angles with linear mapping 0..180 to 0..255; bargraph shows average brightness (R+G+B)/3 mapped to 0..8 LEDs (0..8 inclusive).",
+    "No serial receive/transmit requirements were provided, so serial_channels is empty."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo1 angle controlling RGB red brightness",
+      "sample_period_ms": 5,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D5\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo2 angle controlling RGB green brightness",
+      "sample_period_ms": 5,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo3 angle controlling RGB blue brightness",
+      "sample_period_ms": 5,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D7\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB red channel brightness (mapped from servo1 angle 0..180 to 0..255)",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB green channel brightness (mapped from servo2 angle 0..180 to 0..255)",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB blue channel brightness (mapped from servo3 angle 0..180 to 0..255)",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D4"
+      }
+    },
+    {
+      "name": "io_6_segment_0",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D8\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D8",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D9\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D9",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D10\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D10",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D11\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D11",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D12\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D12",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D13",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D44\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D44",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_6_segment_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "bargraph average brightness mapped to 0..8 illuminated LEDs",
+      "sample_period_ms": 5,
+      "device": "LED bar graph segment",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D45\"}",
+      "binding": {
+        "kind": "digital_output",
+        "pin": "D45",
+        "active_high": true
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to create a dynamic lighting system using an RGB LED (rgb1), three servo motors (servo1, servo2, servo3), and an LED bar graph (bargraph1). The RGB LED's color and the bar graph's illumination level must be determined by the angular positions of the servos. \n\n**Detail Rules**:\n1. **Initialization**:  \n   - All servos start at 0° position.  \n   - The RGB LED (rgb1) and bar graph (bargraph1) are initially off.  \n\n2. **Servo Control**:  \n   - Servo1 controls the **red** channel of the RGB LED.  \n   - Servo2 controls the **green** channel.  \n   - Servo3 controls the **blue** channel.  \n   - Each servo's angle (0°–180°) maps linearly to its corresponding RGB channel's brightness (0–255).  \n   - Every 2 seconds, one servo move 180°, the order is servo1 -> servo2 -> servo3 -> servo1 ... if the servo is at 0°, it will move to 180°, if it is at 180°, it will move to 0°.\n\n3. **LED Bar Graph**:  \n   - The bar graph (bargraph1) displays the **average brightness** of the RGB LED.  \n   - The average brightness is calculated as `(R + G + B) / 3` and mapped to light 0–8 LEDs on the bar graph. (from pin:A1 to pin:A8)\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:7\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to create a dynamic lighting system using an RGB LED (rgb1), three servo motors (servo1, servo2, servo3), and an LED bar graph (bargraph1). The RGB LED's color and the bar graph's illumination level must be determined by the angular positions of the servos. \n\n**Detail Rules**:\n1. **Initialization**:  \n   - All servos start at 0° position.  \n   - The RGB LED (rgb1) and bar graph (bargraph1) are initially off.  \n\n2. **Servo Control**:  \n   - Servo1 controls the **red** channel of the RGB LED.  \n   - Servo2 controls the **green** channel.  \n   - Servo3 controls the **blue** channel.  \n   - Each servo's angle (0°–180°) maps linearly to its corresponding RGB channel's brightness (0–255).  \n   - Every 2 seconds, one servo move 180°, the order is servo1 -> servo2 -> servo3 -> servo1 ... if the servo is at 0°, it will move to 180°, if it is at 180°, it will move to 0°.\n\n3. **LED Bar Graph**:  \n   - The bar graph (bargraph1) displays the **average brightness** of the RGB LED.  \n   - The average brightness is calculated as `(R + G + B) / 3` and mapped to light 0–8 LEDs on the bar graph. (from pin:A1 to pin:A8)\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:7\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb1",
+            "top": -130.4,
+            "left": 39.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo3",
+            "left": -201.6,
+            "top": 170.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led-bar-graph",
+            "id": "bargraph1",
+            "left": 417.6,
+            "top": -14.2,
+            "attrs": {
+              "color": "lime"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "rgb1:COM",
+            "black"
+          ],
+          [
+            "mega:2",
+            "rgb1:R",
+            "red"
+          ],
+          [
+            "mega:3",
+            "rgb1:G",
+            "green"
+          ],
+          [
+            "mega:4",
+            "rgb1:B",
+            "blue"
+          ],
+          [
+            "mega:5",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:6",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:7",
+            "servo3:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo3:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo3:GND",
+            "black"
+          ],
+          [
+            "mega:8",
+            "bargraph1:A1",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C1",
+            "black"
+          ],
+          [
+            "mega:9",
+            "bargraph1:A2",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C2",
+            "black"
+          ],
+          [
+            "mega:10",
+            "bargraph1:A3",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C3",
+            "black"
+          ],
+          [
+            "mega:11",
+            "bargraph1:A4",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C4",
+            "black"
+          ],
+          [
+            "mega:12",
+            "bargraph1:A5",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C5",
+            "black"
+          ],
+          [
+            "mega:13",
+            "bargraph1:A6",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C6",
+            "black"
+          ],
+          [
+            "mega:44",
+            "bargraph1:A7",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C7",
+            "black"
+          ],
+          [
+            "mega:45",
+            "bargraph1:A8",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "bargraph1:C8",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to create a dynamic lighting system using an RGB LED (rgb1), three servo motors (servo1, servo2, servo3), and an LED bar graph (bargraph1). The RGB LED's color and the bar graph's illumination level must be determined by the angular positions of the servos. \n\n**Detail Rules**:\n1. **Initialization**:  \n   - All servos start at 0° position.  \n   - The RGB LED (rgb1) and bar graph (bargraph1) are initially off.  \n\n2. **Servo Control**:  \n   - Servo1 controls the **red** channel of the RGB LED.  \n   - Servo2 controls the **green** channel.  \n   - Servo3 controls the **blue** channel.  \n   - Each servo's angle (0°–180°) maps linearly to its corresponding RGB channel's brightness (0–255).  \n   - Every 2 seconds, one servo move 180°, the order is servo1 -> servo2 -> servo3 -> servo1 ... if the servo is at 0°, it will move to 180°, if it is at 180°, it will move to 0°.\n\n3. **LED Bar Graph**:  \n   - The bar graph (bargraph1) displays the **average brightness** of the RGB LED.  \n   - The average brightness is calculated as `(R + G + B) / 3` and mapped to light 0–8 LEDs on the bar graph. (from pin:A1 to pin:A8)\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:7\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"], [\"mega:8\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:9\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:10\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:11\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:12\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:13\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"], [\"mega:44\", \"bargraph1:A7\", \"green\"], [\"mega:GND.1\", \"bargraph1:C7\", \"black\"], [\"mega:45\", \"bargraph1:A8\", \"green\"], [\"mega:GND.1\", \"bargraph1:C8\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_6_segment_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_6_segment_7": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": []
+  }
+}

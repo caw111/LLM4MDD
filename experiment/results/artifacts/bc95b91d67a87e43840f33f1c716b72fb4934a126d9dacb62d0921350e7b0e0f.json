@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "需求：DHT11采温度并在TM1637显示；温度高于阈值则启动风扇（D5 PWM）。DHT湿度仅在模型需要时使用；即使原需求未要求湿度输出，这里仍为同一物理引脚声明湿度/有效性以满足DHT一致性采集。",
+    "DHT11采样周期要求：>=2000ms，且同一引脚的温度/湿度/有效性为同一采样帧；本JSON未强制采样周期，假设应用侧使用合法默认或在SysML中设置为>=2000ms并能与control step整除。",
+    "阈值（temperature threshold）、风扇PWM占空比/启动策略（例如全速还是按比例）与显示格式（是否带小数/是否截断到整数）属于SysML业务参数，未在本接口方案中给出。",
+    "串口需求未在给定原始要求中出现，因此serial_channels为空；如需串口上报，请补充原始要求的固定文本/协议与上报触发条件。",
+    "TM1637布线与位宽/具体数字位数未提供；该请求按catalog的tm1637_number固定为一个“数字数值”通道，由SysML决定在-999..9999范围内的显示策略（超范围如何映射/是否空白由invalid_policy/模型处理）。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "风扇PWM驱动（温度高于阈值时启动）",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "DHT11温度（用于显示与阈值判断）",
+      "sample_period_ms": 2000,
+      "device": "dht_temperature",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_temperature",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "DHT11湿度（若模型需要）",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "DHT11采样有效性",
+      "sample_period_ms": 2000,
+      "device": "dht_valid",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D7\", \"sensor\": \"DHT11\"}",
+      "binding": {
+        "kind": "dht_valid",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7",
+        "sensor": "DHT11"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "TM1637显示温度",
+      "sample_period_ms": 10,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D2\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D2",
+        "clk_pin": "D4"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "dht",
+        "original": {},
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {},
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D2"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "使用 DHT11 + 风扇（D5 PWM） + TM1637：显示温度，高于阈值风扇启动",
+    "effective_requirement": "使用 DHT11 + 风扇（D5 PWM） + TM1637：显示温度，高于阈值风扇启动\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"dht\", \"pin\": \"D7\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D2\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [
+      {
+        "device": "dht",
+        "field": "pin",
+        "original": null,
+        "resolved": "D7",
+        "reason": "unspecified wiring"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "clk_pin",
+        "original": null,
+        "resolved": "D4",
+        "reason": "unspecified wiring"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": null,
+        "resolved": "D2",
+        "reason": "unspecified wiring"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "使用 DHT11 + 风扇（D5 PWM） + TM1637：显示温度，高于阈值风扇启动",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

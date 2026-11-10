@@ -1,0 +1,280 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Preserved wiring per provided circuit: RGB1 COM->GND.1, R->D2, G->D3, B->D4; servo1 PWM->D5; servo2 PWM->D6; servo3 PWM->D7; all servos V+->5V and GND->GND.1.",
+    "Color sequence: Red, Green, Blue, Yellow, Cyan, Magenta, White; each state held for 2 seconds before advancing (handled in SysML model using elapsed_ms; first delta_since_previous_step is zero).",
+    "White state returns all servos to initial positions (servo1=0, servo2=90, servo3=180).",
+    "Yellow/Cyan/Magenta angles exceed 180° (servo1/2/3 target values include 225° for some states). Catalog/servo_angle supports initial 0..180; thus these >180° targets must be handled in SysML by clamping or mapping to the closest supported angle. This proposal intentionally does not alter port wiring; angle limiting is a model concern.",
+    "RGB LED is driven using three separate PWM outputs (D2/D3/D4). The model should set channel intensities to realize each named color (full on/off per channel assumption) since the prose does not specify exact PWM duty values.",
+    "No serial interface requests were specified/required by the task."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB1 red channel intensity (model-managed color sequence)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB1 green channel intensity (model-managed color sequence)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "RGB1 blue channel intensity (model-managed color sequence)",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D4"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 0,
+      "meaning": "servo1 angle command from current RGB color state",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D5\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 90,
+      "meaning": "servo2 angle command from current RGB color state",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "deg",
+      "initial": 180,
+      "meaning": "servo3 angle command from current RGB color state",
+      "sample_period_ms": 10,
+      "device": "servo_angle",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"servo_angle\", \"pin\": \"D7\"}",
+      "binding": {
+        "kind": "servo_angle",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D7"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (rgb1) and three servo motors (servo1, servo2, servo3). The RGB LED will cycle through a sequence of colors, and each servo motor will move to a specific angle based on the current color of the RGB LED. The system should continuously cycle through the color sequence, with each color and corresponding servo positions maintained for at least 2 seconds.\n\n**Detail Rules**:\n1. **RGB LED Sequence**:\n   - The RGB LED (rgb1) should cycle through the following colors in order: Red, Green, Blue, Yellow, Cyan, Magenta, White.\n   - Each color should be displayed for 2 seconds before transitioning to the next color.\n\n2. **Servo Motor Behavior**:\n   - When the RGB LED is Red, servo1 should move to 0°, servo2 to 90°, and servo3 to 180°.\n   - When the RGB LED is Green, servo1 should move to 90°, servo2 to 180°, and servo3 to 0°.\n   - When the RGB LED is Blue, servo1 should move to 180°, servo2 to 0°, and servo3 to 90°.\n   - When the RGB LED is Yellow, servo1 should move to 45°, servo2 to 135°, and servo3 to 225° (if supported, otherwise 180°).\n   - When the RGB LED is Cyan, servo1 should move to 135°, servo2 to 225° (if supported, otherwise 180°), and servo3 to 45°.\n   - When the RGB LED is Magenta, servo1 should move to 225° (if supported, otherwise 180°), servo2 to 45°, and servo3 to 135°.\n   - When the RGB LED is White, all servos should return to their initial positions: servo1 to 0°, servo2 to 90°, and servo3 to 180°.\n\n3. **Timing**:\n   - Each color and corresponding servo positions should be maintained for 2 seconds before transitioning to the next state.\n\n4. **Hardware Usage**:\n   - The RGB LED (rgb1) and all three servo motors (servo1, servo2, servo3) must be used in the solution.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:7\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (rgb1) and three servo motors (servo1, servo2, servo3). The RGB LED will cycle through a sequence of colors, and each servo motor will move to a specific angle based on the current color of the RGB LED. The system should continuously cycle through the color sequence, with each color and corresponding servo positions maintained for at least 2 seconds.\n\n**Detail Rules**:\n1. **RGB LED Sequence**:\n   - The RGB LED (rgb1) should cycle through the following colors in order: Red, Green, Blue, Yellow, Cyan, Magenta, White.\n   - Each color should be displayed for 2 seconds before transitioning to the next color.\n\n2. **Servo Motor Behavior**:\n   - When the RGB LED is Red, servo1 should move to 0°, servo2 to 90°, and servo3 to 180°.\n   - When the RGB LED is Green, servo1 should move to 90°, servo2 to 180°, and servo3 to 0°.\n   - When the RGB LED is Blue, servo1 should move to 180°, servo2 to 0°, and servo3 to 90°.\n   - When the RGB LED is Yellow, servo1 should move to 45°, servo2 to 135°, and servo3 to 225° (if supported, otherwise 180°).\n   - When the RGB LED is Cyan, servo1 should move to 135°, servo2 to 225° (if supported, otherwise 180°), and servo3 to 45°.\n   - When the RGB LED is Magenta, servo1 should move to 225° (if supported, otherwise 180°), servo2 to 45°, and servo3 to 135°.\n   - When the RGB LED is White, all servos should return to their initial positions: servo1 to 0°, servo2 to 90°, and servo3 to 180°.\n\n3. **Timing**:\n   - Each color and corresponding servo positions should be maintained for 2 seconds before transitioning to the next state.\n\n4. **Hardware Usage**:\n   - The RGB LED (rgb1) and all three servo motors (servo1, servo2, servo3) must be used in the solution.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:7\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb1",
+            "top": -130.4,
+            "left": 39.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo3",
+            "left": -201.6,
+            "top": 170.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "rgb1:COM",
+            "black"
+          ],
+          [
+            "mega:2",
+            "rgb1:R",
+            "red"
+          ],
+          [
+            "mega:3",
+            "rgb1:G",
+            "green"
+          ],
+          [
+            "mega:4",
+            "rgb1:B",
+            "blue"
+          ],
+          [
+            "mega:5",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:6",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ],
+          [
+            "mega:7",
+            "servo3:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo3:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo3:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control an RGB LED (rgb1) and three servo motors (servo1, servo2, servo3). The RGB LED will cycle through a sequence of colors, and each servo motor will move to a specific angle based on the current color of the RGB LED. The system should continuously cycle through the color sequence, with each color and corresponding servo positions maintained for at least 2 seconds.\n\n**Detail Rules**:\n1. **RGB LED Sequence**:\n   - The RGB LED (rgb1) should cycle through the following colors in order: Red, Green, Blue, Yellow, Cyan, Magenta, White.\n   - Each color should be displayed for 2 seconds before transitioning to the next color.\n\n2. **Servo Motor Behavior**:\n   - When the RGB LED is Red, servo1 should move to 0°, servo2 to 90°, and servo3 to 180°.\n   - When the RGB LED is Green, servo1 should move to 90°, servo2 to 180°, and servo3 to 0°.\n   - When the RGB LED is Blue, servo1 should move to 180°, servo2 to 0°, and servo3 to 90°.\n   - When the RGB LED is Yellow, servo1 should move to 45°, servo2 to 135°, and servo3 to 225° (if supported, otherwise 180°).\n   - When the RGB LED is Cyan, servo1 should move to 135°, servo2 to 225° (if supported, otherwise 180°), and servo3 to 45°.\n   - When the RGB LED is Magenta, servo1 should move to 225° (if supported, otherwise 180°), servo2 to 45°, and servo3 to 135°.\n   - When the RGB LED is White, all servos should return to their initial positions: servo1 to 0°, servo2 to 90°, and servo3 to 180°.\n\n3. **Timing**:\n   - Each color and corresponding servo positions should be maintained for 2 seconds before transitioning to the next state.\n\n4. **Hardware Usage**:\n   - The RGB LED (rgb1) and all three servo motors (servo1, servo2, servo3) must be used in the solution.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:5\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:6\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:7\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  }
+}

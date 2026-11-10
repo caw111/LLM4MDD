@@ -1,0 +1,108 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"targetPerMinute\",\n        \"type\": \"i32\",\n        \"initial\": \"60\"\n      },\n      {\n        \"name\": \"productCountTotal\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"productCountActual\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"productCountAtLastToggle\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"stopCount\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"missedInactivityMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"alarmLatched\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prevProductPulse\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"prevStopButtonPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"displayMode\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_3 and not prevStopButtonPressed\",\n        \"then\": [\n          {\n            \"assign\": \"displayMode\",\n            \"value\": \"if displayMode == 2 then 0 else displayMode + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": \"io_2\",\n        \"then\": [\n          {\n            \"assign\": \"missedInactivityMs\",\n            \"value\": \"0\"\n          },\n          {\n            \"if\": \"not alarmLatched\",\n            \"then\": [\n              {\n                \"assign\": \"alarmLatched\",\n                \"value\": \"false\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"not io_2\",\n        \"then\": [\n          {\n            \"assign\": \"missedInactivityMs\",\n            \"value\": \"missedInactivityMs + io_0\"\n          },\n          {\n            \"if\": \"not alarmLatched and missedInactivityMs >= 30000\",\n            \"then\": [\n              {\n                \"assign\": \"alarmLatched\",\n                \"value\": \"true\"\n              },\n              {\n                \"assign\": \"stopCount\",\n                \"value\": \"stopCount + 1\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"io_1 and not prevProductPulse\",\n        \"then\": [\n          {\n            \"assign\": \"productCountTotal\",\n            \"value\": \"productCountTotal + 1\"\n          },\n          {\n            \"assign\": \"productCountActual\",\n            \"value\": \"productCountActual + 1\"\n          },\n          {\n            \"assign\": \"missedInactivityMs\",\n            \"value\": \"0\"\n          },\n          {\n            \"assign\": \"alarmLatched\",\n            \"value\": \"false\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevProductPulse\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"prevStopButtonPressed\",\n        \"value\": \"io_2\"\n      },\n      {\n        \"if\": \"io_3 and not prevStopButtonPressed\",\n        \"then\": [\n          {\n            \"assign\": \"productCountAtLastToggle\",\n            \"value\": \"productCountTotal\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": \"alarmLatched\",\n      \"io_5\": {\n        \"if\": \"alarmLatched\",\n        \"then\": \"2000\",\n        \"else\": \"0\"\n      },\n      \"io_6\": {\n        \"if\": \"displayMode == 0\",\n        \"then\": \"productCountTotal\",\n        \"else\": {\n          \"if\": \"displayMode == 1\",\n          \"then\": \"RealFunctions::floor(productCountActual * 100.0 / (targetPerMinute))\",\n          \"else\": \"stopCount\"\n        }\n      },\n      \"serial_0_trigger\": \"alarmLatched\",\n      \"serial_0_value_0\": \"productCountTotal\",\n      \"serial_0_value_1\": {\n        \"if\": \"targetPerMinute == 0\",\n        \"then\": \"0.0\",\n        \"else\": \"productCountActual * 100.0 / targetPerMinute\"\n      },\n      \"serial_0_value_2\": \"stopCount\",\n      \"serial_0_value_3\": \"productCountActual\",\n      \"serial_0_value_4\": \"alarmLatched\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_1在连续20ms步进中给出一次上升沿脉冲，期间保持io_2=false；持续推进io_0累积到29999ms且无额外上升沿\",\n        \"oracle\": \"报警不触发：io_4=false，io_5=0，serial_0_trigger=false；TM1637显示累计产量（displayMode=0时）保持在1\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_2=false，先给io_1一次上升沿使missedInactivityMs清零；随后不再给io_1上升沿，连续推进io_0使累积达到30000ms（跨过30000阈值）\",\n        \"oracle\": \"在达到30000ms时触发报警：io_4=true，io_5=2000；并使stopCount从0变为1；serial_0_trigger在该步为true且serial_0_value_2=1\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在报警已经触发（io_4=true）的情况下，给出一次io_1上升沿脉冲（产品通过）；io_2保持false\",\n        \"oracle\": \"下一控制步报警解除：io_4=false，io_5=0；productCountTotal与productCountActual各自增加1；missedInactivityMs清零\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下并释放io_3（D7切换）产生一次上升沿；重复两次共三次切换（每次间隔至少一个控制步保证去抖为模型层上升沿）\",\n        \"oracle\": \"displayMode按0->1->2->0循环；当displayMode=0时io_6显示productCountTotal；displayMode=2时io_6显示stopCount\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/updates/0/then/0/value",
+          "original": "if displayMode == 2 then 0 else displayMode + 1",
+          "normalized": {
+            "if": {
+              "==": [
+                "displayMode",
+                2
+              ]
+            },
+            "then": 0,
+            "else": {
+              "+": [
+                "displayMode",
+                1
+              ]
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute targetPerMinute : Integer := 60;\n    attribute productCountTotal : Integer := 0;\n    attribute productCountActual : Integer := 0;\n    attribute productCountAtLastToggle : Integer := 0;\n    attribute stopCount : Integer := 0;\n    attribute missedInactivityMs : Integer := 0;\n    attribute alarmLatched : Boolean := false;\n    attribute prevProductPulse : Boolean := false;\n    attribute prevStopButtonPressed : Boolean := false;\n    attribute displayMode : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_3 and not prevStopButtonPressed {\n        first start;\n        then assign displayMode := (if ((displayMode) == (2)) ? 0 else ((displayMode) + (1)));\n      }\n      then if io_2 {\n        first start;\n        then assign missedInactivityMs := 0;\n        then if not alarmLatched {\n          first start;\n          then assign alarmLatched := false;\n        }\n      }\n      then if not io_2 {\n        first start;\n        then assign missedInactivityMs := missedInactivityMs + io_0;\n        then if not alarmLatched and missedInactivityMs >= 30000 {\n          first start;\n          then assign alarmLatched := true;\n          then assign stopCount := stopCount + 1;\n        }\n      }\n      then if io_1 and not prevProductPulse {\n        first start;\n        then assign productCountTotal := productCountTotal + 1;\n        then assign productCountActual := productCountActual + 1;\n        then assign missedInactivityMs := 0;\n        then assign alarmLatched := false;\n      }\n      then assign prevProductPulse := io_1;\n      then assign prevStopButtonPressed := io_2;\n      then if io_3 and not prevStopButtonPressed {\n        first start;\n        then assign productCountAtLastToggle := productCountTotal;\n      }\n    }\n    out attribute io_4 : Boolean = alarmLatched;\n    out attribute io_5 : Integer = (if alarmLatched ? 2000 else 0);\n    out attribute io_6 : Integer = (if displayMode == 0 ? productCountTotal else (if displayMode == 1 ? RealFunctions::floor(productCountActual * 100.0 / (targetPerMinute)) else stopCount));\n    out attribute serial_0_trigger : Boolean = alarmLatched;\n    out attribute serial_0_value_0 : Integer = productCountTotal;\n    out attribute serial_0_value_1 : Real = (if targetPerMinute == 0 ? 0.0 else productCountActual * 100.0 / targetPerMinute);\n    out attribute serial_0_value_2 : Integer = stopCount;\n    out attribute serial_0_value_3 : Integer = productCountActual;\n    out attribute serial_0_value_4 : Boolean = alarmLatched;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

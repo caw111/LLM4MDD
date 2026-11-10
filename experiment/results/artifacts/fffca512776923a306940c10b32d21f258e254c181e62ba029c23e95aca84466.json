@@ -1,0 +1,291 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_1",
+      "type": "i32"
+    },
+    {
+      "name": "io_1_valid",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "f64"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "reportPending"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "reportedDurationSeconds"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "previousPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "pressedStartStep",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "accumulatedPressedMs",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "reportPending",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "reportedDurationSeconds",
+      "type": "f64",
+      "initial": "0.0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            },
+            {
+              "kind": "state",
+              "name": "previousPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "pressedStartStep",
+                "expression": "0",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "accumulatedPressedMs",
+                "expression": "0",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "reportPending",
+                "expression": "false",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "accumulatedPressedMs",
+                "expression": "(arg0 + 5)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "accumulatedPressedMs"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "((!arg0) && arg1)",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            },
+            {
+              "kind": "state",
+              "name": "previousPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "reportedDurationSeconds",
+                "expression": "((double)(arg0) / 1000.0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "accumulatedPressedMs"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "reportPending",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "accumulatedPressedMs",
+                "expression": "0",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "reportPending"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "reportPending",
+                "expression": "false",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "previousPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

@@ -1,0 +1,468 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests ON/OFF transitions, repeated ON, several explicit PWM values including endpoints, line and idle framing, STATUS reporting, and button-triggered PWM-state reporting. BLINK period, BUZZ frequency/duration, startup state, and report format are unspecified. Consequently, blink/buzzer timing and the textual encoding of reported LED state are not independently asserted.",
+      "assumptions": [
+        "Relies on bench defaults: D13 and D9 LEDs are active HIGH; D2 button connects to GND and uses INPUT_PULLUP.",
+        "Commands are uppercase as listed. Newline terminates a command; an unterminated command is accepted after the specified 20 ms idle timeout.",
+        "PWM:数值 is interpreted as an Arduino PWM duty value in the standard 0..255 range; only valid values are tested.",
+        "STATUS and button reports expose the current PWM value numerically, with arbitrary labels permitted. No particular encoding of LED state is assumed by the checks.",
+        "BLINK timing and BUZZ frequency/duration are missing. The reference chooses 500 ms blink half-periods and a 1000 Hz, 200 ms buzz; these choices are not required by the checks.",
+        "Initial LED/PWM settings and button debounce duration are unspecified. Tests establish settings explicitly and hold button presses long enough for ordinary debounce."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 3000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 3500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 6000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 6500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 10200,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 10700,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [
+        {
+          "at_ms": 100,
+          "text": "ON\n"
+        },
+        {
+          "at_ms": 1200,
+          "text": "OFF\n"
+        },
+        {
+          "at_ms": 2000,
+          "text": "PWM:137\n"
+        },
+        {
+          "at_ms": 4000,
+          "text": "STATUS\n"
+        },
+        {
+          "at_ms": 4600,
+          "text": "ON"
+        },
+        {
+          "at_ms": 5000,
+          "text": "PWM:42\n"
+        },
+        {
+          "at_ms": 7200,
+          "text": "OFF\n"
+        },
+        {
+          "at_ms": 7600,
+          "text": "PWM:255\n"
+        },
+        {
+          "at_ms": 8200,
+          "text": "STATUS\n"
+        },
+        {
+          "at_ms": 9000,
+          "text": "PWM:0"
+        },
+        {
+          "at_ms": 9600,
+          "text": "ON\n"
+        }
+      ],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "gpio",
+          "id": "on",
+          "requirement_quote": "系统支持串口命令 ON、OFF、BLINK、PWM:数值、BUZZ 和 STATUS",
+          "pin": 13,
+          "at_ms": 500,
+          "expected": 1
+        },
+        {
+          "kind": "gpio",
+          "id": "off",
+          "requirement_quote": "系统支持串口命令 ON、OFF、BLINK、PWM:数值、BUZZ 和 STATUS",
+          "pin": 13,
+          "at_ms": 1600,
+          "expected": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm137",
+          "requirement_quote": "PWM:数值",
+          "pin": 9,
+          "at_ms": 2500,
+          "expected": 137,
+          "tolerance": 0
+        },
+        {
+          "kind": "serial",
+          "id": "button137",
+          "requirement_quote": "按钮按下时通过串口输出当前 LED 状态和 PWM 值",
+          "from_ms": 3000,
+          "to_ms": 3450,
+          "expected": 137,
+          "tolerance": 0,
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "status137",
+          "requirement_quote": "系统支持串口命令 ON、OFF、BLINK、PWM:数值、BUZZ 和 STATUS",
+          "from_ms": 4000,
+          "to_ms": 4400,
+          "expected": 137,
+          "tolerance": 0,
+          "min_count": 1
+        },
+        {
+          "kind": "gpio",
+          "id": "idle_on",
+          "requirement_quote": "framing=line_or_idle; idle_timeout_ms=20",
+          "pin": 13,
+          "at_ms": 4900,
+          "expected": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm42",
+          "requirement_quote": "PWM:数值",
+          "pin": 9,
+          "at_ms": 5500,
+          "expected": 42,
+          "tolerance": 0
+        },
+        {
+          "kind": "serial",
+          "id": "button42",
+          "requirement_quote": "按钮按下时通过串口输出当前 LED 状态和 PWM 值",
+          "from_ms": 6000,
+          "to_ms": 6450,
+          "expected": 42,
+          "tolerance": 0,
+          "min_count": 1
+        },
+        {
+          "kind": "gpio",
+          "id": "off_again",
+          "requirement_quote": "系统支持串口命令 ON、OFF、BLINK、PWM:数值、BUZZ 和 STATUS",
+          "pin": 13,
+          "at_ms": 7500,
+          "expected": 0
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_max",
+          "requirement_quote": "PWM:数值",
+          "pin": 9,
+          "at_ms": 8000,
+          "expected": 255,
+          "tolerance": 0
+        },
+        {
+          "kind": "serial",
+          "id": "status255",
+          "requirement_quote": "系统支持串口命令 ON、OFF、BLINK、PWM:数值、BUZZ 和 STATUS",
+          "from_ms": 8200,
+          "to_ms": 8600,
+          "expected": 255,
+          "tolerance": 0,
+          "min_count": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "idle_pwm_zero",
+          "requirement_quote": "PWM:数值",
+          "pin": 9,
+          "at_ms": 9400,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "return_on",
+          "requirement_quote": "系统支持串口命令 ON、OFF、BLINK、PWM:数值、BUZZ 和 STATUS",
+          "pin": 13,
+          "at_ms": 10000,
+          "expected": 1
+        },
+        {
+          "kind": "serial",
+          "id": "button_zero",
+          "requirement_quote": "按钮按下时通过串口输出当前 LED 状态和 PWM 值",
+          "from_ms": 10200,
+          "to_ms": 10650,
+          "expected": 0,
+          "tolerance": 0,
+          "min_count": 1
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <string.h>\n#include <stdlib.h>\n\nbool led = false;\nbool blinking = false;\nint duty = 0;\nunsigned long blinkAt = 0;\nchar line[64];\nunsigned int used = 0;\nunsigned long lastByte = 0;\nint rawButton = HIGH;\nint stableButton = HIGH;\nunsigned long buttonAt = 0;\n\nvoid setLed(bool value) {\n  led = value;\n  digitalWrite(13, value ? HIGH : LOW);\n}\n\nvoid report() {\n  Serial.print(\"LED=\");\n  Serial.print(led ? \"ON\" : \"OFF\");\n  Serial.print(\" PWM=\");\n  Serial.println(duty);\n}\n\nvoid executeCommand() {\n  line[used] = '\\0';\n  if (strcmp(line, \"ON\") == 0) {\n    blinking = false;\n    setLed(true);\n  } else if (strcmp(line, \"OFF\") == 0) {\n    blinking = false;\n    setLed(false);\n  } else if (strcmp(line, \"BLINK\") == 0) {\n    blinking = true;\n    blinkAt = millis();\n    setLed(true);\n  } else if (strncmp(line, \"PWM:\", 4) == 0) {\n    char *end;\n    long value = strtol(line + 4, &end, 10);\n    if (end != line + 4 && *end == '\\0' && value >= 0 && value <= 255) {\n      duty = (int)value;\n      analogWrite(9, duty);\n    }\n  } else if (strcmp(line, \"BUZZ\") == 0) {\n    tone(6, 1000, 200);\n  } else if (strcmp(line, \"STATUS\") == 0) {\n    report();\n  }\n  used = 0;\n}\n\nvoid setup() {\n  pinMode(13, OUTPUT);\n  pinMode(9, OUTPUT);\n  pinMode(6, OUTPUT);\n  pinMode(2, INPUT_PULLUP);\n  setLed(false);\n  analogWrite(9, duty);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByte = millis();\n    if (c == '\\n' || c == '\\r') {\n      if (used) executeCommand();\n    } else if (used < sizeof(line) - 1) {\n      line[used++] = c;\n    }\n  }\n  unsigned long now = millis();\n  if (used && now - lastByte >= 20) executeCommand();\n  if (blinking && now - blinkAt >= 500) {\n    blinkAt = now;\n    setLed(!led);\n  }\n  int reading = digitalRead(2);\n  if (reading != rawButton) {\n    rawButton = reading;\n    buttonAt = now;\n  }\n  if (reading != stableButton && now - buttonAt >= 30) {\n    stableButton = reading;\n    if (stableButton == LOW) report();\n  }\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Tests ON/OFF transitions, repeated ON, several explicit PWM values including endpoints, line and idle framing, STATUS reporting, and button-triggered PWM-state reporting. BLINK period, BUZZ frequency/duration, startup state, and report format are unspecified. Consequently, blink/buzzer timing and the textual encoding of reported LED state are not independently asserted.",
+      "assumptions": [
+        "Relies on bench defaults: D13 and D9 LEDs are active HIGH; D2 button connects to GND and uses INPUT_PULLUP.",
+        "Commands are uppercase as listed. Newline terminates a command; an unterminated command is accepted after the specified 20 ms idle timeout.",
+        "PWM:数值 is interpreted as an Arduino PWM duty value in the standard 0..255 range; only valid values are tested.",
+        "STATUS and button reports expose the current PWM value numerically, with arbitrary labels permitted. No particular encoding of LED state is assumed by the checks.",
+        "BLINK timing and BUZZ frequency/duration are missing. The reference chooses 500 ms blink half-periods and a 1000 Hz, 200 ms buzz; these choices are not required by the checks.",
+        "Initial LED/PWM settings and button debounce duration are unspecified. Tests establish settings explicitly and hold button presses long enough for ordinary debounce."
+      ],
+      "horizon_ms": 12000,
+      "input_steps": [
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 0,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 7200,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 7208,
+          "value": 1
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 7215,
+          "value": 0
+        },
+        {
+          "kind": "digital",
+          "pin": 2,
+          "at_ms": 7440,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [
+        {
+          "at_ms": 500,
+          "text": "ON\n"
+        },
+        {
+          "at_ms": 1500,
+          "text": "PWM:177\n"
+        },
+        {
+          "at_ms": 2500,
+          "text": "STATUS\n"
+        },
+        {
+          "at_ms": 3000,
+          "text": "BLINK\n"
+        },
+        {
+          "at_ms": 5200,
+          "text": "BUZZ\n"
+        },
+        {
+          "at_ms": 6400,
+          "text": "OFF\n"
+        },
+        {
+          "at_ms": 8200,
+          "text": "PWM:999\n"
+        },
+        {
+          "at_ms": 9000,
+          "text": "PWM:0\n"
+        }
+      ],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "gpio",
+          "id": "gpio_13_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_750",
+          "at_ms": 750,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_3200",
+          "at_ms": 3200,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_3750",
+          "at_ms": 3750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_4200",
+          "at_ms": 4200,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_6600",
+          "at_ms": 6600,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_1750",
+          "at_ms": 1750,
+          "expected": 177,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_7500",
+          "at_ms": 7500,
+          "expected": 177,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_8500",
+          "at_ms": 8500,
+          "expected": 177,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_9250",
+          "at_ms": 9250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_5350",
+          "at_ms": 5350,
+          "expected": 1000,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "tone",
+          "id": "tone_6_5600",
+          "at_ms": 5600,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6
+        },
+        {
+          "kind": "serial",
+          "id": "status_led_2500",
+          "from_ms": 2500,
+          "to_ms": 2750,
+          "regex": "^LED_STATE1$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "status_pwm_2500",
+          "from_ms": 2500,
+          "to_ms": 2750,
+          "regex": "^PWM_VALUE177$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "status_led_7200",
+          "from_ms": 7200,
+          "to_ms": 7450,
+          "regex": "^LED_STATE0$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "status_pwm_7200",
+          "from_ms": 7200,
+          "to_ms": 7450,
+          "regex": "^PWM_VALUE177$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        }
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

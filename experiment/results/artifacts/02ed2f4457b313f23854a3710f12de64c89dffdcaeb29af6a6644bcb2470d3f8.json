@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"countSeconds\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"accumulatedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"countSeconds\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": 0\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"not\": {\n            \"and\": [\n              \"io_0\",\n              {\n                \"not\": \"previousPressed\"\n              }\n            ]\n          }\n        },\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs + elapsedMilliseconds\"\n          },\n          {\n            \"if\": {\n              \">=\": [\n                \"accumulatedMs\",\n                1000\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"accumulatedMs\",\n                \"value\": \"accumulatedMs - 1000\"\n              },\n              {\n                \"assign\": \"countSeconds\",\n                \"value\": \"countSeconds + 1\"\n              }\n            ],\n            \"else\": []\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": \"countSeconds\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"TM1637 显示计时器（CLK=D4,DIO=D5）：每秒递增，按钮（D2）清零\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"elapsedMilliseconds连续提供每步为250ms，io_0保持false；观察累计1秒后的若干控制步\",\n        \"oracle\": \"io_1每累计满1000ms后在下一步比上一秒增加1（初始为0，满1秒变为1，满2秒变为2...）\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"TM1637 显示计时器（CLK=D4,DIO=D5）：每秒递增，按钮（D2）清零\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先让elapsedMilliseconds累积使countSeconds>0（例如连续4步250ms）；随后在某一步将io_0从false翻转为true一次（按下上升沿），并在之后保持io_0可为true或false（不影响清零发生时刻）；继续提供elapsedMilliseconds\",\n        \"oracle\": \"在按钮按下上升沿对应的控制步，io_1立即变为0，之后再随elapsedMilliseconds继续每满1000ms递增\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute elapsedMilliseconds : Integer;\n    attribute countSeconds : Integer := 0;\n    attribute accumulatedMs : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign countSeconds := 0;\n        then assign accumulatedMs := 0;\n      }\n      then if (not ((io_0) and ((not previousPressed)))) {\n        first start;\n        then assign accumulatedMs := accumulatedMs + elapsedMilliseconds;\n        then if ((accumulatedMs) >= (1000)) {\n          first start;\n          then assign accumulatedMs := accumulatedMs - 1000;\n          then assign countSeconds := countSeconds + 1;\n        }\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Integer = countSeconds;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

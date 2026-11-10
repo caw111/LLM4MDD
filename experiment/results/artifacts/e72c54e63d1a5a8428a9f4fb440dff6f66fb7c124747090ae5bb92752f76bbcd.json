@@ -1,0 +1,223 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "targetPerMinute",
+        "type": "i32",
+        "initial": "60"
+      },
+      {
+        "name": "productCountTotal",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "productCountActual",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "productCountAtLastToggle",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "stopCount",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "missedInactivityMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "alarmLatched",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevProductPulse",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevStopButtonPressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "displayMode",
+        "type": "i32",
+        "initial": "0"
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_3 and not prevStopButtonPressed",
+        "then": [
+          {
+            "assign": "displayMode",
+            "value": {
+              "if": {
+                "==": [
+                  "displayMode",
+                  2
+                ]
+              },
+              "then": 0,
+              "else": {
+                "+": [
+                  "displayMode",
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "assign": "missedInactivityMs",
+            "value": "0"
+          },
+          {
+            "if": "not alarmLatched",
+            "then": [
+              {
+                "assign": "alarmLatched",
+                "value": "false"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "not io_2",
+        "then": [
+          {
+            "assign": "missedInactivityMs",
+            "value": "missedInactivityMs + io_0"
+          },
+          {
+            "if": "not alarmLatched and missedInactivityMs >= 30000",
+            "then": [
+              {
+                "assign": "alarmLatched",
+                "value": "true"
+              },
+              {
+                "assign": "stopCount",
+                "value": "stopCount + 1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "io_1 and not prevProductPulse",
+        "then": [
+          {
+            "assign": "productCountTotal",
+            "value": "productCountTotal + 1"
+          },
+          {
+            "assign": "productCountActual",
+            "value": "productCountActual + 1"
+          },
+          {
+            "assign": "missedInactivityMs",
+            "value": "0"
+          },
+          {
+            "assign": "alarmLatched",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "assign": "prevProductPulse",
+        "value": "io_1"
+      },
+      {
+        "assign": "prevStopButtonPressed",
+        "value": "io_2"
+      },
+      {
+        "if": "io_3 and not prevStopButtonPressed",
+        "then": [
+          {
+            "assign": "productCountAtLastToggle",
+            "value": "productCountTotal"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_4": "alarmLatched",
+      "io_5": {
+        "if": "alarmLatched",
+        "then": "2000",
+        "else": "0"
+      },
+      "io_6": {
+        "if": "displayMode == 0",
+        "then": "productCountTotal",
+        "else": {
+          "if": "displayMode == 1",
+          "then": "RealFunctions::floor(productCountActual * 100.0 / (targetPerMinute))",
+          "else": "stopCount"
+        }
+      },
+      "serial_0_trigger": "alarmLatched",
+      "serial_0_value_0": "productCountTotal",
+      "serial_0_value_1": {
+        "if": "targetPerMinute == 0",
+        "then": "0.0",
+        "else": "productCountActual * 100.0 / targetPerMinute"
+      },
+      "serial_0_value_2": "stopCount",
+      "serial_0_value_3": "productCountActual",
+      "serial_0_value_4": "alarmLatched"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "将io_1在连续20ms步进中给出一次上升沿脉冲，期间保持io_2=false；持续推进io_0累积到29999ms且无额外上升沿",
+        "oracle": "报警不触发：io_4=false，io_5=0，serial_0_trigger=false；TM1637显示累计产量（displayMode=0时）保持在1"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持io_2=false，先给io_1一次上升沿使missedInactivityMs清零；随后不再给io_1上升沿，连续推进io_0使累积达到30000ms（跨过30000阈值）",
+        "oracle": "在达到30000ms时触发报警：io_4=true，io_5=2000；并使stopCount从0变为1；serial_0_trigger在该步为true且serial_0_value_2=1"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在报警已经触发（io_4=true）的情况下，给出一次io_1上升沿脉冲（产品通过）；io_2保持false",
+        "oracle": "下一控制步报警解除：io_4=false，io_5=0；productCountTotal与productCountActual各自增加1；missedInactivityMs清零"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个小型生产线节拍监控系统，使用光电计数传感器 D2 记录产品通过数，按钮 D3 表示人工停线，蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和串口。系统按每分钟目标产量进行节拍监控，实时显示累计产量和达成率；若连续 30 秒无产品通过或人工停线，则报警并记录停机事件。按钮 D7 用于切换显示目标、实际和停机次数。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "按下并释放io_3（D7切换）产生一次上升沿；重复两次共三次切换（每次间隔至少一个控制步保证去抖为模型层上升沿）",
+        "oracle": "displayMode按0->1->2->0循环；当displayMode=0时io_6显示productCountTotal；displayMode=2时io_6显示stopCount"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute targetPerMinute : Integer := 60;\n    attribute productCountTotal : Integer := 0;\n    attribute productCountActual : Integer := 0;\n    attribute productCountAtLastToggle : Integer := 0;\n    attribute stopCount : Integer := 0;\n    attribute missedInactivityMs : Integer := 0;\n    attribute alarmLatched : Boolean := false;\n    attribute prevProductPulse : Boolean := false;\n    attribute prevStopButtonPressed : Boolean := false;\n    attribute displayMode : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_3 and not prevStopButtonPressed {\n        first start;\n        then assign displayMode := (if ((displayMode) == (2)) ? 0 else ((displayMode) + (1)));\n      }\n      then if io_2 {\n        first start;\n        then assign missedInactivityMs := 0;\n        then if not alarmLatched {\n          first start;\n          then assign alarmLatched := false;\n        }\n      }\n      then if not io_2 {\n        first start;\n        then assign missedInactivityMs := missedInactivityMs + io_0;\n        then if not alarmLatched and missedInactivityMs >= 30000 {\n          first start;\n          then assign alarmLatched := true;\n          then assign stopCount := stopCount + 1;\n        }\n      }\n      then if io_1 and not prevProductPulse {\n        first start;\n        then assign productCountTotal := productCountTotal + 1;\n        then assign productCountActual := productCountActual + 1;\n        then assign missedInactivityMs := 0;\n        then assign alarmLatched := false;\n      }\n      then assign prevProductPulse := io_1;\n      then assign prevStopButtonPressed := io_2;\n      then if io_3 and not prevStopButtonPressed {\n        first start;\n        then assign productCountAtLastToggle := productCountTotal;\n      }\n    }\n    out attribute io_4 : Boolean = alarmLatched;\n    out attribute io_5 : Integer = (if alarmLatched ? 2000 else 0);\n    out attribute io_6 : Integer = (if displayMode == 0 ? productCountTotal else (if displayMode == 1 ? RealFunctions::floor(productCountActual * 100.0 / (targetPerMinute)) else stopCount));\n    out attribute serial_0_trigger : Boolean = alarmLatched;\n    out attribute serial_0_value_0 : Integer = productCountTotal;\n    out attribute serial_0_value_1 : Real = (if targetPerMinute == 0 ? 0.0 else productCountActual * 100.0 / targetPerMinute);\n    out attribute serial_0_value_2 : Integer = stopCount;\n    out attribute serial_0_value_3 : Integer = productCountActual;\n    out attribute serial_0_value_4 : Boolean = alarmLatched;\n  }\n  part system : Controller;\n}\n"
+}

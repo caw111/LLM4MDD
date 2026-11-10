@@ -1,0 +1,324 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "horizon_ms": 3000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A3",
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A4",
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A5",
+          "value": 0
+        },
+        {
+          "at_ms": 1600,
+          "kind": "analog",
+          "pin": "A3",
+          "value": 1023
+        },
+        {
+          "at_ms": 1600,
+          "kind": "analog",
+          "pin": "A4",
+          "value": 1023
+        },
+        {
+          "at_ms": 1600,
+          "kind": "analog",
+          "pin": "A5",
+          "value": 0
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "id": "native_1_0",
+          "kind": "gpio",
+          "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1), an LED (led1), and three slide potentiometers (pot1, pot2, pot3). The servo motor's po",
+          "pin": "2",
+          "at_ms": 1000,
+          "expected": 0
+        },
+        {
+          "id": "native_1_1",
+          "kind": "servo",
+          "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1), an LED (led1), and three slide potentiometers (pot1, pot2, pot3). The servo motor's po",
+          "pin": "3",
+          "at_ms": 1000,
+          "expected": 0.0,
+          "tolerance": 2
+        },
+        {
+          "id": "native_2_2",
+          "kind": "gpio",
+          "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1), an LED (led1), and three slide potentiometers (pot1, pot2, pot3). The servo motor's po",
+          "pin": "2",
+          "at_ms": 2000,
+          "expected": 1
+        },
+        {
+          "id": "native_2_3",
+          "kind": "servo",
+          "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a servo motor (servo1), an LED (led1), and three slide potentiometers (pot1, pot2, pot3). The servo motor's po",
+          "pin": "3",
+          "at_ms": 2000,
+          "expected": 180.0,
+          "tolerance": 2
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <Servo.h>\nServo servo1;\nconst int SERVO_PIN = 3;  \nconst int LED_PIN = 2;    \nconst int POT1_PIN = A3;  \nconst int POT2_PIN = A4;  \nconst int POT3_PIN = A5;  \nint currentServoAngle = 0;\nint targetServoAngle = 0;\nint ledBrightness = 0;\nint movementSpeed = 50;\nunsigned long lasttime = 0;  \n\nvoid setup();\nvoid loop();\nvoid setup() {\n  pinMode(LED_PIN, OUTPUT);\n  servo1.attach(SERVO_PIN);\n  servo1.write(0); \n  analogWrite(LED_PIN, 0); \n}\nvoid loop() {\n  targetServoAngle = map(analogRead(POT1_PIN), 0, 1023, 0, 180);\n  ledBrightness = map(analogRead(POT2_PIN), 0, 1023, 0, 255);\n  movementSpeed = map(analogRead(POT3_PIN), 0, 1023, 10, 100);\n  analogWrite(LED_PIN, ledBrightness);\n  if (currentServoAngle < targetServoAngle && millis() - lasttime > movementSpeed ) {\n    currentServoAngle++;\n    servo1.write(currentServoAngle);\n    lasttime = millis();\n  } else if (currentServoAngle > targetServoAngle && millis() - lasttime > movementSpeed ) {\n    currentServoAngle--;\n    servo1.write(currentServoAngle);\n    lasttime = millis();\n  }\n}",
+      "coverage": "partial",
+      "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+      "native_test_entries": [
+        "test1: {'time': 1, 'state': {'pot1': 0, 'pot2': 0, 'pot3': 0, 'led1': 'off', 'servo1': 0}, 'description': 'Initialization test. All potentiometers are at minimum (0). LED should be off (brightness 0) and servo should be at 0 degrees.'}",
+        "test2: {'time': 2, 'state': {'pot1': 1, 'pot2': 1, 'pot3': 0, 'led1': 'on', 'servo1': 180}, 'description': 'Potentiometer test with pot3 at minimum (0). pot1 and pot2 are at maximum (1). LED should be fully on (brightness 255) and servo should be at 180 degrees. Since pot3 is 0 (minimum speed), servo moves instantly to target.'}",
+        "test3: {'time': 2, 'state': {'pot1': 0, 'pot2': 1, 'pot3': 1, 'led1': 'on', 'servo1': 'not 0'}, 'description': 'Potentiometer test with pot3 at maximum (1). pot1 is at minimum (0), pot2 is at maximum (1). LED should be fully on (brightness 255). Servo target is 0 degrees, but since pot3 is at maximum (slow speed), servo is still moving and has not reached 0, so its value is not 0.'}"
+      ],
+      "skipped_conditions": [
+        {
+          "test": 2,
+          "reason": "description_signals_expected_value_conflict",
+          "description": "Potentiometer test with pot3 at maximum (1). pot1 is at minimum (0), pot2 is at maximum (1). LED should be fully on (brightness 255). Servo target is 0 degrees, but since pot3 is at maximum (slow speed), servo is still moving and has not reached 0, so its value is not 0."
+        }
+      ],
+      "assumptions": [
+        "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+        "Normalized potentiometer positions0..1 map to ADC0..1023.",
+        "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+        "Reference preflight required; no claim that reference consistency proves all prose requirements."
+      ]
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "horizon_ms": 6500,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "pin": "A3",
+          "kind": "analog",
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "pin": "A4",
+          "kind": "analog",
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "pin": "A5",
+          "kind": "analog",
+          "value": 0
+        },
+        {
+          "at_ms": 1000,
+          "pin": "A3",
+          "kind": "analog",
+          "value": 114
+        },
+        {
+          "at_ms": 1000,
+          "pin": "A4",
+          "kind": "analog",
+          "value": 512
+        },
+        {
+          "at_ms": 1000,
+          "pin": "A5",
+          "kind": "analog",
+          "value": 0
+        },
+        {
+          "at_ms": 2000,
+          "pin": "A3",
+          "kind": "analog",
+          "value": 228
+        },
+        {
+          "at_ms": 2000,
+          "pin": "A4",
+          "kind": "analog",
+          "value": 1023
+        },
+        {
+          "at_ms": 2000,
+          "pin": "A5",
+          "kind": "analog",
+          "value": 1023
+        },
+        {
+          "at_ms": 5000,
+          "pin": "A3",
+          "kind": "analog",
+          "value": 0
+        },
+        {
+          "at_ms": 5000,
+          "pin": "A4",
+          "kind": "analog",
+          "value": 0
+        },
+        {
+          "at_ms": 5000,
+          "pin": "A5",
+          "kind": "analog",
+          "value": 0
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pwm",
+          "id": "pwm_2_200",
+          "at_ms": 200,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_1200",
+          "at_ms": 1200,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_2200",
+          "at_ms": 2200,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_5200",
+          "at_ms": 5200,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_300",
+          "at_ms": 300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_1100",
+          "at_ms": 1100,
+          "expected": 10,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_1350",
+          "at_ms": 1350,
+          "expected": 20,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_2250",
+          "at_ms": 2250,
+          "expected": 22,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_3100",
+          "at_ms": 3100,
+          "expected": 31,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_4500",
+          "at_ms": 4500,
+          "expected": 40,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_5200",
+          "at_ms": 5200,
+          "expected": 20,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        },
+        {
+          "kind": "servo",
+          "id": "servo_3_5600",
+          "at_ms": 5600,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 2
+        }
+      ],
+      "coverage": "targeted_core_regression",
+      "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+      "native_test_entries": [
+        "test1: {'time': 1, 'state': {'pot1': 0, 'pot2': 0, 'pot3': 0, 'led1': 'off', 'servo1': 0}, 'description': 'Initialization test. All potentiometers are at minimum (0). LED should be off (brightness 0) and servo should be at 0 degrees.'}",
+        "test2: {'time': 2, 'state': {'pot1': 1, 'pot2': 1, 'pot3': 0, 'led1': 'on', 'servo1': 180}, 'description': 'Potentiometer test with pot3 at minimum (0). pot1 and pot2 are at maximum (1). LED should be fully on (brightness 255) and servo should be at 180 degrees. Since pot3 is 0 (minimum speed), servo moves instantly to target.'}",
+        "test3: {'time': 2, 'state': {'pot1': 0, 'pot2': 1, 'pot3': 1, 'led1': 'on', 'servo1': 'not 0'}, 'description': 'Potentiometer test with pot3 at maximum (1). pot1 is at minimum (0), pot2 is at maximum (1). LED should be fully on (brightness 255). Servo target is 0 degrees, but since pot3 is at maximum (slow speed), servo is still moving and has not reached 0, so its value is not 0.'}"
+      ],
+      "skipped_conditions": [
+        {
+          "test": 2,
+          "reason": "description_signals_expected_value_conflict",
+          "description": "Potentiometer test with pot3 at maximum (1). pot1 is at minimum (0), pot2 is at maximum (1). LED should be fully on (brightness 255). Servo target is 0 degrees, but since pot3 is at maximum (slow speed), servo is still moving and has not reached 0, so its value is not 0."
+        }
+      ],
+      "assumptions": [
+        "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+        "Normalized potentiometer positions0..1 map to ADC0..1023.",
+        "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+        "Reference preflight required; no claim that reference consistency proves all prose requirements."
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests changing numeric output on the specified TM1637 interface over multiple one-second and two-second sampling intervals. The initial number and rollover policy are unspecified. The available checks cannot compare numeric differences modulo rollover or measure TM1637 update intervals directly, so these tests do not independently establish the exact +1 step or exact one-second cadence.",
+  "assumptions": [
+    "CLK=D4 and DIO=D5 are authoritative; no LED, button, or analog bench defaults are needed.",
+    "The starting number, startup phase, brightness, leading-zero formatting, and rollover policy are unspecified and are not asserted.",
+    "The reference chooses an initial value of 0 and wraps after 9999; these choices are not required of candidates.",
+    "Numeric display comparisons ignore leading blanks and zeros."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "relation",
+      "id": "successive_seconds_change",
+      "requirement_quote": "每秒递增显示一个数字",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        1250,
+        2250,
+        3250,
+        4250,
+        5250,
+        6250,
+        7250,
+        8250,
+        9250,
+        10250,
+        11250
+      ],
+      "relation": "different",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "multi_second_progress",
+      "requirement_quote": "每秒递增显示一个数字",
+      "source": "display",
+      "name": "tm:4:5",
+      "at_ms": [
+        1600,
+        3600,
+        5600,
+        7600,
+        9600,
+        11600
+      ],
+      "relation": "different",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 5);\nunsigned long lastUpdate;\nunsigned int number = 0;\n\nvoid setup() {\n  display.setBrightness(7);\n  display.showNumberDec(number, false);\n  lastUpdate = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  while ((unsigned long)(now - lastUpdate) >= 1000UL) {\n    lastUpdate += 1000UL;\n    number = (number + 1U) % 10000U;\n    display.showNumberDec(number, false);\n  }\n}\n",
+  "electrical_led_pins": {}
+}

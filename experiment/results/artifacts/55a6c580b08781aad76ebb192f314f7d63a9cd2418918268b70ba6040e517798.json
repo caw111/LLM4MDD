@@ -1,0 +1,272 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "modeIsSetting",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "targetTemp",
+        "type": "f64",
+        "initial": 37.0
+      },
+      {
+        "name": "tempLastValid",
+        "type": "f64",
+        "initial": 25.0
+      },
+      {
+        "name": "alarmActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "abnormalHighCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "abnormalLowCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "fanOn",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_7",
+        "then": [
+          {
+            "assign": "tempLastValid",
+            "value": "io_5"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeIsSetting",
+            "value": {
+              "not": "modeIsSetting"
+            }
+          },
+          {
+            "assign": "targetTemp",
+            "value": {
+              "if": {
+                "if": "modeIsSetting",
+                "then": false,
+                "else": true
+              },
+              "then": "37.0",
+              "else": "35.0"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevPressed",
+        "value": "io_0"
+      },
+      {
+        "if": {
+          "and": [
+            "io_7",
+            {
+              ">=": [
+                "tempLastValid",
+                "38.0"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "abnormalHighCount",
+            "value": "abnormalHighCount + 1"
+          }
+        ],
+        "else": [
+          {
+            "assign": "abnormalHighCount",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_7",
+            {
+              "<=": [
+                "tempLastValid",
+                "36.0"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "abnormalLowCount",
+            "value": "abnormalLowCount + 1"
+          }
+        ],
+        "else": [
+          {
+            "assign": "abnormalLowCount",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          "or": [
+            {
+              ">=": [
+                "abnormalHighCount",
+                6000
+              ]
+            },
+            {
+              ">=": [
+                "abnormalLowCount",
+                6000
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmActive",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "alarmActive",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "alarmActive"
+            },
+            "io_7"
+          ]
+        },
+        "then": [
+          {
+            "assign": "fanOn",
+            "value": {
+              "if": "fanOn",
+              "then": false,
+              "else": true
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "fanOn",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "alarmActive",
+        "then": false,
+        "else": {
+          "and": [
+            "io_7",
+            {
+              "<": [
+                "tempLastValid",
+                "targetTemp"
+              ]
+            }
+          ]
+        }
+      },
+      "io_2": "alarmActive",
+      "io_3": {
+        "and": [
+          "fanOn",
+          {
+            "not": "alarmActive"
+          }
+        ]
+      },
+      "io_4": {
+        "if": "alarmActive",
+        "then": 2000,
+        "else": 0
+      },
+      "io_8": {
+        "if": "modeIsSetting",
+        "then": "RealFunctions::floor(targetTemp)",
+        "else": "RealFunctions::floor(tempLastValid)"
+      },
+      "serial_0_trigger": "alarmActive",
+      "serial_0_value_0": "alarmActive"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Set io_7=true and keep io_5=38.5 for many consecutive control steps (enough for the model abnormalHighCount threshold) with io_0=false.",
+        "oracle": "serial_0_trigger and serial_0_value_0 become true and io_2 (LED) becomes true; io_4 becomes 2000 (tone enable) and remains alarmed while alarmActive stays true."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "With io_7=true and alarmActive false, drive a rising edge on io_0 (prevPressed=false then io_0=true) once; keep io_5 valid throughout.",
+        "oracle": "modeIsSetting toggles, and io_8 switches from displaying RealFunctions::floor(tempLastValid) to displaying RealFunctions::floor(targetTemp) on the step after the press."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "With io_7=true, set io_5 below targetTemp (e.g., 36.0 when targetTemp=37.0) for one control step.",
+        "oracle": "io_1 (heater relay) becomes true when not alarmActive and io_7 is true and tempLastValid < targetTemp."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Keep io_7=true and alarmActive false for multiple consecutive control steps with io_0=false; hold io_5 within nominal band (not >=38.0 and not <=36.0).",
+        "oracle": "io_3 (fan control) toggles periodically (fanOn state alternates each control step when not alarmed), and io_3 is false when alarmActive is true."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_5 : Real;\n    in attribute io_6 : Real;\n    in attribute io_7 : Boolean;\n    attribute prevPressed : Boolean := false;\n    attribute modeIsSetting : Boolean := false;\n    attribute targetTemp : Real := 37.0;\n    attribute tempLastValid : Real := 25.0;\n    attribute alarmActive : Boolean := false;\n    attribute abnormalHighCount : Integer := 0;\n    attribute abnormalLowCount : Integer := 0;\n    attribute fanOn : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_7 {\n        first start;\n        then assign tempLastValid := io_5;\n      }\n      then if ((io_0) and ((not prevPressed))) {\n        first start;\n        then assign modeIsSetting := (not modeIsSetting);\n        then assign targetTemp := (if (if modeIsSetting ? false else true) ? 37.0 else 35.0);\n      }\n      then assign prevPressed := io_0;\n      then if ((io_7) and (((tempLastValid) >= (38.0)))) {\n        first start;\n        then assign abnormalHighCount := abnormalHighCount + 1;\n      } else {\n        first start;\n        then assign abnormalHighCount := 0;\n      }\n      then if ((io_7) and (((tempLastValid) <= (36.0)))) {\n        first start;\n        then assign abnormalLowCount := abnormalLowCount + 1;\n      } else {\n        first start;\n        then assign abnormalLowCount := 0;\n      }\n      then if ((((abnormalHighCount) >= (6000))) or (((abnormalLowCount) >= (6000)))) {\n        first start;\n        then assign alarmActive := true;\n      } else {\n        first start;\n        then assign alarmActive := false;\n      }\n      then if (((not alarmActive)) and (io_7)) {\n        first start;\n        then assign fanOn := (if fanOn ? false else true);\n      } else {\n        first start;\n        then assign fanOn := false;\n      }\n    }\n    out attribute io_1 : Boolean = (if alarmActive ? false else ((io_7) and (((tempLastValid) < (targetTemp)))));\n    out attribute io_2 : Boolean = alarmActive;\n    out attribute io_3 : Boolean = ((fanOn) and ((not alarmActive)));\n    out attribute io_4 : Integer = (if alarmActive ? 2000 else 0);\n    out attribute io_8 : Integer = (if modeIsSetting ? RealFunctions::floor(targetTemp) else RealFunctions::floor(tempLastValid));\n    out attribute serial_0_trigger : Boolean = alarmActive;\n    out attribute serial_0_value_0 : Boolean = alarmActive;\n  }\n  part system : Controller;\n}\n"
+}

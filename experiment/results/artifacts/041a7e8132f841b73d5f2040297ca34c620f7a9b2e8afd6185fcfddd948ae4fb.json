@@ -1,0 +1,503 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    },
+    {
+      "name": "io_5",
+      "type": "i32"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_2",
+      "type": "bool"
+    },
+    {
+      "name": "io_3",
+      "type": "i32"
+    },
+    {
+      "name": "io_4",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_2",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 == true) ? (arg1 == 15) : (arg1 == 2))"
+      }
+    },
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 == true) ? 2000 : 0)"
+      }
+    },
+    {
+      "id": "compute_io_4",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "alarmLocked"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "count"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_2"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "alarmLocked"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "count"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_4"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "count",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "alarmLocked",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "prevD2Pressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "prevD3Pressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "d3PressAccumMs",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "((arg0 == true) && (arg1 == true))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "alarmLocked"
+            },
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "alarmLocked",
+                "expression": "false",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "count",
+                "expression": "0",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 == false)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "alarmLocked"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "if",
+                "condition": "(arg0 && (!arg1))",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "prevD2Pressed"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "count",
+                      "expression": "(arg0 + 1)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "count"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "if",
+                      "condition": "((arg0 + 1) >= 15)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "count"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "count",
+                            "expression": "15",
+                            "sources": []
+                          },
+                          {
+                            "kind": "assign",
+                            "state": "alarmLocked",
+                            "expression": "true",
+                            "sources": []
+                          }
+                        ]
+                      },
+                      "else": null
+                    }
+                  ]
+                },
+                "else": null
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 && (!arg1))",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_1"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "prevD3Pressed"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "d3PressAccumMs",
+                      "expression": "0",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 == true)",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_1"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "d3PressAccumMs",
+                      "expression": "(arg0 + arg1)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "d3PressAccumMs"
+                        },
+                        {
+                          "kind": "input",
+                          "name": "io_5"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "if",
+                      "condition": "(arg0 >= 1000)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "d3PressAccumMs"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "d3PressAccumMs",
+                            "expression": "0",
+                            "sources": []
+                          },
+                          {
+                            "kind": "assign",
+                            "state": "count",
+                            "expression": "0",
+                            "sources": []
+                          }
+                        ]
+                      },
+                      "else": null
+                    }
+                  ]
+                },
+                "else": null
+              },
+              {
+                "kind": "if",
+                "condition": "((!arg0) && arg1)",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_1"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "prevD3Pressed"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "if",
+                      "condition": "(arg0 >= 1000)",
+                      "sources": [
+                        {
+                          "kind": "state",
+                          "name": "d3PressAccumMs"
+                        }
+                      ],
+                      "then": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "d3PressAccumMs",
+                            "expression": "0",
+                            "sources": []
+                          }
+                        ]
+                      },
+                      "else": {
+                        "kind": "sequence",
+                        "steps": [
+                          {
+                            "kind": "assign",
+                            "state": "count",
+                            "expression": "(arg0 - 1)",
+                            "sources": [
+                              {
+                                "kind": "state",
+                                "name": "count"
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "if",
+                            "condition": "((arg0 - 1) < 0)",
+                            "sources": [
+                              {
+                                "kind": "state",
+                                "name": "count"
+                              }
+                            ],
+                            "then": {
+                              "kind": "sequence",
+                              "steps": [
+                                {
+                                  "kind": "assign",
+                                  "state": "count",
+                                  "expression": "15",
+                                  "sources": []
+                                }
+                              ]
+                            },
+                            "else": null
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "else": null
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "prevD2Pressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "assign",
+          "state": "prevD3Pressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

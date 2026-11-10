@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"welcomeActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"<=\": [\n                \"io_0\",\n                10.0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"welcomeActive\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"welcomeActive\",\n            \"value\": false\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": {\n        \"if\": \"welcomeActive\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_3\": {\n        \"if\": \"welcomeActive\",\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"serial_0_trigger\": {\n        \"if\": \"welcomeActive\",\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_value_0\": {\n        \"if\": \"welcomeActive\",\n        \"then\": 1,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Provide io_1=true (valid) and io_0=9.5 for multiple control steps, then keep io_1=true while increasing io_0 to 20.0 (invalid/absent distance still holds last valid).\",\n        \"oracle\": \"When io_0<=10.0 and io_1 is true, io_2 is true (LED command active), io_3 is non-zero (buzzer tone active), and serial_0_trigger is true with serial_0_value_0=1. When io_0>10.0 (and/or validity not asserted), io_2 becomes false, io_3 becomes 0, and serial_0_trigger is false (no welcome).\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能门口提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、LED（D13）、蜂鸣器（D6）和串口。检测到 10cm 内有人靠近时，LED 快速闪烁、蜂鸣器短鸣三次，并在串口输出 welcome；若 5 秒内无人靠近则恢复待机。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_1=false for at least one control step while previously sampling io_0<=10.0 with io_1=true; then set io_1=true with io_0=12.0.\",\n        \"oracle\": \"If io_1 is false, the controller deasserts welcomeActive (io_2=false, io_3=0, serial_0_trigger=false). After io_1 returns true with io_0=12.0 (>10.0), welcome remains inactive (io_2=false, io_3=0, serial_0_trigger=false).\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute welcomeActive : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and (((io_0) <= (10.0)))) {\n        first start;\n        then assign welcomeActive := true;\n      } else {\n        first start;\n        then assign welcomeActive := false;\n      }\n    }\n    out attribute io_2 : Boolean = (if welcomeActive ? true else false);\n    out attribute io_3 : Integer = (if welcomeActive ? 1000 else 0);\n    out attribute serial_0_trigger : Boolean = (if welcomeActive ? true else false);\n    out attribute serial_0_value_0 : Integer = (if welcomeActive ? 1 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

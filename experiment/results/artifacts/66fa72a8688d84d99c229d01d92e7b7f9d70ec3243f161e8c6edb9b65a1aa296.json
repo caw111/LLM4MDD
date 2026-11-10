@@ -1,0 +1,278 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "roomIndex",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "displayMode",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "prevBtnRoom",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevBtnMode",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "serialAccumMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "nextSerialReady",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "tm1637NumberLatched",
+        "type": "i32",
+        "initial": "0"
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_8",
+            {
+              "not": "prevBtnRoom"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "roomIndex",
+            "value": {
+              "if": "roomIndex == 0",
+              "then": 1,
+              "else": 0
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_9",
+            {
+              "not": "prevBtnMode"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "displayMode",
+            "value": {
+              "if": "displayMode == 0",
+              "then": 1,
+              "else": {
+                "if": "displayMode == 1",
+                "then": 2,
+                "else": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevBtnRoom",
+        "value": "io_8"
+      },
+      {
+        "assign": "prevBtnMode",
+        "value": "io_9"
+      },
+      {
+        "assign": "serialAccumMs",
+        "value": "serialAccumMs + io_13"
+      },
+      {
+        "if": "serialAccumMs >= 5000",
+        "then": [
+          {
+            "assign": "serialAccumMs",
+            "value": "serialAccumMs - 5000"
+          },
+          {
+            "assign": "nextSerialReady",
+            "value": "true"
+          }
+        ],
+        "else": [
+          {
+            "assign": "nextSerialReady",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "if": "roomIndex == 0",
+        "then": [
+          {
+            "assign": "tm1637NumberLatched",
+            "value": {
+              "if": "displayMode == 0",
+              "then": "RealFunctions::floor(io_2)",
+              "else": {
+                "if": "displayMode == 1",
+                "then": "RealFunctions::floor(io_3)",
+                "else": "RealFunctions::floor(io_0)"
+              }
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "tm1637NumberLatched",
+            "value": {
+              "if": "displayMode == 0",
+              "then": "RealFunctions::floor(io_5)",
+              "else": {
+                "if": "displayMode == 1",
+                "then": "RealFunctions::floor(io_6)",
+                "else": "RealFunctions::floor(io_1)"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_10": {
+        "if": "io_4",
+        "then": {
+          "and": [
+            {
+              ">=": [
+                "io_0",
+                700.0
+              ]
+            },
+            {
+              ">=": [
+                "io_2",
+                30.0
+              ]
+            }
+          ]
+        },
+        "else": false
+      },
+      "io_11": {
+        "if": "io_7",
+        "then": {
+          "and": [
+            {
+              ">=": [
+                "io_1",
+                700.0
+              ]
+            },
+            {
+              ">=": [
+                "io_5",
+                30.0
+              ]
+            }
+          ]
+        },
+        "else": false
+      },
+      "io_12": "tm1637NumberLatched",
+      "serial_0_trigger": "nextSerialReady",
+      "serial_0_value_0": {
+        "if": "io_4",
+        "then": "io_2",
+        "else": "io_2"
+      },
+      "serial_0_value_1": {
+        "if": "io_4",
+        "then": "io_3",
+        "else": "io_3"
+      },
+      "serial_0_value_2": "io_0",
+      "serial_0_value_3": {
+        "if": "io_7",
+        "then": "io_5",
+        "else": "io_5"
+      },
+      "serial_0_value_4": {
+        "if": "io_7",
+        "then": "io_6",
+        "else": "io_6"
+      },
+      "serial_0_value_5": "io_1",
+      "serial_0_value_6": {
+        "and": [
+          "io_4",
+          {
+            "and": [
+              {
+                ">=": [
+                  "io_2",
+                  30.0
+                ]
+              },
+              {
+                ">=": [
+                  "io_0",
+                  700.0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "serial_0_value_7": {
+        "and": [
+          "io_7",
+          {
+            "and": [
+              {
+                ">=": [
+                  "io_5",
+                  30.0
+                ]
+              },
+              {
+                ">=": [
+                  "io_1",
+                  700.0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下按钮D2（io_8）发生一次上升沿；保持D3不按（io_9=false）；随后在若干控制步保持DHT有效（io_4=true, io_7=false）并设置io_2=31.0, io_0=800.0，且io_13持续以步进值累加到>=5000ms。",
+        "oracle": "TM1637显示房间切换后的温度（io_12应为floor(31.0)）；串口触发在累计到达5秒时将serial_0_trigger置为true且串口数值端口serial_0_value_0..5更新；客厅告警LED io_10为true、卧室LED io_11为false，并且serial_0_value_6为true、serial_0_value_7为false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个多房间环境监测与轮询展示系统，使用两个 DHT11，客厅传感器 D7、卧室传感器 D8，两个光敏电阻 A0、A1，TM1637（CLK=D4，DIO=D5）、按钮 D2、D3 和串口。系统需要轮流显示不同房间的温度、湿度和光照，并支持按钮手动切换房间和显示项目；每 5 秒通过串口输出完整环境报表；若任一房间温度过高且光照过强，则点亮对应告警 LED（D12 或 D13）并输出房间级异常信息。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "先确保roomIndex选择为卧室（通过按io_8一次或初始化为1）；再按下按钮D3（io_9）一次上升沿以切换显示项目；将卧室DHT有效io_7=true，设置io_5=25.0、io_1=800.0（温度不超阈值）；并持续推进io_13以触发一次5秒串口报表。",
+        "oracle": "TM1637显示切换后的卧室项目（io_12应对应floor(io_6)或floor(io_1)取决于displayMode切换到的项目）；卧室告警LED io_11应为false（因为io_5未达到温度阈值）；serial_0_value_7为false；serial_0_trigger在5秒点置为true且串口值端口包含卧室温湿光照采样。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Real;\n    in attribute io_6 : Real;\n    in attribute io_7 : Boolean;\n    in attribute io_8 : Boolean;\n    in attribute io_9 : Boolean;\n    in attribute io_13 : Integer;\n    attribute roomIndex : Integer := 0;\n    attribute displayMode : Integer := 0;\n    attribute prevBtnRoom : Boolean := false;\n    attribute prevBtnMode : Boolean := false;\n    attribute serialAccumMs : Integer := 0;\n    attribute nextSerialReady : Boolean := false;\n    attribute tm1637NumberLatched : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_8) and ((not prevBtnRoom))) {\n        first start;\n        then assign roomIndex := (if roomIndex == 0 ? 1 else 0);\n      }\n      then if ((io_9) and ((not prevBtnMode))) {\n        first start;\n        then assign displayMode := (if displayMode == 0 ? 1 else (if displayMode == 1 ? 2 else 0));\n      }\n      then assign prevBtnRoom := io_8;\n      then assign prevBtnMode := io_9;\n      then assign serialAccumMs := serialAccumMs + io_13;\n      then if serialAccumMs >= 5000 {\n        first start;\n        then assign serialAccumMs := serialAccumMs - 5000;\n        then assign nextSerialReady := true;\n      } else {\n        first start;\n        then assign nextSerialReady := false;\n      }\n      then if roomIndex == 0 {\n        first start;\n        then assign tm1637NumberLatched := (if displayMode == 0 ? RealFunctions::floor(io_2) else (if displayMode == 1 ? RealFunctions::floor(io_3) else RealFunctions::floor(io_0)));\n      } else {\n        first start;\n        then assign tm1637NumberLatched := (if displayMode == 0 ? RealFunctions::floor(io_5) else (if displayMode == 1 ? RealFunctions::floor(io_6) else RealFunctions::floor(io_1)));\n      }\n    }\n    out attribute io_10 : Boolean = (if io_4 ? ((((io_0) >= (700.0))) and (((io_2) >= (30.0)))) else false);\n    out attribute io_11 : Boolean = (if io_7 ? ((((io_1) >= (700.0))) and (((io_5) >= (30.0)))) else false);\n    out attribute io_12 : Integer = tm1637NumberLatched;\n    out attribute serial_0_trigger : Boolean = nextSerialReady;\n    out attribute serial_0_value_0 : Real = (if io_4 ? io_2 else io_2);\n    out attribute serial_0_value_1 : Real = (if io_4 ? io_3 else io_3);\n    out attribute serial_0_value_2 : Real = io_0;\n    out attribute serial_0_value_3 : Real = (if io_7 ? io_5 else io_5);\n    out attribute serial_0_value_4 : Real = (if io_7 ? io_6 else io_6);\n    out attribute serial_0_value_5 : Real = io_1;\n    out attribute serial_0_value_6 : Boolean = ((io_4) and (((((io_2) >= (30.0))) and (((io_0) >= (700.0))))));\n    out attribute serial_0_value_7 : Boolean = ((io_7) and (((((io_5) >= (30.0))) and (((io_1) >= (700.0))))));\n  }\n  part system : Controller;\n}\n"
+}

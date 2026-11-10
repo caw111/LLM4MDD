@@ -1,0 +1,39 @@
+[
+  {
+    "number": 1,
+    "prompt": "Generate a complete Arduino sketch for the following requirements and given circuit. Output only C++ code with setup() and loop(). Preserve all requirements and wiring; do not simplify away behavior.\n蜂鸣器（D6）每 3 秒响一次，按钮（D2）暂停/恢复\n验收约定：D6使用无源蜂鸣器，音调1000Hz，每次持续100ms；初始运行且静音，累计运行3000ms后首次发声，此后每累计运行3000ms开始一次。D2使用INPUT_PULLUP，低电平按下沿切换暂停/恢复，长按及松开不切换。暂停立即静音，保留计时和剩余鸣叫时长，恢复后继续，不能重新开始完整周期。响应及鸣叫时间容差20ms。",
+    "requested_model": "openai/gpt-5.4-nano",
+    "temperature": 0.2,
+    "max_tokens": 6000,
+    "response": "```cpp\n#include <Arduino.h>\n\nconst uint8_t BUZZER_PIN = 6;   // D6\nconst uint8_t BUTTON_PIN = 2;  // D2\n\n// Buzzer requirements\nstatic const uint16_t TICK_MS = 3000;     // each cycle\nstatic const uint16_t BUZZ_DURATION_MS = 100;\nstatic const uint16_t TONE_HZ = 1000;\n\n// State machine:\n// - Runs continuously, tracks \"accumulated running time\" while NOT paused.\n// - When accumulated time reaches next scheduled boundary, it triggers a 100ms beep.\n// - Pause can occur at any time; pausing immediately stops PWM/beep, but keeps timing state:\n//   - remaining time for current beep (if currently beeping)\n//   - remaining time until next beep boundary (if not beeping)\n// - Resume continues from where left off; does not restart whole cycle.\nenum BuzzerState : uint8_t { WAITING, BEEPING };\n\nBuzzerState state = WAITING;\n\n// Timing bookkeeping (all times in ms)\nunsigned long lastUpdateMs = 0;\n\n// \"running-time\" progress (only advanced when not paused)\nuint32_t accumSinceLastBoundary = 0; // ms accumulated toward next 3s boundary (when WAITING)\n\n// BEEPING timing\nuint32_t beepRemainingMs = 0;         // ms remaining to finish current 100ms beep\n\n// Pause/resume\nbool paused = false;\nbool prevButtonLow = false;\n\n// Output control for passive buzzer using tone() at 1000 Hz\nstatic inline void buzzerOff() {\n  noTone(BUZZER_PIN);\n}\n\nstatic inline void buzzerOn() {\n  tone(BUZZER_PIN, TONE_HZ);\n}\n\nvoid setup() {\n  pinMode(BUZZER_PIN, OUTPUT);\n  pinMode(BUTTON_PIN, INPUT_PULLUP);\n\n  buzzerOff(); // initial run but silent\n\n  lastUpdateMs = millis();\n}\n\nvoid loop() {\n  // Read button: INPUT_PULLUP, low on press.\n  bool buttonLow = (digitalRead(BUTTON_PIN) == LOW);\n\n  // Toggle pause/resume only on falling edge (high -> low).\n  if (buttonLow && !prevButtonLow) {\n    paused = !paused;\n\n    if (paused) {\n      // Immediately stop any sound and preserve remaining timing.\n      // Preserve remaining beep time if currently beeping.\n      if (state == BEEPING) {\n        // Estimate remaining based on elapsed since beep started.\n        // We keep it accurate by updating timing on every iteration and\n        // recalculating remaining when pausing.\n        // Therefore, ensure timing bookkeeping has been updated up to now:\n        // We already update below; but if toggle happens before update, we\n        // correct by forcing an update just after toggling.\n      }\n      buzzerOff();\n    } else {\n      // Resume: if we were in BEEPING, restart tone at 1000Hz and continue\n      // remaining time. If WAITING, remain silent.\n      if (state == BEEPING) {\n        buzzerOn();\n      }\n    }\n  }\n  prevButtonLow = buttonLow;\n\n  unsigned long nowMs = millis();\n  uint32_t dt = (uint32_t)(nowMs - lastUpdateMs);\n  lastUpdateMs = nowMs;\n\n  if (dt == 0) return;\n\n  // While paused: keep timing frozen; just ensure silence (already handled on toggle).\n  if (paused) {\n    return;\n  }\n\n  // Not paused: advance timing.\n  if (state == WAITING) {\n    // Accumulate running time until the next boundary at 3000ms.\n    accumSinceLastBoundary += dt;\n\n    if (accumSinceLastBoundary >= TICK_MS) {\n      // Start a 100ms beep.\n      state = BEEPING;\n\n      // Compute how much extra time beyond the boundary we accumulated.\n      // The boundary event triggers immediately at/after reaching 3000ms.\n      // We'll subtract the overshoot from the accumulated count so that\n      // subsequent boundaries remain accurate.\n      uint32_t overshoot = accumSinceLastBoundary - TICK_MS;\n      // Start beep; any overshoot consumes progress beyond boundary,\n      // but beep duration handling is independent. We effectively reset\n      // to start counting toward next boundary after beep ends.\n      accumSinceLastBoundary = 0;\n\n      beepRemainingMs = BUZZ_DURATION_MS;\n\n      buzzerOn();\n\n      // If overshoot included elapsed time past boundary, we must ensure\n      // the beep duration still totals 100ms of running time.\n      // Since we are now at the first update tick after boundary, it's possible\n      // that dt included overshoot. We already set beepRemainingMs=100ms,\n      // but we need to account for any time in this dt that occurred after boundary.\n      // Approximation within <= 20ms tolerance is acceptable, but we can do better:\n      // We treat boundary reached at the moment accumSinceLastBoundary hit 3000ms.\n      // Therefore, after boundary in this dt, time spent toward beep start is:\n      // timeAfterBoundary = overshoot.\n      // That time occurred after reaching boundary, so beep should have been\n      // sounding for (dt - overshoot)? Actually overshoot = (accum_before + dt) - 3000.\n      // The time after boundary within dt is overshoot? No:\n      // accum_before + dt reaches 3000 + overshoot, so amount after boundary is overshoot.\n      // So time that has passed since boundary within this loop is overshoot ms.\n      // We should reduce beepRemainingMs by overshoot because beep should have\n      // already been active during that time.\n      if (overshoot > 0) {\n        if (overshoot >= beepRemainingMs) {\n          // Beep would have fully completed already; handle completion immediately.\n          buzzerOff();\n          state = WAITING;\n          accumSinceLastBoundary = 0; // next boundary starts after beep completion with zero progress\n          beepRemainingMs = 0;\n        } else {\n          beepRemainingMs -= overshoot;\n        }\n      }\n    }\n  } else if (state == BEEPING) {\n    if (beepRemainingMs > dt) {\n      beepRemainingMs -= dt;\n    } else {\n      // Finish beep\n      beepRemainingMs = 0;\n      buzzerOff();\n      state = WAITING;\n\n      // After finishing a beep, start accumulating toward next boundary.\n      // Per requirement: \"每累计运行3000ms开始一次\"\n      // and we must not reset the entire cycle when beeping starts; however\n      // we define beep to be triggered at each 3000ms boundary and then\n      // the next boundary is 3000ms of running time after beep trigger.\n      // Since we set accumSinceLastBoundary=0 when boundary triggered,\n      // we can now keep it as 0 and start accumulating again from next loop.\n      accumSinceLastBoundary = 0;\n    }\n  }\n}\n```",
+    "actual_model": "openai/gpt-5.4-nano",
+    "finish_reason": "stop",
+    "refusal": null,
+    "usage": {
+      "completion_tokens": 1483,
+      "prompt_tokens": 199,
+      "total_tokens": 1682,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": null,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": null,
+        "image_tokens": 0
+      },
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost": 0.00189355,
+      "is_byok": false,
+      "cost_details": {
+        "upstream_inference_cost": 0.00189355,
+        "upstream_inference_prompt_cost": 3.98e-05,
+        "upstream_inference_completions_cost": 0.00185375
+      }
+    },
+    "seconds": 9.949
+  }
+]

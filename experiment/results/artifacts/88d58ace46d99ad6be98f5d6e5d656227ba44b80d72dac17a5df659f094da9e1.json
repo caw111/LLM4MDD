@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is Arduino Uno and wiring must be preserved: DHT22 SDA data pin is connected to Arduino Uno D2; VCC to 5V; GND to GND.2.",
+    "DHT22 humidity is sampled with sample_period_ms >= 2000ms; invalid reads retain the last valid measurement and set validity false (SysML handles validity).",
+    "Serial baud is fixed at 9600 with framing line_or_idle and idle_timeout_ms=20 as specified; actual line newline formatting and report cadence are handled by the SysML model via the serial trigger.",
+    "To satisfy the required serial output format \"Humidity: {humidity value}\", the fixed prefix is produced by serial_text_output (\"Humidity: \") and the numeric humidity value is produced as the typed f64 serial report value in the same serial channel group gated by the same serial trigger.",
+    "control_period_ms is set to 10ms as a scheduling granularity; humidity sampling occurs on a multiple of this step via DHT sample_period_ms=2000ms."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "Humidity value to print as \"Humidity: {humidity}\" over Serial",
+      "sample_period_ms": 2000,
+      "device": "dht_humidity",
+      "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D2\", \"sensor\": \"DHT22\"}",
+      "binding": {
+        "kind": "dht_humidity",
+        "invalid_policy": "hold_last_valid",
+        "pin": "D2",
+        "sensor": "DHT22"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Report gate for the fixed message prefix \"Humidity: \" (no numeric text appended by this port)",
+      "sample_period_ms": 10,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"Humidity: \"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Humidity: "
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Delta time since previous control step for report cadence",
+      "sample_period_ms": 10,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Business condition: when it's time to report the next humidity reading to Serial",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "%RH",
+      "initial": 0,
+      "meaning": "Humidity numeric value to print after the fixed prefix",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"humidity\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "humidity"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Humidity Sensor Basic\n\n## Project Description\nThis is a simple Arduino project that uses dht22 sensor to measure the humidity.\n\n## Hardware Components\n- Arduino Uno\n- DHT22 sensor\n\n## Circuit Description\nThe DHT22 sensor is connected to an Arduino Uno. The VCC pin is connected to the 5V pin on the Arduino, and the GND pin is connected to the GND2 pin. The data pin is connected to digital pin 2 on the Arduino.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial monitor\n2. Initialize and begin DHT sensor\n3. Continuously read the DHT sensor's humidity value\n4. Print humidity to the serial monitor in the following format: \"Humidity: {humidity value}\", for example: \"Humidity: 40.0\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct humidity value is printed to the serial monitor.\n\n## Notes for Implementation\n\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read humidity sensor value\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": -201.3,\n            \"left\": 100.2,\n            \"attrs\": {\n                \"humidity\": \"64.5\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v48\",\n                \"h-134.4\",\n                \"v259.2\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v48\",\n                \"h144\",\n                \"v268.8\",\n                \"h19.2\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v76.8\",\n                \"h115.3\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "effective_requirement": "# Humidity Sensor Basic\n\n## Project Description\nThis is a simple Arduino project that uses dht22 sensor to measure the humidity.\n\n## Hardware Components\n- Arduino Uno\n- DHT22 sensor\n\n## Circuit Description\nThe DHT22 sensor is connected to an Arduino Uno. The VCC pin is connected to the 5V pin on the Arduino, and the GND pin is connected to the GND2 pin. The data pin is connected to digital pin 2 on the Arduino.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial monitor\n2. Initialize and begin DHT sensor\n3. Continuously read the DHT sensor's humidity value\n4. Print humidity to the serial monitor in the following format: \"Humidity: {humidity value}\", for example: \"Humidity: 40.0\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct humidity value is printed to the serial monitor.\n\n## Notes for Implementation\n\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read humidity sensor value\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": -201.3,\n            \"left\": 100.2,\n            \"attrs\": {\n                \"humidity\": \"64.5\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v48\",\n                \"h-134.4\",\n                \"v259.2\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v48\",\n                \"h144\",\n                \"v268.8\",\n                \"h19.2\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v76.8\",\n                \"h115.3\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Read humidity sensor value",
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-dht22",
+            "id": "dht22 sensor1",
+            "top": -201.3,
+            "left": 100.2,
+            "attrs": {
+              "humidity": "64.5"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "dht22 sensor1:VCC",
+            "arduino uno1:5V",
+            "red",
+            [
+              "v48",
+              "h-134.4",
+              "v259.2",
+              "h182.4"
+            ]
+          ],
+          [
+            "dht22 sensor1:GND",
+            "arduino uno1:GND.2",
+            "black",
+            [
+              "v48",
+              "h144",
+              "v268.8",
+              "h19.2"
+            ]
+          ],
+          [
+            "dht22 sensor1:SDA",
+            "arduino uno1:2",
+            "green",
+            [
+              "v76.8",
+              "h115.3"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# Humidity Sensor Basic\n\n## Project Description\nThis is a simple Arduino project that uses dht22 sensor to measure the humidity.\n\n## Hardware Components\n- Arduino Uno\n- DHT22 sensor\n\n## Circuit Description\nThe DHT22 sensor is connected to an Arduino Uno. The VCC pin is connected to the 5V pin on the Arduino, and the GND pin is connected to the GND2 pin. The data pin is connected to digital pin 2 on the Arduino.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Initialize serial monitor\n2. Initialize and begin DHT sensor\n3. Continuously read the DHT sensor's humidity value\n4. Print humidity to the serial monitor in the following format: \"Humidity: {humidity value}\", for example: \"Humidity: 40.0\"\n\n## Success Criteria\nThe test is successful when:\n1. The correct humidity value is printed to the serial monitor.\n\n## Notes for Implementation\n\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Read humidity sensor value\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": -201.3,\n            \"left\": 100.2,\n            \"attrs\": {\n                \"humidity\": \"64.5\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v48\",\n                \"h-134.4\",\n                \"v259.2\",\n                \"h182.4\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v48\",\n                \"h144\",\n                \"v268.8\",\n                \"h19.2\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v76.8\",\n                \"h115.3\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ],
+    "serial_text_outputs": [
+      {
+        "id": "io_1",
+        "trigger_port": "io_1",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "Humidity: "
+      }
+    ]
+  }
+}

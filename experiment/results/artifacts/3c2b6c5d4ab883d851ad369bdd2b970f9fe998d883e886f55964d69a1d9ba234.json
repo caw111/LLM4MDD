@@ -1,0 +1,133 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"accumulatedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"pendingReport\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      },\n      {\n        \"name\": \"lastTempForReport\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"accumulatedMs\",\n        \"value\": \"accumulatedMs + io_1\"\n      },\n      {\n        \"if\": \"accumulatedMs >= 1000\",\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs - 1000\"\n          },\n          {\n            \"assign\": \"pendingReport\",\n            \"value\": \"true\"\n          }\n        ]\n      },\n      {\n        \"if\": \"not pendingReport\",\n        \"then\": [\n          {\n            \"assign\": \"serial_0_trigger\",\n            \"value\": \"false\"\n          }\n        ]\n      },\n      {\n        \"if\": \"pendingReport\",\n        \"then\": [\n          {\n            \"assign\": \"pendingReport\",\n            \"value\": \"false\"\n          },\n          {\n            \"assign\": \"lastTempForReport\",\n            \"value\": \"io_0\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"pendingReport\",\n      \"serial_0_value_0\": \"lastTempForReport\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"读取连接在 D7 引脚的数据温湿度传感器 DHT11 的温度值，并每秒通过串口输出。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Provide io_0 temperature samples (after legacy valid frame) and advance io_1 deltas such that elapsed accumulates to 1000ms boundaries (e.g., many steps summing to 1000ms, then another 1000ms).\",\n        \"oracle\": \"serial_0_trigger becomes true exactly once per completed 1000ms accumulation window, and serial_0_value_0 equals the current io_0 temperature value on the corresponding trigger step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"读取连接在 D7 引脚的数据温湿度传感器 DHT11 的温度值，并每秒通过串口输出。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Advance io_1 with non-uniform deltas that sum past 1000ms (e.g., 600ms then 500ms).\",\n        \"oracle\": \"A single serial_0_trigger occurs at/after the first step that causes accumulatedMs to reach or exceed 1000ms, with accumulatedMs reduced by exactly 1000ms; subsequent triggers follow the next 1000ms from the remaining phase.\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: serial_0_trigger. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Assignment target must be initialized internal state: serial_0_trigger. For stateless behavior, put the input expression directly in outputs."
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Assignment target must be initialized internal state: serial_0_trigger. For stateless behavior, put the input expression directly in outputs."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"accumulatedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"lastTempForReport\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"accumulatedMs\",\n        \"value\": \"accumulatedMs + io_1\"\n      },\n      {\n        \"if\": \"accumulatedMs >= 1000\",\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs - 1000\"\n          },\n          {\n            \"assign\": \"lastTempForReport\",\n            \"value\": \"io_0\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"accumulatedMs >= 1000\",\n      \"serial_0_value_0\": \"lastTempForReport\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"读取连接在 D7 引脚的数据温湿度传感器 DHT11 的温度值，并每秒通过串口输出。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Provide io_0 temperature samples (after legacy valid frame) and advance io_1 deltas such that the elapsed accumulation reaches a 1000ms boundary multiple times (e.g., a sequence of deltas summing to >=1000ms, then another >=1000ms), while keeping io_0 changes observable at and between boundaries.\",\n        \"oracle\": \"serial_0_trigger is asserted once per completed 1000ms accumulation window, and serial_0_value_0 equals the current io_0 temperature captured on the corresponding trigger step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"读取连接在 D7 引脚的数据温湿度传感器 DHT11 的温度值，并每秒通过串口输出。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Use a non-uniform delta pattern for io_1 that causes accumulation to cross the 1000ms threshold within the same controller step window (e.g., 600ms then 500ms), with io_0 changing between these deltas.\",\n        \"oracle\": \"A single serial_0_trigger occurs on the step where accumulatedMs reaches/exceeds 1000ms, serial_0_value_0 matches the io_0 value at that trigger step, and subsequent triggers resume after the remaining phase without an extra immediate trigger.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Integer;\n    attribute accumulatedMs : Integer := 0;\n    attribute lastTempForReport : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign accumulatedMs := accumulatedMs + io_1;\n      then if accumulatedMs >= 1000 {\n        first start;\n        then assign accumulatedMs := accumulatedMs - 1000;\n        then assign lastTempForReport := io_0;\n      }\n    }\n    out attribute serial_0_trigger : Boolean = accumulatedMs >= 1000;\n    out attribute serial_0_value_0 : Real = lastTempForReport;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

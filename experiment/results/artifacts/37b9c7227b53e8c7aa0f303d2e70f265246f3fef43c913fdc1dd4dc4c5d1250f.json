@@ -1,0 +1,198 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "prevDoorOpen",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "doorOpenElapsedMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "accRunDoorPauseMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "alarmLevel",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "inDefrost",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "inDefrost",
+        "value": {
+          "if": {
+            ">=": [
+              "io_1",
+              1000.0
+            ]
+          },
+          "then": true,
+          "else": "inDefrost"
+        }
+      },
+      {
+        "assign": "alarmLevel",
+        "value": {
+          "if": {
+            "or": [
+              {
+                ">=": [
+                  "io_0",
+                  3000.0
+                ]
+              },
+              {
+                ">=": [
+                  "io_1",
+                  2000.0
+                ]
+              }
+            ]
+          },
+          "then": 1,
+          "else": 0
+        }
+      },
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "assign": "doorOpenElapsedMs",
+            "value": "doorOpenElapsedMs + io_7"
+          }
+        ],
+        "else": [
+          {
+            "assign": "doorOpenElapsedMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": {
+          ">=": [
+            "doorOpenElapsedMs",
+            600000
+          ]
+        },
+        "then": [
+          {
+            "assign": "alarmLevel",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_2",
+            {
+              "not": "prevDoorOpen"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "accRunDoorPauseMs",
+            "value": "accRunDoorPauseMs + io_7"
+          }
+        ]
+      },
+      {
+        "assign": "prevDoorOpen",
+        "value": "io_2"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": {
+          "and": [
+            {
+              "not": "io_2"
+            },
+            {
+              "not": "inDefrost"
+            }
+          ]
+        },
+        "then": {
+          "if": {
+            ">": [
+              "io_0",
+              2500.0
+            ]
+          },
+          "then": 255.0,
+          "else": 128.0
+        },
+        "else": 0.0
+      },
+      "io_4": "inDefrost",
+      "io_5": {
+        "if": {
+          ">=": [
+            "alarmLevel",
+            2
+          ]
+        },
+        "then": 2000,
+        "else": {
+          "if": {
+            ">=": [
+              "alarmLevel",
+              1
+            ]
+          },
+          "then": 1000,
+          "else": 0
+        }
+      },
+      "io_6": {
+        "if": "io_2",
+        "then": 9,
+        "else": {
+          "if": "inDefrost",
+          "then": 8,
+          "else": "alarmLevel"
+        }
+      },
+      "serial_0_trigger": true,
+      "serial_0_value_0": "alarmLevel",
+      "serial_0_value_1": "io_0",
+      "serial_0_value_2": "io_1",
+      "serial_0_value_3": "io_2"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个冷库多级告警与保护系统，使用两个 LM35，环境温度 A0、蒸发器温度 A1，门磁 D2、风扇 D5、除霜继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和串口。系统需要根据环境温度控制风扇，根据蒸发器温度判断是否进入除霜流程；门打开时暂停部分控制并计时。若环境温度超上限、蒸发器结霜严重或门长时间未关，则进入不同级别告警并输出详细状态。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "step1: io_0=2600.0, io_1=1500.0, io_2=false, io_7=10; step2: io_0=2600.0, io_1=1500.0, io_2=true, io_7=1000 (door open begins); step3: keep io_2=true, io_0=2600.0, io_1=1500.0, io_7=600000",
+        "oracle": "serial_0_trigger为true；门打开期间 io_3输出为0.0（暂停风扇）；door_openElapsedMs累积到门长时间未关门限后 alarmLevel=2且蜂鸣器频率io_5=2000；TM1637显示io_6=9"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个冷库多级告警与保护系统，使用两个 LM35，环境温度 A0、蒸发器温度 A1，门磁 D2、风扇 D5、除霜继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和串口。系统需要根据环境温度控制风扇，根据蒸发器温度判断是否进入除霜流程；门打开时暂停部分控制并计时。若环境温度超上限、蒸发器结霜严重或门长时间未关，则进入不同级别告警并输出详细状态。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_2=false, io_0=3100.0 (ambient above upper), io_1=1500.0, io_7=10",
+        "oracle": "alarmLevel=1并输出到serial_0_value_0=1；蜂鸣器io_5=1000；除霜继电器io_4=false；风扇io_3按环境温度策略给出非零值（io_0>2500.0则io_3=255.0）；TM1637显示io_6=1"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_7 : Integer;\n    attribute prevDoorOpen : Boolean := false;\n    attribute doorOpenElapsedMs : Integer := 0;\n    attribute accRunDoorPauseMs : Integer := 0;\n    attribute alarmLevel : Integer := 0;\n    attribute inDefrost : Boolean := false;\n    perform action tick {\n      first start;\n      then assign inDefrost := (if ((io_1) >= (1000.0)) ? true else inDefrost);\n      then assign alarmLevel := (if ((((io_0) >= (3000.0))) or (((io_1) >= (2000.0)))) ? 1 else 0);\n      then if io_2 {\n        first start;\n        then assign doorOpenElapsedMs := doorOpenElapsedMs + io_7;\n      } else {\n        first start;\n        then assign doorOpenElapsedMs := 0;\n      }\n      then if ((doorOpenElapsedMs) >= (600000)) {\n        first start;\n        then assign alarmLevel := 2;\n      }\n      then if ((io_2) and ((not prevDoorOpen))) {\n        first start;\n        then assign accRunDoorPauseMs := accRunDoorPauseMs + io_7;\n      }\n      then assign prevDoorOpen := io_2;\n    }\n    out attribute io_3 : Real = (if (((not io_2)) and ((not inDefrost))) ? (if ((io_0) > (2500.0)) ? 255.0 else 128.0) else 0.0);\n    out attribute io_4 : Boolean = inDefrost;\n    out attribute io_5 : Integer = (if ((alarmLevel) >= (2)) ? 2000 else (if ((alarmLevel) >= (1)) ? 1000 else 0));\n    out attribute io_6 : Integer = (if io_2 ? 9 else (if inDefrost ? 8 else alarmLevel));\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Integer = alarmLevel;\n    out attribute serial_0_value_1 : Real = io_0;\n    out attribute serial_0_value_2 : Real = io_1;\n    out attribute serial_0_value_3 : Boolean = io_2;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,125 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "muteMode",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "muteMode",
+            "value": {
+              "not": "muteMode"
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": "muteMode",
+      "io_2": {
+        "if": "muteMode",
+        "then": 0,
+        "else": {
+          "if": {
+            "and": [
+              "io_4",
+              {
+                ">=": [
+                  "io_3",
+                  2.0
+                ]
+              }
+            ]
+          },
+          "then": {
+            "if": {
+              "<": [
+                "io_3",
+                20.0
+              ]
+            },
+            "then": 2000,
+            "else": {
+              "if": {
+                "<": [
+                  "io_3",
+                  50.0
+                ]
+              },
+              "then": 1200,
+              "else": {
+                "if": {
+                  "<": [
+                    "io_3",
+                    100.0
+                  ]
+                },
+                "then": 700,
+                "else": 300
+              }
+            }
+          },
+          "else": 0
+        }
+      },
+      "serial_0_trigger": "true",
+      "serial_0_value_0": {
+        "if": "io_4",
+        "then": "io_3",
+        "else": 0.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持io_4=true，分别将io_3取值为10cm、30cm、80cm、150cm，每个值保持至少一个控制步；同时io_0保持false且不发生边沿",
+        "oracle": "muteMode一直为false；io_2为非零且随距离增大而降低（10->2000Hz，30->1200Hz，80->700Hz，150->300Hz）；io_1始终为false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "在io_4=true且io_3=30cm条件下，使io_0从false经历一次上升沿（pressed边沿），之后保持io_0为true若干步，再将io_0拉回false；整个过程中io_3保持不变",
+        "oracle": "muteMode在pressed上升沿切换为true；从切换步起io_1=true（LED常亮）且io_2=0（静音）；serial_0_trigger保持true且serial_0_value_0等于30.0（或在io_4保持true时为io_3）"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能蜂鸣提示系统，使用 HC-SR04（Trig=D8，Echo=D9）、蜂鸣器 D6、按钮 D2 和 LED D13。系统默认根据距离远近调整蜂鸣器提示频率；按钮用于静音/取消静音，静音时 LED 常亮作为提示，但串口仍输出距离信息。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在muteMode已为true（先完成一次按键上升沿切换为静音）的情况下，保持io_4=true且io_3=80cm；再次对io_0产生一次上升沿（从false到true），然后保持io_0为true若干步",
+        "oracle": "muteMode在第二次pressed上升沿切换回false；LED io_1变为false；蜂鸣器 io_2恢复为与距离对应的频率（80cm->700Hz）；serial_0_value_0持续反映io_3（在io_4=true时为80.0）且serial_0_trigger保持true"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    attribute muteMode : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign muteMode := (not muteMode);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = muteMode;\n    out attribute io_2 : Integer = (if muteMode ? 0 else (if ((io_4) and (((io_3) >= (2.0)))) ? (if ((io_3) < (20.0)) ? 2000 else (if ((io_3) < (50.0)) ? 1200 else (if ((io_3) < (100.0)) ? 700 else 300))) else 0));\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Real = (if io_4 ? io_3 else 0.0);\n  }\n  part system : Controller;\n}\n"
+}

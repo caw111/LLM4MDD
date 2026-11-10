@@ -1,0 +1,680 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "bootComplete",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "operational",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "automaticMode",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "selectedActuator",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "fanCommand",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "lightCommand",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pumpCommand",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "savedTemperature",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "temperatureAvailable",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "modeCandidate",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "modeStable",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "modeStableMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "modePressEvent",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "selectCandidate",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "selectStable",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "selectStableMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "selectPressEvent",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "displayPhase",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "displayDelta",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousDhtFault",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousLightFault",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousSoilFault",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportEvent",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "calculations": [
+      {
+        "name": "dhtFault",
+        "type": "bool",
+        "expression": {
+          "not": "io_1"
+        }
+      },
+      {
+        "name": "lightFault",
+        "type": "bool",
+        "expression": {
+          "or": [
+            {
+              "==": [
+                "io_2",
+                0.0
+              ]
+            },
+            {
+              "==": [
+                "io_2",
+                1023.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "soilFault",
+        "type": "bool",
+        "expression": {
+          "or": [
+            {
+              "==": [
+                "io_3",
+                0.0
+              ]
+            },
+            {
+              "==": [
+                "io_3",
+                1023.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "anyFault",
+        "type": "bool",
+        "expression": {
+          "or": [
+            "dhtFault",
+            "lightFault",
+            "soilFault"
+          ]
+        }
+      },
+      {
+        "name": "faultSetChanged",
+        "type": "bool",
+        "expression": {
+          "or": [
+            {
+              "!=": [
+                "dhtFault",
+                "previousDhtFault"
+              ]
+            },
+            {
+              "!=": [
+                "lightFault",
+                "previousLightFault"
+              ]
+            },
+            {
+              "!=": [
+                "soilFault",
+                "previousSoilFault"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "manualFanValue",
+        "type": "f64",
+        "expression": "io_4 * 255.0 / 1023.0"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "operational",
+        "value": "bootComplete"
+      },
+      {
+        "assign": "bootComplete",
+        "value": true
+      },
+      {
+        "assign": "modePressEvent",
+        "value": false
+      },
+      {
+        "assign": "selectPressEvent",
+        "value": false
+      },
+      {
+        "assign": "reportEvent",
+        "value": false
+      },
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "savedTemperature",
+            "value": "io_0"
+          },
+          {
+            "assign": "temperatureAvailable",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "!=": [
+            "io_8",
+            "modeCandidate"
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeCandidate",
+            "value": "io_8"
+          },
+          {
+            "assign": "modeStableMs",
+            "value": 0
+          }
+        ],
+        "else": [
+          {
+            "if": {
+              ">=": [
+                "io_12",
+                "20 - modeStableMs"
+              ]
+            },
+            "then": [
+              {
+                "assign": "modeStableMs",
+                "value": 20
+              }
+            ],
+            "else": [
+              {
+                "if": {
+                  ">": [
+                    "io_12",
+                    0
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "modeStableMs",
+                    "value": "modeStableMs + io_12"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "modeStableMs",
+                20
+              ]
+            },
+            {
+              "!=": [
+                "modeStable",
+                "modeCandidate"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modePressEvent",
+            "value": "modeCandidate"
+          },
+          {
+            "assign": "modeStable",
+            "value": "modeCandidate"
+          }
+        ]
+      },
+      {
+        "if": {
+          "!=": [
+            "io_9",
+            "selectCandidate"
+          ]
+        },
+        "then": [
+          {
+            "assign": "selectCandidate",
+            "value": "io_9"
+          },
+          {
+            "assign": "selectStableMs",
+            "value": 0
+          }
+        ],
+        "else": [
+          {
+            "if": {
+              ">=": [
+                "io_12",
+                "20 - selectStableMs"
+              ]
+            },
+            "then": [
+              {
+                "assign": "selectStableMs",
+                "value": 20
+              }
+            ],
+            "else": [
+              {
+                "if": {
+                  ">": [
+                    "io_12",
+                    0
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "selectStableMs",
+                    "value": "selectStableMs + io_12"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "selectStableMs",
+                20
+              ]
+            },
+            {
+              "!=": [
+                "selectStable",
+                "selectCandidate"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "selectPressEvent",
+            "value": "selectCandidate"
+          },
+          {
+            "assign": "selectStable",
+            "value": "selectCandidate"
+          }
+        ]
+      },
+      {
+        "if": "modePressEvent",
+        "then": [
+          {
+            "assign": "automaticMode",
+            "value": {
+              "not": "automaticMode"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "selectPressEvent",
+            {
+              "not": "automaticMode"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "selectedActuator",
+            "value": {
+              "if": {
+                "==": [
+                  "selectedActuator",
+                  2
+                ]
+              },
+              "then": 0,
+              "else": "selectedActuator + 1"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          ">": [
+            "io_12",
+            0
+          ]
+        },
+        "then": [
+          {
+            "assign": "displayDelta",
+            "value": "io_12 - 6000 * RealFunctions::floor(io_12 / 6000)"
+          },
+          {
+            "assign": "displayPhase",
+            "value": "displayPhase + displayDelta"
+          },
+          {
+            "if": {
+              ">=": [
+                "displayPhase",
+                6000
+              ]
+            },
+            "then": [
+              {
+                "assign": "displayPhase",
+                "value": "displayPhase - 6000"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "operational",
+        "then": [
+          {
+            "if": "automaticMode",
+            "then": [
+              {
+                "assign": "fanCommand",
+                "value": {
+                  "if": {
+                    "or": [
+                      {
+                        "not": "temperatureAvailable"
+                      },
+                      {
+                        "<=": [
+                          "savedTemperature",
+                          25.0
+                        ]
+                      }
+                    ]
+                  },
+                  "then": 0.0,
+                  "else": {
+                    "if": {
+                      ">=": [
+                        "savedTemperature",
+                        35.0
+                      ]
+                    },
+                    "then": 255.0,
+                    "else": "(savedTemperature - 25.0) * 255.0 / 10.0"
+                  }
+                }
+              },
+              {
+                "assign": "lightCommand",
+                "value": {
+                  "<": [
+                    "io_2",
+                    400.0
+                  ]
+                }
+              },
+              {
+                "assign": "pumpCommand",
+                "value": {
+                  "<": [
+                    "io_3",
+                    400.0
+                  ]
+                }
+              }
+            ],
+            "else": [
+              {
+                "if": {
+                  "==": [
+                    "selectedActuator",
+                    0
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "fanCommand",
+                    "value": "manualFanValue"
+                  }
+                ],
+                "else": [
+                  {
+                    "if": {
+                      "==": [
+                        "selectedActuator",
+                        1
+                      ]
+                    },
+                    "then": [
+                      {
+                        "assign": "lightCommand",
+                        "value": {
+                          ">=": [
+                            "io_4",
+                            512.0
+                          ]
+                        }
+                      }
+                    ],
+                    "else": [
+                      {
+                        "assign": "pumpCommand",
+                        "value": {
+                          ">=": [
+                            "io_4",
+                            512.0
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "assign": "reportEvent",
+            "value": {
+              "and": [
+                "anyFault",
+                "faultSetChanged"
+              ]
+            }
+          },
+          {
+            "assign": "previousDhtFault",
+            "value": "dhtFault"
+          },
+          {
+            "assign": "previousLightFault",
+            "value": "lightFault"
+          },
+          {
+            "assign": "previousSoilFault",
+            "value": "soilFault"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_5": "fanCommand",
+      "io_6": "lightCommand",
+      "io_7": "pumpCommand",
+      "io_10": {
+        "if": {
+          "<": [
+            "displayPhase",
+            2000
+          ]
+        },
+        "then": "RealFunctions::floor(savedTemperature + 0.5)",
+        "else": {
+          "if": {
+            "<": [
+              "displayPhase",
+              4000
+            ]
+          },
+          "then": "RealFunctions::floor(io_2)",
+          "else": "RealFunctions::floor(io_3)"
+        }
+      },
+      "io_11": {
+        "if": {
+          "and": [
+            "operational",
+            "anyFault"
+          ]
+        },
+        "then": 2000,
+        "else": 0
+      },
+      "serial_0_trigger": "reportEvent",
+      "serial_0_value_0": "dhtFault",
+      "serial_0_value_1": "lightFault",
+      "serial_0_value_2": "soilFault"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Run the initial step with declared initial inputs. Then supply valid DHT temperatures 20, 25, 30, 35 and 40 degrees Celsius, and independently sweep light and soil ADC across 399 and 400. Subsequently fail DHT validity while changing its temperature input.",
+        "oracle": "The initial step commands fan zero, light and pump off, alarm silent, and temperature display selected. Subsequent automatic fan commands are 0, 0, 127.5, 255 and 255 PWM counts. Light and pump independently enable below 400 and disable at 400. Invalid DHT input retains the last valid temperature for control and display; before any valid acquisition the automatic fan remains zero. Faults do not override actuator decisions.",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Apply brief D2/D3 contact bounce, then stable presses and releases lasting at least 20 ms, including long holds. Enter manual mode using D2; sweep A2 through 0, 511, 512 and 1023 while selecting fan, light, pump and fan with successive D3 presses. Return to automatic mode.",
+        "oracle": "Each debounced press causes exactly one action within 250 ms; holds cause no repeated toggles or selections. Manual mode initially selects fan. Fan maps A2 linearly from 0 to 255. Selected digital outputs are off below 512 and on at or above 512. Only the selected actuator changes in manual mode; all others retain their commands. D3 cycles light, pump, fan and does not select in automatic mode. Returning to automatic mode restores sensor-based control.",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Advance io_12 through irregular positive deltas, testing cumulative times immediately before and at 2000, 4000 and 6000 ms, repeated cycles, and deltas spanning multiple cycles. Change each currently selected sensor value and provide valid and invalid DHT acquisitions.",
+        "oracle": "The display repeats temperature, light ADC and soil ADC in 2000 ms slots using actual elapsed time, preserving residual phase after large deltas. Temperature is rounded to nearest integer using floor(value + 0.5); analog values display raw counts. Selected quantity changes appear within 250 ms. Invalid DHT acquisitions preserve the last valid displayed temperature without freezing other sensors or display timing.",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "After initialization, independently fail DHT validity and drive A0/A1 to 0 and 1023; exercise overlapping faults, changes between active fault sets, stable faults and complete recovery. Sweep A2 through its endpoints during otherwise healthy operation.",
+        "oracle": "Any DHT validity failure or A0/A1 endpoint sentinel produces a continuous 2000 Hz alarm; full recovery silences it. A2 endpoints do not create faults. A one-step report gate emits exactly one three-line group on fault entry or an active fault-set change, with labels DHT11 fault: , Light sensor fault: , and Soil sensor fault:  and the corresponding Boolean values. Stable faults do not repeat reports and full recovery does not trigger a report.",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T5",
+        "test_method": "integration trace",
+        "stimulus": "Run the assembled controller on the frozen Arduino Uno adapter and inspect pin activity, setup duration, DHT acquisition intervals and serial transmission.",
+        "oracle": "Preserve DHT D7, light A0, soil A1, potentiometer A2, fan PWM D5, active-HIGH light D9 and pump D10, normalized pullup buttons D2/D3, buzzer D6, and authoritative TM1637 CLK D4/DIO D8 remap. Setup returns within 500 ms without waiting for DHT validity; DHT acquisitions are no faster than once per 2000 ms. Serial fault groups use 9600 baud. No fabricated clock increment or serial receiver is introduced.",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。\nDisclosed configurable bench choices for otherwise unspecified parameters: automatic fan mode at startup, relay outputs active HIGH, integer Celsius temperature and raw ADC light/soil display. Manual mode initially selects fan; each D3 press selects light,pump,fan in that order. A manual update changes only its selected actuator and retains the others until selected or auto mode resumes. PWM ramps from 0 at 25C to 255 at 35C, light turns on below ADC400, pump turns on below soil ADC400. D2 toggles auto/manual; D3 cycles fan,light,pump in manual, and A2 maps 0..1023 to PWM0..255 for fan or OFF/ON at ADC512 for the selected digital output. Display cycles temperature/light/soil every 2s. Sensor fault means invalid DHT acquisition or analog inputs railed at 0/1023; these analog endpoints are declared fault sentinels in this bench variant. Fault drives D6 and a Serial fault report. The existing pin conflict resolver and its recorded remaps are authoritative."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_8 : Boolean;\n    in attribute io_9 : Boolean;\n    in attribute io_12 : Integer;\n    attribute bootComplete : Boolean := false;\n    attribute operational : Boolean := false;\n    attribute automaticMode : Boolean := true;\n    attribute selectedActuator : Integer := 0;\n    attribute fanCommand : Real := 0.0;\n    attribute lightCommand : Boolean := false;\n    attribute pumpCommand : Boolean := false;\n    attribute savedTemperature : Real := 0.0;\n    attribute temperatureAvailable : Boolean := false;\n    attribute modeCandidate : Boolean := false;\n    attribute modeStable : Boolean := false;\n    attribute modeStableMs : Integer := 0;\n    attribute modePressEvent : Boolean := false;\n    attribute selectCandidate : Boolean := false;\n    attribute selectStable : Boolean := false;\n    attribute selectStableMs : Integer := 0;\n    attribute selectPressEvent : Boolean := false;\n    attribute displayPhase : Integer := 0;\n    attribute displayDelta : Integer := 0;\n    attribute previousDhtFault : Boolean := false;\n    attribute previousLightFault : Boolean := false;\n    attribute previousSoilFault : Boolean := false;\n    attribute reportEvent : Boolean := false;\n    attribute dhtFault : Boolean = (not io_1);\n    attribute lightFault : Boolean = ((((io_2) == (0.0))) or (((io_2) == (1023.0))));\n    attribute soilFault : Boolean = ((((io_3) == (0.0))) or (((io_3) == (1023.0))));\n    attribute anyFault : Boolean = ((dhtFault) or (lightFault) or (soilFault));\n    attribute faultSetChanged : Boolean = ((((dhtFault) != (previousDhtFault))) or (((lightFault) != (previousLightFault))) or (((soilFault) != (previousSoilFault))));\n    attribute manualFanValue : Real = io_4 * 255.0 / 1023.0;\n    perform action tick {\n      first start;\n      then assign operational := bootComplete;\n      then assign bootComplete := true;\n      then assign modePressEvent := false;\n      then assign selectPressEvent := false;\n      then assign reportEvent := false;\n      then if io_1 {\n        first start;\n        then assign savedTemperature := io_0;\n        then assign temperatureAvailable := true;\n      }\n      then if ((io_8) != (modeCandidate)) {\n        first start;\n        then assign modeCandidate := io_8;\n        then assign modeStableMs := 0;\n      } else {\n        first start;\n        then if ((io_12) >= (20 - modeStableMs)) {\n          first start;\n          then assign modeStableMs := 20;\n        } else {\n          first start;\n          then if ((io_12) > (0)) {\n            first start;\n            then assign modeStableMs := modeStableMs + io_12;\n          }\n        }\n      }\n      then if ((((modeStableMs) >= (20))) and (((modeStable) != (modeCandidate)))) {\n        first start;\n        then assign modePressEvent := modeCandidate;\n        then assign modeStable := modeCandidate;\n      }\n      then if ((io_9) != (selectCandidate)) {\n        first start;\n        then assign selectCandidate := io_9;\n        then assign selectStableMs := 0;\n      } else {\n        first start;\n        then if ((io_12) >= (20 - selectStableMs)) {\n          first start;\n          then assign selectStableMs := 20;\n        } else {\n          first start;\n          then if ((io_12) > (0)) {\n            first start;\n            then assign selectStableMs := selectStableMs + io_12;\n          }\n        }\n      }\n      then if ((((selectStableMs) >= (20))) and (((selectStable) != (selectCandidate)))) {\n        first start;\n        then assign selectPressEvent := selectCandidate;\n        then assign selectStable := selectCandidate;\n      }\n      then if modePressEvent {\n        first start;\n        then assign automaticMode := (not automaticMode);\n      }\n      then if ((selectPressEvent) and ((not automaticMode))) {\n        first start;\n        then assign selectedActuator := (if ((selectedActuator) == (2)) ? 0 else selectedActuator + 1);\n      }\n      then if ((io_12) > (0)) {\n        first start;\n        then assign displayDelta := io_12 - 6000 * RealFunctions::floor(io_12 / 6000);\n        then assign displayPhase := displayPhase + displayDelta;\n        then if ((displayPhase) >= (6000)) {\n          first start;\n          then assign displayPhase := displayPhase - 6000;\n        }\n      }\n      then if operational {\n        first start;\n        then if automaticMode {\n          first start;\n          then assign fanCommand := (if (((not temperatureAvailable)) or (((savedTemperature) <= (25.0)))) ? 0.0 else (if ((savedTemperature) >= (35.0)) ? 255.0 else (savedTemperature - 25.0) * 255.0 / 10.0));\n          then assign lightCommand := ((io_2) < (400.0));\n          then assign pumpCommand := ((io_3) < (400.0));\n        } else {\n          first start;\n          then if ((selectedActuator) == (0)) {\n            first start;\n            then assign fanCommand := manualFanValue;\n          } else {\n            first start;\n            then if ((selectedActuator) == (1)) {\n              first start;\n              then assign lightCommand := ((io_4) >= (512.0));\n            } else {\n              first start;\n              then assign pumpCommand := ((io_4) >= (512.0));\n            }\n          }\n        }\n        then assign reportEvent := ((anyFault) and (faultSetChanged));\n        then assign previousDhtFault := dhtFault;\n        then assign previousLightFault := lightFault;\n        then assign previousSoilFault := soilFault;\n      }\n    }\n    out attribute io_5 : Real = fanCommand;\n    out attribute io_6 : Boolean = lightCommand;\n    out attribute io_7 : Boolean = pumpCommand;\n    out attribute io_10 : Integer = (if ((displayPhase) < (2000)) ? RealFunctions::floor(savedTemperature + 0.5) else (if ((displayPhase) < (4000)) ? RealFunctions::floor(io_2) else RealFunctions::floor(io_3)));\n    out attribute io_11 : Integer = (if ((operational) and (anyFault)) ? 2000 else 0);\n    out attribute serial_0_trigger : Boolean = reportEvent;\n    out attribute serial_0_value_0 : Boolean = dhtFault;\n    out attribute serial_0_value_1 : Boolean = lightFault;\n    out attribute serial_0_value_2 : Boolean = soilFault;\n  }\n  part system : Controller;\n}\n"
+}

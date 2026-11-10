@@ -1,0 +1,423 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    },
+    {
+      "name": "io_5",
+      "type": "i32"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_2",
+      "type": "f64"
+    },
+    {
+      "name": "io_3",
+      "type": "bool"
+    },
+    {
+      "name": "io_4",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_2",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 != 0)"
+      }
+    },
+    {
+      "id": "compute_io_4",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(((arg0 == 0) || (arg0 == 1)) ? arg0 : ((int)(arg1) - ((arg1) < (double)((int)(arg1)) ? 1 : 0)))"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "brightnessGate"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_2"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "mode"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "mode"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "param"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_4"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "mode",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "param",
+      "type": "i32",
+      "initial": "128"
+    },
+    {
+      "name": "brightnessGate",
+      "type": "f64",
+      "initial": "0.0"
+    },
+    {
+      "name": "accumulatedMs",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "previousPressed",
+      "type": "bool",
+      "initial": "false"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "assign",
+          "state": "previousPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            },
+            {
+              "kind": "state",
+              "name": "previousPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "mode",
+                "expression": "((arg0 == 2) ? 0 : (arg0 + 1))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "mode"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!(arg1 == 2)))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            },
+            {
+              "kind": "state",
+              "name": "mode"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "param",
+                "expression": "((arg0 == 255) ? 0 : (arg0 + 16))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "param"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "param",
+                "expression": "((arg0 == 5000) ? 500 : (arg0 + 500))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "param"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 == 0)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "mode"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "brightnessGate",
+                "expression": "0.0",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 == 1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "mode"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "brightnessGate",
+                "expression": "((arg0 >= 255) ? 255.0 : (arg0 * 1.0))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "param"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 == 2)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "mode"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "accumulatedMs",
+                "expression": "(arg0 + arg1)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "accumulatedMs"
+                  },
+                  {
+                    "kind": "input",
+                    "name": "io_5"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "brightnessGate",
+                "expression": "((arg0 < (arg1 * 1)) ? ((arg0 >= ((double)(arg1) / 2)) ? ((double)((arg1 - ((double)((arg0 - ((double)(arg1) / 2))) / 1))) / 1) : ((double)(arg0) / ((double)(arg1) / 255))) : 0.0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "accumulatedMs"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "param"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "((arg0 == 2) && (arg1 >= (arg2 * 2)))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "mode"
+            },
+            {
+              "kind": "state",
+              "name": "accumulatedMs"
+            },
+            {
+              "kind": "state",
+              "name": "param"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "accumulatedMs",
+                "expression": "0",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

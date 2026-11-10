@@ -1,0 +1,436 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Board is arduino:avr:uno; exact wiring pins preserved: D13 LED, D6 buzzer, TM1637 CLK=D4 DIO=D5, infrared/digital placeholder sensors on D2, D3, D7.",
+    "Digital input polarity (active_high vs active_low) is not provided; catalog default is used. Model must interpret sensor raw boolean as occupied accordingly, or configure pullups/active polarity if required in SysML-level assumptions.",
+    "TM1637 is modeled as tm1637_number showing the occupied layer count (0..3). Leading zeros disabled. Any out-of-range handling is left to model.",
+    "Serial protocol details for 'query each layer status' and 'reset timers' were not specified; therefore serial_channels report a fixed typed status set gated by a single trigger. The exact command ASCII tokens and their mapping to actions must be defined in SysML and/or via serial_command_input/serial_integer_input operations if required (none are specified in the provided requirements).",
+    "The control_period_ms is set to 5 ms for timely state updates; business timers (restock-needed duration, lock conditions, and timer reset behavior) belong entirely in the SysML model and use elapsed_ms.",
+    "No additional program-owned ports are created beyond the required electrical IO: three layer sensor inputs, one buzzer output, one LED output, and one TM1637 numeric display."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Layer 1 occupied detected by infrared/digital placeholder sensor",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Layer 2 occupied detected by infrared/digital placeholder sensor",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Layer 3 occupied detected by infrared/digital placeholder sensor",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": false}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": true,
+        "pullup": false,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer tone for 'all full' alarm",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Alarm LED indicator",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Current occupied layer count display",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D4\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D4"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Serial query or periodic report gate for layer status and restock/all-full state",
+      "sample_period_ms": 5,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "layer_count",
+      "initial": 0,
+      "meaning": "Current occupied layer count (0..3)",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"layer_count\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "layer_count"
+      }
+    },
+    {
+      "name": "serial_0_value_1",
+      "direction": "output",
+      "type": "bool",
+      "unit": "occupied",
+      "initial": false,
+      "meaning": "Layer 1 occupied status",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"layer1_occupied\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "layer1_occupied"
+      }
+    },
+    {
+      "name": "serial_0_value_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "occupied",
+      "initial": false,
+      "meaning": "Layer 2 occupied status",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"layer2_occupied\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "layer2_occupied"
+      }
+    },
+    {
+      "name": "serial_0_value_3",
+      "direction": "output",
+      "type": "bool",
+      "unit": "occupied",
+      "initial": false,
+      "meaning": "Layer 3 occupied status",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"layer3_occupied\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "layer3_occupied"
+      }
+    },
+    {
+      "name": "serial_0_value_4",
+      "direction": "output",
+      "type": "i32",
+      "unit": "ms_since_empty_reset",
+      "initial": 0,
+      "meaning": "Elapsed time since layer emptiness reset for the most recently queried layer (model will choose which)",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"query_elapsed_ms\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "query_elapsed_ms"
+      }
+    },
+    {
+      "name": "serial_0_value_5",
+      "direction": "output",
+      "type": "bool",
+      "unit": "alarm",
+      "initial": false,
+      "meaning": "restock needed flag (any empty layer exceeding configured empty duration threshold)",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"restock_needed\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "restock_needed"
+      }
+    },
+    {
+      "name": "serial_0_value_6",
+      "direction": "output",
+      "type": "bool",
+      "unit": "alarm",
+      "initial": false,
+      "meaning": "all full flag (all three layers occupied)",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"all_full\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "all_full"
+      }
+    },
+    {
+      "name": "serial_0_value_7",
+      "direction": "output",
+      "type": "bool",
+      "unit": "lock",
+      "initial": false,
+      "meaning": "New record lock flag when all full condition is reached",
+      "sample_period_ms": 5,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"lock_new_records\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "lock_new_records"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D4",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "设计一个仓储货架层级报警系统，使用三个红外对射或数字占位传感器 D2、D3、D7 表示三层货架占用状态，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统需要统计当前占用层数并显示；当某层长时间空置超过设定时间时输出 restock needed；当三层全满时蜂鸣提示并锁定新增记录。串口支持查询各层状态和重置计时。",
+    "effective_requirement": "设计一个仓储货架层级报警系统，使用三个红外对射或数字占位传感器 D2、D3、D7 表示三层货架占用状态，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统需要统计当前占用层数并显示；当某层长时间空置超过设定时间时输出 restock needed；当三层全满时蜂鸣提示并锁定新增记录。串口支持查询各层状态和重置计时。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个仓储货架层级报警系统，使用三个红外对射或数字占位传感器 D2、D3、D7 表示三层货架占用状态，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统需要统计当前占用层数并显示；当某层长时间空置超过设定时间时输出 restock needed；当三层全满时蜂鸣提示并锁定新增记录。串口支持查询各层状态和重置计时。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_4": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_value_5": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_6": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_7": {
+        "direction": "output",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2",
+          "serial_0_value_3",
+          "serial_0_value_4",
+          "serial_0_value_5",
+          "serial_0_value_6",
+          "serial_0_value_7"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,296 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_2",
+      "type": "bool"
+    },
+    {
+      "name": "io_3",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_2",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        },
+        {
+          "name": "arg2",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 && (arg1 < ((double)(arg2) / 2)))"
+      }
+    },
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "running"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "blinkPhase"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "periodMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg2"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_2"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "periodMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "running",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "previousPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "periodMs",
+      "type": "i32",
+      "initial": "500"
+    },
+    {
+      "name": "blinkPhase",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            },
+            {
+              "kind": "state",
+              "name": "previousPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "running",
+                "expression": "(!arg0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "running"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "blinkPhase",
+                "expression": "0",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "previousPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ]
+        },
+        {
+          "kind": "assign",
+          "state": "periodMs",
+          "expression": "((((int)(arg0) - ((arg0) < (double)((int)(arg0)) ? 1 : 0)) <= 0) ? 1 : ((((int)(arg0) - ((arg0) < (double)((int)(arg0)) ? 1 : 0)) >= 2000) ? 2000 : ((int)(arg0) - ((arg0) < (double)((int)(arg0)) ? 1 : 0))))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "running"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "blinkPhase",
+                "expression": "(arg0 + 10)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "blinkPhase"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (arg1 >= arg2))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "running"
+            },
+            {
+              "kind": "state",
+              "name": "blinkPhase"
+            },
+            {
+              "kind": "state",
+              "name": "periodMs"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "blinkPhase",
+                "expression": "(arg0 - arg1)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "blinkPhase"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "periodMs"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

@@ -1,0 +1,180 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "i32"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_1",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_1",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(((arg0 < 200) && (arg0 >= 0)) ? 31 : 0)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "cycleAccumMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_1",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_1",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_1"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "elapsedAccumMs",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "cycleAccumMs",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "previousBecameActive",
+      "type": "bool",
+      "initial": "false"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "assign",
+          "state": "elapsedAccumMs",
+          "expression": "(arg0 + arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "elapsedAccumMs"
+            },
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "assign",
+          "state": "cycleAccumMs",
+          "expression": "(arg0 + arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "cycleAccumMs"
+            },
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "if",
+          "condition": "((arg0 >= 2000) || (arg1 >= 2000))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "cycleAccumMs"
+            },
+            {
+              "kind": "state",
+              "name": "elapsedAccumMs"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "cycleAccumMs",
+                "expression": "(arg0 - 2000)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "cycleAccumMs"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "((arg0 < 200) && (arg0 >= 0))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "cycleAccumMs"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "previousBecameActive",
+                "expression": "true",
+                "sources": []
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "previousBecameActive",
+                "expression": "false",
+                "sources": []
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

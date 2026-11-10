@@ -1,0 +1,143 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"armed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"nightMode\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"eventCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousDoorOpened\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPIR\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousCmdARM\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousCmdDISARM\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousCmdRESET\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"nightMode\",\n        \"value\": {\n          \">\": [\n            500.0,\n            \"io_2\"\n          ]\n        }\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"serial_0_trigger\",\n            {\n              \"==\": [\n                \"serial_0_value_0\",\n                1\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": {\n              \"or\": [\n                \"armed\",\n                {\n                  \"and\": [\n                    \"serial_0_trigger\",\n                    {\n                      \"not\": \"previousCmdARM\"\n                    }\n                  ]\n                }\n              ]\n            }\n          },\n          {\n            \"assign\": \"previousCmdARM\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"previousCmdARM\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"serial_0_trigger\",\n            {\n              \"==\": [\n                \"serial_0_value_0\",\n                2\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"previousCmdDISARM\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"previousCmdDISARM\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"serial_0_trigger\",\n            {\n              \"==\": [\n                \"serial_0_value_0\",\n                3\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"eventCount\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"previousCmdRESET\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"previousCmdRESET\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousDoorOpened\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"previousPIR\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"armed\",\n            \"io_1\",\n            \"io_0\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"eventCount\",\n            \"value\": \"eventCount + 1\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \"and\": [\n            \"armed\",\n            \"io_1\",\n            \"io_0\"\n          ]\n        },\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_4\": {\n        \"and\": [\n          \"armed\",\n          \"io_1\",\n          \"io_0\"\n        ]\n      },\n      \"io_5\": \"eventCount\",\n      \"serial_0_trigger\": \"false\",\n      \"serial_0_value_0\": {\n        \"if\": {\n          \"and\": [\n            \"serial_0_trigger\",\n            {\n              \"==\": [\n                \"serial_0_value_0\",\n                4\n              ]\n            }\n          ]\n        },\n        \"then\": \"eventCount\",\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"serial_0_value_0=1 with serial_0_trigger=true (ARM), then set io_1=true (door opened) and io_0=true (PIR movement) for one control step; keep io_2 arbitrary\",\n        \"oracle\": \"io_3>0 (tone enabled), io_4=true (alarm LED on), and io_5 increases from 0 to 1\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Assume armed by ARM first; then set serial_0_value_0=2 with serial_0_trigger=true (DISARM) while holding io_1=true and io_0=true\",\n        \"oracle\": \"io_3==0 (tone silent), io_4==false (alarm LED off), and io_5 remains unchanged\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Trigger a prior alarm to make io_5=K>0, then send serial_0_value_0=3 with serial_0_trigger=true (RESET) on one step\",\n        \"oracle\": \"io_5==0 and io_3==0 and io_4==false immediately after RESET\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "SYSML_LOWERING",
+          "message": "Algebraic cycle detected; state/delay must be explicit.",
+          "line": 54,
+          "element": "GeneratedModel::Controller::serial_0_value_0",
+          "stage": "sysml_to_ir"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    attribute armed : Boolean := false;\n    attribute nightMode : Boolean := false;\n    attribute eventCount : Integer := 0;\n    attribute previousDoorOpened : Boolean := false;\n    attribute previousPIR : Boolean := false;\n    attribute previousCmdARM : Boolean := false;\n    attribute previousCmdDISARM : Boolean := false;\n    attribute previousCmdRESET : Boolean := false;\n    perform action tick {\n      first start;\n      then assign nightMode := ((500.0) > (io_2));\n      then if ((serial_0_trigger) and (((serial_0_value_0) == (1)))) {\n        first start;\n        then assign armed := ((armed) or (((serial_0_trigger) and ((not previousCmdARM)))));\n        then assign previousCmdARM := true;\n      } else {\n        first start;\n        then assign previousCmdARM := false;\n      }\n      then if ((serial_0_trigger) and (((serial_0_value_0) == (2)))) {\n        first start;\n        then assign armed := false;\n        then assign previousCmdDISARM := true;\n      } else {\n        first start;\n        then assign previousCmdDISARM := false;\n      }\n      then if ((serial_0_trigger) and (((serial_0_value_0) == (3)))) {\n        first start;\n        then assign armed := false;\n        then assign eventCount := 0;\n        then assign previousCmdRESET := true;\n      } else {\n        first start;\n        then assign previousCmdRESET := false;\n      }\n      then assign previousDoorOpened := io_1;\n      then assign previousPIR := io_0;\n      then if ((armed) and (io_1) and (io_0)) {\n        first start;\n        then assign eventCount := eventCount + 1;\n      }\n    }\n    out attribute io_3 : Integer = (if ((armed) and (io_1) and (io_0)) ? 2000 else 0);\n    out attribute io_4 : Boolean = ((armed) and (io_1) and (io_0));\n    out attribute io_5 : Integer = eventCount;\n    out attribute serial_0_trigger : Boolean = false;\n    out attribute serial_0_value_0 : Integer = (if ((serial_0_trigger) and (((serial_0_value_0) == (4)))) ? eventCount else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": false,
+        "ir_to_il": null
+      },
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "SYSML_LOWERING",
+          "message": "Algebraic cycle detected; state/delay must be explicit.",
+          "line": 54,
+          "element": "GeneratedModel::Controller::serial_0_value_0",
+          "stage": "sysml_to_ir"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "SYSML_LOWERING",
+          "Algebraic cycle detected; state/delay must be explicit."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_to_ir"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"armed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"nightAuto\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"eventCount\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousDoorOpened\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPIR\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"serialCommandActive\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"pendingReportCmd\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"doorRising\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"pirRising\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"==\": [\n            \"pendingReportCmd\",\n            1\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"pendingReportCmd\",\n            2\n          ]\n          },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"pendingReportCmd\",\n            3\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"armed\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"eventCount\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"nightAuto\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"pendingReportCmd\",\n            4\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"serialCommandActive\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"serialCommandActive\",\n            true\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"serialCommandActive\",\n            \"value\": false\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"doorRising\",\n        \"value\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousDoorOpened\"\n            }\n          ]\n        }\n      },\n      {\n        \"assign\": \"pirRising\",\n        \"value\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPIR\"\n            }\n          ]\n        }\n      },\n      {\n        \"assign\": \"nightAuto\",\n        \"value\": {\n          \"<\": [\n            \"io_2\",\n            512.0\n          ]\n        }\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"or\": [\n                \"armed\",\n                \"nightAuto\"\n              ]\n            },\n            \"doorRising\",\n            \"pirRising\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"eventCount\",\n            \"value\": \"eventCount + 1\"\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousDoorOpened\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"previousPIR\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"or\": [\n                \"armed\",\n                \"nightAuto\"\n              ]\n            },\n            \"doorRising\",\n            \"pirRising\"\n          ]\n        },\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_4\": {\n        \"and\": [\n          {\n            \"or\": [\n              \"armed\",\n              \"nightAuto\"\n            ]\n          },\n          \"doorRising\",\n          \"pirRising\"\n        ]\n      },\n      \"io_5\": \"eventCount\",\n      \"serial_0_trigger\": {\n        \"if\": {\n          \"==\": [\n            \"pendingReportCmd\",\n            4\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"serial_0_value_0\": {\n        \"if\": {\n          \"==\": [\n            \"pendingReportCmd\",\n            4\n          ]\n        },\n        \"then\": \"eventCount\",\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"夜间自动布防条件：io_2 低于阈值（例如 511.0）；随后发生门打开上升沿 io_1 从 false→true 与 PIR 上升沿 io_0 从 false→true 同步或先后均可（以模型一个控制步内门上升与PIR上升均为真为准）。\",\n        \"oracle\": \"io_4 为 true 且 io_3 为非零报警频率（例如 2000），并且 io_5 的 eventCount 从 0 变为 1。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先触发一次报警使 eventCount=1；随后执行 RESET 命令（将 pendingReportCmd 设为 3 并保持一个控制步有效）。\",\n        \"oracle\": \"io_4 为 false 且 io_3 为 0 且 io_5 输出回到 0（事件计数被清零且撤防）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个家庭安防联动系统，使用 PIR 人体红外传感器（D2）、门磁开关（D3）、光敏电阻（A0）、蜂鸣器（D6）、报警 LED（D13）、TM1637（CLK=D4，DIO=D5）和串口。系统包含布防、撤防和夜间自动布防三种模式：夜间模式由光照低于阈值自动进入；布防状态下若门被打开且检测到人体移动，则触发报警、记录事件次数并在数码管显示；串口支持 ARM、DISARM、STATUS 和 RESET 命令。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"执行 STATUS 命令（将 pendingReportCmd 设为 4 并保持一个控制步有效），同时保持任意传感器输入值。\",\n        \"oracle\": \"serial_0_trigger 在该控制步为 true，serial_0_value_0 等于当前 eventCount（并且不改变 eventCount）。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    attribute armed : Boolean := false;\n    attribute nightAuto : Boolean := false;\n    attribute eventCount : Integer := 0;\n    attribute previousDoorOpened : Boolean := false;\n    attribute previousPIR : Boolean := false;\n    attribute serialCommandActive : Boolean := false;\n    attribute pendingReportCmd : Integer := 0;\n    attribute doorRising : Boolean := false;\n    attribute pirRising : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((pendingReportCmd) == (1)) {\n        first start;\n        then assign armed := true;\n      }\n      then if ((pendingReportCmd) == (2)) {\n        first start;\n        then assign armed := false;\n      }\n      then if ((pendingReportCmd) == (3)) {\n        first start;\n        then assign armed := false;\n        then assign eventCount := 0;\n        then assign nightAuto := false;\n      }\n      then if ((pendingReportCmd) == (4)) {\n        first start;\n        then assign serialCommandActive := true;\n      }\n      then if ((serialCommandActive) == (true)) {\n        first start;\n        then assign serialCommandActive := false;\n      }\n      then assign doorRising := ((io_1) and ((not previousDoorOpened)));\n      then assign pirRising := ((io_0) and ((not previousPIR)));\n      then assign nightAuto := ((io_2) < (512.0));\n      then if ((((armed) or (nightAuto))) and (doorRising) and (pirRising)) {\n        first start;\n        then assign eventCount := eventCount + 1;\n      }\n      then assign previousDoorOpened := io_1;\n      then assign previousPIR := io_0;\n    }\n    out attribute io_3 : Integer = (if ((((armed) or (nightAuto))) and (doorRising) and (pirRising)) ? 2000 else 0);\n    out attribute io_4 : Boolean = ((((armed) or (nightAuto))) and (doorRising) and (pirRising));\n    out attribute io_5 : Integer = eventCount;\n    out attribute serial_0_trigger : Boolean = (if ((pendingReportCmd) == (4)) ? true else false);\n    out attribute serial_0_value_0 : Integer = (if ((pendingReportCmd) == (4)) ? eventCount else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

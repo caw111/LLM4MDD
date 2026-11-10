@@ -1,0 +1,104 @@
+{
+  "contract_sha256": "821124c0d869ca9768455bd81ab81fcfc35a17241bed619424f0e18e76fd1589",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"HC-SR04 distance status LED: HIGH when valid measured distance < 10cm, else LOW (matches wiring: high level bright)\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"initial\": 0,\n      \"meaning\": \"HC-SR04 measured distance in cm (coherent with validity; invalid/out-of-range does not set to 0)\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"sample_period_ms\": 65\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"initial\": false,\n      \"meaning\": \"HC-SR04 validity: true only when echo captured within timeout and distance in supported range 2..400cm\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"sample_period_ms\": 65\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display: integer centimeters; initial blank behavior handled by model using validity and distance quantization\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Uno authoritative wiring preserved: HC-SR04 TRIG=D8, ECHO=D9; TM1637 CLK=D4, DIO=D5; LED=D13 (high level亮). No additional pins provided.\",\n    \"TM1637 requirement allows leading_zero or blank; catalog request sets leading_zero=false and invalid_policy=blank; the model must blank the display when ultrasonic_valid is false or when out-of-range/timeout occurs, and must display an integer centimeter otherwise.\",\n    \"Ultrasonic behavior: success only when echo captured within 25,000us timeout and computed distance lies in 2..400cm; measured distance is converted from echo microseconds/58 to centimeters and then quantized to integer cm with 1cm tolerance. Threshold comparison for LED uses the measured distance (pre-quantization) per requirement (>=10cm turns LED off).\",\n    \"Acquisition timing: requirement states sampling start interval 60..160ms and changes must reflect within 250ms including measurement and display. Set ultrasonic sample_period_ms to 65ms (a control-period multiple) so updates meet the bound. Actual echo wait and timeout are handled within the ultrasonic device; model budget accounts for bounded pulse duration.\",\n    \"Initial state: ultrasonic distance initial set to 0 but ultrasonic_valid initial is false; model must ensure timeout is not treated as 0cm and LED remains off and display starts blank until first valid measurement.\",\n    \"Distance-to-display: model must use ultrasonic_valid to decide whether to display integer centimeters; otherwise blank. TM1637 initial command is set to 0 with blanking handled in the model to satisfy 'initial display blank and LED off'.\",\n    \"No serial reporting was required; serial_channels left empty.\"\n  ]\n}",
+      "error": "Interface io_3.initial must request blank (e.g. i32 10000 with invalid_policy=blank), not a displayed zero, because the original requirement specifies initial blank. Preserve all sensor logic.",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D13\",\n      \"initial\": false,\n      \"meaning\": \"HC-SR04 distance status LED: HIGH when valid measured distance < 10cm, else LOW (high level bright). Threshold uses measured distance, not display-quantized value.\"\n    },\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"initial\": 0,\n      \"meaning\": \"HC-SR04 measured distance in cm; invalid/timeout/out-of-range must not be treated as 0 (validity is controlled separately). Distance uses echo_us/58, supports 2..400cm.\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"initial\": false,\n      \"meaning\": \"HC-SR04 validity: true only when echo captured within 25,000us timeout and computed distance lies in supported range 2..400cm.\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 10000,\n      \"meaning\": \"TM1637 display: show integer centimeters when ultrasonic_valid is true and keep display blank otherwise (startup blank). Leading zeros are not required.\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Uno wiring preserved exactly: HC-SR04 TRIG=D8, ECHO=D9; TM1637 CLK=D4, DIO=D5; LED=D13 (HIGH亮).\",\n    \"Ultrasonic device rules preserved: use timeout_us=25000 and supported distance range 2..400cm; on timeout/out-of-range set validity false while holding the previous distance internally; LED and display must be gated by ultrasonic_valid in the model so timeout is not converted into 0cm behavior.\",\n    \"Display rules preserved: distance in cm is computed from echo microseconds/58, then the model decides whether to display an integer centimeter (quantized with tolerance 1cm allowed) when ultrasonic_valid is true; LED threshold comparison uses measured distance (not display-quantized value) and is strict (<10cm => LED on; >=10cm => LED off).\",\n    \"Startup rules preserved: initial display must be blank and LED must be off; the ultrasonic_valid initial is false so gating in the model blanks the display until first valid measurement.\",\n    \"Sampling/latency requirement preserved by design intent: ultrasonic updates must occur at a control-period multiple (previous contract used sample_period_ms=65ms); bounded echo wait/timeout are handled within the ultrasonic device, while the model ensures updates (measurement + display transmission) appear within the 250ms bound after a sampling start interval of 60..160ms.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "使用 HC-SR04 + TM1637 + LED：显示距离，小于10cm LED（D13）亮\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5，LED=D13，高电平亮。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。有效距离严格小于10cm时LED亮，等于或大于10cm时灭；阈值判断使用测量距离而非显示取整值。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白且LED灭，恢复后继续响应。初始显示空白且LED灭；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的传感器及显示引脚采用上述公开接线，各组相同。",
+    "effective_requirement": "使用 HC-SR04 + TM1637 + LED：显示距离，小于10cm LED（D13）亮\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5，LED=D13，高电平亮。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。有效距离严格小于10cm时LED亮，等于或大于10cm时灭；阈值判断使用测量距离而非显示取整值。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白且LED灭，恢复后继续响应。初始显示空白且LED灭；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的传感器及显示引脚采用上述公开接线，各组相同。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  }
+}

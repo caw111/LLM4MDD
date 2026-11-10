@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"menuIndex\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"confirmedIndex\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousMenuPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousConfirmPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"tempValid\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"lastTemp\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"lastHumidity\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_5\",\n        \"then\": [\n          {\n            \"assign\": \"tempValid\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"lastTemp\",\n            \"value\": \"io_3\"\n          },\n          {\n            \"assign\": \"lastHumidity\",\n            \"value\": \"io_4\"\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"tempValid\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousMenuPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"menuIndex\",\n            \"value\": {\n              \"if\": \"menuIndex == 2\",\n              \"then\": 0,\n              \"else\": \"menuIndex + 1\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            {\n              \"not\": \"previousConfirmPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"confirmedIndex\",\n            \"value\": \"menuIndex\"\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousMenuPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"previousConfirmPressed\",\n        \"value\": \"io_2\"\n      }\n    ],\n    \"outputs\": {\n      \"io_6\": {\n        \"if\": \"confirmedIndex == 0\",\n        \"then\": {\n          \"if\": \"tempValid\",\n          \"then\": {\n            \"if\": \"lastTemp >= 0.0\",\n            \"then\": \"RealFunctions::floor(lastTemp * 10.0 + 0.5)\",\n            \"else\": \"RealFunctions::floor(lastTemp * 10.0 - 0.5)\"\n          },\n          \"else\": 0\n        },\n        \"else\": {\n          \"if\": \"confirmedIndex == 1\",\n          \"then\": {\n            \"if\": \"tempValid\",\n            \"then\": {\n              \"if\": \"lastHumidity >= 0.0\",\n              \"then\": \"RealFunctions::floor(lastHumidity * 10.0 + 0.5)\",\n              \"else\": \"RealFunctions::floor(lastHumidity * 10.0 - 0.5)\"\n            },\n            \"else\": 0\n          },\n          \"else\": {\n            \"if\": \"io_0 <= 1023.0\",\n            \"then\": \"RealFunctions::floor(io_0)\",\n            \"else\": \"RealFunctions::floor(io_0)\"\n          }\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_2为false。给io_1产生一次按下上升沿（false->true），再按下一次io_2产生上升沿确认。保持DHT有效（io_5=true，io_3=25.0，io_4=60.0），保持电位器io_0=123.0。观察多步输出。\",\n        \"oracle\": \"在确认后，io_6持续显示与当前confirmedIndex对应的温度数值编码；在未再次发生确认且期间不发生新的确认上升沿时，io_6保持不变；释放D2不改变已确认显示内容，直到再次切换（再次确认且menuIndex改变）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先让confirmedIndex=温度（通过一次menuIndex切换并确认）。然后多次触发io_1上升沿以循环切换menuIndex（不触发io_2上升沿确认）。同时保持io_5=true且io_3/io_4固定、io_0固定。\",\n        \"oracle\": \"在未触发io_2上升沿确认期间，io_6保持显示温度对应值不变；menuIndex变化不影响输出，确认后才切换显示。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"循环menuIndex到“电位器值”（连续触发io_1上升沿三次或直到menuIndex=2）。在io_0=700.0时触发一次io_2上升沿确认。随后改变io_0为250.0但不再触发io_2上升沿。\",\n        \"oracle\": \"确认后io_6显示与电位器menu项对应的值编码；随后即使io_0变化，只要confirmedIndex不变且没有新的确认上升沿，io_6仍随每步的当前io_0重新计算并保持对应电位器显示（输出会反映新电位器值）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个简单的菜单式显示系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3、DHT11（D7）和电位器 A0。D2 用于切换菜单项，D3 用于确认；菜单包括显示温度、显示湿度、显示电位器值三项，确认后持续显示对应值直到再次切换。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先确认到温度（confirmedIndex=0），并设置一次有效DHT读（io_5=true，io_3=30.0，io_4=50.0），得到一个基准输出。随后将io_5=false（无效读），保持io_3/io_4不变，且不触发io_2上升沿。\",\n        \"oracle\": \"当io_5=false时，温度/湿度显示不会因无效读被阻塞；io_6按模型约定从无效状态输出静默编码（这里应为0），且在无新的确认上升沿且无效保持期间维持该行为。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    attribute menuIndex : Integer := 0;\n    attribute confirmedIndex : Integer := 0;\n    attribute previousMenuPressed : Boolean := false;\n    attribute previousConfirmPressed : Boolean := false;\n    attribute tempValid : Boolean := false;\n    attribute lastTemp : Real := 0.0;\n    attribute lastHumidity : Real := 0.0;\n    perform action tick {\n      first start;\n      then if io_5 {\n        first start;\n        then assign tempValid := true;\n        then assign lastTemp := io_3;\n        then assign lastHumidity := io_4;\n      } else {\n        first start;\n        then assign tempValid := false;\n      }\n      then if ((io_1) and ((not previousMenuPressed))) {\n        first start;\n        then assign menuIndex := (if menuIndex == 2 ? 0 else menuIndex + 1);\n      }\n      then if ((io_2) and ((not previousConfirmPressed))) {\n        first start;\n        then assign confirmedIndex := menuIndex;\n      }\n      then assign previousMenuPressed := io_1;\n      then assign previousConfirmPressed := io_2;\n    }\n    out attribute io_6 : Integer = (if confirmedIndex == 0 ? (if tempValid ? (if lastTemp >= 0.0 ? RealFunctions::floor(lastTemp * 10.0 + 0.5) else RealFunctions::floor(lastTemp * 10.0 - 0.5)) else 0) else (if confirmedIndex == 1 ? (if tempValid ? (if lastHumidity >= 0.0 ? RealFunctions::floor(lastHumidity * 10.0 + 0.5) else RealFunctions::floor(lastHumidity * 10.0 - 0.5)) else 0) else (if io_0 <= 1023.0 ? RealFunctions::floor(io_0) else RealFunctions::floor(io_0))));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

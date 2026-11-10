@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"displayMode\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"heaterEnabled\",\n        \"type\": \"bool\",\n        \"initial\": true\n      },\n      {\n        \"name\": \"aeratorEnabled\",\n        \"type\": \"bool\",\n        \"initial\": true\n      },\n      {\n        \"name\": \"alarmEnabled\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_6\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"displayMode\",\n            \"value\": {\n              \"if\": \"displayMode == 2\",\n              \"then\": 0,\n              \"else\": \"displayMode + 1\"\n            }\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_6\"\n      },\n      {\n        \"assign\": \"heaterEnabled\",\n        \"value\": {\n          \"not\": {\n            \"and\": [\n              \"alarmEnabled\",\n              {\n                \"or\": [\n                  \"io_2 <= 0.0\",\n                  \"io_2 < 10.0\"\n                ]\n              }\n            ]\n          }\n        }\n      },\n      {\n        \"assign\": \"aeratorEnabled\",\n        \"value\": {\n          \"if\": {\n            \"and\": [\n              \"io_2 > 0.0\",\n              \"io_2 >= 10.0\"\n            ]\n          },\n          \"then\": true,\n          \"else\": false\n        }\n      },\n      {\n        \"assign\": \"alarmEnabled\",\n        \"value\": {\n          \"if\": \"io_2 < 10.0\",\n          \"then\": true,\n          \"else\": false\n        }\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": \"alarmEnabled\",\n        \"then\": 0.0,\n        \"else\": {\n          \"if\": \"io_0 < 30.0\",\n          \"then\": 255.0,\n          \"else\": 0.0\n        }\n      },\n      \"io_4\": {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"alarmEnabled\"\n            },\n            \"io_1 < 500.0\"\n          ]\n        },\n        \"then\": 255.0,\n        \"else\": 0.0\n      },\n      \"io_5\": {\n        \"if\": \"aeratorEnabled\",\n        \"then\": 255.0,\n        \"else\": 0.0\n      },\n      \"io_7\": {\n        \"if\": \"alarmEnabled\",\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_8\": {\n        \"if\": \"displayMode == 0\",\n        \"then\": {\n          \"if\": \"io_0 <= 0.0\",\n          \"then\": 0,\n          \"else\": \"RealFunctions::floor(io_0)\"\n        },\n        \"else\": {\n          \"if\": \"displayMode == 1\",\n          \"then\": \"RealFunctions::floor(io_1)\",\n          \"else\": \"RealFunctions::floor(io_2)\"\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_2 >= 10（正常水位），设置 io_0 < 30 且 io_1 >= 500；不按按钮 D2（io_6=false）。\",\n        \"oracle\": \"io_3=255.0（加热器开启）、io_5=255.0（增氧泵开启）、io_4=0.0（照明关闭）、io_7=0（无报警）、io_8=显示水温（displayMode初始0时为 floor(io_0)）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_2 >= 10（正常水位），设置 io_0 >= 30 且 io_1 < 500；不按按钮（io_6=false）。\",\n        \"oracle\": \"io_3=0.0（加热器关闭）、io_5=255.0（增氧泵开启）、io_4=255.0（照明开启）、io_7=0（无报警）、io_8显示水温（displayMode初始0时为 floor(io_0)）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将 io_2 置为小于10（例如 io_2=5），同时任意设置 io_0=25、io_1=200；不按按钮（io_6=false）。\",\n        \"oracle\": \"io_5=0.0（低水位保护：增氧泵关闭）、io_3=0.0（报警时加热器输出为0）、io_4=0.0（报警时照明输出为0）、io_7=2000（蜂鸣器报警）、io_8显示水温（displayMode初始0时为 floor(io_0)）。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在正常水位条件下（io_2=20），先保持 io_6=false 一步；随后将 io_6 从false上升到true（按下一次，仅产生一个按下上升沿），再保持 io_6=true 若干步后回到false；全程 io_0=25.7、io_1=300.2、io_2=20。\",\n        \"oracle\": \"一次按下上升沿后 displayMode 从0变为1；在后续步骤中 io_8 等于 floor(io_1)（光照），且不会在按住期间重复切换。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。\",\n        \"test_point_id\": \"T5\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在正常水位条件下（io_2=20），使按钮 D2 连续产生三次按下上升沿：按下上升沿一次（false->true->false）、再一次、再一次；每次按下之间确保至少出现一段 io_6=false；设置 io_0=10.1、io_1=400.9、io_2=20。\",\n        \"oracle\": \"displayMode 经0->1->2->0循环；对应 TM1637 数值 io_8 依次为 floor(io_0)、floor(io_1)、floor(io_2)、再回到floor(io_0)。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_6 : Boolean;\n    attribute previousPressed : Boolean := false;\n    attribute displayMode : Integer := 0;\n    attribute heaterEnabled : Boolean := true;\n    attribute aeratorEnabled : Boolean := true;\n    attribute alarmEnabled : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_6) and ((not previousPressed))) {\n        first start;\n        then assign displayMode := (if displayMode == 2 ? 0 else displayMode + 1);\n      }\n      then assign previousPressed := io_6;\n      then assign heaterEnabled := (not ((alarmEnabled) and (((io_2 <= 0.0) or (io_2 < 10.0)))));\n      then assign aeratorEnabled := (if ((io_2 > 0.0) and (io_2 >= 10.0)) ? true else false);\n      then assign alarmEnabled := (if io_2 < 10.0 ? true else false);\n    }\n    out attribute io_3 : Real = (if alarmEnabled ? 0.0 else (if io_0 < 30.0 ? 255.0 else 0.0));\n    out attribute io_4 : Real = (if (((not alarmEnabled)) and (io_1 < 500.0)) ? 255.0 else 0.0);\n    out attribute io_5 : Real = (if aeratorEnabled ? 255.0 else 0.0);\n    out attribute io_7 : Integer = (if alarmEnabled ? 2000 else 0);\n    out attribute io_8 : Integer = (if displayMode == 0 ? (if io_0 <= 0.0 ? 0 else RealFunctions::floor(io_0)) else (if displayMode == 1 ? RealFunctions::floor(io_1) else RealFunctions::floor(io_2)));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

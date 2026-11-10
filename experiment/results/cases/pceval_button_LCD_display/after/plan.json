@@ -1,0 +1,105 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Tests the required LCD text on startup and across repeated active-HIGH press/release transitions, plus the electrically specified button input mode. The host LCD checks observe API text output, not landscape orientation, cursor position, text color/size, or black background clearing; those essential graphical requirements remain unverified. No assertion is made about repeated printing while a button remains held.",
+  "assumptions": [
+    "Explicit wiring overrides bench defaults: pin 2 is externally pulled LOW through 10kΩ and reads HIGH when pressed; no INPUT_PULLUP is used.",
+    "LCD wiring is preserved: RST=8, D/C=9, CS=10, MOSI=11, MISO=12, SCK=13.",
+    "The malformed opening quotation marks in the behavior description are prose delimiters, not characters to display; the required text is Pressed! and Not pressed!.",
+    "No debounce interval or exact response deadline is specified; checks allow 700ms after each stable transition.",
+    "Landscape rotation 1 is a permitted landscape orientation for the reference. The test does not require that particular landscape orientation.",
+    "No bench-default LED, analog, or button wiring assumptions are needed."
+  ],
+  "horizon_ms": 10000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 2000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 4000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 6000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 8000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "pin_mode",
+      "id": "external_pulldown_input",
+      "requirement_quote": "Set button pin as INPUT",
+      "pin": 2,
+      "expected": 0
+    },
+    {
+      "kind": "lcd",
+      "id": "initial_released_text",
+      "requirement_quote": "Not pressed!",
+      "from_ms": 0,
+      "to_ms": 1700,
+      "contains": "Not pressed!",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "first_press_text",
+      "requirement_quote": "Pressed!",
+      "from_ms": 2000,
+      "to_ms": 2700,
+      "contains": "Pressed!",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "first_release_text",
+      "requirement_quote": "Not pressed!",
+      "from_ms": 4000,
+      "to_ms": 4700,
+      "contains": "Not pressed!",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "second_press_text",
+      "requirement_quote": "Pressed!",
+      "from_ms": 6000,
+      "to_ms": 6700,
+      "contains": "Pressed!",
+      "min_count": 1
+    },
+    {
+      "kind": "lcd",
+      "id": "second_release_text",
+      "requirement_quote": "Not pressed!",
+      "from_ms": 8000,
+      "to_ms": 8700,
+      "contains": "Not pressed!",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <SPI.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_ILI9341.h>\n\nAdafruit_ILI9341 display(10, 9, 8);\nconst uint8_t buttonPin = 2;\nint previousState = -1;\n\nvoid showState(int state) {\n  display.fillScreen(ILI9341_BLACK);\n  display.setCursor(0, 0);\n  display.setTextColor(ILI9341_WHITE);\n  display.setTextSize(2);\n  display.print(state == HIGH ? \"Pressed!\" : \"Not pressed!\");\n}\n\nvoid setup() {\n  pinMode(buttonPin, INPUT);\n  display.begin();\n  display.setRotation(1);\n  display.setTextColor(ILI9341_WHITE);\n  display.setTextSize(2);\n}\n\nvoid loop() {\n  int state = digitalRead(buttonPin);\n  if (state != previousState) {\n    showState(state);\n    previousState = state;\n  }\n}\n"
+}

@@ -1,0 +1,291 @@
+#include "define.h"
+/* Code of ProgramPage1 */
+/* Global Variable define of  */
+struct ProgramPage1_state ProgramPage1_instance;
+/* Global Variable define of  */
+int sysml_state_number = 0;
+/* Global Variable define of  */
+int sysml_state_accumulatedMs = 0;
+/* Global Variable define of  */
+bool sysml_state_holdServos = false;
+/* Global Variable define of  */
+int sysml_state_holdRemainingMs = 0;
+/* Init function of CompositeActor named "ProgramPage1" */
+void ProgramPage1_Init(struct ProgramPage1_state* self) {
+    /* Calculate code of CompositeActor named "ProgramPage1.reset" */
+    sysml_state_number = 0;
+    sysml_state_accumulatedMs = 0;
+    sysml_state_holdServos = false;
+    sysml_state_holdRemainingMs = 0;
+}
+/* Update function of CompositeActor named "ProgramPage1" */
+void ProgramPage1(int io_0, int* io_1, bool* io_2_segment_0, bool* io_2_segment_1, bool* io_2_segment_2, bool* io_2_segment_3, bool* io_2_segment_4, bool* io_2_segment_5, bool* io_2_segment_6, bool* io_2_segment_7, bool* io_2_segment_8, bool* io_2_segment_9, double* io_3, double* io_4, double* io_5) {
+    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+    int sysml_conditional_0 = 0;
+    bool sysml_conditional_1 = 0;
+    int sysml_conditional_2 = 0;
+    int sysml_conditional_3 = 0;
+    int sysml_arithmetic_4 = 0;
+    bool sysml_lazy_5 = 0;
+    bool sysml_conditional_6 = 0;
+    bool sysml_conditional_7 = 0;
+    int sysml_conditional_8 = 0;
+    int sysml_arithmetic_9 = 0;
+    bool sysml_conditional_10 = 0;
+    int sysml_conditional_11 = 0;
+    int sysml_arithmetic_12 = 0;
+    bool sysml_conditional_13 = 0;
+    int sysml_conditional_14 = 0;
+    int sysml_arithmetic_15 = 0;
+    bool sysml_conditional_16 = 0;
+    bool sysml_conditional_17 = 0;
+    bool sysml_conditional_18 = 0;
+    bool sysml_conditional_19 = 0;
+    bool sysml_conditional_20 = 0;
+    bool sysml_conditional_21 = 0;
+    bool sysml_conditional_22 = 0;
+    bool sysml_conditional_23 = 0;
+    bool sysml_conditional_24 = 0;
+    double sysml_conditional_25 = 0;
+    int sysml_conditional_26 = 0;
+    int sysml_arithmetic_27 = 0;
+    int sysml_arithmetic_28 = 0;
+    double sysml_conditional_29 = 0;
+    int sysml_conditional_30 = 0;
+    int sysml_arithmetic_31 = 0;
+    int sysml_arithmetic_32 = 0;
+    double sysml_conditional_33 = 0;
+    int sysml_conditional_34 = 0;
+    int sysml_arithmetic_35 = 0;
+    int sysml_arithmetic_36 = 0;
+    sysml_state_accumulatedMs = (sysml_state_accumulatedMs + io_0);
+    if ((sysml_state_accumulatedMs >= 2000)) {
+        sysml_state_accumulatedMs = (sysml_state_accumulatedMs - 2000);
+        if (sysml_state_number >= 99) {
+            sysml_conditional_0 = 0;
+        }
+        else {
+            sysml_conditional_0 = sysml_state_number + 1;
+        }
+        sysml_state_number = sysml_conditional_0;
+        if (sysml_state_number == 9) {
+            sysml_conditional_1 = true;
+        }
+        else {
+            sysml_conditional_1 = false;
+        }
+        sysml_state_holdServos = sysml_conditional_1;
+        if (sysml_state_number == 9) {
+            sysml_conditional_2 = 2000;
+        }
+        else {
+            sysml_conditional_2 = 0;
+        }
+        sysml_state_holdRemainingMs = sysml_conditional_2;
+        if ((sysml_state_number != 9)) {
+            sysml_state_holdServos = false;
+            sysml_state_holdRemainingMs = 0;
+        }
+    }
+    if (sysml_state_holdServos) {
+        sysml_state_holdRemainingMs = (sysml_state_holdRemainingMs - io_0);
+        if ((sysml_state_holdRemainingMs <= 0)) {
+            sysml_state_holdServos = false;
+            sysml_state_holdRemainingMs = 0;
+        }
+    }
+    int sysml_value_0 = 0;
+    sysml_value_0 = sysml_state_number;
+    bool sysml_value_1 = 0;
+    if ((((double)sysml_state_number) / 10) < ((double)((int)(((double)sysml_state_number) / 10)))) {
+        sysml_conditional_3 = 1;
+    }
+    else {
+        sysml_conditional_3 = 0;
+    }
+    sysml_arithmetic_4 = ((int)(((double)sysml_state_number) / 10)) - sysml_conditional_3;
+    sysml_lazy_5 = (sysml_state_number - (10 * sysml_arithmetic_4)) != 0;
+    if (sysml_lazy_5) {
+        sysml_lazy_5 = true;
+    }
+    if (sysml_lazy_5) {
+        if (sysml_state_number >= 10) {
+            if ((((double)sysml_state_number) / 10) < ((double)((int)(((double)sysml_state_number) / 10)))) {
+                sysml_conditional_8 = 1;
+            }
+            else {
+                sysml_conditional_8 = 0;
+            }
+            sysml_arithmetic_9 = ((int)(((double)sysml_state_number) / 10)) - sysml_conditional_8;
+            if ((sysml_state_number - (10 * sysml_arithmetic_9)) >= 0) {
+                if ((((double)sysml_state_number) / 10) < ((double)((int)(((double)sysml_state_number) / 10)))) {
+                    sysml_conditional_11 = 1;
+                }
+                else {
+                    sysml_conditional_11 = 0;
+                }
+                sysml_arithmetic_12 = ((int)(((double)sysml_state_number) / 10)) - sysml_conditional_11;
+                sysml_conditional_10 = (sysml_state_number - (10 * sysml_arithmetic_12)) >= 0;
+            }
+            else {
+                sysml_conditional_10 = false;
+            }
+            sysml_conditional_7 = sysml_conditional_10;
+        }
+        else {
+            sysml_conditional_7 = false;
+        }
+        sysml_conditional_6 = sysml_conditional_7;
+    }
+    else {
+        sysml_conditional_6 = false;
+    }
+    sysml_value_1 = sysml_conditional_6;
+    bool sysml_value_2 = 0;
+    if (sysml_state_number >= 10) {
+        if ((((double)sysml_state_number) / 10) < ((double)((int)(((double)sysml_state_number) / 10)))) {
+            sysml_conditional_14 = 1;
+        }
+        else {
+            sysml_conditional_14 = 0;
+        }
+        sysml_arithmetic_15 = ((int)(((double)sysml_state_number) / 10)) - sysml_conditional_14;
+        if ((sysml_state_number - (10 * sysml_arithmetic_15)) == 0) {
+            sysml_conditional_16 = false;
+        }
+        else {
+            sysml_conditional_16 = false;
+        }
+        sysml_conditional_13 = sysml_conditional_16;
+    }
+    else {
+        sysml_conditional_13 = false;
+    }
+    sysml_value_2 = sysml_conditional_13;
+    bool sysml_value_3 = 0;
+    if (sysml_state_number >= 20) {
+        sysml_conditional_17 = true;
+    }
+    else {
+        sysml_conditional_17 = false;
+    }
+    sysml_value_3 = sysml_conditional_17;
+    bool sysml_value_4 = 0;
+    if (sysml_state_number >= 30) {
+        sysml_conditional_18 = true;
+    }
+    else {
+        sysml_conditional_18 = false;
+    }
+    sysml_value_4 = sysml_conditional_18;
+    bool sysml_value_5 = 0;
+    if (sysml_state_number >= 40) {
+        sysml_conditional_19 = true;
+    }
+    else {
+        sysml_conditional_19 = false;
+    }
+    sysml_value_5 = sysml_conditional_19;
+    bool sysml_value_6 = 0;
+    if (sysml_state_number >= 50) {
+        sysml_conditional_20 = true;
+    }
+    else {
+        sysml_conditional_20 = false;
+    }
+    sysml_value_6 = sysml_conditional_20;
+    bool sysml_value_7 = 0;
+    if (sysml_state_number >= 60) {
+        sysml_conditional_21 = true;
+    }
+    else {
+        sysml_conditional_21 = false;
+    }
+    sysml_value_7 = sysml_conditional_21;
+    bool sysml_value_8 = 0;
+    if (sysml_state_number >= 70) {
+        sysml_conditional_22 = true;
+    }
+    else {
+        sysml_conditional_22 = false;
+    }
+    sysml_value_8 = sysml_conditional_22;
+    bool sysml_value_9 = 0;
+    if (sysml_state_number >= 80) {
+        sysml_conditional_23 = true;
+    }
+    else {
+        sysml_conditional_23 = false;
+    }
+    sysml_value_9 = sysml_conditional_23;
+    bool sysml_value_10 = 0;
+    if (sysml_state_number >= 90) {
+        sysml_conditional_24 = true;
+    }
+    else {
+        sysml_conditional_24 = false;
+    }
+    sysml_value_10 = sysml_conditional_24;
+    double sysml_value_11 = 0;
+    if (sysml_state_holdServos) {
+        sysml_conditional_25 = 0.0;
+    }
+    else {
+        if ((((double)sysml_state_number) / 10) < ((double)((int)(((double)sysml_state_number) / 10)))) {
+            sysml_conditional_26 = 1;
+        }
+        else {
+            sysml_conditional_26 = 0;
+        }
+        sysml_arithmetic_27 = ((int)(((double)sysml_state_number) / 10)) - sysml_conditional_26;
+        sysml_arithmetic_28 = sysml_state_number - (10 * sysml_arithmetic_27);
+        sysml_conditional_25 = 18.0 * sysml_arithmetic_28;
+    }
+    sysml_value_11 = sysml_conditional_25;
+    double sysml_value_12 = 0;
+    if (sysml_state_holdServos) {
+        sysml_conditional_29 = 0.0;
+    }
+    else {
+        if ((((double)sysml_state_number) / 10) < ((double)((int)(((double)sysml_state_number) / 10)))) {
+            sysml_conditional_30 = 1;
+        }
+        else {
+            sysml_conditional_30 = 0;
+        }
+        sysml_arithmetic_31 = ((int)(((double)sysml_state_number) / 10)) - sysml_conditional_30;
+        sysml_arithmetic_32 = sysml_state_number - (10 * sysml_arithmetic_31);
+        sysml_conditional_29 = (18.0 * sysml_arithmetic_32) + 60.0;
+    }
+    sysml_value_12 = sysml_conditional_29;
+    double sysml_value_13 = 0;
+    if (sysml_state_holdServos) {
+        sysml_conditional_33 = 0.0;
+    }
+    else {
+        if ((((double)sysml_state_number) / 10) < ((double)((int)(((double)sysml_state_number) / 10)))) {
+            sysml_conditional_34 = 1;
+        }
+        else {
+            sysml_conditional_34 = 0;
+        }
+        sysml_arithmetic_35 = ((int)(((double)sysml_state_number) / 10)) - sysml_conditional_34;
+        sysml_arithmetic_36 = sysml_state_number - (10 * sysml_arithmetic_35);
+        sysml_conditional_33 = (18.0 * sysml_arithmetic_36) + 120.0;
+    }
+    sysml_value_13 = sysml_conditional_33;
+    *io_1 = sysml_value_0;
+    *io_2_segment_0 = sysml_value_1;
+    *io_2_segment_1 = sysml_value_2;
+    *io_2_segment_2 = sysml_value_3;
+    *io_2_segment_3 = sysml_value_4;
+    *io_2_segment_4 = sysml_value_5;
+    *io_2_segment_5 = sysml_value_6;
+    *io_2_segment_6 = sysml_value_7;
+    *io_2_segment_7 = sysml_value_8;
+    *io_2_segment_8 = sysml_value_9;
+    *io_2_segment_9 = sysml_value_10;
+    *io_3 = sysml_value_11;
+    *io_4 = sysml_value_12;
+    *io_5 = sysml_value_13;
+}

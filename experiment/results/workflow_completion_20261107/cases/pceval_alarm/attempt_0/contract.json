@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Use RTClib RTC_DS1307 initialization and periodic acquisition, with matching default sampling for the epoch and validity requests. Do not adjust the RTC from the diagram's initial timestamp.",
+    "The SysML model compares valid RTC time against 2024-11-24T04:49:00, represented by the i32 Unix epoch constant 1732423740. Treat the threshold and RTC calendar values in the same timezone without adding an unspecified offset.",
+    "The buzzer starts silent. The model commands a continuous tone only while RTC validity is true and the current epoch is at or after the threshold; otherwise it commands zero.",
+    "The alarm frequency is unspecified. Assume 1000 Hz unless another audible frequency is selected during model review.",
+    "No elapsed-time input is required for the absolute RTC comparison. Initialization must return within 500 ms without waiting for the alarm threshold."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "i32",
+      "unit": "s",
+      "initial": 0,
+      "meaning": "Current DS1307 time as Unix epoch seconds",
+      "sample_period_ms": 10,
+      "device": "rtc module1",
+      "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_epoch\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "rtc_epoch",
+        "address": 104,
+        "acquisition": "periodic",
+        "scl_pin": "A5",
+        "sda_pin": "A4"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "RTC initialization and current time acquisition are valid",
+      "sample_period_ms": 10,
+      "device": "rtc module1",
+      "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_valid\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+      "binding": {
+        "kind": "rtc_valid",
+        "address": 104,
+        "acquisition": "periodic",
+        "scl_pin": "A5",
+        "sda_pin": "A4"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Alarm tone frequency; zero silences the buzzer",
+      "sample_period_ms": 10,
+      "device": "piezoelectric buzzer1",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D8\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D8"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+    "effective_requirement": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Trigger the buzzer when the specified time is reached",
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-ds1307",
+            "id": "rtc module1",
+            "top": 234.6,
+            "left": 268.9,
+            "attrs": {
+              "initTime": "2024-11-24T04:48:55"
+            }
+          },
+          {
+            "type": "wokwi-buzzer",
+            "id": "piezoelectric buzzer1",
+            "top": -132,
+            "left": 232.2,
+            "attrs": {
+              "volume": "0.1"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "rtc module1:SCL",
+            "arduino uno1:A5",
+            "green",
+            [
+              "h0"
+            ]
+          ],
+          [
+            "rtc module1:SDA",
+            "arduino uno1:A4",
+            "green",
+            [
+              "h0"
+            ]
+          ],
+          [
+            "rtc module1:5V",
+            "arduino uno1:5V",
+            "red",
+            [
+              "h0"
+            ]
+          ],
+          [
+            "rtc module1:GND",
+            "arduino uno1:GND.2",
+            "black",
+            [
+              "h0"
+            ]
+          ],
+          [
+            "piezoelectric buzzer1:1",
+            "arduino uno1:GND.2",
+            "black",
+            [
+              "v192",
+              "h-96"
+            ]
+          ],
+          [
+            "piezoelectric buzzer1:2",
+            "arduino uno1:8",
+            "green",
+            [
+              "v28.8",
+              "h-38.8"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# Alarm\n\n## Project Description\nThis is an Arduino project that triggers the buzzer when the specified time is reached.\n\n## Hardware Components\n- Arduino Uno\n- Piezoelectric Buzzer\n- RTC module\n\n## Circuit Description\nThe RTC module and piezo buzzer is connected to the Arduino. For RTC module, the VCC pin is connected to 5V, the GND pin to gnd2, the SDA pin to A4, and the SCL pin to A5. For piezo buzzer, the negative pin is connected to gnd2, and the positive pin is connected to the arduino pin8.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Set the buzzer pin mode as OUTPUT\n2. Initialize the RTC module, and check if it can begin\n3. Continuously read the current time with RTC module\n4. Tone the buzzer if the current time is on or after '2024-11-24T04:49:00'\n\n## Success Criteria\nThe test is successful when:\n1. Buzzer plays tone only when the current time is on or after the specified time.\n\n## Notes for Implementation\n- Specified time is \"2024-11-24T04:49:00\".\n- Use RTClib to generate RTC_DS1307 object and read the value.\n- RTC module has I2C interface.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Trigger the buzzer when the specified time is reached\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 234.6,\n            \"left\": 268.9,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:55\"\n            }\n        },\n        {\n            \"type\": \"wokwi-buzzer\",\n            \"id\": \"piezoelectric buzzer1\",\n            \"top\": -132,\n            \"left\": 232.2,\n            \"attrs\": {\n                \"volume\": \"0.1\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:1\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"v192\",\n                \"h-96\"\n            ]\n        ],\n        [\n            \"piezoelectric buzzer1:2\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v28.8\",\n                \"h-38.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  }
+}

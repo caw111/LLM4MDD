@@ -1,0 +1,1485 @@
+{
+  "status": "passed",
+  "contract_revisions": 0,
+  "rounds": [
+    {
+      "revision": 0,
+      "contract": {
+        "version": 1,
+        "board": "arduino:avr:uno",
+        "control_period_ms": 10,
+        "planning_notes": [
+          "Preserve all supplied wiring; empty supplied pins introduce no overrides. Power and ground connections require no scalar requests.",
+          "Use one coherent acquisition for temperature, humidity and validity, with the same legal catalog-default DHT22 sampling period of at least 2000 ms.",
+          "Implement the required 100 ms end-of-loop wait as model pacing using actual elapsed time, independently of the 10 ms control step and DHT22 acquisition interval.",
+          "In the model, accept valid measurement pairs and update both displayed quantities when either changes. Invalid acquisitions retain the previously accepted display values.",
+          "The native LCD adapter initializes SPI, Adafruit_GFX and Adafruit_ILI9341, applies landscape rotation, and clears and redraws the shared screen when either displayed field changes.",
+          "Numeric precision is unspecified; assume two decimal places. Zero initial values are placeholders, not successful sensor measurements.",
+          "Initialization must return within 500 ms without waiting for the first DHT22 acquisition. No serial reporting is required."
+        ],
+        "interfaces": [
+          {
+            "name": "io_0",
+            "direction": "input",
+            "type": "f64",
+            "unit": "degC",
+            "initial": 0,
+            "meaning": "Coherently acquired DHT22 temperature in degrees Celsius",
+            "sample_period_ms": 2000,
+            "device": "dht22 sensor1",
+            "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_temperature\", \"pin\": \"D2\", \"sensor\": \"DHT22\"}",
+            "binding": {
+              "kind": "dht_temperature",
+              "invalid_policy": "hold_last_valid",
+              "sensor": "DHT22",
+              "pin": "D2"
+            }
+          },
+          {
+            "name": "io_1",
+            "direction": "input",
+            "type": "f64",
+            "unit": "%RH",
+            "initial": 0,
+            "meaning": "Coherently acquired DHT22 relative humidity",
+            "sample_period_ms": 2000,
+            "device": "dht22 sensor1",
+            "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_humidity\", \"pin\": \"D2\", \"sensor\": \"DHT22\"}",
+            "binding": {
+              "kind": "dht_humidity",
+              "invalid_policy": "hold_last_valid",
+              "sensor": "DHT22",
+              "pin": "D2"
+            }
+          },
+          {
+            "name": "io_2",
+            "direction": "input",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Whether the latest shared DHT22 acquisition succeeded",
+            "sample_period_ms": 2000,
+            "device": "dht22 sensor1",
+            "hardware": "{\"invalid_policy\": \"hold_last_valid\", \"kind\": \"dht_valid\", \"pin\": \"D2\", \"sensor\": \"DHT22\"}",
+            "binding": {
+              "kind": "dht_valid",
+              "invalid_policy": "hold_last_valid",
+              "sensor": "DHT22",
+              "pin": "D2"
+            }
+          },
+          {
+            "name": "io_3",
+            "direction": "output",
+            "type": "f64",
+            "unit": "1",
+            "initial": 0,
+            "meaning": "Displayed relative humidity from the accepted DHT22 measurement",
+            "sample_period_ms": 10,
+            "device": "ili9341 lcd display1",
+            "hardware": "{\"background\": 0, \"color\": 65535, \"cs_pin\": \"D10\", \"dc_pin\": \"D9\", \"format\": \"Humidity: {0:.2f}\", \"kind\": \"lcd_number\", \"miso_pin\": \"D12\", \"mosi_pin\": \"D11\", \"rotation\": 1, \"rst_pin\": \"D8\", \"sck_pin\": \"D13\", \"text_size\": 2, \"x\": 0, \"y\": 0}",
+            "binding": {
+              "kind": "lcd_number",
+              "rotation": 1,
+              "color": 65535,
+              "background": 0,
+              "text_size": 2,
+              "x": 0,
+              "y": 0,
+              "rst_pin": "D8",
+              "format": "Humidity: {0:.2f}",
+              "miso_pin": "D12",
+              "sck_pin": "D13",
+              "dc_pin": "D9",
+              "cs_pin": "D10",
+              "mosi_pin": "D11"
+            }
+          },
+          {
+            "name": "io_4",
+            "direction": "output",
+            "type": "f64",
+            "unit": "1",
+            "initial": 0,
+            "meaning": "Displayed temperature in degrees Celsius from the accepted DHT22 measurement",
+            "sample_period_ms": 10,
+            "device": "ili9341 lcd display1",
+            "hardware": "{\"background\": 0, \"color\": 65535, \"cs_pin\": \"D10\", \"dc_pin\": \"D9\", \"format\": \"Temperature: {0:.2f}\", \"kind\": \"lcd_number\", \"miso_pin\": \"D12\", \"mosi_pin\": \"D11\", \"rotation\": 1, \"rst_pin\": \"D8\", \"sck_pin\": \"D13\", \"text_size\": 2, \"x\": 0, \"y\": 100}",
+            "binding": {
+              "kind": "lcd_number",
+              "rotation": 1,
+              "color": 65535,
+              "background": 0,
+              "text_size": 2,
+              "x": 0,
+              "y": 100,
+              "rst_pin": "D8",
+              "format": "Temperature: {0:.2f}",
+              "miso_pin": "D12",
+              "sck_pin": "D13",
+              "dc_pin": "D9",
+              "cs_pin": "D10",
+              "mosi_pin": "D11"
+            }
+          },
+          {
+            "name": "io_5",
+            "direction": "input",
+            "type": "i32",
+            "unit": "ms",
+            "initial": 0,
+            "meaning": "Actual elapsed milliseconds for the model's 100 ms loop pacing",
+            "sample_period_ms": 10,
+            "device": "elapsed_ms",
+            "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+            "binding": {
+              "kind": "elapsed_ms",
+              "semantics": "delta_since_previous_step"
+            }
+          }
+        ],
+        "required_dependencies": {},
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+          "effective_requirement": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Show humidity and temperature with lcd display",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 331.89,
+                  "left": 1.49,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ili9341",
+                  "id": "ili9341 lcd display1",
+                  "top": 5.51,
+                  "left": 40.77,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-dht22",
+                  "id": "dht22 sensor1",
+                  "top": 0.3,
+                  "left": 311.4,
+                  "attrs": {}
+                }
+              ],
+              "connections": [
+                [
+                  "ili9341 lcd display1:GND",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v22",
+                    "h-46"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:SCK",
+                  "arduino uno1:13",
+                  "green",
+                  [
+                    "v16",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MISO",
+                  "arduino uno1:12",
+                  "limegreen",
+                  [
+                    "v20",
+                    "h-78"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MOSI",
+                  "arduino uno1:11",
+                  "green",
+                  [
+                    "v24",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:CS",
+                  "arduino uno1:10",
+                  "orange",
+                  [
+                    "v32",
+                    "h-64"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:D/C",
+                  "arduino uno1:9",
+                  "purple",
+                  [
+                    "v36",
+                    "h-84"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:VCC",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v24.09",
+                    "h-98.67",
+                    "v230.4",
+                    "h172.8"
+                  ]
+                ],
+                [
+                  "dht22 sensor1:VCC",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v201.6",
+                    "h-336",
+                    "v230.4",
+                    "h172.8"
+                  ]
+                ],
+                [
+                  "dht22 sensor1:GND",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v201.6",
+                    "h-240"
+                  ]
+                ],
+                [
+                  "dht22 sensor1:SDA",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "v211.2",
+                    "h-95.9"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:RST",
+                  "arduino uno1:8",
+                  "green",
+                  [
+                    "v33.69",
+                    "h54.93"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": true
+        },
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+            "assertion_ids": [
+              "source_requirement_R1"
+            ]
+          }
+        ],
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_2": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_3": {
+              "direction": "output",
+              "type": "f64"
+            },
+            "io_4": {
+              "direction": "output",
+              "type": "f64"
+            },
+            "io_5": {
+              "direction": "input",
+              "type": "i32"
+            }
+          },
+          "serial_channels": []
+        }
+      },
+      "planning": {
+        "contract_sha256": "b1842123a8f2673a086cbc5c5bd384378095813213b7c1b5e531daf264ed34f4",
+        "provenance": "program_assembled",
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "f64"
+            },
+            "io_2": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_3": {
+              "direction": "output",
+              "type": "f64"
+            },
+            "io_4": {
+              "direction": "output",
+              "type": "f64"
+            },
+            "io_5": {
+              "direction": "input",
+              "type": "i32"
+            }
+          },
+          "serial_channels": []
+        },
+        "registered_relationships": "verified",
+        "functional_status": "unverified",
+        "attempts": [
+          {
+            "ok": true,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"dht_temperature\",\n      \"device\": \"dht22 sensor1\",\n      \"pin\": \"D2\",\n      \"sensor\": \"DHT22\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"Coherently acquired DHT22 temperature in degrees Celsius\"\n    },\n    {\n      \"kind\": \"dht_humidity\",\n      \"device\": \"dht22 sensor1\",\n      \"pin\": \"D2\",\n      \"sensor\": \"DHT22\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"Coherently acquired DHT22 relative humidity\"\n    },\n    {\n      \"kind\": \"dht_valid\",\n      \"device\": \"dht22 sensor1\",\n      \"pin\": \"D2\",\n      \"sensor\": \"DHT22\",\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"Whether the latest shared DHT22 acquisition succeeded\"\n    },\n    {\n      \"kind\": \"lcd_number\",\n      \"device\": \"ili9341 lcd display1\",\n      \"cs_pin\": \"D10\",\n      \"dc_pin\": \"D9\",\n      \"rst_pin\": \"D8\",\n      \"mosi_pin\": \"D11\",\n      \"miso_pin\": \"D12\",\n      \"sck_pin\": \"D13\",\n      \"rotation\": 1,\n      \"color\": 65535,\n      \"background\": 0,\n      \"text_size\": 2,\n      \"x\": 0,\n      \"y\": 0,\n      \"format\": \"Humidity: {0:.2f}\",\n      \"initial\": 0,\n      \"meaning\": \"Displayed relative humidity from the accepted DHT22 measurement\"\n    },\n    {\n      \"kind\": \"lcd_number\",\n      \"device\": \"ili9341 lcd display1\",\n      \"cs_pin\": \"D10\",\n      \"dc_pin\": \"D9\",\n      \"rst_pin\": \"D8\",\n      \"mosi_pin\": \"D11\",\n      \"miso_pin\": \"D12\",\n      \"sck_pin\": \"D13\",\n      \"rotation\": 1,\n      \"color\": 65535,\n      \"background\": 0,\n      \"text_size\": 2,\n      \"x\": 0,\n      \"y\": 100,\n      \"format\": \"Temperature: {0:.2f}\",\n      \"initial\": 0,\n      \"meaning\": \"Displayed temperature in degrees Celsius from the accepted DHT22 measurement\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"semantics\": \"delta_since_previous_step\",\n      \"initial\": 0,\n      \"meaning\": \"Actual elapsed milliseconds for the model's 100 ms loop pacing\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Preserve all supplied wiring; empty supplied pins introduce no overrides. Power and ground connections require no scalar requests.\",\n    \"Use one coherent acquisition for temperature, humidity and validity, with the same legal catalog-default DHT22 sampling period of at least 2000 ms.\",\n    \"Implement the required 100 ms end-of-loop wait as model pacing using actual elapsed time, independently of the 10 ms control step and DHT22 acquisition interval.\",\n    \"In the model, accept valid measurement pairs and update both displayed quantities when either changes. Invalid acquisitions retain the previously accepted display values.\",\n    \"The native LCD adapter initializes SPI, Adafruit_GFX and Adafruit_ILI9341, applies landscape rotation, and clears and redraws the shared screen when either displayed field changes.\",\n    \"Numeric precision is unspecified; assume two decimal places. Zero initial values are placeholders, not successful sensor measurements.\",\n    \"Initialization must return within 500 ms without waiting for the first DHT22 acquisition. No serial reporting is required.\"\n  ]\n}",
+            "construction": [
+              "catalog_interfaces_and_serial_channels_assembled"
+            ],
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            }
+          }
+        ],
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}",
+          "effective_requirement": "# LCD Display with DHT22 sensor\n\n## Project Description\nThis is an Arduino project that shows dht22 sensor value to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n- DHT22 sensor\n\n## Circuit Description\nIli9341 LCD Display and dht22 sensor are connected to the Arudino Uno board. RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively. Each GND pins of LCD display and DHT sensor are connected to arduino pin gnd1. Each VCC pins of LCD display and DHT sensor are connected to arduino pin 5v. SDA pin of DHT sensor is connected to arduino pin2.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Set the text color to white, and size to 2\n4. Initialize and begin the dht22 sensor\n5. Continuously read the humidity and temperature value of dht22 sensor\n6. If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"\n\n## Success Criteria\nThe test is successful when:\n1. Sensor value is successfully printed to the display, with correct position, color, and size.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n- Wait for 100 milliseconds at the end of every loop iteration.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show humidity and temperature with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-dht22\",\n            \"id\": \"dht22 sensor1\",\n            \"top\": 0.3,\n            \"left\": 311.4,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v201.6\",\n                \"h-336\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v201.6\",\n                \"h-240\"\n            ]\n        ],\n        [\n            \"dht22 sensor1:SDA\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"v211.2\",\n                \"h-95.9\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:RST\",\n            \"arduino uno1:8\",\n            \"green\",\n            [\n                \"v33.69\",\n                \"h54.93\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [],
+          "serial": null,
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Show humidity and temperature with lcd display",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 331.89,
+                  "left": 1.49,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ili9341",
+                  "id": "ili9341 lcd display1",
+                  "top": 5.51,
+                  "left": 40.77,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-dht22",
+                  "id": "dht22 sensor1",
+                  "top": 0.3,
+                  "left": 311.4,
+                  "attrs": {}
+                }
+              ],
+              "connections": [
+                [
+                  "ili9341 lcd display1:GND",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v22",
+                    "h-46"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:SCK",
+                  "arduino uno1:13",
+                  "green",
+                  [
+                    "v16",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MISO",
+                  "arduino uno1:12",
+                  "limegreen",
+                  [
+                    "v20",
+                    "h-78"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:MOSI",
+                  "arduino uno1:11",
+                  "green",
+                  [
+                    "v24",
+                    "h-75"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:CS",
+                  "arduino uno1:10",
+                  "orange",
+                  [
+                    "v32",
+                    "h-64"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:D/C",
+                  "arduino uno1:9",
+                  "purple",
+                  [
+                    "v36",
+                    "h-84"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:VCC",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v24.09",
+                    "h-98.67",
+                    "v230.4",
+                    "h172.8"
+                  ]
+                ],
+                [
+                  "dht22 sensor1:VCC",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "v201.6",
+                    "h-336",
+                    "v230.4",
+                    "h172.8"
+                  ]
+                ],
+                [
+                  "dht22 sensor1:GND",
+                  "arduino uno1:GND.1",
+                  "black",
+                  [
+                    "v201.6",
+                    "h-240"
+                  ]
+                ],
+                [
+                  "dht22 sensor1:SDA",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "v211.2",
+                    "h-95.9"
+                  ]
+                ],
+                [
+                  "ili9341 lcd display1:RST",
+                  "arduino uno1:8",
+                  "green",
+                  [
+                    "v33.69",
+                    "h54.93"
+                  ]
+                ]
+              ],
+              "dependencies": {}
+            }
+          ],
+          "circuit_preserved": true
+        }
+      },
+      "validation": {
+        "validator_version": "2026-08 / 0.62.0",
+        "attempts": [
+          {
+            "attempt": 1,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"loopWaitRemaining\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"displayedHumidity\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"displayedTemperature\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"loopWaitRemaining\",\n        \"value\": {\n          \"if\": {\n            \">=\": [\n              \"io_5\",\n              \"loopWaitRemaining\"\n            ]\n          },\n          \"then\": 0,\n          \"else\": \"loopWaitRemaining - io_5\"\n        }\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"loopWaitRemaining\",\n            0\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_2\",\n                {\n                  \"or\": [\n                    {\n                      \"!=\": [\n                        \"io_1\",\n                        \"displayedHumidity\"\n                      ]\n                    },\n                    {\n                      \"!=\": [\n                        \"io_0\",\n                        \"displayedTemperature\"\n                      ]\n                    }\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"displayedHumidity\",\n                \"value\": \"io_1\"\n              },\n              {\n                \"assign\": \"displayedTemperature\",\n                \"value\": \"io_0\"\n              }\n            ]\n          },\n          {\n            \"assign\": \"loopWaitRemaining\",\n            \"value\": 100\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"displayedHumidity\",\n      \"io_4\": \"displayedTemperature\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_2=false and io_5=0. Supply coherent valid temperature and humidity pairs, changing each quantity independently across successive acquisitions.\",\n        \"oracle\": \"Initial invalid inputs are not accepted. At the next paced iteration, io_3 equals valid io_1 and io_4 equals valid io_0. A change in either measurement updates the accepted pair; unchanged measurements leave the display values unchanged.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"After accepting a valid pair, supply failed acquisitions with io_2=false and different numeric inputs, then restore validity with a new pair.\",\n        \"oracle\": \"Both displayed values retain the last accepted measurements throughout invalid acquisitions. The new valid pair is accepted at the next paced iteration.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Run the first step with io_5=0, then provide changing valid inputs with elapsed deltas of 30, 30, 39 and 1 milliseconds. Continue over multiple 100 ms intervals.\",\n        \"oracle\": \"The first iteration executes immediately. Subsequent acceptance occurs only after the full 100 ms wait, including exactly at its boundary. Timing continues during invalid readings and uses actual io_5 deltas rather than the control-step count.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Boot the assembled application on the supplied circuit and apply changing DHT22 humidity and temperature measurements.\",\n        \"oracle\": \"Setup returns within 500 ms without waiting for an acquisition. The registered adapters preserve all wiring, initialize DHT22 and the SPI/Adafruit display libraries, and use coherent DHT22 acquisitions at least 2000 ms apart. The LCD uses rotation 1, white size-2 text and a black background. Changed values cause a shared-screen clear and redraw of Humidity at (0,0) and Temperature at (0,100), with the exact registered labels and two decimal places.\"\n      }\n    ]\n  }\n}",
+            "issues": [],
+            "ok": true,
+            "usage": {
+              "completion_tokens": 1057,
+              "prompt_tokens": 15133,
+              "total_tokens": 16190,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 129,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 15130,
+                "video_tokens": 0
+              },
+              "cost": 0.048401,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.048401,
+                "upstream_inference_prompt_cost": 0.037831,
+                "upstream_inference_completions_cost": 0.01057
+              }
+            },
+            "structural_validation_passed": true,
+            "deterministic_behavior_passed": true,
+            "final_compile_passed": true,
+            "semantic_review": {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"Both native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13. The DHT22 bindings use D2 as required. The resolved circuit preserves both devices' supplied 5V and GND.1 connections. No model output overrides these connections.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Declare Adafruit_ILI9341 object\\n2. Begin display and change it to landscape mode (rotation 1)\\n3. Set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The registered native adapter owns object creation and display initialization. Both output bindings select rotation 1, white color 65535, text size 2 and black background 0. These are consistent with the startup requirements; explicit library calls are not required in the scalar model.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Initialize and begin the dht22 sensor\\n5. Continuously read the humidity and temperature value of dht22 sensor\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract supplies coherent DHT22 temperature, relative humidity and acquisition validity through D2 bindings with recurring 2000 ms sampling. Device initialization and acquisition belong to the adapter boundary. The model repeatedly examines the supplied measurements and accepts valid pairs; it does not stop reading after its first update. Celsius and percent-relative-humidity values are passed through without an incorrect conversion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\",\n      \"reason\": \"A valid change in either measurement updates both retained display values. Ordered updates complete before output evaluation, so the outputs contain the newly accepted pair. Invalid acquisitions retain the previous pair, and unchanged valid values do not change the outputs. The registered adapter clears the shared screen and redraws all fields on a scalar change. The bindings specify black background, the exact labels, humidity at (0,0) and temperature at (0,100). Two decimal places do not contradict any specified precision. Initial zero placeholders are not prohibited by the requirement.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Wait for 100 milliseconds at the end of every loop iteration.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"The timer initially equals zero, allowing the first application iteration immediately. Every application iteration ends with 'then assign loopWaitRemaining := 100;' regardless of measurement validity or change. Subsequent steps subtract actual elapsed milliseconds from the registered delta input, saturating at zero. The later guard observes the updated timer, enabling the next iteration exactly at or after expiration, never before 100 ms has elapsed. The model does not substitute control-step counts for elapsed time.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The model selects the registered native Adafruit_ILI9341 display boundary, whose contract assigns SPI and Adafruit display-library initialization to the adapter. There is no conflicting implementation in the model. Together with the correct scalar mappings and display settings, this also satisfies the stated printing success criterion at the model boundary, not as a claim of executed library or peripheral success.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute loopWaitRemaining : Integer := 0;\",\n      \"reason\": \"The model imposes no startup warmup, acquisition wait or blocking initialization sequence. Its 100 ms pacing applies to recurring application iterations, not setup completion. The contract calls for initialization without waiting for the first DHT22 acquisition and does not contradict the 500 ms setup obligation. The original requirements duplicated under SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\",\n      \"reason\": \"Recurring 2000 ms contract acquisition and 100 ms model acceptance pacing introduce no model-boundary delay exceeding 3000 ms. Once a changed valid pair is published, it is accepted at the next paced application iteration and reflected through the native outputs. The explicit original 100 ms loop delay takes precedence over the default display timing rule; even if the 250 ms display bound is applied to published valid input changes, the configured 10 ms scheduling and 100 ms pacing are consistent with it. Button, LED, counter, servo and continuous Boolean Serial defaults are inapplicable.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance. No supplied test description was treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify generated adapter execution preserves coherent DHT22 acquisition and validity, actual elapsed-time delivery, output scheduling, shared-screen redraw behavior, and the required visible positions, colors, text size and labels.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1707,
+                    "prompt_tokens": 23901,
+                    "total_tokens": 25608,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 81,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 23898,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.076821,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.076821,
+                      "upstream_inference_prompt_cost": 0.059751,
+                      "upstream_inference_completions_cost": 0.01707
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1040,
+                    "prompt_tokens": 25607,
+                    "total_tokens": 26647,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 75,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 25604,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.074416,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.074416,
+                      "upstream_inference_prompt_cost": 0.064016,
+                      "upstream_inference_completions_cost": 0.0104
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 1040,
+                "prompt_tokens": 25607,
+                "total_tokens": 26647,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 75,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 25604,
+                  "video_tokens": 0
+                },
+                "cost": 0.074416,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.074416,
+                  "upstream_inference_prompt_cost": 0.064016,
+                  "upstream_inference_completions_cost": 0.0104
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+                    "status": "satisfied",
+                    "model_quote": "      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\n      then if ((loopWaitRemaining) == (0)) {",
+                    "reason": "Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"",
+                    "status": "satisfied",
+                    "model_quote": "        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\n          first start;\n          then assign displayedHumidity := io_1;\n          then assign displayedTemperature := io_0;\n        }\n        then assign loopWaitRemaining := 100;",
+                    "reason": "All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.",
+                  "After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.",
+                  "Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655"
+              }
+            },
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            },
+            "normalizations": [
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id"
+            ],
+            "generation_mode": "contract_assembly",
+            "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_5 : Integer;\n    attribute loopWaitRemaining : Integer := 0;\n    attribute displayedHumidity : Real := 0.0;\n    attribute displayedTemperature : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\n      then if ((loopWaitRemaining) == (0)) {\n        first start;\n        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\n          first start;\n          then assign displayedHumidity := io_1;\n          then assign displayedTemperature := io_0;\n        }\n        then assign loopWaitRemaining := 100;\n      }\n    }\n    out attribute io_3 : Real = displayedHumidity;\n    out attribute io_4 : Real = displayedTemperature;\n  }\n  part system : Controller;\n}\n",
+            "stages": {
+              "sysml_generation": true,
+              "sysml_to_ir": true,
+              "ir_to_il": true
+            },
+            "focus_issues": [],
+            "coverage": {
+              "status": "structural_pass",
+              "issues": [],
+              "functional_status": "unverified",
+              "startup": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+              },
+              "pause": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+              },
+              "periodic": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+              },
+              "numeric": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+              },
+              "source_behavior": {
+                "status": "not_requested",
+                "checked": 0,
+                "traces": [],
+                "scope": "Only the exact source-derived scenarios; not full functionality proof"
+              },
+              "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+            },
+            "diagnostic_fingerprint": [],
+            "no_progress": false,
+            "failed_obligation_keys": [],
+            "repeated_requirement": false,
+            "repair_locations": [],
+            "repair_example": null,
+            "failure_stage": null
+          }
+        ],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "semantic_review": {
+          "enabled": true,
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "review_calls": 2,
+          "max_review_calls": 6,
+          "repair_count": 0,
+          "rounds": [
+            {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"Both native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13. The DHT22 bindings use D2 as required. The resolved circuit preserves both devices' supplied 5V and GND.1 connections. No model output overrides these connections.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Declare Adafruit_ILI9341 object\\n2. Begin display and change it to landscape mode (rotation 1)\\n3. Set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The registered native adapter owns object creation and display initialization. Both output bindings select rotation 1, white color 65535, text size 2 and black background 0. These are consistent with the startup requirements; explicit library calls are not required in the scalar model.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Initialize and begin the dht22 sensor\\n5. Continuously read the humidity and temperature value of dht22 sensor\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract supplies coherent DHT22 temperature, relative humidity and acquisition validity through D2 bindings with recurring 2000 ms sampling. Device initialization and acquisition belong to the adapter boundary. The model repeatedly examines the supplied measurements and accepts valid pairs; it does not stop reading after its first update. Celsius and percent-relative-humidity values are passed through without an incorrect conversion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\",\n      \"reason\": \"A valid change in either measurement updates both retained display values. Ordered updates complete before output evaluation, so the outputs contain the newly accepted pair. Invalid acquisitions retain the previous pair, and unchanged valid values do not change the outputs. The registered adapter clears the shared screen and redraws all fields on a scalar change. The bindings specify black background, the exact labels, humidity at (0,0) and temperature at (0,100). Two decimal places do not contradict any specified precision. Initial zero placeholders are not prohibited by the requirement.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Wait for 100 milliseconds at the end of every loop iteration.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"The timer initially equals zero, allowing the first application iteration immediately. Every application iteration ends with 'then assign loopWaitRemaining := 100;' regardless of measurement validity or change. Subsequent steps subtract actual elapsed milliseconds from the registered delta input, saturating at zero. The later guard observes the updated timer, enabling the next iteration exactly at or after expiration, never before 100 ms has elapsed. The model does not substitute control-step counts for elapsed time.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The model selects the registered native Adafruit_ILI9341 display boundary, whose contract assigns SPI and Adafruit display-library initialization to the adapter. There is no conflicting implementation in the model. Together with the correct scalar mappings and display settings, this also satisfies the stated printing success criterion at the model boundary, not as a claim of executed library or peripheral success.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute loopWaitRemaining : Integer := 0;\",\n      \"reason\": \"The model imposes no startup warmup, acquisition wait or blocking initialization sequence. Its 100 ms pacing applies to recurring application iterations, not setup completion. The contract calls for initialization without waiting for the first DHT22 acquisition and does not contradict the 500 ms setup obligation. The original requirements duplicated under SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\",\n      \"reason\": \"Recurring 2000 ms contract acquisition and 100 ms model acceptance pacing introduce no model-boundary delay exceeding 3000 ms. Once a changed valid pair is published, it is accepted at the next paced application iteration and reflected through the native outputs. The explicit original 100 ms loop delay takes precedence over the default display timing rule; even if the 250 ms display bound is applied to published valid input changes, the configured 10 ms scheduling and 100 ms pacing are consistent with it. Button, LED, counter, servo and continuous Boolean Serial defaults are inapplicable.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance. No supplied test description was treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify generated adapter execution preserves coherent DHT22 acquisition and validity, actual elapsed-time delivery, output scheduling, shared-screen redraw behavior, and the required visible positions, colors, text size and labels.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1707,
+                    "prompt_tokens": 23901,
+                    "total_tokens": 25608,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 81,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 23898,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.076821,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.076821,
+                      "upstream_inference_prompt_cost": 0.059751,
+                      "upstream_inference_completions_cost": 0.01707
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: R1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1040,
+                    "prompt_tokens": 25607,
+                    "total_tokens": 26647,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 75,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 25604,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.074416,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.074416,
+                      "upstream_inference_prompt_cost": 0.064016,
+                      "upstream_inference_completions_cost": 0.0104
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 1040,
+                "prompt_tokens": 25607,
+                "total_tokens": 26647,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 75,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 25604,
+                  "video_tokens": 0
+                },
+                "cost": 0.074416,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.074416,
+                  "upstream_inference_prompt_cost": 0.064016,
+                  "upstream_inference_completions_cost": 0.0104
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+                    "status": "satisfied",
+                    "model_quote": "      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\n      then if ((loopWaitRemaining) == (0)) {",
+                    "reason": "Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"",
+                    "status": "satisfied",
+                    "model_quote": "        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\n          first start;\n          then assign displayedHumidity := io_1;\n          then assign displayedTemperature := io_0;\n        }\n        then assign loopWaitRemaining := 100;",
+                    "reason": "All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.",
+                  "After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.",
+                  "Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655"
+              }
+            }
+          ],
+          "final_status": "passed",
+          "failure_category": null
+        },
+        "call_counts": {
+          "generation_and_repair": 1,
+          "semantic_review": 2
+        },
+        "usage": {
+          "generation_and_repair": [
+            {
+              "completion_tokens": 1057,
+              "prompt_tokens": 15133,
+              "total_tokens": 16190,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 129,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 15130,
+                "video_tokens": 0
+              },
+              "cost": 0.048401,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.048401,
+                "upstream_inference_prompt_cost": 0.037831,
+                "upstream_inference_completions_cost": 0.01057
+              }
+            }
+          ],
+          "semantic_review": [
+            {
+              "completion_tokens": 1040,
+              "prompt_tokens": 25607,
+              "total_tokens": 26647,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 75,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 25604,
+                "video_tokens": 0
+              },
+              "cost": 0.074416,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.074416,
+                "upstream_inference_prompt_cost": 0.064016,
+                "upstream_inference_completions_cost": 0.0104
+              }
+            }
+          ]
+        },
+        "final_status": "accepted"
+      },
+      "status": "passed"
+    }
+  ],
+  "validation": {
+    "validator_version": "2026-08 / 0.62.0",
+    "attempts": [
+      {
+        "attempt": 1,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"loopWaitRemaining\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"displayedHumidity\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"displayedTemperature\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"loopWaitRemaining\",\n        \"value\": {\n          \"if\": {\n            \">=\": [\n              \"io_5\",\n              \"loopWaitRemaining\"\n            ]\n          },\n          \"then\": 0,\n          \"else\": \"loopWaitRemaining - io_5\"\n        }\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"loopWaitRemaining\",\n            0\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": {\n              \"and\": [\n                \"io_2\",\n                {\n                  \"or\": [\n                    {\n                      \"!=\": [\n                        \"io_1\",\n                        \"displayedHumidity\"\n                      ]\n                    },\n                    {\n                      \"!=\": [\n                        \"io_0\",\n                        \"displayedTemperature\"\n                      ]\n                    }\n                  ]\n                }\n              ]\n            },\n            \"then\": [\n              {\n                \"assign\": \"displayedHumidity\",\n                \"value\": \"io_1\"\n              },\n              {\n                \"assign\": \"displayedTemperature\",\n                \"value\": \"io_0\"\n              }\n            ]\n          },\n          {\n            \"assign\": \"loopWaitRemaining\",\n            \"value\": 100\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"displayedHumidity\",\n      \"io_4\": \"displayedTemperature\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_2=false and io_5=0. Supply coherent valid temperature and humidity pairs, changing each quantity independently across successive acquisitions.\",\n        \"oracle\": \"Initial invalid inputs are not accepted. At the next paced iteration, io_3 equals valid io_1 and io_4 equals valid io_0. A change in either measurement updates the accepted pair; unchanged measurements leave the display values unchanged.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"After accepting a valid pair, supply failed acquisitions with io_2=false and different numeric inputs, then restore validity with a new pair.\",\n        \"oracle\": \"Both displayed values retain the last accepted measurements throughout invalid acquisitions. The new valid pair is accepted at the next paced iteration.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Run the first step with io_5=0, then provide changing valid inputs with elapsed deltas of 30, 30, 39 and 1 milliseconds. Continue over multiple 100 ms intervals.\",\n        \"oracle\": \"The first iteration executes immediately. Subsequent acceptance occurs only after the full 100 ms wait, including exactly at its boundary. Timing continues during invalid readings and uses actual io_5 deltas rather than the control-step count.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Boot the assembled application on the supplied circuit and apply changing DHT22 humidity and temperature measurements.\",\n        \"oracle\": \"Setup returns within 500 ms without waiting for an acquisition. The registered adapters preserve all wiring, initialize DHT22 and the SPI/Adafruit display libraries, and use coherent DHT22 acquisitions at least 2000 ms apart. The LCD uses rotation 1, white size-2 text and a black background. Changed values cause a shared-screen clear and redraw of Humidity at (0,0) and Temperature at (0,100), with the exact registered labels and two decimal places.\"\n      }\n    ]\n  }\n}",
+        "issues": [],
+        "ok": true,
+        "usage": {
+          "completion_tokens": 1057,
+          "prompt_tokens": 15133,
+          "total_tokens": 16190,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 129,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 15130,
+            "video_tokens": 0
+          },
+          "cost": 0.048401,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.048401,
+            "upstream_inference_prompt_cost": 0.037831,
+            "upstream_inference_completions_cost": 0.01057
+          }
+        },
+        "structural_validation_passed": true,
+        "deterministic_behavior_passed": true,
+        "final_compile_passed": true,
+        "semantic_review": {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"Both native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13. The DHT22 bindings use D2 as required. The resolved circuit preserves both devices' supplied 5V and GND.1 connections. No model output overrides these connections.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Declare Adafruit_ILI9341 object\\n2. Begin display and change it to landscape mode (rotation 1)\\n3. Set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The registered native adapter owns object creation and display initialization. Both output bindings select rotation 1, white color 65535, text size 2 and black background 0. These are consistent with the startup requirements; explicit library calls are not required in the scalar model.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Initialize and begin the dht22 sensor\\n5. Continuously read the humidity and temperature value of dht22 sensor\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract supplies coherent DHT22 temperature, relative humidity and acquisition validity through D2 bindings with recurring 2000 ms sampling. Device initialization and acquisition belong to the adapter boundary. The model repeatedly examines the supplied measurements and accepts valid pairs; it does not stop reading after its first update. Celsius and percent-relative-humidity values are passed through without an incorrect conversion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\",\n      \"reason\": \"A valid change in either measurement updates both retained display values. Ordered updates complete before output evaluation, so the outputs contain the newly accepted pair. Invalid acquisitions retain the previous pair, and unchanged valid values do not change the outputs. The registered adapter clears the shared screen and redraws all fields on a scalar change. The bindings specify black background, the exact labels, humidity at (0,0) and temperature at (0,100). Two decimal places do not contradict any specified precision. Initial zero placeholders are not prohibited by the requirement.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Wait for 100 milliseconds at the end of every loop iteration.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"The timer initially equals zero, allowing the first application iteration immediately. Every application iteration ends with 'then assign loopWaitRemaining := 100;' regardless of measurement validity or change. Subsequent steps subtract actual elapsed milliseconds from the registered delta input, saturating at zero. The later guard observes the updated timer, enabling the next iteration exactly at or after expiration, never before 100 ms has elapsed. The model does not substitute control-step counts for elapsed time.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The model selects the registered native Adafruit_ILI9341 display boundary, whose contract assigns SPI and Adafruit display-library initialization to the adapter. There is no conflicting implementation in the model. Together with the correct scalar mappings and display settings, this also satisfies the stated printing success criterion at the model boundary, not as a claim of executed library or peripheral success.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute loopWaitRemaining : Integer := 0;\",\n      \"reason\": \"The model imposes no startup warmup, acquisition wait or blocking initialization sequence. Its 100 ms pacing applies to recurring application iterations, not setup completion. The contract calls for initialization without waiting for the first DHT22 acquisition and does not contradict the 500 ms setup obligation. The original requirements duplicated under SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\",\n      \"reason\": \"Recurring 2000 ms contract acquisition and 100 ms model acceptance pacing introduce no model-boundary delay exceeding 3000 ms. Once a changed valid pair is published, it is accepted at the next paced application iteration and reflected through the native outputs. The explicit original 100 ms loop delay takes precedence over the default display timing rule; even if the 250 ms display bound is applied to published valid input changes, the configured 10 ms scheduling and 100 ms pacing are consistent with it. Button, LED, counter, servo and continuous Boolean Serial defaults are inapplicable.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance. No supplied test description was treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify generated adapter execution preserves coherent DHT22 acquisition and validity, actual elapsed-time delivery, output scheduling, shared-screen redraw behavior, and the required visible positions, colors, text size and labels.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1707,
+                "prompt_tokens": 23901,
+                "total_tokens": 25608,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 81,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 23898,
+                  "video_tokens": 0
+                },
+                "cost": 0.076821,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.076821,
+                  "upstream_inference_prompt_cost": 0.059751,
+                  "upstream_inference_completions_cost": 0.01707
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1040,
+                "prompt_tokens": 25607,
+                "total_tokens": 26647,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 75,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 25604,
+                  "video_tokens": 0
+                },
+                "cost": 0.074416,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.074416,
+                  "upstream_inference_prompt_cost": 0.064016,
+                  "upstream_inference_completions_cost": 0.0104
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 1040,
+            "prompt_tokens": 25607,
+            "total_tokens": 26647,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 75,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 25604,
+              "video_tokens": 0
+            },
+            "cost": 0.074416,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.074416,
+              "upstream_inference_prompt_cost": 0.064016,
+              "upstream_inference_completions_cost": 0.0104
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+                "status": "satisfied",
+                "model_quote": "      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\n      then if ((loopWaitRemaining) == (0)) {",
+                "reason": "Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"",
+                "status": "satisfied",
+                "model_quote": "        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\n          first start;\n          then assign displayedHumidity := io_1;\n          then assign displayedTemperature := io_0;\n        }\n        then assign loopWaitRemaining := 100;",
+                "reason": "All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.",
+              "After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.",
+              "Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655"
+          }
+        },
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "normalizations": [
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id"
+        ],
+        "generation_mode": "contract_assembly",
+        "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_5 : Integer;\n    attribute loopWaitRemaining : Integer := 0;\n    attribute displayedHumidity : Real := 0.0;\n    attribute displayedTemperature : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\n      then if ((loopWaitRemaining) == (0)) {\n        first start;\n        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\n          first start;\n          then assign displayedHumidity := io_1;\n          then assign displayedTemperature := io_0;\n        }\n        then assign loopWaitRemaining := 100;\n      }\n    }\n    out attribute io_3 : Real = displayedHumidity;\n    out attribute io_4 : Real = displayedTemperature;\n  }\n  part system : Controller;\n}\n",
+        "stages": {
+          "sysml_generation": true,
+          "sysml_to_ir": true,
+          "ir_to_il": true
+        },
+        "focus_issues": [],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "diagnostic_fingerprint": [],
+        "no_progress": false,
+        "failed_obligation_keys": [],
+        "repeated_requirement": false,
+        "repair_locations": [],
+        "repair_example": null,
+        "failure_stage": null
+      }
+    ],
+    "coverage": {
+      "status": "structural_pass",
+      "issues": [],
+      "functional_status": "unverified",
+      "startup": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+      },
+      "pause": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+      },
+      "periodic": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+      },
+      "numeric": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+      },
+      "source_behavior": {
+        "status": "not_requested",
+        "checked": 0,
+        "traces": [],
+        "scope": "Only the exact source-derived scenarios; not full functionality proof"
+      },
+      "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+    },
+    "semantic_review": {
+      "enabled": true,
+      "policy_version": "sysml-semantic-review-v2-native-boundaries",
+      "review_calls": 2,
+      "max_review_calls": 6,
+      "repair_count": 0,
+      "rounds": [
+        {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"RST, D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 8 to 13, respectively.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"Both native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13. The DHT22 bindings use D2 as required. The resolved circuit preserves both devices' supplied 5V and GND.1 connections. No model output overrides these connections.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Declare Adafruit_ILI9341 object\\n2. Begin display and change it to landscape mode (rotation 1)\\n3. Set the text color to white, and size to 2\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The registered native adapter owns object creation and display initialization. Both output bindings select rotation 1, white color 65535, text size 2 and black background 0. These are consistent with the startup requirements; explicit library calls are not required in the scalar model.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Initialize and begin the dht22 sensor\\n5. Continuously read the humidity and temperature value of dht22 sensor\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    in attribute io_0 : Real;\\n    in attribute io_1 : Real;\\n    in attribute io_2 : Boolean;\",\n      \"reason\": \"The contract supplies coherent DHT22 temperature, relative humidity and acquisition validity through D2 bindings with recurring 2000 ms sampling. Device initialization and acquisition belong to the adapter boundary. The model repeatedly examines the supplied measurements and accepts valid pairs; it does not stop reading after its first update. Celsius and percent-relative-humidity values are passed through without an incorrect conversion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\",\n      \"reason\": \"A valid change in either measurement updates both retained display values. Ordered updates complete before output evaluation, so the outputs contain the newly accepted pair. Invalid acquisitions retain the previous pair, and unchanged valid values do not change the outputs. The registered adapter clears the shared screen and redraws all fields on a scalar change. The bindings specify black background, the exact labels, humidity at (0,0) and temperature at (0,100). Two decimal places do not contradict any specified precision. Initial zero placeholders are not prohibited by the requirement.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Wait for 100 milliseconds at the end of every loop iteration.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"The timer initially equals zero, allowing the first application iteration immediately. Every application iteration ends with 'then assign loopWaitRemaining := 100;' regardless of measurement validity or change. Subsequent steps subtract actual elapsed milliseconds from the registered delta input, saturating at zero. The later guard observes the updated timer, enabling the next iteration exactly at or after expiration, never before 100 ms has elapsed. The model does not substitute control-step counts for elapsed time.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    out attribute io_3 : Real = displayedHumidity;\\n    out attribute io_4 : Real = displayedTemperature;\",\n      \"reason\": \"The model selects the registered native Adafruit_ILI9341 display boundary, whose contract assigns SPI and Adafruit display-library initialization to the adapter. There is no conflicting implementation in the model. Together with the correct scalar mappings and display settings, this also satisfies the stated printing success criterion at the model boundary, not as a claim of executed library or peripheral success.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"    attribute loopWaitRemaining : Integer := 0;\",\n      \"reason\": \"The model imposes no startup warmup, acquisition wait or blocking initialization sequence. Its 100 ms pacing applies to recurring application iterations, not setup completion. The contract calls for initialization without waiting for the first DHT22 acquisition and does not contradict the 500 ms setup obligation. The original requirements duplicated under SOURCE-1 are covered by the R1 checks.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\",\n      \"reason\": \"Recurring 2000 ms contract acquisition and 100 ms model acceptance pacing introduce no model-boundary delay exceeding 3000 ms. Once a changed valid pair is published, it is accepted at the next paced application iteration and reflected through the native outputs. The explicit original 100 ms loop delay takes precedence over the default display timing rule; even if the 250 ms display bound is applied to published valid input changes, the configured 10 ms scheduling and 100 ms pacing are consistent with it. Button, LED, counter, servo and continuous Boolean Serial defaults are inapplicable.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary consistency review, not final code acceptance. No supplied test description was treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify generated adapter execution preserves coherent DHT22 acquisition and validity, actual elapsed-time delivery, output scheduling, shared-screen redraw behavior, and the required visible positions, colors, text size and labels.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1707,
+                "prompt_tokens": 23901,
+                "total_tokens": 25608,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 81,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 23898,
+                  "video_tokens": 0
+                },
+                "cost": 0.076821,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.076821,
+                  "upstream_inference_prompt_cost": 0.059751,
+                  "upstream_inference_completions_cost": 0.01707
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: R1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1040,
+                "prompt_tokens": 25607,
+                "total_tokens": 26647,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 75,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 25604,
+                  "video_tokens": 0
+                },
+                "cost": 0.074416,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.074416,
+                  "upstream_inference_prompt_cost": 0.064016,
+                  "upstream_inference_completions_cost": 0.0104
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\\n      then if ((loopWaitRemaining) == (0)) {\",\n      \"reason\": \"Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \\\"Humidity: {humidity}\\\", and print the temperature at position (0, 100) in the following format: \\\"Temperature: {temperature}\\\"\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\\n          first start;\\n          then assign displayedHumidity := io_1;\\n          then assign displayedTemperature := io_0;\\n        }\\n        then assign loopWaitRemaining := 100;\",\n      \"reason\": \"All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.\",\n    \"After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.\",\n    \"Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 1040,
+            "prompt_tokens": 25607,
+            "total_tokens": 26647,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 75,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 25604,
+              "video_tokens": 0
+            },
+            "cost": 0.074416,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.074416,
+              "upstream_inference_prompt_cost": 0.064016,
+              "upstream_inference_completions_cost": 0.0104
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+                "status": "satisfied",
+                "model_quote": "      then assign loopWaitRemaining := (if ((io_5) >= (loopWaitRemaining)) ? 0 else loopWaitRemaining - io_5);\n      then if ((loopWaitRemaining) == (0)) {",
+                "reason": "Reviewed the original requirements and operational acceptance additions together. The contract preserves the supplied Uno circuit, supplies coherent DHT22 measurements on D2 every 2000 ms, and registers the requested native LCD initialization, formatting and electrical connections. The model accepts changed valid measurement pairs at application iterations paced by 100 ms of actual elapsed time; outputs are evaluated after those ordered updates. Thus the contract sampling interval plus model acceptance pacing is consistent with the 3000 ms fresh-reading bound. Published changed valid inputs are reflected at the next paced iteration, also consistent with the display response condition where applicable; the explicit original delay takes precedence over defaults. No startup wait or warmup contradicts the 500 ms setup requirement. Actual setup completion remains a generated-code verification obligation. Button, LED, counter, servo and Boolean Serial defaults are inapplicable. The original display, initialization, library, wiring and timing clauses duplicated in this requirement were also checked as detailed under R1."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "If the sensor value is changed, clear the display with a black background and print the humidity at position (0, 0), in the following format: \"Humidity: {humidity}\", and print the temperature at position (0, 100) in the following format: \"Temperature: {temperature}\"",
+                "status": "satisfied",
+                "model_quote": "        then if ((io_2) and (((((io_1) != (displayedHumidity))) or (((io_0) != (displayedTemperature)))))) {\n          first start;\n          then assign displayedHumidity := io_1;\n          then assign displayedTemperature := io_0;\n        }\n        then assign loopWaitRemaining := 100;",
+                "reason": "All R1 clauses were checked. The native LCD bindings preserve RST D8, D/C D9, CS D10, MOSI D11, MISO D12 and SCK D13; DHT22 inputs use D2. The resolved circuit retains both devices' supplied 5V and GND.1 connections. Registered adapter semantics assign Adafruit_ILI9341 construction and display initialization to the adapter, with rotation 1, white color 65535, text size 2 and black background 0. The contract assigns the required SPI/Adafruit libraries and DHT22 initialization to that boundary without contradictory model behavior. Recurring coherent temperature, humidity and validity inputs support continuous reading. A valid change in either quantity updates both retained values before output evaluation; io_3 selects displayedHumidity and io_4 selects displayedTemperature, without conversion or swapped quantities. Invalid acquisitions retain the previous pair. Registered LCD behavior clears the shared screen and redraws all fields on a scalar change, using the required labels and positions (0,0) and (0,100). Two-decimal formatting does not contradict unspecified precision. Initial zero values are consistent with the contract placeholders and no required initial measurement is specified. The initially zero timer permits the first application iteration immediately. Each application iteration resets the timer to 100 regardless of validity or change; subsequent ordered updates subtract actual elapsed milliseconds through io_5, saturate at zero, and permit another iteration only after expiration. This implements the required end-of-iteration wait without counting scheduler ticks as time. These mappings and adapter settings are consistent with the printing success criterion at the model boundary."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is model-boundary consistency review, not runtime success or final code acceptance. Supplied test descriptions were not treated as executed evidence.",
+              "After code generation, verify target compilation, required library inclusion, Adafruit_ILI9341 construction and initialization, DHT22 initialization, and setup() completion within 500 ms.",
+              "Verify actual peripheral execution, coherent recurring DHT22 acquisition and validity, elapsed-time delivery, output scheduling, and visible shared-screen redraws with the required labels, positions, colors and text size."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "529179d64f5227546c039555f3db174759943a3c9ca7ecc618587503555cb655"
+          }
+        }
+      ],
+      "final_status": "passed",
+      "failure_category": null
+    },
+    "call_counts": {
+      "generation_and_repair": 1,
+      "semantic_review": 2
+    },
+    "usage": {
+      "generation_and_repair": [
+        {
+          "completion_tokens": 1057,
+          "prompt_tokens": 15133,
+          "total_tokens": 16190,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 129,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 15130,
+            "video_tokens": 0
+          },
+          "cost": 0.048401,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.048401,
+            "upstream_inference_prompt_cost": 0.037831,
+            "upstream_inference_completions_cost": 0.01057
+          }
+        }
+      ],
+      "semantic_review": [
+        {
+          "completion_tokens": 1040,
+          "prompt_tokens": 25607,
+          "total_tokens": 26647,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 75,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 25604,
+            "video_tokens": 0
+          },
+          "cost": 0.074416,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.074416,
+            "upstream_inference_prompt_cost": 0.064016,
+            "upstream_inference_completions_cost": 0.0104
+          }
+        }
+      ]
+    },
+    "final_status": "accepted"
+  }
+}

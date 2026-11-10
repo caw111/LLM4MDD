@@ -1,0 +1,62 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeBlinking",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": true
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeBlinking",
+            "value": {
+              "if": "modeBlinking",
+              "then": false,
+              "else": true
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "modeBlinking",
+        "then": true,
+        "else": false
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D2 按钮切换 D13 LED 的工作模式：按一次开始闪烁，再按一次停止闪烁并熄灭。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下D2一次（从未按下到按下产生上升沿），保持按住若干控制步，然后再按下一次（产生第二次上升沿）。",
+        "oracle": "第一次上升沿之后，io_1=true；第二次上升沿之后，io_1=false（熄灭）。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute modeBlinking : Boolean := false;\n    attribute previousPressed : Boolean := true;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign modeBlinking := (if modeBlinking ? false else true);\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute io_1 : Boolean = (if modeBlinking ? true else false);\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,110 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "elapsedAccMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "lastTemp",
+        "type": "f64",
+        "initial": "0.0"
+      },
+      {
+        "name": "lastHum",
+        "type": "f64",
+        "initial": "0.0"
+      },
+      {
+        "name": "lastValid",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "elapsedAccMs",
+        "value": "elapsedAccMs + io_3"
+      },
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "assign": "lastTemp",
+            "value": "io_0"
+          },
+          {
+            "assign": "lastHum",
+            "value": "io_1"
+          },
+          {
+            "assign": "lastValid",
+            "value": "true"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">=": [
+                "elapsedAccMs",
+                5000
+              ]
+            },
+            "true"
+          ]
+        },
+        "then": [
+          {
+            "assign": "elapsedAccMs",
+            "value": "elapsedAccMs - 5000"
+          },
+          {
+            "if": "io_2",
+            "then": [
+              {
+                "assign": "lastTemp",
+                "value": "io_0"
+              },
+              {
+                "assign": "lastHum",
+                "value": "io_1"
+              },
+              {
+                "assign": "lastValid",
+                "value": "true"
+              }
+            ],
+            "else": [
+              {
+                "assign": "lastValid",
+                "value": "false"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": "elapsedAccMs >= 5000",
+      "serial_0_value_0": "lastTemp",
+      "serial_0_value_1": "lastHum",
+      "serial_0_value_2": "lastValid"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "每 5 秒读取 DHT11（D7）温度并串口输出",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Apply io_3 deltas accumulating past 5000ms repeatedly; vary io_2 (valid/invalid) and provide corresponding io_0/io_1 values; observe serial_0_trigger and serial_0_value_* at each 5s boundary.",
+        "oracle": "serial_0_trigger is asserted exactly at each control-step where accumulated elapsed time crosses each 5s boundary; serial_0_value_0/serial_0_value_1 reflect the most recent retained measurement (updated only when io_2 is true); serial_0_value_2 equals true only when the DHT read for that report frame is valid (io_2 true), and false when invalid."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Integer;\n    attribute elapsedAccMs : Integer := 0;\n    attribute lastTemp : Real := 0.0;\n    attribute lastHum : Real := 0.0;\n    attribute lastValid : Boolean := false;\n    perform action tick {\n      first start;\n      then assign elapsedAccMs := elapsedAccMs + io_3;\n      then if io_2 {\n        first start;\n        then assign lastTemp := io_0;\n        then assign lastHum := io_1;\n        then assign lastValid := true;\n      }\n      then if ((((elapsedAccMs) >= (5000))) and (true)) {\n        first start;\n        then assign elapsedAccMs := elapsedAccMs - 5000;\n        then if io_2 {\n          first start;\n          then assign lastTemp := io_0;\n          then assign lastHum := io_1;\n          then assign lastValid := true;\n        } else {\n          first start;\n          then assign lastValid := false;\n        }\n      }\n    }\n    out attribute serial_0_trigger : Boolean = elapsedAccMs >= 5000;\n    out attribute serial_0_value_0 : Real = lastTemp;\n    out attribute serial_0_value_1 : Real = lastHum;\n    out attribute serial_0_value_2 : Boolean = lastValid;\n  }\n  part system : Controller;\n}\n"
+}

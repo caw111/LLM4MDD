@@ -1,0 +1,76 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "counter",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "counter",
+            "value": "counter + 1"
+          },
+          {
+            "assign": "previousPressed",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "previousPressed",
+            "value": "io_0"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "serial_0_trigger": {
+        "and": [
+          "io_0",
+          {
+            "not": "previousPressed"
+          }
+        ]
+      },
+      "serial_0_value_0": "counter"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D2 按钮进行计数，每按一次计数加 1，并通过串口输出当前计数值。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Apply one rising press edge on io_0 (false->true), keep io_0 true for at least one control step, then release (io_0->false); repeat for 3 total presses.",
+        "oracle": "On each press rising edge control step, serial_0_trigger is true for exactly that step and serial_0_value_0 equals the incremented counter value (1, then 2, then 3). On all non-edge steps, serial_0_trigger is false and serial_0_value_0 remains the current counter."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D2 按钮进行计数，每按一次计数加 1，并通过串口输出当前计数值。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Hold io_0 continuously true for N control steps without releasing, then release and press again once (false->true).",
+        "oracle": "serial_0_trigger is false throughout the initial hold and becomes true only on the release-free second press rising edge; counter increases by exactly 1 total."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Integer;\n    attribute counter : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign counter := counter + 1;\n        then assign previousPressed := true;\n      } else {\n        first start;\n        then assign previousPressed := io_0;\n      }\n    }\n    out attribute serial_0_trigger : Boolean = ((io_0) and ((not previousPressed)));\n    out attribute serial_0_value_0 : Integer = counter;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,82 @@
+--- original.ino
++++ repaired.ino
+@@ -104,7 +104,7 @@
+             sysml_conditional_1 = 0;
+         }
+         else {
+-            sysml_conditional_1 = sysml_state_redIntensity + 32;
++            sysml_conditional_1 = (sysml_state_redIntensity <= 223 ? sysml_state_redIntensity + 32 : 255);
+         }
+         sysml_state_redIntensity = sysml_conditional_1;
+     }
+@@ -118,7 +118,7 @@
+             sysml_conditional_3 = 0;
+         }
+         else {
+-            sysml_conditional_3 = sysml_state_greenIntensity + 32;
++            sysml_conditional_3 = (sysml_state_greenIntensity <= 223 ? sysml_state_greenIntensity + 32 : 255);
+         }
+         sysml_state_greenIntensity = sysml_conditional_3;
+     }
+@@ -132,7 +132,7 @@
+             sysml_conditional_5 = 0;
+         }
+         else {
+-            sysml_conditional_5 = sysml_state_blueIntensity + 32;
++            sysml_conditional_5 = (sysml_state_blueIntensity <= 223 ? sysml_state_blueIntensity + 32 : 255);
+         }
+         sysml_state_blueIntensity = sysml_conditional_5;
+     }
+@@ -322,6 +322,17 @@
+     *io_6_segment_5 = sysml_value_8;
+     *io_6_segment_6 = sysml_value_9;
+     *io_6_segment_7 = sysml_value_10;
++    int latest=sysml_state_selectedColor==0 ? sysml_state_redIntensity : (sysml_state_selectedColor==1 ? sysml_state_greenIntensity : sysml_state_blueIntensity);
++    int segments=latest==255 ? 8 : latest/32;
++    *io_6_segment_0=segments>0;
++    *io_6_segment_1=segments>1;
++    *io_6_segment_2=segments>2;
++    *io_6_segment_3=segments>3;
++    *io_6_segment_4=segments>4;
++    *io_6_segment_5=segments>5;
++    *io_6_segment_6=segments>6;
++    *io_6_segment_7=segments>7;
++
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -354,6 +365,15 @@
+ static bool hw_value_io_6_segment_6 = false;
+ static bool hw_value_io_6_segment_7 = false;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+   pinMode(2, INPUT_PULLUP);
+@@ -390,15 +410,15 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(2) == LOW);
++    hw_value_io_0 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   if (!hw_attempted_io_1 || (uint32_t)(hw_now - hw_sampled_io_1) >= 5UL) {
+     hw_attempted_io_1 = true; hw_sampled_io_1 = hw_now;
+-    hw_value_io_1 = (digitalRead(3) == LOW);
++    hw_value_io_1 = manual_debounce_input((digitalRead(3) == LOW), 1);
+   }
+   if (!hw_attempted_io_2 || (uint32_t)(hw_now - hw_sampled_io_2) >= 5UL) {
+     hw_attempted_io_2 = true; hw_sampled_io_2 = hw_now;
+-    hw_value_io_2 = (digitalRead(4) == LOW);
++    hw_value_io_2 = manual_debounce_input((digitalRead(4) == LOW), 2);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

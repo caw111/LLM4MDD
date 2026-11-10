@@ -1,0 +1,120 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "mode",
+        "type": "i32",
+        "initial": 2
+      },
+      {
+        "name": "brightness",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "phaseMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1_valid",
+        "then": [
+          {
+            "assign": "mode",
+            "value": "io_1"
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "phaseMs",
+        "value": "phaseMs + io_2"
+      },
+      {
+        "if": "mode == 1",
+        "then": [
+          {
+            "assign": "brightness",
+            "value": {
+              "if": "phaseMs < 1000",
+              "then": "phaseMs * 1.0 / 1000.0 * 255.0",
+              "else": {
+                "if": "phaseMs < 2000",
+                "then": "(2000 - phaseMs) * 1.0 / 1000.0 * 255.0",
+                "else": {
+                  "if": "phaseMs < 3000",
+                  "then": "(phaseMs - 2000) * 1.0 / 1000.0 * 255.0",
+                  "else": {
+                    "if": "phaseMs < 4000",
+                    "then": "(4000 - phaseMs) * 1.0 / 1000.0 * 255.0",
+                    "else": {
+                      "if": "phaseMs < 5000",
+                      "then": "(phaseMs - 4000) * 1.0 / 1000.0 * 255.0",
+                      "else": {
+                        "if": "phaseMs < 6000",
+                        "then": "(6000 - phaseMs) * 1.0 / 1000.0 * 255.0",
+                        "else": 0.0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "brightness",
+            "value": 255.0
+          }
+        ]
+      },
+      {
+        "if": "mode == 2 and brightness != 255.0",
+        "then": [
+          {
+            "assign": "brightness",
+            "value": 255.0
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_0": "brightness",
+      "serial_0_trigger": "true",
+      "serial_0_value_0": "mode"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "串口输入 MODE1 或 MODE2：MODE1 LED（D9）渐变，MODE2 常亮",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Send valid serial frame with io_1_valid true and io_1=1 (MODE1). Hold io_1_valid false for subsequent steps while varying io_2 deltas.",
+        "oracle": "serial_0_value_0 becomes 1 immediately on the valid step; io_0 changes over time between near 0 and 255 with a repeating gradient pattern while mode remains 1."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "串口输入 MODE1 或 MODE2：MODE1 LED（D9）渐变，MODE2 常亮",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Send valid serial frame with io_1_valid true and io_1=2 (MODE2). Hold io_1_valid false for subsequent steps while varying io_2 deltas.",
+        "oracle": "serial_0_value_0 becomes 2 immediately on the valid step; io_0 stays constant at 255.0 for subsequent steps while mode remains 2."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "串口输入 MODE1 或 MODE2：MODE1 LED（D9）渐变，MODE2 常亮",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Start with MODE2 (io_1_valid true, io_1=2), then switch to MODE1 on a later step (io_1_valid true, io_1=1), continuing to vary io_2.",
+        "oracle": "On the MODE2 valid step serial_0_value_0 reports 2 and io_0 is constant; on the MODE1 valid step serial_0_value_0 updates to 1 and io_0 transitions into time-varying gradient updates."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    in attribute io_1_valid : Boolean;\n    in attribute io_2 : Integer;\n    attribute mode : Integer := 2;\n    attribute brightness : Real := 0.0;\n    attribute phaseMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_1_valid {\n        first start;\n        then assign mode := io_1;\n      }\n      then assign phaseMs := phaseMs + io_2;\n      then if mode == 1 {\n        first start;\n        then assign brightness := (if phaseMs < 1000 ? phaseMs * 1.0 / 1000.0 * 255.0 else (if phaseMs < 2000 ? (2000 - phaseMs) * 1.0 / 1000.0 * 255.0 else (if phaseMs < 3000 ? (phaseMs - 2000) * 1.0 / 1000.0 * 255.0 else (if phaseMs < 4000 ? (4000 - phaseMs) * 1.0 / 1000.0 * 255.0 else (if phaseMs < 5000 ? (phaseMs - 4000) * 1.0 / 1000.0 * 255.0 else (if phaseMs < 6000 ? (6000 - phaseMs) * 1.0 / 1000.0 * 255.0 else 0.0))))));\n      } else {\n        first start;\n        then assign brightness := 255.0;\n      }\n      then if mode == 2 and brightness != 255.0 {\n        first start;\n        then assign brightness := 255.0;\n      }\n    }\n    out attribute io_0 : Real = brightness;\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Integer = mode;\n  }\n  part system : Controller;\n}\n"
+}

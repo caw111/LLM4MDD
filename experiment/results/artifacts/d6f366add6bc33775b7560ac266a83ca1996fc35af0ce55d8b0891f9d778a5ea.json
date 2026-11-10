@@ -1,0 +1,133 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"component_run_value\",\n        \"type\": \"bool\",\n        \"initial\": true\n      }\n    ],\n    \"updates\": [],\n    \"components\": [\n      {\n        \"kind\": \"periodic_pulse\",\n        \"name\": \"beep\",\n        \"delta\": \"io_0\",\n        \"enabled\": \"component_run_value\",\n        \"period_ms\": 2000,\n        \"pulse_ms\": 200,\n        \"first_pulse\": \"after_period\",\n        \"pause\": \"preserve\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"component_beep_value\",\n        \"then\": \"1000\",\n        \"else\": \"0\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"让 D6 引脚的蜂鸣器每 2 秒响 200ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"逐步推进 io_0（delta_since_previous_step），覆盖每个 2000ms 周期内的 ON(200ms) 与 OFF(1800ms) 时间段\",\n        \"oracle\": \"io_1 在每个周期的首次 200ms 内为 1000Hz，之后到周期结束为 0Hz；并且从首次开始起等待满 2000ms 后才发出第一段 200ms 的蜂鸣。\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Component input must reference a declared bool input or an earlier component export: component_run_value"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "BUNDLE_FORMAT",
+          "message": "Component input must reference a declared bool input or an earlier component export: component_run_value"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "BUNDLE_FORMAT",
+          "Component input must reference a declared bool input or an earlier component export: component_run_value"
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [],\n    \"updates\": [],\n    \"components\": [\n      {\n        \"kind\": \"periodic_pulse\",\n        \"name\": \"beep\",\n        \"delta\": \"io_0\",\n        \"enabled\": \"true\",\n        \"period_ms\": 2000,\n        \"pulse_ms\": 200,\n        \"first_pulse\": \"after_period\",\n        \"pause\": \"preserve\"\n      }\n    ],\n    \"outputs\": {\n      \"io_1\": {\n        \"if\": \"component_beep_value\",\n        \"then\": 1000,\n        \"else\": 0\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"让 D6 引脚的蜂鸣器每 2 秒响 200ms。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply elapsed delta sequence via io_0 over multiple 10ms control steps and trace io_1.\",\n        \"oracle\": \"io_1 remains 0 for the first full 2000ms, then io_1 is 1000 for 200ms each 2000ms period (and 0 otherwise), repeating thereafter.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Integer;\n    attribute component_beep_phase : Integer := 0;\n    attribute component_beep_started : Boolean := false;\n    attribute component_beep_enabled : Boolean := false;\n    attribute component_beep_remainder : Integer := 0;\n    attribute component_beep_value : Boolean := false;\n    perform action tick {\n      first start;\n      then if component_beep_enabled and io_0 > 0 {\n        first start;\n        then if io_0 >= 2000 - component_beep_phase {\n          first start;\n          then assign component_beep_started := true;\n        }\n        then assign component_beep_remainder := io_0;\n        then if component_beep_remainder >= 2097152000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 2097152000;\n        }\n        then if component_beep_remainder >= 1048576000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 1048576000;\n        }\n        then if component_beep_remainder >= 524288000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 524288000;\n        }\n        then if component_beep_remainder >= 262144000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 262144000;\n        }\n        then if component_beep_remainder >= 131072000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 131072000;\n        }\n        then if component_beep_remainder >= 65536000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 65536000;\n        }\n        then if component_beep_remainder >= 32768000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 32768000;\n        }\n        then if component_beep_remainder >= 16384000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 16384000;\n        }\n        then if component_beep_remainder >= 8192000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 8192000;\n        }\n        then if component_beep_remainder >= 4096000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 4096000;\n        }\n        then if component_beep_remainder >= 2048000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 2048000;\n        }\n        then if component_beep_remainder >= 1024000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 1024000;\n        }\n        then if component_beep_remainder >= 512000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 512000;\n        }\n        then if component_beep_remainder >= 256000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 256000;\n        }\n        then if component_beep_remainder >= 128000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 128000;\n        }\n        then if component_beep_remainder >= 64000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 64000;\n        }\n        then if component_beep_remainder >= 32000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 32000;\n        }\n        then if component_beep_remainder >= 16000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 16000;\n        }\n        then if component_beep_remainder >= 8000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 8000;\n        }\n        then if component_beep_remainder >= 4000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 4000;\n        }\n        then if component_beep_remainder >= 2000 {\n          first start;\n          then assign component_beep_remainder := component_beep_remainder - 2000;\n        }\n        then if component_beep_remainder >= 2000 - component_beep_phase {\n          first start;\n          then assign component_beep_phase := component_beep_remainder - (2000 - component_beep_phase);\n        } else {\n          first start;\n          then assign component_beep_phase := component_beep_phase + component_beep_remainder;\n        }\n      }\n      then assign component_beep_value := (true) and component_beep_started and component_beep_phase < 200;\n      then assign component_beep_enabled := true;\n    }\n    out attribute io_1 : Integer = (if component_beep_value ? 1000 else 0);\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

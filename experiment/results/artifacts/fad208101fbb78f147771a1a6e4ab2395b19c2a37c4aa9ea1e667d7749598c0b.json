@@ -1,0 +1,315 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "Board is arduino:avr:uno with wiring: LM35 -> A1 (analog input), Fan PWM -> D5 (PWM output), Overheat LED -> D13 (digital output active-high).",
+    "Serial uses baud 9600 with framing=line_or_idle and idle_timeout_ms=20 per requirement.",
+    "LM35 calibration and conversion to °C are handled in the SysML model; the analog_input port carries raw ADC counts (no fabricated electrical calibration requested here).",
+    "Fan control logic (target threshold and minimum fan speed configured via serial) and overheat LED behavior are handled in the SysML model; this interface proposal only provides the required IO ports.",
+    "Control period chosen as 10 ms as scheduling granularity; temperature sampling uses a multiple of control step (40 ms).",
+    "Overheat warning serial trigger is modeled as a Boolean gate; the reported value is the current calibrated temperature in °C.",
+    "Serial command mapping: io_3.commands maps 1..32 exact printable ASCII tokens to i32 codes; tokens are assumed to be uppercase ASCII with underscores and are handled by the SysML model."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "LM35 temperature sensor reading (raw ADC counts; model applies calibration to compute °C).",
+      "sample_period_ms": 40,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A1\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A1"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "Fan PWM drive command (model applies min fan speed threshold and control based on temperature).",
+      "sample_period_ms": 10,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Overheat warning LED (ON when temperature is more than threshold by +5°C).",
+      "sample_period_ms": 10,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Serial parameter/config commands for target temperature threshold and minimum fan speed.",
+      "sample_period_ms": 10,
+      "device": "serial_command_input",
+      "hardware": "{\"baud\": 9600, \"commands\": {\"AUTO_OFF\": 12, \"AUTO_ON\": 11, \"DEC_FAN_MIN\": 16, \"DEC_THRESHOLD\": 14, \"FAN_MIN_DOWN\": 6, \"FAN_MIN_Q1\": 21, \"FAN_MIN_Q2\": 22, \"FAN_MIN_Q3\": 23, \"FAN_MIN_Q4\": 24, \"FAN_MIN_UP\": 5, \"GET_STATUS\": 9, \"INC_FAN_MIN\": 15, \"INC_THRESHOLD\": 13, \"MODE_0\": 26, \"MODE_1\": 27, \"MODE_2\": 28, \"MODE_3\": 29, \"MODE_4\": 30, \"MODE_5\": 31, \"MODE_6\": 32, \"OVERHEAT_ACK\": 25, \"RESET\": 10, \"SET_FAN_MIN\": 8, \"SET_THRESHOLD\": 7, \"TEMP_DOWN\": 2, \"TEMP_UP\": 1, \"THRESH_DOWN\": 4, \"THRESH_Q1\": 17, \"THRESH_Q2\": 18, \"THRESH_Q3\": 19, \"THRESH_Q4\": 20, \"THRESH_UP\": 3}, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_command_input\"}",
+      "binding": {
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "commands": {
+          "TEMP_UP": 1,
+          "TEMP_DOWN": 2,
+          "THRESH_UP": 3,
+          "THRESH_DOWN": 4,
+          "FAN_MIN_UP": 5,
+          "FAN_MIN_DOWN": 6,
+          "SET_THRESHOLD": 7,
+          "SET_FAN_MIN": 8,
+          "GET_STATUS": 9,
+          "RESET": 10,
+          "AUTO_ON": 11,
+          "AUTO_OFF": 12,
+          "INC_THRESHOLD": 13,
+          "DEC_THRESHOLD": 14,
+          "INC_FAN_MIN": 15,
+          "DEC_FAN_MIN": 16,
+          "THRESH_Q1": 17,
+          "THRESH_Q2": 18,
+          "THRESH_Q3": 19,
+          "THRESH_Q4": 20,
+          "FAN_MIN_Q1": 21,
+          "FAN_MIN_Q2": 22,
+          "FAN_MIN_Q3": 23,
+          "FAN_MIN_Q4": 24,
+          "OVERHEAT_ACK": 25,
+          "MODE_0": 26,
+          "MODE_1": 27,
+          "MODE_2": 28,
+          "MODE_3": 29,
+          "MODE_4": 30,
+          "MODE_5": 31,
+          "MODE_6": 32
+        },
+        "baud": 9600
+      }
+    },
+    {
+      "name": "io_3_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 10,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_3\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_3"
+      }
+    },
+    {
+      "name": "serial_0_trigger",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Send overheat warning when temperature exceeds target threshold by +5°C.",
+      "sample_period_ms": 10,
+      "device": "Serial report control",
+      "hardware": "{\"kind\": \"report_trigger\"}",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "serial_0_value_0",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "initial": 0,
+      "meaning": "Current temperature (after model calibration).",
+      "sample_period_ms": 10,
+      "device": "Serial value",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"overheat_temperature\", \"trigger\": \"serial_0_trigger\"}",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "serial_0_trigger",
+        "baud": 9600,
+        "label": "overheat_temperature"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "pwm_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。",
+    "effective_requirement": "实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v1\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"pwm_output\", \"pin\": \"D5\"}, {\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "实现一个串口参数配置的温控系统，使用 LM35（A1）、风扇 PWM D5、LED D13 和串口。串口可设置目标温度阈值和最小风扇转速，系统根据实时温度自动调节风扇；若温度超过阈值 5℃ 以上则 LED 亮并输出 overheat 警告。",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_3_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0"
+        ]
+      }
+    ],
+    "serial_inputs": [
+      {
+        "id": "io_3",
+        "value_port": "io_3",
+        "valid_port": "io_3_valid",
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "commands": {
+          "TEMP_UP": 1,
+          "TEMP_DOWN": 2,
+          "THRESH_UP": 3,
+          "THRESH_DOWN": 4,
+          "FAN_MIN_UP": 5,
+          "FAN_MIN_DOWN": 6,
+          "SET_THRESHOLD": 7,
+          "SET_FAN_MIN": 8,
+          "GET_STATUS": 9,
+          "RESET": 10,
+          "AUTO_ON": 11,
+          "AUTO_OFF": 12,
+          "INC_THRESHOLD": 13,
+          "DEC_THRESHOLD": 14,
+          "INC_FAN_MIN": 15,
+          "DEC_FAN_MIN": 16,
+          "THRESH_Q1": 17,
+          "THRESH_Q2": 18,
+          "THRESH_Q3": 19,
+          "THRESH_Q4": 20,
+          "FAN_MIN_Q1": 21,
+          "FAN_MIN_Q2": 22,
+          "FAN_MIN_Q3": 23,
+          "FAN_MIN_Q4": 24,
+          "OVERHEAT_ACK": 25,
+          "MODE_0": 26,
+          "MODE_1": 27,
+          "MODE_2": 28,
+          "MODE_3": 29,
+          "MODE_4": 30,
+          "MODE_5": 31,
+          "MODE_6": 32
+        },
+        "baud": 9600
+      }
+    ]
+  }
+}

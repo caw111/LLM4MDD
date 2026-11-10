@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Initialize the native ILI9341 adapter using SPI, Adafruit_GFX and Adafruit_ILI9341; configure landscape rotation 1 and finish setup within 500 ms. No LCD reset connection is supplied, so rst_pin is -1.",
+    "On each valid receive event, the model forwards the accepted frame counter to both display and echo outputs. Repeated identical text still constitutes a new frame and must be displayed and echoed once.",
+    "Each accepted frame clears the display to black before rendering the preserved input at (0, 0), in white with text size 2. Reflect accepted input within 250 ms.",
+    "The disclosed transport accepts nonempty frames of at most 63 bytes, preserving leading, trailing and interior spaces and tabs. CR/LF delimiters are not part of the text; 20 ms idle completion is also enabled.",
+    "Reject overlong frames and frames containing NUL or non-ASCII bytes without partial display or echo. Invalid frames leave the previous display unchanged and produce no echo.",
+    "Serial echo preserves the accepted frame text and appends the adapter's line terminator. No independent numeric reporting or startup message is required.",
+    "No model business timer is required: the adapter handles serial framing, and response deadlines alone do not require elapsed_ms."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Sequence counter for accepted serial input frames, preserving all received spaces and tabs",
+      "sample_period_ms": 5,
+      "device": "serial_string_input",
+      "hardware": "{\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_string_input\"}",
+      "binding": {
+        "kind": "serial_string_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600
+      }
+    },
+    {
+      "name": "io_0_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 5,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_0\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_0"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Accepted input frame selected for display, initially blank",
+      "sample_period_ms": 5,
+      "device": "ili9341 lcd display1",
+      "hardware": "{\"background\": 0, \"color\": 65535, \"cs_pin\": \"D10\", \"dc_pin\": \"D9\", \"kind\": \"lcd_text\", \"miso_pin\": \"D12\", \"mosi_pin\": \"D11\", \"rotation\": 1, \"rst_pin\": -1, \"sck_pin\": \"D13\", \"source_input\": \"io_0\", \"text_size\": 2, \"x\": 0, \"y\": 0}",
+      "binding": {
+        "kind": "lcd_text",
+        "rotation": 1,
+        "color": 65535,
+        "background": 0,
+        "text_size": 2,
+        "x": 0,
+        "y": 0,
+        "rst_pin": -1,
+        "mosi_pin": "D11",
+        "source_input": "io_0",
+        "dc_pin": "D9",
+        "miso_pin": "D12",
+        "sck_pin": "D13",
+        "cs_pin": "D10"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Accepted input frame selected for one-time serial echo, with no startup echo",
+      "sample_period_ms": 5,
+      "device": "serial_echo",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_echo\", \"source_input\": \"io_0\"}",
+      "binding": {
+        "kind": "serial_echo",
+        "source_input": "io_0",
+        "baud": 9600
+      }
+    }
+  ],
+  "required_dependencies": {
+    "io_1": [
+      "io_0"
+    ],
+    "io_2": [
+      "io_0"
+    ]
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "original_requirement": "# LCD Display with Serial Monitor\n\n## Project Description\nThis is an Arduino project that shows serial input to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n\n## Circuit Description\nIli9341 LCD Display is connected to the Arudino Uno board. D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 9 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Initialize the serial monitor\n4. Continuously read the serial monitor\n5. If there is input from the Serial Monitor, clear the display with a black background and print the input string at position (0, 0) in white with text size 2\n6. Also print the input string to the serial monitor\n\n## Success Criteria\nThe test is successful when:\n1. Input string is successfully printed to the display, with correct position, color, and size.\n2. Input string is successfully printed to the serial monitor.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show serial input with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed finite transport domain for this Uno bench: each input is a nonempty printable-ASCII line of at most63 bytes, excluding its CR/LF delimiter. Preserve all received spaces and tabs, including at the beginning and end, in display and echo. Frames exceeding the buffer bound or containing NUL/non-ASCII are rejected without partial display or echo; arbitrary-length and non-ASCII text are outside this disclosed bench scope.",
+    "effective_requirement": "# LCD Display with Serial Monitor\n\n## Project Description\nThis is an Arduino project that shows serial input to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n\n## Circuit Description\nIli9341 LCD Display is connected to the Arudino Uno board. D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 9 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Initialize the serial monitor\n4. Continuously read the serial monitor\n5. If there is input from the Serial Monitor, clear the display with a black background and print the input string at position (0, 0) in white with text size 2\n6. Also print the input string to the serial monitor\n\n## Success Criteria\nThe test is successful when:\n1. Input string is successfully printed to the display, with correct position, color, and size.\n2. Input string is successfully printed to the serial monitor.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show serial input with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed finite transport domain for this Uno bench: each input is a nonempty printable-ASCII line of at most63 bytes, excluding its CR/LF delimiter. Preserve all received spaces and tabs, including at the beginning and end, in display and echo. Frames exceeding the buffer bound or containing NUL/non-ASCII are rejected without partial display or echo; arbitrary-length and non-ASCII text are outside this disclosed bench scope.\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+    "pins": {},
+    "devices": [],
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "resolved_circuits": [
+      {
+        "version": 1.0,
+        "author": "Blind Author",
+        "description": "Show serial input with lcd display",
+        "parts": [
+          {
+            "type": "wokwi-arduino-uno",
+            "id": "arduino uno1",
+            "top": 331.89,
+            "left": 1.49,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-ili9341",
+            "id": "ili9341 lcd display1",
+            "top": 5.51,
+            "left": 40.77,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "ili9341 lcd display1:GND",
+            "arduino uno1:GND.1",
+            "black",
+            [
+              "v22",
+              "h-46"
+            ]
+          ],
+          [
+            "ili9341 lcd display1:SCK",
+            "arduino uno1:13",
+            "green",
+            [
+              "v16",
+              "h-75"
+            ]
+          ],
+          [
+            "ili9341 lcd display1:MISO",
+            "arduino uno1:12",
+            "limegreen",
+            [
+              "v20",
+              "h-78"
+            ]
+          ],
+          [
+            "ili9341 lcd display1:MOSI",
+            "arduino uno1:11",
+            "green",
+            [
+              "v24",
+              "h-75"
+            ]
+          ],
+          [
+            "ili9341 lcd display1:CS",
+            "arduino uno1:10",
+            "orange",
+            [
+              "v32",
+              "h-64"
+            ]
+          ],
+          [
+            "ili9341 lcd display1:D/C",
+            "arduino uno1:9",
+            "purple",
+            [
+              "v36",
+              "h-84"
+            ]
+          ],
+          [
+            "ili9341 lcd display1:VCC",
+            "arduino uno1:5V",
+            "red",
+            [
+              "v24.09",
+              "h-98.67",
+              "v230.4",
+              "h172.8"
+            ]
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "# LCD Display with Serial Monitor\n\n## Project Description\nThis is an Arduino project that shows serial input to the ili9341 lcd display.\n\n## Hardware Components\n- Arduino Uno\n- Ili9341 LCD Display\n\n## Circuit Description\nIli9341 LCD Display is connected to the Arudino Uno board. D/C, CS, MOSI, MISO, SCK pin of LCD display is connected to arduino pin 9 to 13, respectively. GND pin of LCD display is connected to arduino pin gnd1. VCC pin of LCD display is connected to arduino pin 5v.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Declare Adafruit_ILI9341 object\n2. Begin display and change it to landscape mode (rotation 1)\n3. Initialize the serial monitor\n4. Continuously read the serial monitor\n5. If there is input from the Serial Monitor, clear the display with a black background and print the input string at position (0, 0) in white with text size 2\n6. Also print the input string to the serial monitor\n\n## Success Criteria\nThe test is successful when:\n1. Input string is successfully printed to the display, with correct position, color, and size.\n2. Input string is successfully printed to the serial monitor.\n\n## Notes for Implementation\n- Use the following libraries: <SPI.h>, <Adafruit_GFX.h>, and <Adafruit_ILI9341.h>.\n\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Show serial input with lcd display\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 331.89,\n            \"left\": 1.49,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ili9341\",\n            \"id\": \"ili9341 lcd display1\",\n            \"top\": 5.51,\n            \"left\": 40.77,\n            \"attrs\": {}\n        }\n    ],\n    \"connections\": [\n        [\n            \"ili9341 lcd display1:GND\",\n            \"arduino uno1:GND.1\",\n            \"black\",\n            [\n                \"v22\",\n                \"h-46\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:SCK\",\n            \"arduino uno1:13\",\n            \"green\",\n            [\n                \"v16\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MISO\",\n            \"arduino uno1:12\",\n            \"limegreen\",\n            [\n                \"v20\",\n                \"h-78\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:MOSI\",\n            \"arduino uno1:11\",\n            \"green\",\n            [\n                \"v24\",\n                \"h-75\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:CS\",\n            \"arduino uno1:10\",\n            \"orange\",\n            [\n                \"v32\",\n                \"h-64\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:D/C\",\n            \"arduino uno1:9\",\n            \"purple\",\n            [\n                \"v36\",\n                \"h-84\"\n            ]\n        ],\n        [\n            \"ili9341 lcd display1:VCC\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"v24.09\",\n                \"h-98.67\",\n                \"v230.4\",\n                \"h172.8\"\n            ]\n        ]\n    ],\n    \"dependencies\": {}\n}\nDisclosed finite transport domain for this Uno bench: each input is a nonempty printable-ASCII line of at most63 bytes, excluding its CR/LF delimiter. Preserve all received spaces and tabs, including at the beginning and end, in display and echo. Frames exceeding the buffer bound or containing NUL/non-ASCII are rejected without partial display or echo; arbitrary-length and non-ASCII text are outside this disclosed bench scope.",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_0_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [],
+    "serial_inputs": [
+      {
+        "id": "io_0",
+        "value_port": "io_0",
+        "valid_port": "io_0_valid",
+        "kind": "serial_string_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "baud": 9600
+      }
+    ]
+  }
+}

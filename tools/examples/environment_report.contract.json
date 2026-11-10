@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "control_period_ms": 100,
+  "interfaces": [
+    {
+      "name": "temperatureC",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "meaning": "有效温度测量值",
+      "sample_period_ms": 2000,
+      "initial": 0.0,
+      "device": "DHT22",
+      "hardware": "D2; DHT library; invalid reading must not be substituted by a constant",
+      "binding": {
+        "kind": "dht_temperature",
+        "pin": 2,
+        "sensor": "DHT22",
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "humidityPercent",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "meaning": "有效相对湿度测量值",
+      "sample_period_ms": 2000,
+      "initial": 0.0,
+      "device": "DHT22",
+      "hardware": "D2 shared DHT22; retain latest valid sample",
+      "binding": {
+        "kind": "dht_humidity",
+        "pin": 2,
+        "sensor": "DHT22",
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "elapsedMilliseconds",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "meaning": "距上次控制步实际经过时间；0..4999，超范围须报告采样故障",
+      "sample_period_ms": 100,
+      "initial": 0,
+      "device": "clock",
+      "hardware": "unsigned millis delta; cast only after range check",
+      "binding": {
+        "kind": "elapsed_ms"
+      }
+    },
+    {
+      "name": "measuredTemperature",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "meaning": "报告温度值",
+      "sample_period_ms": 100,
+      "initial": 0.0,
+      "device": "Serial",
+      "hardware": "Serial 115200; format only when reportDue",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "reportDue",
+        "label": "Temperature (C): ",
+        "baud": 115200
+      }
+    },
+    {
+      "name": "measuredHumidity",
+      "direction": "output",
+      "type": "f64",
+      "unit": "%RH",
+      "meaning": "报告湿度值",
+      "sample_period_ms": 100,
+      "initial": 0.0,
+      "device": "Serial",
+      "hardware": "Serial 115200; format only when reportDue",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "reportDue",
+        "label": "Humidity (%RH): ",
+        "baud": 115200
+      }
+    },
+    {
+      "name": "reportDue",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "meaning": "每累计5000ms为真一个控制步",
+      "sample_period_ms": 100,
+      "initial": false,
+      "device": "Serial",
+      "hardware": "gate report formatting; no adapter report timer",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "highTemperature",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "meaning": "温度严格大于30degC",
+      "sample_period_ms": 100,
+      "initial": false,
+      "device": "LED",
+      "hardware": "D13 digitalWrite; true=HIGH",
+      "binding": {
+        "kind": "digital_output",
+        "pin": 13,
+        "active_high": true
+      }
+    }
+  ],
+  "required_dependencies": {
+    "measuredTemperature": [
+      "temperatureC"
+    ],
+    "measuredHumidity": [
+      "humidityPercent"
+    ],
+    "reportDue": [
+      "elapsedMilliseconds"
+    ],
+    "highTemperature": [
+      "temperatureC"
+    ]
+  },
+  "required_states": [
+    {
+      "name": "accumulated",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "reportPulse",
+      "type": "bool",
+      "initial": "false"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "完整输出温湿度测量值，不得以常量代替传感器",
+      "assertion_ids": [
+        "samples_follow_inputs"
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "每累计5000ms触发一次报告，保留余量，复位清除计时和脉冲",
+      "assertion_ids": [
+        "before_boundary",
+        "at_boundary",
+        "one_step_pulse",
+        "carry_remainder",
+        "reset"
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "温度严格大于30degC才点亮LED",
+      "assertion_ids": [
+        "threshold_equal",
+        "threshold_above"
+      ]
+    }
+  ],
+  "board": "arduino:avr:uno"
+}

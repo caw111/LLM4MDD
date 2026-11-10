@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"prevIo7Pressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"countReusable\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"countOther\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"alarmLatched\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevFullState\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"lastValidDistance\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"hasEverValidDistance\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_3\",\n        \"then\": [\n          {\n            \"assign\": \"lastValidDistance\",\n            \"value\": \"io_2\"\n          },\n          {\n            \"assign\": \"hasEverValidDistance\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevIo7Pressed\",\n        \"value\": \"io_7\"\n      },\n      {\n        \"assign\": \"prevFullState\",\n        \"value\": {\n          \"if\": \"hasEverValidDistance\",\n          \"then\": \"lastValidDistance >= 20.0\",\n          \"else\": \"false\"\n        }\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"prevIo7Pressed\"\n            },\n            \"io_7\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"countReusable\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"countOther\",\n            \"value\": 0\n          },\n          {\n            \"assign\": \"alarmLatched\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"prevFullState\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"alarmLatched\"\n            },\n            \"hasEverValidDistance\",\n            {\n              \">=\": [\n                \"lastValidDistance\",\n                20.0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"alarmLatched\",\n            \"value\": true\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"alarmLatched\"\n            },\n            \"io_0\",\n            {\n              \"not\": {\n                \">=\": [\n                  \"lastValidDistance\",\n                  20.0\n                ]\n              }\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"countReusable\",\n            \"value\": \"countReusable + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"not\": \"alarmLatched\"\n            },\n            \"io_1\",\n            {\n              \"not\": {\n                \">=\": [\n                  \"lastValidDistance\",\n                  20.0\n                ]\n              }\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"countOther\",\n            \"value\": \"countOther + 1\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_4\": \"countReusable + countOther\",\n      \"io_5\": {\n        \"if\": \"alarmLatched\",\n        \"then\": 2000,\n        \"else\": 0\n      },\n      \"io_6\": \"alarmLatched\",\n      \"serial_0_trigger\": \"alarmLatched\",\n      \"serial_0_value_0\": \"alarmLatched\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"依次让io_3=true且io_2=10.0，随后保持alarmLatched前，分别将io_0从false跳到true并保持1个控制步，再将io_1从false跳到true并保持1个控制步；期间io_7一直为false。\",\n        \"oracle\": \"在未满载且未报警前，io_4递增为2（两类总次数之和），io_5=0且io_6=false且serial_0_trigger=false。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在计数已为非零后，切换io_3=true且io_2=20.0（使满载条件达到阈值），同时将io_0和/或io_1保持为true 若干控制步；期间io_7一直为false。\",\n        \"oracle\": \"alarmLatched置位后，io_4不再增加；io_5=2000且io_6=true且serial_0_trigger=true且serial_0_value_0=true。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能垃圾桶分类与满载提醒系统，使用两个接近传感器 D2、D3 分别检测可回收和其他垃圾投递口，一个超声波模块（Trig=D8，Echo=D9）检测桶内满载高度，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统分别统计两类投递次数并显示总次数；当满载程度超过阈值时停止计数并报警，串口输出 empty bin needed。按钮 D7 可在清空后复位。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先让io_3=true且io_2=20.0使alarmLatched=true；然后将io_7从false变为true（产生上升沿一次），之后io_7回到false；满载条件保持为io_3=true且io_2=10.0。\",\n        \"oracle\": \"按钮上升沿后，io_4清零且io_5回到0且io_6=false，且在随后满载条件解除（io_2=10.0）前提下计数可重新开始。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_7 : Boolean;\n    attribute prevIo7Pressed : Boolean := false;\n    attribute countReusable : Integer := 0;\n    attribute countOther : Integer := 0;\n    attribute alarmLatched : Boolean := false;\n    attribute prevFullState : Boolean := false;\n    attribute lastValidDistance : Real := 0.0;\n    attribute hasEverValidDistance : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_3 {\n        first start;\n        then assign lastValidDistance := io_2;\n        then assign hasEverValidDistance := true;\n      }\n      then assign prevIo7Pressed := io_7;\n      then assign prevFullState := (if hasEverValidDistance ? lastValidDistance >= 20.0 else false);\n      then if (((not prevIo7Pressed)) and (io_7)) {\n        first start;\n        then assign countReusable := 0;\n        then assign countOther := 0;\n        then assign alarmLatched := false;\n        then assign prevFullState := false;\n      }\n      then if (((not alarmLatched)) and (hasEverValidDistance) and (((lastValidDistance) >= (20.0)))) {\n        first start;\n        then assign alarmLatched := true;\n      }\n      then if (((not alarmLatched)) and (io_0) and ((not ((lastValidDistance) >= (20.0))))) {\n        first start;\n        then assign countReusable := countReusable + 1;\n      }\n      then if (((not alarmLatched)) and (io_1) and ((not ((lastValidDistance) >= (20.0))))) {\n        first start;\n        then assign countOther := countOther + 1;\n      }\n    }\n    out attribute io_4 : Integer = countReusable + countOther;\n    out attribute io_5 : Integer = (if alarmLatched ? 2000 else 0);\n    out attribute io_6 : Boolean = alarmLatched;\n    out attribute serial_0_trigger : Boolean = alarmLatched;\n    out attribute serial_0_value_0 : Boolean = alarmLatched;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

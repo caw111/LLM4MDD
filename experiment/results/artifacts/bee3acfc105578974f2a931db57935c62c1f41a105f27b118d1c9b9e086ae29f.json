@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"running\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"periodMs\",\n        \"type\": \"i32\",\n        \"initial\": 500\n      },\n      {\n        \"name\": \"blinkPhase\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_1 and not previousPressed\",\n        \"then\": [\n          {\n            \"assign\": \"running\",\n            \"value\": \"not running\"\n          },\n          {\n            \"assign\": \"blinkPhase\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"periodMs\",\n        \"value\": {\n          \"if\": \"RealFunctions::floor(io_0) <= 0\",\n          \"then\": 1,\n          \"else\": {\n            \"if\": \"RealFunctions::floor(io_0) >= 2000\",\n            \"then\": 2000,\n            \"else\": \"RealFunctions::floor(io_0)\"\n          }\n        }\n      },\n      {\n        \"if\": \"running\",\n        \"then\": [\n          {\n            \"assign\": \"blinkPhase\",\n            \"value\": \"blinkPhase + 10\"\n          }\n        ]\n      },\n      {\n        \"if\": \"running and blinkPhase >= periodMs\",\n        \"then\": [\n          {\n            \"assign\": \"blinkPhase\",\n            \"value\": \"blinkPhase - periodMs\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"running and blinkPhase < (periodMs / 2)\",\n      \"io_3\": \"periodMs\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个可配置闪烁系统，使用 LED D13、电位器 A0、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。电位器控制闪烁周期，数码管显示周期值；按钮用于启动和停止闪烁，停止时 LED 熄灭但保留当前周期设置。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持 io_0 为某个固定值；在 io_1 上产生一次按键上升沿（从未按到按下）启动后维持若干控制步，再产生第二次按键上升沿停止。\",\n        \"oracle\": \"停止后 io_2 必须为 false；在停止期间 io_3 必须保持为停止前由 io_0 映射得到的 periodMs 值不变；启动后 io_2 会随 blinkPhase 在一个周期内在 true/false 间切换。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个可配置闪烁系统，使用 LED D13、电位器 A0、按钮 D2 和 TM1637（CLK=D4，DIO=D5）。电位器控制闪烁周期，数码管显示周期值；按钮用于启动和停止闪烁，停止时 LED 熄灭但保留当前周期设置。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"先启动（按下并释放按钮一次）；随后在未按按钮的情况下改变 io_0（电位器值）并观察若干控制步；最后停止（再按一次按钮）。\",\n        \"oracle\": \"启动后 io_3 随 io_0 的变化反映更新后的 periodMs；停止后 io_2 保持为 false 且 io_3 继续显示最新映射的 periodMs（即电位器设置保留并显示）。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute running : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    attribute periodMs : Integer := 500;\n    attribute blinkPhase : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_1 and not previousPressed {\n        first start;\n        then assign running := not running;\n        then assign blinkPhase := 0;\n      }\n      then assign previousPressed := io_1;\n      then assign periodMs := (if RealFunctions::floor(io_0) <= 0 ? 1 else (if RealFunctions::floor(io_0) >= 2000 ? 2000 else RealFunctions::floor(io_0)));\n      then if running {\n        first start;\n        then assign blinkPhase := blinkPhase + 10;\n      }\n      then if running and blinkPhase >= periodMs {\n        first start;\n        then assign blinkPhase := blinkPhase - periodMs;\n      }\n    }\n    out attribute io_2 : Boolean = running and blinkPhase < (periodMs / 2);\n    out attribute io_3 : Integer = periodMs;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

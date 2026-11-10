@@ -1,0 +1,284 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    },
+    {
+      "name": "io_2",
+      "type": "f64"
+    },
+    {
+      "name": "io_4",
+      "type": "i32"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_3",
+      "type": "f64"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "f64"
+        },
+        {
+          "name": "arg2",
+          "type": "f64"
+        },
+        {
+          "name": "arg3",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? ((arg1 <= arg2) ? ((double)((255.0 * arg1)) / arg2) : ((double)((255.0 * ((2.0 * arg2) - arg1))) / arg2)) : ((arg3 < 0.0) ? 0.0 : ((arg3 > 1023.0) ? 255.0 : ((double)((arg3 * 255.0)) / 1023.0))))"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "automaticMode"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "rampPhaseMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "directionDurationMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg2"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_2"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg3"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "automaticMode",
+      "type": "bool",
+      "initial": "true"
+    },
+    {
+      "name": "previousAutoPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "previousManualPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "rampPhaseMs",
+      "type": "f64",
+      "initial": "0.0"
+    },
+    {
+      "name": "directionDurationMs",
+      "type": "f64",
+      "initial": "2000.0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "automaticMode"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "rampPhaseMs",
+                "expression": "(arg0 + arg1)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "rampPhaseMs"
+                  },
+                  {
+                    "kind": "input",
+                    "name": "io_4"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "rampPhaseMs",
+                "expression": "(arg0 - ((2.0 * arg1) * ((int)(((double)(arg0) / (2.0 * arg1))) - ((((double)(arg0) / (2.0 * arg1))) < (double)((int)(((double)(arg0) / (2.0 * arg1)))) ? 1 : 0))))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "rampPhaseMs"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "directionDurationMs"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            },
+            {
+              "kind": "state",
+              "name": "previousAutoPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "automaticMode",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "rampPhaseMs",
+                "expression": "0.0",
+                "sources": []
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "if",
+                "condition": "(arg0 && (!arg1))",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_1"
+                  },
+                  {
+                    "kind": "state",
+                    "name": "previousManualPressed"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "automaticMode",
+                      "expression": "false",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              }
+            ]
+          }
+        },
+        {
+          "kind": "assign",
+          "state": "previousAutoPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "assign",
+          "state": "previousManualPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

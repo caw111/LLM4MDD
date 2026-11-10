@@ -1,0 +1,107 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "mode",
+        "type": "i32",
+        "initial": 2
+      },
+      {
+        "name": "pwmValue",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "phaseMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_2_valid and (io_2 == 1)",
+        "then": [
+          {
+            "assign": "mode",
+            "value": 1
+          },
+          {
+            "assign": "phaseMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "io_2_valid and (io_2 == 2)",
+        "then": [
+          {
+            "assign": "mode",
+            "value": 2
+          },
+          {
+            "assign": "phaseMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "if": "mode == 1",
+        "then": [
+          {
+            "assign": "phaseMs",
+            "value": "phaseMs + io_1"
+          },
+          {
+            "assign": "pwmValue",
+            "value": {
+              "if": "(phaseMs / 10) == (2 * RealFunctions::floor((phaseMs / 10) / 2))",
+              "then": 1023.0,
+              "else": 0.0
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "pwmValue",
+            "value": 1023.0
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": "pwmValue",
+      "serial_0_trigger": "true",
+      "serial_0_value_0": "mode",
+      "serial_0_value_1": "pwmValue"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "串口输入 MODE1 或 MODE2：MODE1 LED（D9）渐变，MODE2 常亮",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Send valid serial frame for MODE2 (io_2=2 with io_2_valid true for one step), then run several control steps with io_1>0 and io_2_valid false.",
+        "oracle": "serial_0_value_0 becomes 2 at the first step after the MODE2-valid frame, and io_0 (D9 PWM command) is constant at 1023.0 across subsequent steps while mode remains 2."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "串口输入 MODE1 或 MODE2：MODE1 LED（D9）渐变，MODE2 常亮",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Send valid serial frame for MODE1 (io_2=1 with io_2_valid true for one step), then run control steps with increasing io_1 deltas (e.g., 10ms each) and io_2_valid false.",
+        "oracle": "serial_0_value_0 becomes 1 at the first step after the MODE1-valid frame, and io_0 alternates between 0.0 and 1023.0 as a time-varying gradient drive while mode remains 1."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "串口输入 MODE1 或 MODE2：MODE1 LED（D9）渐变，MODE2 常亮",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Switch from MODE1 to MODE2: first send MODE1 (io_2=1 with io_2_valid true once), advance a few steps, then send MODE2 (io_2=2 with io_2_valid true once), then advance more steps.",
+        "oracle": "On the MODE2-valid step, serial_0_value_0 becomes 2 and io_0 becomes constant 1023.0 thereafter, regardless of previous phase progression in MODE1."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    in attribute io_2 : Integer;\n    in attribute io_2_valid : Boolean;\n    attribute mode : Integer := 2;\n    attribute pwmValue : Real := 0.0;\n    attribute phaseMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_2_valid and (io_2 == 1) {\n        first start;\n        then assign mode := 1;\n        then assign phaseMs := 0;\n      }\n      then if io_2_valid and (io_2 == 2) {\n        first start;\n        then assign mode := 2;\n        then assign phaseMs := 0;\n      }\n      then if mode == 1 {\n        first start;\n        then assign phaseMs := phaseMs + io_1;\n        then assign pwmValue := (if (phaseMs / 10) == (2 * RealFunctions::floor((phaseMs / 10) / 2)) ? 1023.0 else 0.0);\n      } else {\n        first start;\n        then assign pwmValue := 1023.0;\n      }\n    }\n    out attribute io_0 : Real = pwmValue;\n    out attribute serial_0_trigger : Boolean = true;\n    out attribute serial_0_value_0 : Integer = mode;\n    out attribute serial_0_value_1 : Real = pwmValue;\n  }\n  part system : Controller;\n}\n"
+}

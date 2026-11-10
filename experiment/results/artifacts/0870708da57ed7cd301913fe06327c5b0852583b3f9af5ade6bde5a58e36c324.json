@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Preserved wiring from the supplied Mega circuit: pot1->A3, pot2->A4, pot3->A5. LED anode uses Mega pin D2 and cathode uses Mega GND.",
+    "LED startup requirement 'off on power/reset' is implemented by pwm_output initial=false-equivalent via initial numeric 0 for duty/brightness.",
+    "If pot1 >= pot2, brightness is mapped from pot3 into [pot2..pot1]; otherwise SysML sets duty to 0 (LED remains off). Those comparisons/mappings belong in the model, not in device requests.",
+    "Control period is chosen for continuous brightness updating; sensor sampling may occur every step or at an integer multiple as selected in SysML."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot1 mapped upper bound of LED brightness in model range [0..1]",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A3"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot2 mapped lower bound of LED brightness in model range [0..1]",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A4"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot3 mapped brightness command between lower bound (pot2) and upper bound (pot1)",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A5"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "led1 brightness (off at startup; continuously updated from pot bounds and pot3 mapping)",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D2"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v1",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control the brightness of a single-color LED (led1) using three slide potentiometers (pot1, pot2, pot3). The potentiometers will determine the upper and lower bounds of the LED's brightness, as well as the actual brightness level.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the LED (led1) should be off.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) determines the upper bound of the LED's brightness. The value of pot1 is mapped uniformly from 0 to 1.\n2. The second potentiometer (pot2) determines the lower bound of the LED's brightness. The value of pot2 is also mapped uniformly from 0 to 1.\n3. The third potentiometer (pot3) controls the actual brightness of the LED. The value of pot3 is mapped uniformly from the lower bound (pot2) to the upper bound (pot1).\n4. If the upper bound (pot1) is greater than or equal to the lower bound (pot2), the LED's brightness should be set according to the mapped value of pot3.\n5. If the upper bound (pot1) is less than the lower bound (pot2), the LED should remain off.\nThe LED's brightness should be updated continuously based on the current values of the potentiometers.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -418.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\", []], [\"led1:A\", \"mega:2\", \"red\", []], [\"pot1:GND\", \"mega:GND.1\", \"black\", []], [\"pot1:VCC\", \"mega:5V\", \"red\", []], [\"pot1:SIG\", \"mega:A3\", \"black\", []], [\"pot2:GND\", \"mega:GND.1\", \"black\", []], [\"pot2:VCC\", \"mega:5V\", \"red\", []], [\"pot2:SIG\", \"mega:A4\", \"black\", []], [\"pot3:GND\", \"mega:GND.1\", \"black\", []], [\"pot3:VCC\", \"mega:5V\", \"red\", []], [\"pot3:SIG\", \"mega:A5\", \"black\", []]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control the brightness of a single-color LED (led1) using three slide potentiometers (pot1, pot2, pot3). The potentiometers will determine the upper and lower bounds of the LED's brightness, as well as the actual brightness level.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the LED (led1) should be off.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) determines the upper bound of the LED's brightness. The value of pot1 is mapped uniformly from 0 to 1.\n2. The second potentiometer (pot2) determines the lower bound of the LED's brightness. The value of pot2 is also mapped uniformly from 0 to 1.\n3. The third potentiometer (pot3) controls the actual brightness of the LED. The value of pot3 is mapped uniformly from the lower bound (pot2) to the upper bound (pot1).\n4. If the upper bound (pot1) is greater than or equal to the lower bound (pot2), the LED's brightness should be set according to the mapped value of pot3.\n5. If the upper bound (pot1) is less than the lower bound (pot2), the LED should remain off.\nThe LED's brightness should be updated continuously based on the current values of the potentiometers.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -418.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\", []], [\"led1:A\", \"mega:2\", \"red\", []], [\"pot1:GND\", \"mega:GND.1\", \"black\", []], [\"pot1:VCC\", \"mega:5V\", \"red\", []], [\"pot1:SIG\", \"mega:A3\", \"black\", []], [\"pot2:GND\", \"mega:GND.1\", \"black\", []], [\"pot2:VCC\", \"mega:5V\", \"red\", []], [\"pot2:SIG\", \"mega:A4\", \"black\", []], [\"pot3:GND\", \"mega:GND.1\", \"black\", []], [\"pot3:VCC\", \"mega:5V\", \"red\", []], [\"pot3:SIG\", \"mega:A5\", \"black\", []]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led1",
+            "top": -70.8,
+            "left": 13.4,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot3",
+            "top": -158,
+            "left": -418.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "led1:C",
+            "black",
+            []
+          ],
+          [
+            "led1:A",
+            "mega:2",
+            "red",
+            []
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black",
+            []
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red",
+            []
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black",
+            []
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black",
+            []
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red",
+            []
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black",
+            []
+          ],
+          [
+            "pot3:GND",
+            "mega:GND.1",
+            "black",
+            []
+          ],
+          [
+            "pot3:VCC",
+            "mega:5V",
+            "red",
+            []
+          ],
+          [
+            "pot3:SIG",
+            "mega:A5",
+            "black",
+            []
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control the brightness of a single-color LED (led1) using three slide potentiometers (pot1, pot2, pot3). The potentiometers will determine the upper and lower bounds of the LED's brightness, as well as the actual brightness level.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the LED (led1) should be off.\nPotentiometer Interaction:\n1. The first potentiometer (pot1) determines the upper bound of the LED's brightness. The value of pot1 is mapped uniformly from 0 to 1.\n2. The second potentiometer (pot2) determines the lower bound of the LED's brightness. The value of pot2 is also mapped uniformly from 0 to 1.\n3. The third potentiometer (pot3) controls the actual brightness of the LED. The value of pot3 is mapped uniformly from the lower bound (pot2) to the upper bound (pot1).\n4. If the upper bound (pot1) is greater than or equal to the lower bound (pot2), the LED's brightness should be set according to the mapped value of pot3.\n5. If the upper bound (pot1) is less than the lower bound (pot2), the LED should remain off.\nThe LED's brightness should be updated continuously based on the current values of the potentiometers.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -418.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\", []], [\"led1:A\", \"mega:2\", \"red\", []], [\"pot1:GND\", \"mega:GND.1\", \"black\", []], [\"pot1:VCC\", \"mega:5V\", \"red\", []], [\"pot1:SIG\", \"mega:A3\", \"black\", []], [\"pot2:GND\", \"mega:GND.1\", \"black\", []], [\"pot2:VCC\", \"mega:5V\", \"red\", []], [\"pot2:SIG\", \"mega:A4\", \"black\", []], [\"pot3:GND\", \"mega:GND.1\", \"black\", []], [\"pot3:VCC\", \"mega:5V\", \"red\", []], [\"pot3:SIG\", \"mega:A5\", \"black\", []]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "autoMode",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevIo2",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "prevIo3",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "curAnglePct",
+        "type": "i32",
+        "initial": 50
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_2 and not prevIo2",
+        "then": [
+          {
+            "assign": "autoMode",
+            "value": {
+              "if": "autoMode",
+              "then": false,
+              "else": true
+            }
+          }
+        ]
+      },
+      {
+        "if": "not autoMode and io_3 and not prevIo3",
+        "then": [
+          {
+            "assign": "curAnglePct",
+            "value": {
+              "if": "curAnglePct >= 100",
+              "then": 0,
+              "else": "curAnglePct + 10"
+            }
+          }
+        ]
+      },
+      {
+        "if": "autoMode",
+        "then": [
+          {
+            "assign": "curAnglePct",
+            "value": {
+              "if": {
+                "and": [
+                  {
+                    ">=": [
+                      "io_0",
+                      700.0
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        ">": [
+                          "io_1",
+                          30.0
+                        ]
+                      },
+                      true
+                    ]
+                  }
+                ]
+              },
+              "then": 0,
+              "else": {
+                "if": {
+                  ">": [
+                    "io_1",
+                    30.0
+                  ]
+                },
+                "then": 0,
+                "else": {
+                  "if": {
+                    "<=": [
+                      "io_0",
+                      300.0
+                    ]
+                  },
+                  "then": 100,
+                  "else": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "assign": "prevIo2",
+        "value": "io_2"
+      },
+      {
+        "assign": "prevIo3",
+        "value": "io_3"
+      }
+    ],
+    "outputs": {
+      "io_4": {
+        "if": "autoMode",
+        "then": {
+          "and": [
+            {
+              "<=": [
+                "io_0",
+                300.0
+              ]
+            },
+            {
+              "<=": [
+                "io_1",
+                30.0
+              ]
+            }
+          ]
+        },
+        "else": false
+      },
+      "io_5": "RealFunctions::floor(curAnglePct * 1.0)",
+      "io_6": "curAnglePct"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Set io_2 rising edge to enter autoMode; then apply io_0=800.0, io_1=20.0",
+        "oracle": "io_5 commanded angle corresponds to curAnglePct=0 and io_4 becomes false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Enter autoMode; apply io_0=200.0, io_1=25.0",
+        "oracle": "io_5 commanded angle corresponds to curAnglePct=100 and io_4 becomes true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Enter autoMode; apply io_0=200.0, io_1=35.0",
+        "oracle": "Temperature high has priority: io_5 commanded angle corresponds to curAnglePct=0 and io_4 becomes false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能窗帘与照明联动系统，使用光敏电阻 A0、室内温度传感器 LM35（A1）、舵机控制引脚 D9、室内灯 LED D10、按钮 D2、D3 和 TM1637（CLK=D4，DIO=D5）。自动模式下光照过强时关闭窗帘、光照过弱时开启窗帘并点亮室内灯；若温度过高则优先关闭窗帘以降低室温。按钮用于切换自动/手动和调整窗帘角度，TM1637 显示当前窗帘开度百分比或光照值。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Use io_2 rising edge to ensure autoMode=false; then create two rising edges on io_3 while keeping io_0/io_1 arbitrary",
+        "oracle": "In manual mode, io_6 (TM1637 value) increments curAnglePct by 10 per io_3 press-edge and wraps at >=100; io_4 stays false"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Boolean;\n    attribute autoMode : Boolean := false;\n    attribute prevIo2 : Boolean := false;\n    attribute prevIo3 : Boolean := false;\n    attribute curAnglePct : Integer := 50;\n    perform action tick {\n      first start;\n      then if io_2 and not prevIo2 {\n        first start;\n        then assign autoMode := (if autoMode ? false else true);\n      }\n      then if not autoMode and io_3 and not prevIo3 {\n        first start;\n        then assign curAnglePct := (if curAnglePct >= 100 ? 0 else curAnglePct + 10);\n      }\n      then if autoMode {\n        first start;\n        then assign curAnglePct := (if ((((io_0) >= (700.0))) and (((((io_1) > (30.0))) and (true)))) ? 0 else (if ((io_1) > (30.0)) ? 0 else (if ((io_0) <= (300.0)) ? 100 else 0)));\n      }\n      then assign prevIo2 := io_2;\n      then assign prevIo3 := io_3;\n    }\n    out attribute io_4 : Boolean = (if autoMode ? ((((io_0) <= (300.0))) and (((io_1) <= (30.0)))) else false);\n    out attribute io_5 : Real = RealFunctions::floor(curAnglePct * 1.0);\n    out attribute io_6 : Integer = curAnglePct;\n  }\n  part system : Controller;\n}\n"
+}

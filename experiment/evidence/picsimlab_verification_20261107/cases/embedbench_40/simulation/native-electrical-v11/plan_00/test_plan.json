@@ -1,0 +1,122 @@
+{
+  "horizon_ms": 11500,
+  "input_steps": [],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [
+    {
+      "data_pin": "A0",
+      "clock_pin": "A2",
+      "latch_pin": "A1",
+      "registers": 1,
+      "displays": [
+        {
+          "name": "sevseg1",
+          "register_index": 0,
+          "segment_bits": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "common_anode": true
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "native_1_0",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize a 7-segment display (sevseg1) and a 10-LED bar graph (bargraph1) using a shift register (sr1). The system ",
+      "name": "sevseg1",
+      "at_ms": 2500,
+      "expected": "1",
+      "numeric": true
+    },
+    {
+      "id": "native_2_1",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize a 7-segment display (sevseg1) and a 10-LED bar graph (bargraph1) using a shift register (sr1). The system ",
+      "name": "sevseg1",
+      "at_ms": 4500,
+      "expected": "2",
+      "numeric": true
+    },
+    {
+      "id": "native_3_2",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize a 7-segment display (sevseg1) and a 10-LED bar graph (bargraph1) using a shift register (sr1). The system ",
+      "name": "sevseg1",
+      "at_ms": 8500,
+      "expected": "4",
+      "numeric": true
+    },
+    {
+      "id": "native_4_3",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize a 7-segment display (sevseg1) and a 10-LED bar graph (bargraph1) using a shift register (sr1). The system ",
+      "name": "sevseg1",
+      "at_ms": 10500,
+      "expected": "5",
+      "numeric": true
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\nconst int SHCP_PIN = A2;  \nconst int STCP_PIN = A1;  \nconst int DS_PIN = A0;    \nconst byte segmentCodes[10] = {\n  0b11000000, \n  0b11111001, \n  0b10100100, \n  0b10110000, \n  0b10011001, \n  0b10010010, \n  0b10000010, \n  0b11111000, \n  0b10000000, \n  0b10010000  \n};\nint currentValue = 0;\nunsigned long lastUpdate = 0;\nconst int interval = 2000;\n\nvoid setup();\nvoid loop();\nvoid updateDisplays(int value);\nvoid setup() {\n  for (int pin = 2; pin <= 11; pin++) {\n    pinMode(pin, OUTPUT);\n  }\n  pinMode(DS_PIN, OUTPUT);\n  pinMode(SHCP_PIN, OUTPUT);\n  pinMode(STCP_PIN, OUTPUT);\n  updateDisplays(0); \n}\nvoid loop() {\n  if (millis() - lastUpdate >= interval) {\n    currentValue = (currentValue + 1) % 10;\n    updateDisplays(currentValue);\n    lastUpdate = millis();\n  }\n}\nvoid updateDisplays(int value) {\n  digitalWrite(STCP_PIN, LOW);\n  shiftOut(DS_PIN, SHCP_PIN, MSBFIRST, segmentCodes[value]);\n  digitalWrite(STCP_PIN, HIGH);\n  digitalWrite(STCP_PIN, LOW);\n  for (int led = 2; led <= 11; led++) {\n    digitalWrite(led, (led - 2 < value) ? HIGH : LOW);\n  }\n}",
+  "coverage": "partial",
+  "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+  "native_test_entries": [
+    "test1: {'time': 2.5, 'state': {'sevseg1': '1', 'bargraph1': '1 LED lit'}, 'description': 'After 2.5 seconds, the system has incremented once (every 2 seconds). The 7-segment display shows 1, and the bar graph has 1 LED illuminated (LED A1).'}",
+    "test2: {'time': 4.5, 'state': {'sevseg1': '2', 'bargraph1': '2 LEDs lit'}, 'description': 'After 4.5 seconds, the system has incremented twice. The 7-segment display shows 2, and the bar graph has 2 LEDs illuminated (LEDs A1 and A2).'}",
+    "test3: {'time': 8.5, 'state': {'sevseg1': '4', 'bargraph1': '4 LEDs lit'}, 'description': 'After 8.5 seconds, the system has incremented four times. The 7-segment display shows 4, and the bar graph has 4 LEDs illuminated (LEDs A1 to A4).'}",
+    "test4: {'time': 10.5, 'state': {'sevseg1': '5', 'bargraph1': '5 LEDs lit'}, 'description': 'After 10.5 seconds, the system has incremented five times. The 7-segment display shows 5, and the bar graph has 5 LEDs illuminated (LEDs A1 to A5).'}"
+  ],
+  "skipped_conditions": [
+    {
+      "test": 0,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "1 LED lit"
+    },
+    {
+      "test": 1,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "2 LEDs lit"
+    },
+    {
+      "test": 2,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "4 LEDs lit"
+    },
+    {
+      "test": 3,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "5 LEDs lit"
+    }
+  ],
+  "assumptions": [
+    "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+    "Normalized potentiometer positions0..1 map to ADC0..1023.",
+    "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+    "Reference preflight required; no claim that reference consistency proves all prose requirements."
+  ],
+  "electrical_led_pins": {
+    "2": 1,
+    "3": 1,
+    "4": 1,
+    "5": 1,
+    "6": 1,
+    "7": 1,
+    "8": 1,
+    "9": 1,
+    "10": 1,
+    "11": 1
+  }
+}

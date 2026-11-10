@@ -1,0 +1,32 @@
+#ifndef _DEFINE_H_
+#define _DEFINE_H_
+struct ProgramPage1_state;
+struct ProgramPage1_state {
+};
+/* Global Variable define of  */
+extern struct ProgramPage1_state ProgramPage1_instance;
+/* Global Variable define of  */
+extern int sysml_state_mode;
+/* Global Variable define of  */
+extern double sysml_state_servo1Angle;
+/* Global Variable define of  */
+extern double sysml_state_servo2Angle;
+/* Global Variable define of  */
+extern bool sysml_state_ledOn;
+/* Global Variable define of  */
+extern bool sysml_state_previousBtn1;
+/* Global Variable define of  */
+extern bool sysml_state_previousBtn2;
+/* Global Variable define of  */
+extern bool sysml_state_btn1Latch;
+/* Global Variable define of  */
+extern bool sysml_state_btn2Latch;
+/* Global Variable define of  */
+extern int sysml_state_maintainUntilMs;
+/* Global Variable define of  */
+extern int sysml_state_flashAccumulatedMs;
+/* Init function of CompositeActor named "ProgramPage1" */
+void ProgramPage1_Init(struct ProgramPage1_state* self);
+/* Update function of CompositeActor named "ProgramPage1" */
+void ProgramPage1(bool io_3, bool io_4, int io_5, double* io_0, double* io_1, bool* io_2);
+#endif

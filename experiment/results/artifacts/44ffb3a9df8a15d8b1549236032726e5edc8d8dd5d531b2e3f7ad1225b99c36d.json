@@ -1,0 +1,264 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_1",
+      "type": "i32"
+    },
+    {
+      "name": "io_1_valid",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_0",
+      "type": "i32"
+    },
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 > 0) ? 1000 : 0)"
+      }
+    },
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 && (arg1 == 1)) ? true : false)"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 > 0) ? 1000 : 0)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "buzzRemainingMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_0"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_1_valid"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "input",
+        "name": "io_1"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "buzzRemainingMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "buzzRemainingMs",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "((arg0 > 0) && arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "buzzRemainingMs"
+            },
+            {
+              "kind": "input",
+              "name": "io_1_valid"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "buzzRemainingMs",
+                "expression": "0",
+                "sources": []
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "if",
+                "condition": "(arg0 > 0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "buzzRemainingMs"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "buzzRemainingMs",
+                      "expression": "0",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 && (arg1 == 1))",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_1_valid"
+                  },
+                  {
+                    "kind": "input",
+                    "name": "io_1"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "buzzRemainingMs",
+                      "expression": "500",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

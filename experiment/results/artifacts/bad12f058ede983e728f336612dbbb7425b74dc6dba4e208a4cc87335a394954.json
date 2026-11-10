@@ -1,0 +1,204 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "lightOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "count",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousIo0",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousIo1",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_5_valid",
+            true
+          ]
+        },
+        "then": [
+          {
+            "if": "io_5 == 6",
+            "then": [
+              {
+                "assign": "lightOn",
+                "value": true
+              },
+              {
+                "assign": "count",
+                "value": "count + 1"
+              }
+            ]
+          },
+          {
+            "if": "io_5 == 5",
+            "then": [
+              {
+                "assign": "lightOn",
+                "value": false
+              },
+              {
+                "assign": "count",
+                "value": "count + 1"
+              }
+            ]
+          },
+          {
+            "if": "io_5 == 1",
+            "then": [
+              {
+                "assign": "count",
+                "value": "count + 1"
+              }
+            ]
+          },
+          {
+            "if": "io_5 == 3",
+            "then": [
+              {
+                "assign": "count",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousIo0"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lightOn",
+            "value": true
+          },
+          {
+            "assign": "count",
+            "value": "count + 1"
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousIo1"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lightOn",
+            "value": false
+          },
+          {
+            "assign": "count",
+            "value": "count + 1"
+          }
+        ]
+      },
+      {
+        "assign": "previousIo0",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousIo1",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": "lightOn",
+      "io_3": {
+        "if": {
+          "and": [
+            "io_5_valid",
+            "io_5 == 1"
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_4": "count",
+      "serial_0_trigger": "io_5_valid",
+      "serial_0_value_0": "count",
+      "serial_0_value_1": {
+        "if": "lightOn",
+        "then": 1,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_0 pressed rising edge (io_0: false->true), keep io_1=false, io_5_valid=false",
+        "oracle": "io_2 becomes true and io_4 (TM1637 count) increments by 1; serial_0_trigger is false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_1 pressed rising edge (io_1: false->true), keep io_0=false, io_5_valid=false",
+        "oracle": "io_2 becomes false and io_4 increments by 1; serial_0_trigger is false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "serial command frame: io_5_valid=true and io_5==6 (LIGHT_ON), with io_0=false io_1=false",
+        "oracle": "io_2 becomes true; io_3 is 0; io_4 increments by 1; serial_0_trigger true with serial_0_value_0==count and serial_0_value_1==1"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "serial command frame: io_5_valid=true and io_5==5 (LIGHT_OFF), with io_0=false io_1=false",
+        "oracle": "io_2 becomes false; io_3 is 0; io_4 increments by 1; serial_0_trigger true with serial_0_value_0==count and serial_0_value_1==0"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T5",
+        "test_method": "trace",
+        "stimulus": "serial command frame: io_5_valid=true and io_5==1 (BEEP), keep io_0=false io_1=false",
+        "oracle": "io_3 outputs 1000 Hz in that step and io_3 outputs 0 when io_5_valid becomes false; io_2 unchanged; io_4 increments by 1; serial_0_trigger true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个串口与本地按键双输入控制系统，使用按钮 D2、按钮 D3、LED D13、蜂鸣器 D6 和 TM1637（CLK=D4，DIO=D5）。D2 本地开灯，D3 本地关灯；串口也支持 LIGHT_ON、LIGHT_OFF、BEEP 和 COUNT_RESET 命令；数码管显示累计操作次数。",
+        "test_point_id": "T6",
+        "test_method": "trace",
+        "stimulus": "serial command frame: io_5_valid=true and io_5==3 (COUNT_RESET), with prior count nonzero",
+        "oracle": "io_4 becomes 0 (TM1637 shows zero); io_2 unchanged; io_3 is 0; serial_0_trigger true with serial_0_value_0==0"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_5 : Integer;\n    in attribute io_5_valid : Boolean;\n    attribute lightOn : Boolean := false;\n    attribute count : Integer := 0;\n    attribute previousIo0 : Boolean := false;\n    attribute previousIo1 : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_5_valid) and (true)) {\n        first start;\n        then if io_5 == 6 {\n          first start;\n          then assign lightOn := true;\n          then assign count := count + 1;\n        }\n        then if io_5 == 5 {\n          first start;\n          then assign lightOn := false;\n          then assign count := count + 1;\n        }\n        then if io_5 == 1 {\n          first start;\n          then assign count := count + 1;\n        }\n        then if io_5 == 3 {\n          first start;\n          then assign count := 0;\n        }\n      }\n      then if ((io_0) and ((not previousIo0))) {\n        first start;\n        then assign lightOn := true;\n        then assign count := count + 1;\n      }\n      then if ((io_1) and ((not previousIo1))) {\n        first start;\n        then assign lightOn := false;\n        then assign count := count + 1;\n      }\n      then assign previousIo0 := io_0;\n      then assign previousIo1 := io_1;\n    }\n    out attribute io_2 : Boolean = lightOn;\n    out attribute io_3 : Integer = (if ((io_5_valid) and (io_5 == 1)) ? 1000 else 0);\n    out attribute io_4 : Integer = count;\n    out attribute serial_0_trigger : Boolean = io_5_valid;\n    out attribute serial_0_value_0 : Integer = count;\n    out attribute serial_0_value_1 : Integer = (if lightOn ? 1 else 0);\n  }\n  part system : Controller;\n}\n"
+}

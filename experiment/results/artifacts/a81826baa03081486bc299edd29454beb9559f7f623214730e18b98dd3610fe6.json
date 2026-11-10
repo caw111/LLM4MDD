@@ -1,0 +1,91 @@
+{
+  "contract_sha256": "311b761cb9481c7229466eff4a2691c047e22314e35a0fd5a18c4d24f114974f",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"pin\": \"N/A\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"Measured distance in cm (quantized/displayed by model); retained previous value on invalid\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"pin\": \"N/A\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"Validity flag for distance measurement (false on timeout/out-of-range/echo stuck)\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 10000,\n      \"meaning\": \"TM1637 display request: blank initial (out-of-range command) to show empty until first valid distance\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Board is Arduino Uno. Pins preserved exactly as required: HC-SR04 TRIG=D8, ECHO=D9; TM1637 CLK=D4, DIO=D5.\",\n    \"No additional wired functional outputs/inputs beyond the ultrasonic pair and TM1637 are specified in the provided inventory; therefore only these program-owned ports are created.\",\n    \"TM1637 blanking is implemented using tm1637_number invalid_policy='blank' and an initial startup command out-of-range (10000) as allowed by the catalog; the model will update tm1637_number to an integer cm when ultrasonic_valid is true.\",\n    \"Ultrasonic timing/quantization and the 60..160ms sampling start spacing plus <=250ms response latency are model responsibilities; hardware request only provides trigger/echo wiring, timeout_us, and validity retention policy.\",\n    \"Timeout_us is set to the lower bound 25000us to satisfy the explicit 'each wait must have 25000us timeout' requirement; actual sampling alignment to control_period_ms multiple is handled in the SysML model.\",\n    \"When timeout/out-of-range/echo-stuck occurs, ultrasonic_valid is set false and ultrasonic_distance retains its previous value per invalid_policy; the model decides when to drive TM1637 blank versus displaying the retained distance.\"\n  ]\n}",
+      "error": "interface_requests[0].pin conflicts with trigger_pin or is not a valid equivalent pin spelling",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"ultrasonic_distance\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": 0,\n      \"meaning\": \"HC-SR04 measured distance in cm (model quantizes/display state; retained previous value on invalid)\"\n    },\n    {\n      \"kind\": \"ultrasonic_valid\",\n      \"trigger_pin\": \"D8\",\n      \"echo_pin\": \"D9\",\n      \"sensor\": \"HC-SR04\",\n      \"timeout_us\": 25000,\n      \"invalid_policy\": \"hold_last_valid\",\n      \"initial\": false,\n      \"meaning\": \"Validity flag for HC-SR04 distance (false on timeout/out-of-range/echo stuck); retained policy applies to distance only\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 10000,\n      \"meaning\": \"TM1637 display command for distance-in-cm; initial out-of-range requests blank per model; show integer cm when valid\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Uno board with authoritative wiring preserved: HC-SR04 TRIG=D8, ECHO=D9; TM1637 CLK=D4, DIO=D5.\",\n    \"Ultrasonic requests use hardware timeout_us=25000 (lower bound) to satisfy the 'each wait must have 25000us超时' requirement; exact 60..160ms sampling start spacing and <=250ms end-to-end latency are handled in SysML timing.\",\n    \"Quantization to integer centimeters, blanking behavior on timeout/out-of-range/echo-stuck, and validity-vs-distance separation are handled in the SysML model: ultrasonic_valid drives whether tm1637_number shows blank vs the latest retained ultrasonic_distance.\",\n    \"TM1637 initial startup blanking is implemented by requesting an out-of-display-range initial value (10000) together with invalid_policy='blank'; leading_zero is false.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "ultrasonic",
+        "original": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        },
+        "resolved": {
+          "trigger_pin": "D8",
+          "echo_pin": "D9"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": null,
+    "original_requirement": "使用 TM1637 + HC-SR04（D8/D9）：显示距离\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。",
+    "effective_requirement": "使用 TM1637 + HC-SR04（D8/D9）：显示距离\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"ultrasonic\", \"trigger_pin\": \"D8\", \"echo_pin\": \"D9\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": null}",
+    "pins": {},
+    "changes": [],
+    "circuit_preserved": false
+  }
+}

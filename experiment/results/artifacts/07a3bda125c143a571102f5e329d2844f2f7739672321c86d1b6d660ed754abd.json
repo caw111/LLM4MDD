@@ -1,0 +1,51 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "repairAccMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "repairLedLit",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "repairAccMs",
+        "value": "repairAccMs + io_1"
+      },
+      {
+        "if": "repairAccMs >= 500",
+        "then": [
+          {
+            "assign": "repairAccMs",
+            "value": "repairAccMs - 500"
+          },
+          {
+            "assign": "repairLedLit",
+            "value": "not repairLedLit"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": "repairLedLit"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "让连接在 D12 引脚的 LED 每秒闪烁一次。\n验收约定：每秒闪烁一次指完整周期为1000ms；初始熄灭，500ms时首次点亮，此后每500ms翻转。时间容差10ms。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "elapsed io_1 deltas tracing 0ms->500ms->1000ms->1500ms->2000ms with control steps of 10ms, including initial step where io_1=0, and verify output at each 500ms boundary within 10ms tolerance.",
+        "oracle": "io_0 initial false (startup), becomes true at first 500ms, then toggles every additional 500ms (i.e., true at 500, false at 1000, true at 1500, false at 2000), with all transitions occurring within 10ms tolerance."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Integer;\n    attribute repairAccMs : Integer := 0;\n    attribute repairLedLit : Boolean := false;\n    perform action tick {\n      first start;\n      then assign repairAccMs := repairAccMs + io_1;\n      then if repairAccMs >= 500 {\n        first start;\n        then assign repairAccMs := repairAccMs - 500;\n        then assign repairLedLit := not repairLedLit;\n      }\n    }\n    out attribute io_0 : Boolean = repairLedLit;\n  }\n  part system : Controller;\n}\n"
+}

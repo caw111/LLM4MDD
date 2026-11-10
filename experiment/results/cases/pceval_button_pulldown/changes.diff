@@ -1,0 +1,48 @@
+--- original.ino
++++ repaired.ino
+@@ -32,30 +32,12 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_0, bool* serial_0_trigger, bool* serial_0_value_0, bool* serial_1_trigger, bool* serial_1_value_0) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    sysml_state_previousPressed = io_0;
+-    bool sysml_value_0 = 0;
+-    sysml_lazy_0 = io_0;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = !sysml_state_previousPressed;
+-    }
+-    sysml_value_0 = sysml_lazy_0;
+-    bool sysml_value_1 = 0;
+-    sysml_value_1 = io_0;
+-    bool sysml_value_2 = 0;
+-    sysml_lazy_1 = !io_0;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = sysml_state_previousPressed;
+-    }
+-    sysml_value_2 = sysml_lazy_1;
+-    bool sysml_value_3 = 0;
+-    sysml_value_3 = (!io_0);
+-    *serial_0_trigger = sysml_value_0;
+-    *serial_0_value_0 = sysml_value_1;
+-    *serial_1_trigger = sysml_value_2;
+-    *serial_1_value_0 = sysml_value_3;
++    static bool initialized=false,previous=false;
++    static unsigned long last=0;
++    bool report=!initialized || io_0!=previous || (unsigned long)(millis()-last)>=250;
++    if(report) {initialized=true;last=millis();}
++    *serial_0_trigger=report&&io_0;*serial_1_trigger=report&&!io_0;
++    *serial_0_value_0=io_0;*serial_1_value_0=!io_0;previous=io_0;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -95,6 +77,6 @@
+   if (hw_elapsed > 2147483647UL) return;
+   hw_last_step = hw_now; hw_started = true;
+   ProgramPage1(hw_value_io_0, &hw_value_serial_0_trigger, &hw_value_serial_0_value_0, &hw_value_serial_1_trigger, &hw_value_serial_1_value_0);
+-  if (hw_value_serial_0_trigger) { Serial.print("Button pressed"); Serial.println(hw_value_serial_0_value_0); }
+-  if (hw_value_serial_1_trigger) { Serial.print("Button not pressed"); Serial.println(hw_value_serial_1_value_0); }
++  if (hw_value_serial_0_trigger) Serial.println("Button pressed");
++  if (hw_value_serial_1_trigger) Serial.println("Button not pressed");
+ }

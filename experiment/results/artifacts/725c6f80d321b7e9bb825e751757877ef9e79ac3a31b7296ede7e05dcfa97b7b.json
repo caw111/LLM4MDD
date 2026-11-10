@@ -1,0 +1,148 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "displayMode",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "alarmState",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_7 and not previousPressed",
+        "then": [
+          {
+            "assign": "displayMode",
+            "value": "displayMode + 1"
+          }
+        ]
+      },
+      {
+        "if": "displayMode == 3",
+        "then": [
+          {
+            "assign": "displayMode",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_7"
+      },
+      {
+        "if": "io_2 < 300.0",
+        "then": [
+          {
+            "assign": "alarmState",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "alarmState",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": "alarmState",
+        "then": 0.0,
+        "else": {
+          "if": {
+            "<": [
+              "io_0",
+              250.0
+            ]
+          },
+          "then": 255.0,
+          "else": 0.0
+        }
+      },
+      "io_4": {
+        "if": "alarmState",
+        "then": 0.0,
+        "else": {
+          "if": {
+            "<": [
+              "io_1",
+              300.0
+            ]
+          },
+          "then": 200.0,
+          "else": 0.0
+        }
+      },
+      "io_5": {
+        "if": "alarmState",
+        "then": true,
+        "else": false
+      },
+      "io_6": {
+        "if": "alarmState",
+        "then": 1000,
+        "else": 0
+      },
+      "io_8": {
+        "if": {
+          "==": [
+            "displayMode",
+            0
+          ]
+        },
+        "then": "RealFunctions::floor(io_0)",
+        "else": {
+          "if": {
+            "==": [
+              "displayMode",
+              1
+            ]
+          },
+          "then": "RealFunctions::floor(io_1)",
+          "else": "RealFunctions::floor(io_2)"
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "按下按钮D2一次（io_7从false到true的按下沿），且在该步骤保持io_0=123，io_1=456，io_2=789",
+        "oracle": "TM1637显示值(io_8)从显示水温切换为显示光照（第一次切换模式后按显示顺序为模式1），因此io_8应等于RealFunctions::floor(io_1)"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持按钮不按（io_7=false且不发生按下沿），设置水位过低 io_2=299，给任意io_0=260、io_1=100",
+        "oracle": "报警状态为开：io_5应为true、io_6应为1000，且相关设备关闭：io_3=0.0且io_4=0.0"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个智能鱼缸环境维持系统，使用水温传感器 LM35（A1）、光敏电阻 A0、水位传感器 A2、加热器 D10、照明 LED D9、水泵或增氧泵 D5、TM1637（CLK=D4，DIO=D5）和蜂鸣器 D6。系统根据水温控制加热器，根据环境光照控制鱼缸照明，根据水位控制增氧泵保护；若水位过低则关闭相关设备并报警。按钮 D2 可切换显示水温、光照和水位。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "保持按钮不按（io_7=false且不发生按下沿），设置水位正常 io_2=300，并设置io_0=200（低于加热阈值）、io_1=100（低于光照阈值）",
+        "oracle": "不报警：io_5=false且io_6=0；按温度控制加热器打开：io_3=255.0；按光照控制照明打开：io_4=200.0"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_7 : Boolean;\n    attribute displayMode : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute alarmState : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_7 and not previousPressed {\n        first start;\n        then assign displayMode := displayMode + 1;\n      }\n      then if displayMode == 3 {\n        first start;\n        then assign displayMode := 0;\n      }\n      then assign previousPressed := io_7;\n      then if io_2 < 300.0 {\n        first start;\n        then assign alarmState := true;\n      } else {\n        first start;\n        then assign alarmState := false;\n      }\n    }\n    out attribute io_3 : Real = (if alarmState ? 0.0 else (if ((io_0) < (250.0)) ? 255.0 else 0.0));\n    out attribute io_4 : Real = (if alarmState ? 0.0 else (if ((io_1) < (300.0)) ? 200.0 else 0.0));\n    out attribute io_5 : Boolean = (if alarmState ? true else false);\n    out attribute io_6 : Integer = (if alarmState ? 1000 else 0);\n    out attribute io_8 : Integer = (if ((displayMode) == (0)) ? RealFunctions::floor(io_0) else (if ((displayMode) == (1)) ? RealFunctions::floor(io_1) else RealFunctions::floor(io_2)));\n  }\n  part system : Controller;\n}\n"
+}

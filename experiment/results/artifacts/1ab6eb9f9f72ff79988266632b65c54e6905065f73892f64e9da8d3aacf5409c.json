@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"elapsedAccMs\",\n        \"type\": \"i32\",\n        \"initial\": \"0\"\n      },\n      {\n        \"name\": \"lastTemp\",\n        \"type\": \"f64\",\n        \"initial\": \"0.0\"\n      },\n      {\n        \"name\": \"lastHum\",\n        \"type\": \"f64\",\n        \"initial\": \"0.0\"\n      },\n      {\n        \"name\": \"lastValid\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"elapsedAccMs\",\n        \"value\": \"elapsedAccMs + io_3\"\n      },\n      {\n        \"if\": \"io_2\",\n        \"then\": [\n          {\n            \"assign\": \"lastTemp\",\n            \"value\": \"io_0\"\n          },\n          {\n            \"assign\": \"lastHum\",\n            \"value\": \"io_1\"\n          },\n          {\n            \"assign\": \"lastValid\",\n            \"value\": \"true\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \">=\": [\n                \"elapsedAccMs\",\n                5000\n              ]\n            },\n            \"true\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"elapsedAccMs\",\n            \"value\": \"elapsedAccMs - 5000\"\n          },\n          {\n            \"if\": \"io_2\",\n            \"then\": [\n              {\n                \"assign\": \"lastTemp\",\n                \"value\": \"io_0\"\n              },\n              {\n                \"assign\": \"lastHum\",\n                \"value\": \"io_1\"\n              },\n              {\n                \"assign\": \"lastValid\",\n                \"value\": \"true\"\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"lastValid\",\n                \"value\": \"false\"\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"elapsedAccMs >= 5000\",\n      \"serial_0_value_0\": \"lastTemp\",\n      \"serial_0_value_1\": \"lastHum\",\n      \"serial_0_value_2\": \"lastValid\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"每 5 秒读取 DHT11（D7）温度并串口输出\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Apply io_3 deltas accumulating past 5000ms repeatedly; vary io_2 (valid/invalid) and provide corresponding io_0/io_1 values; observe serial_0_trigger and serial_0_value_* at each 5s boundary.\",\n        \"oracle\": \"serial_0_trigger is asserted exactly at each control-step where accumulated elapsed time crosses each 5s boundary; serial_0_value_0/serial_0_value_1 reflect the most recent retained measurement (updated only when io_2 is true); serial_0_value_2 equals true only when the DHT read for that report frame is valid (io_2 true), and false when invalid.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Integer;\n    attribute elapsedAccMs : Integer := 0;\n    attribute lastTemp : Real := 0.0;\n    attribute lastHum : Real := 0.0;\n    attribute lastValid : Boolean := false;\n    perform action tick {\n      first start;\n      then assign elapsedAccMs := elapsedAccMs + io_3;\n      then if io_2 {\n        first start;\n        then assign lastTemp := io_0;\n        then assign lastHum := io_1;\n        then assign lastValid := true;\n      }\n      then if ((((elapsedAccMs) >= (5000))) and (true)) {\n        first start;\n        then assign elapsedAccMs := elapsedAccMs - 5000;\n        then if io_2 {\n          first start;\n          then assign lastTemp := io_0;\n          then assign lastHum := io_1;\n          then assign lastValid := true;\n        } else {\n          first start;\n          then assign lastValid := false;\n        }\n      }\n    }\n    out attribute serial_0_trigger : Boolean = elapsedAccMs >= 5000;\n    out attribute serial_0_value_0 : Real = lastTemp;\n    out attribute serial_0_value_1 : Real = lastHum;\n    out attribute serial_0_value_2 : Boolean = lastValid;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

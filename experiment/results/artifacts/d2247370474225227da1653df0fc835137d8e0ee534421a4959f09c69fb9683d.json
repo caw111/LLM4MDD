@@ -1,0 +1,75 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "mode",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "mode",
+            "value": {
+              "if": "mode == 2",
+              "then": 0,
+              "else": "mode + 1"
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "mode == 0",
+        "then": "0",
+        "else": {
+          "if": "mode == 1",
+          "then": "RealFunctions::floor(io_0)",
+          "else": 1234
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "按钮（D2）循环切换 TM1637 显示：计数/电位器值/1234",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "在初始状态下保持D2不按(低)，连续产生3次按键上升沿(每次按下并释放)，同时令io_0在按键间保持为固定ADC值X(第一次按键前为X1，第二次为X2，第三次为X3)",
+        "oracle": "每次检测到D2按下的上升沿后，io_2依次依序显示：第一次为电位器值(等于floor(io_0)在该步取值)，第二次为1234，第三次回到计数显示(本模型为0)，保持到下一次上升沿发生"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "按钮（D2）循环切换 TM1637 显示：计数/电位器值/1234",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持D2为按住高电平(按键不释放)跨多个控制步，同时变更io_0为不同值Y1->Y2->Y3",
+        "oracle": "在没有再次发生按下上升沿的情况下，mode不改变，io_2在处于mode==1时始终等于当步floor(io_0)，在mode!=1时不受io_0变化影响"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute mode : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign mode := (if mode == 2 ? 0 else mode + 1);\n      }\n      then assign previousPressed := io_1;\n    }\n    out attribute io_2 : Integer = (if mode == 0 ? 0 else (if mode == 1 ? RealFunctions::floor(io_0) else 1234));\n  }\n  part system : Controller;\n}\n"
+}

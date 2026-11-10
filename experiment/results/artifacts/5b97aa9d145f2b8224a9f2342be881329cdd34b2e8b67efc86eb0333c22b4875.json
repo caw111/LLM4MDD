@@ -1,0 +1,456 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Wiring assumed exactly as provided: led1->D2, led2->D3, led3->D4; rgb1 R/G/B->D5/D6/D7; rgb2 R/G/B->D8/D9/D10; pot1 SIG->A3; pot2 SIG->A4; all COM/GND common to mega GND.1 and potentiometer rails to 5V/GND.",
+    "The prose specifies red=pot1, green=pot2, and white at pot1=1023 and pot2=1023; it does not explicitly define blue. Model should derive blue as part of the 'color gradient' requirement (e.g., set blue=pot1+pot2 normalized or blue constant tied to the gradient); this is a SysML/model behavior choice.",
+    "Analog inputs are treated as raw ADC readings 0..1023 and mapped in SysML to PWM duty 0..255 (application-owned output scalar type/unit).",
+    "led3 requirement implemented in SysML as a Boolean-on condition feeding the PWM output duty (ON => 255, else 0).",
+    "No serial reporting or command inputs were requested by the requirements."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot1 raw value (0..1023)",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A3"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 0,
+      "meaning": "pot2 raw value (0..1023)",
+      "sample_period_ms": 5,
+      "device": "analog_input",
+      "hardware": "{\"kind\": \"analog_input\", \"offset\": 0.0, \"pin\": \"A4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "analog_input",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "A4"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "led1 brightness from pot1 mapped to 0..255",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D2\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D2"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "led2 brightness from pot2 mapped to 0..255",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D3\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D3"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "led3 indicator: ON when pot1==1023 and pot2==1023; otherwise off",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D4\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D4"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb1 red component from pot1 mapped to 0..255",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D5\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D5"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb1 green component from pot2 mapped to 0..255",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D6\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb1 blue component (gradient blue derived from pot1+pot2 model)",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D7\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D7"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb2 red component from pot1 mapped to 0..255",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D8\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D8"
+      }
+    },
+    {
+      "name": "io_9",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb2 green component from pot2 mapped to 0..255",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D9\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D9"
+      }
+    },
+    {
+      "name": "io_10",
+      "direction": "output",
+      "type": "f64",
+      "unit": "pwm_count",
+      "initial": 0,
+      "meaning": "rgb2 blue component (gradient blue derived from pot1+pot2 model)",
+      "sample_period_ms": 5,
+      "device": "pwm_output",
+      "hardware": "{\"kind\": \"pwm_output\", \"offset\": 0.0, \"pin\": \"D10\", \"scale\": 1.0}",
+      "binding": {
+        "kind": "pwm_output",
+        "scale": 1.0,
+        "offset": 0.0,
+        "pin": "D10"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three single-color LEDs (led1, led2, led3) and two RGB LEDs (rgb1, rgb2) using two slide potentiometers (pot1, pot2). The slide potentiometers will control the brightness of the single-color LEDs and the color of the RGB LEDs. The single-color LEDs will act as indicators for the potentiometer values, while the RGB LEDs will display a color gradient based on the combined values of the potentiometers.\n\n**Detail Rules**:\n1. **Single-Color LEDs (led1, led2, led3)**:\n   - The brightness of each single-color LED is controlled by the value of one potentiometer.\n   - `led1` brightness is controlled by `pot1`.\n   - `led2` brightness is controlled by `pot2`.\n   - If both `pot1` and `pot2` are at their maximum value (1023),\n`led3` should be on.\n   - The brightness of each LED should be updated continuously based on the potentiometer values.\n\n2. **RGB LEDs (rgb1, rgb2)**:\n   - The color of both RGB LEDs is determined by the combined values of `pot1` and `pot2`.\n   - The red component is controlled by `pot1`.\n   - The green component is controlled by `pot2`.\n   - If both `pot1` and `pot2` are at their maximum value (1023), the RGB LEDs should display white.\n   - The RGB LEDs should display the same color gradient, updated continuously based on the potentiometer values.\n\n3. **Potentiometer Values**:\n   - The values of `pot1` and `pot2` range from 0 to 1023.\n   - These values should be mapped to appropriate ranges for controlling LED brightness (0-255) and RGB color components (0-255).\n\n4. **State Maintenance**:\n   - The system should continuously update the LED states based on the potentiometer values.\n\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led3\", \"top\": -70.8, \"left\": 128.6, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"led3:C\", \"black\"], [\"led3:A\", \"mega:4\", \"red\"], [\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:5\", \"rgb1:R\", \"red\"], [\"mega:6\", \"rgb1:G\", \"green\"], [\"mega:7\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:8\", \"rgb2:R\", \"red\"], [\"mega:9\", \"rgb2:G\", \"green\"], [\"mega:10\", \"rgb2:B\", \"blue\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three single-color LEDs (led1, led2, led3) and two RGB LEDs (rgb1, rgb2) using two slide potentiometers (pot1, pot2). The slide potentiometers will control the brightness of the single-color LEDs and the color of the RGB LEDs. The single-color LEDs will act as indicators for the potentiometer values, while the RGB LEDs will display a color gradient based on the combined values of the potentiometers.\n\n**Detail Rules**:\n1. **Single-Color LEDs (led1, led2, led3)**:\n   - The brightness of each single-color LED is controlled by the value of one potentiometer.\n   - `led1` brightness is controlled by `pot1`.\n   - `led2` brightness is controlled by `pot2`.\n   - If both `pot1` and `pot2` are at their maximum value (1023),\n`led3` should be on.\n   - The brightness of each LED should be updated continuously based on the potentiometer values.\n\n2. **RGB LEDs (rgb1, rgb2)**:\n   - The color of both RGB LEDs is determined by the combined values of `pot1` and `pot2`.\n   - The red component is controlled by `pot1`.\n   - The green component is controlled by `pot2`.\n   - If both `pot1` and `pot2` are at their maximum value (1023), the RGB LEDs should display white.\n   - The RGB LEDs should display the same color gradient, updated continuously based on the potentiometer values.\n\n3. **Potentiometer Values**:\n   - The values of `pot1` and `pot2` range from 0 to 1023.\n   - These values should be mapped to appropriate ranges for controlling LED brightness (0-255) and RGB color components (0-255).\n\n4. **State Maintenance**:\n   - The system should continuously update the LED states based on the potentiometer values.\n\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led3\", \"top\": -70.8, \"left\": 128.6, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"led3:C\", \"black\"], [\"led3:A\", \"mega:4\", \"red\"], [\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:5\", \"rgb1:R\", \"red\"], [\"mega:6\", \"rgb1:G\", \"green\"], [\"mega:7\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:8\", \"rgb2:R\", \"red\"], [\"mega:9\", \"rgb2:G\", \"green\"], [\"mega:10\", \"rgb2:B\", \"blue\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led1",
+            "top": -70.8,
+            "left": 13.4,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led2",
+            "top": -70.8,
+            "left": 71.0,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-led",
+            "id": "led3",
+            "top": -70.8,
+            "left": 128.6,
+            "attrs": {
+              "color": "red"
+            }
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb1",
+            "top": -130.4,
+            "left": 39.5,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-rgb-led",
+            "id": "rgb2",
+            "top": -130.4,
+            "left": 97.1,
+            "attrs": {
+              "common": "cathode"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "led1:C",
+            "black"
+          ],
+          [
+            "led1:A",
+            "mega:2",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "led2:C",
+            "black"
+          ],
+          [
+            "led2:A",
+            "mega:3",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "led3:C",
+            "black"
+          ],
+          [
+            "led3:A",
+            "mega:4",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "rgb1:COM",
+            "black"
+          ],
+          [
+            "mega:5",
+            "rgb1:R",
+            "red"
+          ],
+          [
+            "mega:6",
+            "rgb1:G",
+            "green"
+          ],
+          [
+            "mega:7",
+            "rgb1:B",
+            "blue"
+          ],
+          [
+            "mega:GND.1",
+            "rgb2:COM",
+            "black"
+          ],
+          [
+            "mega:8",
+            "rgb2:R",
+            "red"
+          ],
+          [
+            "mega:9",
+            "rgb2:G",
+            "green"
+          ],
+          [
+            "mega:10",
+            "rgb2:B",
+            "blue"
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three single-color LEDs (led1, led2, led3) and two RGB LEDs (rgb1, rgb2) using two slide potentiometers (pot1, pot2). The slide potentiometers will control the brightness of the single-color LEDs and the color of the RGB LEDs. The single-color LEDs will act as indicators for the potentiometer values, while the RGB LEDs will display a color gradient based on the combined values of the potentiometers.\n\n**Detail Rules**:\n1. **Single-Color LEDs (led1, led2, led3)**:\n   - The brightness of each single-color LED is controlled by the value of one potentiometer.\n   - `led1` brightness is controlled by `pot1`.\n   - `led2` brightness is controlled by `pot2`.\n   - If both `pot1` and `pot2` are at their maximum value (1023),\n`led3` should be on.\n   - The brightness of each LED should be updated continuously based on the potentiometer values.\n\n2. **RGB LEDs (rgb1, rgb2)**:\n   - The color of both RGB LEDs is determined by the combined values of `pot1` and `pot2`.\n   - The red component is controlled by `pot1`.\n   - The green component is controlled by `pot2`.\n   - If both `pot1` and `pot2` are at their maximum value (1023), the RGB LEDs should display white.\n   - The RGB LEDs should display the same color gradient, updated continuously based on the potentiometer values.\n\n3. **Potentiometer Values**:\n   - The values of `pot1` and `pot2` range from 0 to 1023.\n   - These values should be mapped to appropriate ranges for controlling LED brightness (0-255) and RGB color components (0-255).\n\n4. **State Maintenance**:\n   - The system should continuously update the LED states based on the potentiometer values.\n\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led2\", \"top\": -70.8, \"left\": 71.0, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-led\", \"id\": \"led3\", \"top\": -70.8, \"left\": 128.6, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"led2:C\", \"black\"], [\"led2:A\", \"mega:3\", \"red\"], [\"mega:GND.1\", \"led3:C\", \"black\"], [\"led3:A\", \"mega:4\", \"red\"], [\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:5\", \"rgb1:R\", \"red\"], [\"mega:6\", \"rgb1:G\", \"green\"], [\"mega:7\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:8\", \"rgb2:R\", \"red\"], [\"mega:9\", \"rgb2:G\", \"green\"], [\"mega:10\", \"rgb2:B\", \"blue\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_7": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_9": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_10": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  }
+}

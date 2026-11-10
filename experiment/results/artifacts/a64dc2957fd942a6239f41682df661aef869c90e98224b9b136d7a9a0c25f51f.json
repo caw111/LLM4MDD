@@ -1,0 +1,114 @@
+{
+  "contract_sha256": "4ed56858159695bfe3433b670e8dc5f889dff2e960b2e0cb94b48368b0f7ba80",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A1\",\n      \"initial\": 0,\n      \"meaning\": \"LM35 temperature sensor reading (current temperature)\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"Button: press to display historical maximum temperature for 3 seconds\",\n      \"pullup\": true,\n      \"active_high\": false\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 display current temperature by default; shows historical maximum while button-triggered display is active\",\n      \"leading_zero\": false\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Serial report gate: continuously output both current temperature and historical maximum temperature (with the same cadence as the model’s reporting cadence)\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"Current temperature (live LM35 reading)\",\n          \"label\": \"current\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"Historical maximum temperature since start\",\n          \"label\": \"max\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"Board is Arduino Uno; wiring preserved: LM35 on A1, button on D2, TM1637 with CLK=D4 and DIO=D5.\",\n    \"Button on D2 is configured with pullup=true and active_high=false so that the model boolean becomes true when the button is pressed.\",\n    \"Analog input scale/offset are not specified in the prompt; the application/model must define the LM35 conversion into degC (including units and ADC scaling).\",\n    \"TM1637 number is configured for leading_zero=false; exact temperature formatting/rounding (e.g., number of decimals, clipping behavior, and whether negative temperatures are possible) is a model concern not specified in the prompt.\",\n    \"Serial protocol details (line format, exact text, and report cadence) are not specified beyond '持续输出两者'; this proposal uses one serial channel gated by a model boolean trigger and reports two numeric fields (current and max) with unit degC.\",\n    \"Control period set to 10 ms as a safe default for responsiveness and display/button handling; business timing (3 seconds max-display) must be implemented in the SysML model using elapsed_ms deltas.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。",
+    "effective_requirement": "实现一个温度监控与历史极值显示系统，使用 LM35（A1）、TM1637（CLK=D4，DIO=D5）、按钮 D2 和串口。系统实时读取温度并保存运行以来的最高温度；默认显示当前温度，按下按钮后显示历史最高温度 3 秒，然后恢复当前温度，同时串口持续输出两者。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "sevsegHoldDigit",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "servo1HoldAngle",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "servo2HoldAngle",
+        "type": "f64",
+        "initial": 90.0
+      },
+      {
+        "name": "servo3HoldAngle",
+        "type": "f64",
+        "initial": 180.0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "sevsegHoldDigit",
+        "value": {
+          "if": "io_0 <= 0.0",
+          "then": 0,
+          "else": {
+            "if": "io_0 >= 1023.0",
+            "then": 9,
+            "else": "RealFunctions::floor(io_0 * 10.0 / 1023.0)"
+          }
+        }
+      },
+      {
+        "assign": "servo1HoldAngle",
+        "value": {
+          "if": "io_1 <= 0.0",
+          "then": 0.0,
+          "else": {
+            "if": "io_1 >= 1023.0",
+            "then": 90.0,
+            "else": "io_1 * 90.0 / 1023.0"
+          }
+        }
+      },
+      {
+        "assign": "servo2HoldAngle",
+        "value": {
+          "if": "io_1 <= 0.0",
+          "then": 90.0,
+          "else": {
+            "if": "io_1 >= 1023.0",
+            "then": 180.0,
+            "else": "90.0 + (io_1 * 90.0 / 1023.0)"
+          }
+        }
+      },
+      {
+        "assign": "servo3HoldAngle",
+        "value": {
+          "if": "io_1 <= 0.0",
+          "then": 180.0,
+          "else": {
+            "if": "io_1 >= 1023.0",
+            "then": 270.0,
+            "else": "180.0 + (io_1 * 90.0 / 1023.0)"
+          }
+        }
+      }
+    ],
+    "outputs": {
+      "io_2": "servo1HoldAngle",
+      "io_3": "servo2HoldAngle",
+      "io_4": "servo3HoldAngle",
+      "io_5": "sevsegHoldDigit"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) and three servo motors (servo1, servo2, servo3) using a shift register (sr1) and two slide potentiometers (pot1, pot2). The 7-segment display will show a number between 0 and 9, which is determined by the value of the first potentiometer (pot1). The three servo motors will rotate to angles determined by the second potentiometer (pot2), with each servo representing a different range of angles.\n\n**Detail Rules**:\n1. **7-Segment Display**:\n   - The 7-segment display (sevseg1) should show a number between 0 and 9, mapped from the value of the first potentiometer (pot1). The value of pot1 ranges from 0 to 1023, and it should be mapped to a number between 0 and 9.\n   - The displayed number should update continuously as the potentiometer is adjusted.\n\n2. **Servo Motors**:\n   - The second potentiometer (pot2) controls the angles of the three servo motors (servo1, servo2, servo3).\n   - The value of pot2 ranges from 0 to 1023 and should be mapped to angles as follows:\n     - Servo1 (servo1): 0° to 90°.\n     - Servo2 (servo2): 90° to 180°.\n     - Servo3 (servo3): 180° to 270° (if the servo supports it, otherwise clamp to 180°).\n   - The servos should move smoothly to their respective angles as the potentiometer is adjusted.\n\n3. **State Maintenance**:\n   - Each state of the 7-segment display and servo motors should be maintained for at least 2 seconds to allow for verification.\n\n4. **Hardware Usage**:\n   - All components (7-segment display, shift register, potentiometers, and servos) must be used in the solution.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:2\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:3\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:4\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Set io_0=0 and io_1=0, then step once with io_0=1023 and io_1=1023.",
+        "oracle": "After first step: io_5=0, io_2=0.0, io_3=90.0, io_4=180.0. After second step: io_5=9, io_2=90.0, io_3=180.0, io_4=270.0."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    attribute sevsegHoldDigit : Integer := 0;\n    attribute servo1HoldAngle : Real := 0.0;\n    attribute servo2HoldAngle : Real := 90.0;\n    attribute servo3HoldAngle : Real := 180.0;\n    perform action tick {\n      first start;\n      then assign sevsegHoldDigit := (if io_0 <= 0.0 ? 0 else (if io_0 >= 1023.0 ? 9 else RealFunctions::floor(io_0 * 10.0 / 1023.0)));\n      then assign servo1HoldAngle := (if io_1 <= 0.0 ? 0.0 else (if io_1 >= 1023.0 ? 90.0 else io_1 * 90.0 / 1023.0));\n      then assign servo2HoldAngle := (if io_1 <= 0.0 ? 90.0 else (if io_1 >= 1023.0 ? 180.0 else 90.0 + (io_1 * 90.0 / 1023.0)));\n      then assign servo3HoldAngle := (if io_1 <= 0.0 ? 180.0 else (if io_1 >= 1023.0 ? 270.0 else 180.0 + (io_1 * 90.0 / 1023.0)));\n    }\n    out attribute io_2 : Real = servo1HoldAngle;\n    out attribute io_3 : Real = servo2HoldAngle;\n    out attribute io_4 : Real = servo3HoldAngle;\n    out attribute io_5 : Integer = sevsegHoldDigit;\n  }\n  part system : Controller;\n}\n"
+}

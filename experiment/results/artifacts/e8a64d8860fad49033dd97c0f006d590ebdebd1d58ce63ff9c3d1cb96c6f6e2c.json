@@ -1,0 +1,279 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_2",
+      "type": "f64"
+    },
+    {
+      "name": "io_3",
+      "type": "f64"
+    },
+    {
+      "name": "io_4",
+      "type": "f64"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_2",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 == 0) ? arg1 : 0.0)"
+      }
+    },
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 == 1) ? arg1 : 0.0)"
+      }
+    },
+    {
+      "id": "compute_io_4",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        },
+        {
+          "name": "arg1",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 == 2) ? arg1 : 0.0)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "selectedChannel"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "pwmBrightness"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_2"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "selectedChannel"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "pwmBrightness"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "selectedChannel"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "pwmBrightness"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_4",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_4"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "selectedChannel",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "previousPressed",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "pwmBrightness",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "assign",
+          "state": "pwmBrightness",
+          "expression": "(true ? ((int)(((double)((arg0 * 255.0)) / 1023.0)) - ((((double)((arg0 * 255.0)) / 1023.0)) < (double)((int)(((double)((arg0 * 255.0)) / 1023.0))) ? 1 : 0)) : 0)",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 && (!arg1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            },
+            {
+              "kind": "state",
+              "name": "previousPressed"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "selectedChannel",
+                "expression": "((arg0 == 0) ? 1 : ((arg0 == 1) ? 2 : 0))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "selectedChannel"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "previousPressed",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

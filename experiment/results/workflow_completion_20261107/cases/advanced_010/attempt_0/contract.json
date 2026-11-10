@@ -1,0 +1,475 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 5,
+  "planning_notes": [
+    "Preserve all specified wiring. With no electrical button wiring supplied, buttons use INPUT_PULLUP to GND and normalized true means pressed. The D13 LED is assumed active HIGH and starts OFF.",
+    "The explicit disclosed transport takes precedence over configuration defaults: RESTOCK1, RESTOCK2 and RESTOCK3 use codes 1, 2 and 3. COMMAND and INTEGER are grammar placeholders, not accepted command tokens. Use the specified 9600 baud, line_or_idle framing and 20 ms idle completion.",
+    "SysML maintains prices 1, 2 and 3 and initial stocks of 2 each, bounded to 0..9999. Decode packet command and payload using integer division and subtraction. Apply restocking only on a valid receive event while administrator mode is active.",
+    "SysML implements selection, sale guards, stock decrement, stock-bound enforcement, display selection, report gates and all timing using actual elapsed deltas.",
+    "A short D7 release confirms a sale. A 2000 ms hold toggles administrator mode once per hold and suppresses dispensing on the subsequent release.",
+    "The model alternates selected item number and price every 1000 ms. Out-of-stock confirmation displays -1. Assume startup has no selection and a blank display, represented by initial command 10000.",
+    "Each accepted sale emits exactly its fixed dispense:itemX line and commands a 100 ms beep. Buzzer frequencies and the out-of-stock alarm pattern are unspecified business parameters requiring resolution in SysML.",
+    "The LED's business function, administrator-mode display indication, error-display clearing policy, behavior of confirmation while in administrator mode, and restocking overflow policy are unspecified model questions. No additional serial messages are assumed.",
+    "Use the 5 ms control step to service button, serial and display changes within the 250 ms acceptance bound without replacing the explicit 100 ms, 1000 ms or 2000 ms business intervals."
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Item 1 selection button; true when pressed",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D2"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Item 2 selection button; true when pressed",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D3\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D3"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_2",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Item 3 selection button; true when pressed",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D4\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D4"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_3",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Confirmation and administrator-mode button; true when pressed",
+      "sample_period_ms": 5,
+      "device": "digital_input",
+      "hardware": "{\"active_high\": false, \"kind\": \"digital_input\", \"pin\": \"D7\", \"pullup\": true}",
+      "binding": {
+        "kind": "digital_input",
+        "active_high": false,
+        "pullup": true,
+        "pin": "D7"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "LOW",
+        "false_level": "HIGH"
+      }
+    },
+    {
+      "name": "io_4",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "LED indication command; business indication policy remains to be specified",
+      "sample_period_ms": 5,
+      "device": "digital_output",
+      "hardware": "{\"active_high\": true, \"kind\": \"digital_output\", \"pin\": \"D13\"}",
+      "binding": {
+        "kind": "digital_output",
+        "active_high": true,
+        "pin": "D13"
+      },
+      "model_semantics": {
+        "kind": "digital_boolean",
+        "true_level": "HIGH",
+        "false_level": "LOW"
+      }
+    },
+    {
+      "name": "io_5",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "Buzzer frequency command for successful dispensing and out-of-stock alarms",
+      "sample_period_ms": 5,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_6",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "initial": 10000,
+      "meaning": "Selected item number, selected price, or out-of-stock error code -1",
+      "sample_period_ms": 5,
+      "device": "tm1637_number",
+      "hardware": "{\"brightness\": 7, \"clk_pin\": \"D8\", \"dio_pin\": \"D5\", \"invalid_policy\": \"blank\", \"kind\": \"tm1637_number\", \"leading_zero\": false}",
+      "binding": {
+        "kind": "tm1637_number",
+        "brightness": 7,
+        "leading_zero": false,
+        "invalid_policy": "blank",
+        "dio_pin": "D5",
+        "clk_pin": "D8"
+      }
+    },
+    {
+      "name": "io_7",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "Restocking command and added quantity; accepted command events affect stock only in administrator mode",
+      "sample_period_ms": 5,
+      "device": "serial_packet_input",
+      "hardware": "{\"baud\": 9600, \"commands\": {\"RESTOCK1\": 1, \"RESTOCK2\": 2, \"RESTOCK3\": 3}, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_packet_input\", \"max\": 9999, \"min\": 0}",
+      "binding": {
+        "kind": "serial_packet_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "min": 0,
+        "max": 9999,
+        "commands": {
+          "RESTOCK1": 1,
+          "RESTOCK2": 2,
+          "RESTOCK3": 3
+        },
+        "baud": 9600
+      }
+    },
+    {
+      "name": "io_7_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 5,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_7\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_7"
+      }
+    },
+    {
+      "name": "io_8",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Emit the exact item 1 dispensing message once per accepted item 1 sale",
+      "sample_period_ms": 5,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"dispense:item1\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "dispense:item1"
+      }
+    },
+    {
+      "name": "io_9",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Emit the exact item 2 dispensing message once per accepted item 2 sale",
+      "sample_period_ms": 5,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"dispense:item2\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "dispense:item2"
+      }
+    },
+    {
+      "name": "io_10",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "Emit the exact item 3 dispensing message once per accepted item 3 sale",
+      "sample_period_ms": 5,
+      "device": "serial_text_output",
+      "hardware": "{\"baud\": 9600, \"kind\": \"serial_text_output\", \"text\": \"dispense:item3\"}",
+      "binding": {
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "dispense:item3"
+      }
+    },
+    {
+      "name": "io_11",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "meaning": "Actual elapsed milliseconds since the previous control step; first delta is zero",
+      "sample_period_ms": 5,
+      "device": "elapsed_ms",
+      "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+      "binding": {
+        "kind": "elapsed_ms",
+        "semantics": "delta_since_previous_step"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tm1637_number": {
+      "clk_pin": "D8",
+      "dio_pin": "D5"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D2"
+        },
+        "resolved": {
+          "pin": "D2"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D3"
+        },
+        "resolved": {
+          "pin": "D3"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D4"
+        },
+        "resolved": {
+          "pin": "D4"
+        }
+      },
+      {
+        "kind": "digital_input",
+        "original": {
+          "pin": "D7"
+        },
+        "resolved": {
+          "pin": "D7"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D13"
+        },
+        "resolved": {
+          "pin": "D13"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D8",
+          "dio_pin": "D5"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20,
+      "commands": {
+        "COMMAND": 1,
+        "INTEGER": 2,
+        "RESTOCK1": 3,
+        "RESTOCK2": 4,
+        "RESTOCK3": 5
+      }
+    },
+    "original_requirement": "设计一个自动售货机简化控制系统，使用按钮 D2、D3、D4 作为三种商品选择键，按钮 D7 作为确认键，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统维护商品价格和库存，用户按键选择商品后在数码管显示商品编号和价格；确认后若库存充足则串口输出 dispense:itemX，库存减一并蜂鸣提示，若库存不足则报警并显示错误代码。长按 D7 进入管理员模式，通过串口补货。\nDisclosed bench parameters and transport: item prices1,2,3 and initial stock2 each. D2/D3/D4 select items1/2/3; short D7 release confirms a sale. A 2s D7 hold toggles admin mode without dispensing. In admin, serial_packet_input commands RESTOCK1,RESTOCK2,RESTOCK3 with codes1,2,3 accept COMMAND INTEGER frames at9600baud, payload0..9999 as added stock; only admin accepts restocking. Stock is bounded0..9999. Display alternates selected item/price each second, out-of-stock displays -1, accepted dispense emits dispense:itemX and a100ms beep. Keep stock, sale guards, hold timing and admin transitions in SysML.",
+    "effective_requirement": "设计一个自动售货机简化控制系统，使用按钮 D2、D3、D4 作为三种商品选择键，按钮 D7 作为确认键，TM1637（CLK=D8，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统维护商品价格和库存，用户按键选择商品后在数码管显示商品编号和价格；确认后若库存充足则串口输出 dispense:itemX，库存减一并蜂鸣提示，若库存不足则报警并显示错误代码。长按 D7 进入管理员模式，通过串口补货。\nDisclosed bench parameters and transport: item prices1,2,3 and initial stock2 each. D2/D3/D4 select items1/2/3; short D7 release confirms a sale. A 2s D7 hold toggles admin mode without dispensing. In admin, serial_packet_input commands RESTOCK1,RESTOCK2,RESTOCK3 with codes1,2,3 accept COMMAND INTEGER frames at9600baud, payload0..9999 as added stock; only admin accepts restocking. Stock is bounded0..9999. Display alternates selected item/price each second, out-of-stock displays -1, accepted dispense emits dispense:itemX and a100ms beep. Keep stock, sale guards, hold timing and admin transitions in SysML.\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"digital_input\", \"pin\": \"D2\"}, {\"device_role\": \"digital_input\", \"pin\": \"D3\"}, {\"device_role\": \"digital_input\", \"pin\": \"D4\"}, {\"device_role\": \"digital_input\", \"pin\": \"D7\"}, {\"device_role\": \"digital_output\", \"pin\": \"D13\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D8\", \"dio_pin\": \"D5\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"commands\": {\"COMMAND\": 1, \"INTEGER\": 2, \"RESTOCK1\": 3, \"RESTOCK2\": 4, \"RESTOCK3\": 5}}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+    "pins": {},
+    "changes": [
+      {
+        "device": "tm1637_number",
+        "field": "clk_pin",
+        "original": "D4",
+        "resolved": "D8",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "设计一个自动售货机简化控制系统，使用按钮 D2、D3、D4 作为三种商品选择键，按钮 D7 作为确认键，TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6、LED D13 和串口。系统维护商品价格和库存，用户按键选择商品后在数码管显示商品编号和价格；确认后若库存充足则串口输出 dispense:itemX，库存减一并蜂鸣提示，若库存不足则报警并显示错误代码。长按 D7 进入管理员模式，通过串口补货。\nDisclosed bench parameters and transport: item prices1,2,3 and initial stock2 each. D2/D3/D4 select items1/2/3; short D7 release confirms a sale. A 2s D7 hold toggles admin mode without dispensing. In admin, serial_packet_input commands RESTOCK1,RESTOCK2,RESTOCK3 with codes1,2,3 accept COMMAND INTEGER frames at9600baud, payload0..9999 as added stock; only admin accepts restocking. Stock is bounded0..9999. Display alternates selected item/price each second, out-of-stock displays -1, accepted dispense emits dispense:itemX and a100ms beep. Keep stock, sale guards, hold timing and admin transitions in SysML.",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_7": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_7_valid": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_8": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_9": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_10": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_11": {
+        "direction": "input",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [],
+    "serial_inputs": [
+      {
+        "id": "io_7",
+        "value_port": "io_7",
+        "valid_port": "io_7_valid",
+        "kind": "serial_packet_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "min": 0,
+        "max": 9999,
+        "commands": {
+          "RESTOCK1": 1,
+          "RESTOCK2": 2,
+          "RESTOCK3": 3
+        },
+        "baud": 9600
+      }
+    ],
+    "serial_text_outputs": [
+      {
+        "id": "io_8",
+        "trigger_port": "io_8",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "dispense:item1"
+      },
+      {
+        "id": "io_9",
+        "trigger_port": "io_9",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "dispense:item2"
+      },
+      {
+        "id": "io_10",
+        "trigger_port": "io_10",
+        "kind": "serial_text_output",
+        "baud": 9600,
+        "text": "dispense:item3"
+      }
+    ]
+  }
+}

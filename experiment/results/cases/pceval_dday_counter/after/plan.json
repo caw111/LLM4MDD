@@ -1,0 +1,88 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises all three supplied target datetimes, successive inputs, repeated inputs, line and idle framing, and a near-day-boundary target. Assertions check the required D-{days} format. For fractional positive day differences, checks permit either adjacent whole-day result because the requirement does not specify rounding. API output checks cannot directly establish use of RTC_DS1307, begin(), or exactly one setup-time RTC read; the reference implements these explicitly.",
+  "assumptions": [
+    "The supplied circuit establishes the DS1307 initial time as 2024-11-24T04:48:00. Harness support for this circuit state is a preflight prerequisite.",
+    "Preserve DS1307 SDA=A4, SCL=A5, VCC=5V, and GND=GND.2. No LED, button, or analog bench defaults are needed.",
+    "Serial uses the supplied 9600 baud and line-or-idle framing with a 20 ms idle timeout.",
+    "The setup-time RTC snapshot is captured close to startup, before the first serial target at 1000 ms.",
+    "Whole-day rounding is unspecified. Tests accept floor or ceiling for the positive fractional differences used here; the reference uses completed 24-hour periods.",
+    "RTC initialization failure behavior and malformed-target behavior are unspecified and are not asserted."
+  ],
+  "horizon_ms": 12000,
+  "input_steps": [],
+  "serial_inputs": [
+    {
+      "at_ms": 1000,
+      "text": "2025-04-11T09:38:00\n"
+    },
+    {
+      "at_ms": 3000,
+      "text": "2025-06-11T09:38:00\n"
+    },
+    {
+      "at_ms": 5000,
+      "text": "2025-03-03T09:38:00\n"
+    },
+    {
+      "at_ms": 7000,
+      "text": "2024-11-25T04:49:00\n"
+    },
+    {
+      "at_ms": 9000,
+      "text": "2025-04-11T09:38:00"
+    }
+  ],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "serial",
+      "id": "april_target",
+      "requirement_quote": "Calculate how much day is left until the target time",
+      "from_ms": 1000,
+      "to_ms": 2500,
+      "regex": "D-(138|139)(\\r?\\n|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "june_target",
+      "requirement_quote": "Calculate how much day is left until the target time",
+      "from_ms": 3000,
+      "to_ms": 4500,
+      "regex": "D-(199|200)(\\r?\\n|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "march_target",
+      "requirement_quote": "Calculate how much day is left until the target time",
+      "from_ms": 5000,
+      "to_ms": 6500,
+      "regex": "D-(99|100)(\\r?\\n|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "near_one_day_boundary",
+      "requirement_quote": "print to the serial monitor in the following format: \"D-{days}\"",
+      "from_ms": 7000,
+      "to_ms": 8500,
+      "regex": "D-(1|2)(\\r?\\n|$)",
+      "min_count": 1
+    },
+    {
+      "kind": "serial",
+      "id": "repeated_target_idle_framing",
+      "requirement_quote": "Continuously read the serial input",
+      "from_ms": 9000,
+      "to_ms": 11000,
+      "regex": "D-(138|139)(\\r?\\n|$)",
+      "min_count": 1
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <Wire.h>\n#include <RTClib.h>\n#include <stdint.h>\n\nRTC_DS1307 rtc;\nuint32_t snapshot = 0;\nbool ready = false;\nchar line[40];\nuint8_t used = 0;\nunsigned long lastByte = 0;\n\nbool validISO(const char *s) {\n  if (strlen(s) != 19) return false;\n  for (uint8_t i = 0; i < 19; ++i) {\n    if (i == 4 || i == 7) { if (s[i] != '-') return false; }\n    else if (i == 10) { if (s[i] != 'T') return false; }\n    else if (i == 13 || i == 16) { if (s[i] != ':') return false; }\n    else if (s[i] < '0' || s[i] > '9') return false;\n  }\n  return true;\n}\n\nvoid processLine() {\n  line[used] = '\\0';\n  if (ready && validISO(line)) {\n    DateTime target(line);\n    int64_t seconds = (int64_t)target.unixtime() - (int64_t)snapshot;\n    long days = (long)(seconds / 86400LL);\n    Serial.print(\"D-\");\n    Serial.println(days);\n  }\n  used = 0;\n}\n\nvoid setup() {\n  Serial.begin(9600);\n  Wire.begin();\n  if (!rtc.begin()) return;\n  snapshot = rtc.now().unixtime();\n  ready = true;\n}\n\nvoid loop() {\n  while (Serial.available() > 0) {\n    char c = (char)Serial.read();\n    lastByte = millis();\n    if (c == '\\n' || c == '\\r') {\n      if (used) processLine();\n    } else if (used < sizeof(line) - 1) {\n      line[used++] = c;\n    }\n  }\n  if (used && (unsigned long)(millis() - lastByte) >= 20) processLine();\n}\n"
+}

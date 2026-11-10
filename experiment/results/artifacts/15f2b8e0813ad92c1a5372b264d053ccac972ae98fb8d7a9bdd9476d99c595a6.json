@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"modeAuto\",\n        \"type\": \"bool\",\n        \"initial\": true\n      },\n      {\n        \"name\": \"prevButton\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"manualForcedUntil\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"manualRemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"displayPhase\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_7\",\n            {\n              \"not\": \"prevButton\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"if\": \"modeAuto\",\n            \"then\": [\n              {\n                \"assign\": \"modeAuto\",\n                \"value\": false\n              }\n            ],\n            \"else\": [\n              {\n                \"assign\": \"modeAuto\",\n                \"value\": true\n              }\n            ]\n          },\n          {\n            \"if\": {\n              \"not\": \"modeAuto\"\n            },\n            \"then\": [\n              {\n                \"assign\": \"manualRemainingMs\",\n                \"value\": 5000\n              },\n              {\n                \"assign\": \"manualForcedUntil\",\n                \"value\": 1\n              }\n            ],\n            \"else\": []\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevButton\",\n        \"value\": \"io_7\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"!=\": [\n                \"manualForcedUntil\",\n                0\n              ]\n            },\n            {\n              \">\": [\n                \"manualRemainingMs\",\n                0\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"manualRemainingMs\",\n            \"value\": \"manualRemainingMs\"\n          },\n          {\n            \"assign\": \"manualForcedUntil\",\n            \"value\": \"manualForcedUntil\"\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"manualForcedUntil\",\n            \"value\": 0\n          }\n        ]\n      },\n      {\n        \"if\": \"modeAuto\",\n        \"then\": [\n          {\n            \"assign\": \"displayPhase\",\n            \"value\": {\n              \"+\": [\n                \"displayPhase\",\n                1\n              ]\n            }\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"displayPhase\",\n            \"value\": {\n              \"+\": [\n                \"displayPhase\",\n                1\n              ]\n            }\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": \"modeAuto\",\n        \"then\": {\n          \"and\": [\n            {\n              \"<\": [\n                \"io_0\",\n                512.0\n              ]\n            },\n            {\n              \">=\": [\n                \"io_1\",\n                512.0\n              ]\n            },\n            {\n              \">=\": [\n                \"io_2\",\n                512.0\n              ]\n            }\n          ]\n        },\n        \"else\": {\n          \"and\": [\n            {\n              \"!=\": [\n                \"manualForcedUntil\",\n                0\n              ]\n            },\n            {\n              \">\": [\n                \"manualRemainingMs\",\n                0\n              ]\n            }\n          ]\n        }\n      },\n      \"io_4\": {\n        \"if\": {\n          \"and\": [\n            \"modeAuto\",\n            {\n              \"<\": [\n                \"io_2\",\n                512.0\n              ]\n            }\n          ]\n        },\n        \"then\": true,\n        \"else\": false\n      },\n      \"io_5\": {\n        \"if\": {\n          \"and\": [\n            \"modeAuto\",\n            {\n              \"<\": [\n                \"io_2\",\n                512.0\n              ]\n            }\n          ]\n        },\n        \"then\": 1000,\n        \"else\": 0\n      },\n      \"io_6\": {\n        \"if\": {\n          \"==\": [\n            \"displayPhase\",\n            0\n          ]\n        },\n        \"then\": {\n          \"floor\": \"io_0\"\n        },\n        \"else\": {\n          \"if\": {\n            \"==\": [\n              \"displayPhase\",\n              1\n            ]\n          },\n          \"then\": {\n            \"floor\": \"io_2\"\n          },\n          \"else\": {\n            \"if\": \"modeAuto\",\n            \"then\": 0,\n            \"else\": 1\n          }\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能灌溉控制系统，使用土壤湿度传感器 A0、雨滴传感器 A1、水位传感器 A2、水泵继电器 D10、状态 LED D13、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和按钮 D2。自动模式下仅在土壤干燥、未下雨且水位足够时开启水泵；若水位不足则禁止启动并报警；按钮用于切换自动/手动模式，手动模式下再次按键可强制启动 5 秒。数码管循环显示土壤湿度、水位和当前模式。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按下/释放按钮将模式切换到自动；设置io_0<512(干燥)、io_1<512(未下雨)、io_2>=512(水位足够)；保持输入不变若干控制步。\",\n        \"oracle\": \"io_3为true(泵开启)，io_4为false，io_5为0，io_6按循环阶段显示土壤湿度数值、随后水位数值、随后模式值(0=自动/1=手动)。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能灌溉控制系统，使用土壤湿度传感器 A0、雨滴传感器 A1、水位传感器 A2、水泵继电器 D10、状态 LED D13、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和按钮 D2。自动模式下仅在土壤干燥、未下雨且水位足够时开启水泵；若水位不足则禁止启动并报警；按钮用于切换自动/手动模式，手动模式下再次按键可强制启动 5 秒。数码管循环显示土壤湿度、水位和当前模式。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"切换到自动模式；设置io_2<512(水位不足)，并设置io_0与io_1满足‘干燥且未下雨’(io_0<512且io_1<512)。保持输入不变。\",\n        \"oracle\": \"io_3为false(禁止启动)，io_4为true，io_5为1000(报警音)，且io_6仍在循环更新显示。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"构建一个智能灌溉控制系统，使用土壤湿度传感器 A0、雨滴传感器 A1、水位传感器 A2、水泵继电器 D10、状态 LED D13、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和按钮 D2。自动模式下仅在土壤干燥、未下雨且水位足够时开启水泵；若水位不足则禁止启动并报警；按钮用于切换自动/手动模式，手动模式下再次按键可强制启动 5 秒。数码管循环显示土壤湿度、水位和当前模式。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将系统切换到手动模式(通过按钮切换一次）；随后在手动模式下再次产生按钮上升沿(pressed先由false->true)。在此过程中设置任意io_0/io_1，并设置io_2可以小于512或大于512。\",\n        \"oracle\": \"在按钮上升沿之后，io_3被拉高(强制启动逻辑生效)，io_4为false，io_5为0；TM1637切换显示模式值(1=手动)并继续循环显示。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_7 : Boolean;\n    attribute modeAuto : Boolean := true;\n    attribute prevButton : Boolean := false;\n    attribute manualForcedUntil : Integer := 0;\n    attribute manualRemainingMs : Integer := 0;\n    attribute displayPhase : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_7) and ((not prevButton))) {\n        first start;\n        then if modeAuto {\n          first start;\n          then assign modeAuto := false;\n        } else {\n          first start;\n          then assign modeAuto := true;\n        }\n        then if (not modeAuto) {\n          first start;\n          then assign manualRemainingMs := 5000;\n          then assign manualForcedUntil := 1;\n        }\n      }\n      then assign prevButton := io_7;\n      then if ((((manualForcedUntil) != (0))) and (((manualRemainingMs) > (0)))) {\n        first start;\n        then assign manualRemainingMs := manualRemainingMs;\n        then assign manualForcedUntil := manualForcedUntil;\n      } else {\n        first start;\n        then assign manualForcedUntil := 0;\n      }\n      then if modeAuto {\n        first start;\n        then assign displayPhase := ((displayPhase) + (1));\n      } else {\n        first start;\n        then assign displayPhase := ((displayPhase) + (1));\n      }\n    }\n    out attribute io_3 : Boolean = (if modeAuto ? ((((io_0) < (512.0))) and (((io_1) >= (512.0))) and (((io_2) >= (512.0)))) else ((((manualForcedUntil) != (0))) and (((manualRemainingMs) > (0)))));\n    out attribute io_4 : Boolean = (if ((modeAuto) and (((io_2) < (512.0)))) ? true else false);\n    out attribute io_5 : Integer = (if ((modeAuto) and (((io_2) < (512.0)))) ? 1000 else 0);\n    out attribute io_6 : Integer = (if ((displayPhase) == (0)) ? RealFunctions::floor(io_0) else (if ((displayPhase) == (1)) ? RealFunctions::floor(io_2) else (if modeAuto ? 0 else 1)));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

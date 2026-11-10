@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "board": "arduino:avr:uno",
+  "control_period_ms": 10,
+  "planning_notes": [
+    "仅提供了“串口输入 BUZZ：蜂鸣器（D6）鸣叫 500ms”的电气/串口配置需求；没有指定任何额外串口状态回传字段，因此 serial_channels 为空。",
+    "蜂鸣器鸣叫时长 500ms、触发条件与 BUZZ 命令的业务逻辑均在 SysML 模型中实现；端口仅负责 tone 输出（静音初始值 0）与串口命令接收。",
+    "串口接收使用配置-defaults-v3 中给定的 baud=9600、framing=line_or_idle、idle_timeout_ms=20；每个控制步仅在接收到有效帧时产生 io_i_valid（由框架自动处理）。"
+  ],
+  "interfaces": [
+    {
+      "name": "io_0",
+      "direction": "output",
+      "type": "i32",
+      "unit": "Hz",
+      "initial": 0,
+      "meaning": "BUZZ 蜂鸣器鸣叫控制（来自串口输入 BUZZ 命令触发）",
+      "sample_period_ms": 10,
+      "device": "tone_output",
+      "hardware": "{\"invalid_policy\": \"silence\", \"kind\": \"tone_output\", \"pin\": \"D6\"}",
+      "binding": {
+        "kind": "tone_output",
+        "invalid_policy": "silence",
+        "pin": "D6"
+      }
+    },
+    {
+      "name": "io_1",
+      "direction": "input",
+      "type": "i32",
+      "unit": "1",
+      "initial": 0,
+      "meaning": "串口输入 BUZZ：接收命令码，BUZZ=1 表示鸣叫 500ms",
+      "sample_period_ms": 10,
+      "device": "serial_command_input",
+      "hardware": "{\"baud\": 9600, \"commands\": {\"BUZZ\": 1}, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"kind\": \"serial_command_input\"}",
+      "binding": {
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "commands": {
+          "BUZZ": 1
+        },
+        "baud": 9600
+      }
+    },
+    {
+      "name": "io_1_valid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "meaning": "True for this model step only when a complete valid serial frame was received; value holds its previous value otherwise",
+      "sample_period_ms": 10,
+      "device": "Serial receive validity",
+      "hardware": "{\"kind\": \"serial_valid\", \"value\": \"io_1\"}",
+      "binding": {
+        "kind": "serial_valid",
+        "value": "io_1"
+      }
+    }
+  ],
+  "required_dependencies": {},
+  "wiring_snapshot": {
+    "tone_output": {
+      "pin": "D6"
+    }
+  },
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20,
+      "commands": {
+        "BUZZ": 1
+      }
+    },
+    "original_requirement": "串口输入 BUZZ：蜂鸣器（D6）鸣叫 500ms",
+    "effective_requirement": "串口输入 BUZZ：蜂鸣器（D6）鸣叫 500ms\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"tone_output\", \"pin\": \"D6\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20, \"commands\": {\"BUZZ\": 1}}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      }
+    ],
+    "circuit_preserved": false
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "串口输入 BUZZ：蜂鸣器（D6）鸣叫 500ms",
+      "assertion_ids": [
+        "source_requirement_R1"
+      ]
+    }
+  ],
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "i32"
+      },
+      "io_1_valid": {
+        "direction": "input",
+        "type": "bool"
+      }
+    },
+    "serial_channels": [],
+    "serial_inputs": [
+      {
+        "id": "io_1",
+        "value_port": "io_1",
+        "valid_port": "io_1_valid",
+        "kind": "serial_command_input",
+        "framing": "line_or_idle",
+        "idle_timeout_ms": 20,
+        "commands": {
+          "BUZZ": 1
+        },
+        "baud": 9600
+      }
+    ]
+  }
+}

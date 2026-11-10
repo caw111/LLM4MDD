@@ -1,0 +1,317 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "mode",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "param",
+        "type": "i32",
+        "initial": 128
+      },
+      {
+        "name": "brightnessGate",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "accumulatedMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "mode",
+            "value": {
+              "if": {
+                "==": [
+                  "mode",
+                  2
+                ]
+              },
+              "then": 0,
+              "else": {
+                "+": [
+                  "mode",
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": {
+                "==": [
+                  "mode",
+                  2
+                ]
+              }
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "param",
+            "value": {
+              "if": {
+                "==": [
+                  "param",
+                  255
+                ]
+              },
+              "then": 0,
+              "else": {
+                "+": [
+                  "param",
+                  16
+                ]
+              }
+            }
+          }
+        ],
+        "else": [
+          {
+            "assign": "param",
+            "value": {
+              "if": {
+                "==": [
+                  "param",
+                  5000
+                ]
+              },
+              "then": 500,
+              "else": {
+                "+": [
+                  "param",
+                  500
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "mode",
+            0
+          ]
+        },
+        "then": [
+          {
+            "assign": "brightnessGate",
+            "value": 0.0
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "mode",
+            1
+          ]
+        },
+        "then": [
+          {
+            "assign": "brightnessGate",
+            "value": {
+              "if": {
+                ">=": [
+                  "param",
+                  255
+                ]
+              },
+              "then": 255.0,
+              "else": "param * 1.0"
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "==": [
+            "mode",
+            2
+          ]
+        },
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "accumulatedMs + io_5"
+          },
+          {
+            "assign": "brightnessGate",
+            "value": {
+              "if": {
+                "<": [
+                  "accumulatedMs",
+                  {
+                    "*": [
+                      "param",
+                      1
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "if": {
+                  ">=": [
+                    "accumulatedMs",
+                    {
+                      "/": [
+                        "param",
+                        2
+                      ]
+                    }
+                  ]
+                },
+                "then": {
+                  "/": [
+                    {
+                      "-": [
+                        "param",
+                        {
+                          "/": [
+                            {
+                              "-": [
+                                "accumulatedMs",
+                                {
+                                  "/": [
+                                    "param",
+                                    2
+                                  ]
+                                }
+                              ]
+                            },
+                            1
+                          ]
+                        }
+                      ]
+                    },
+                    1
+                  ]
+                },
+                "else": {
+                  "/": [
+                    "accumulatedMs",
+                    {
+                      "/": [
+                        "param",
+                        255
+                      ]
+                    }
+                  ]
+                }
+              },
+              "else": 0.0
+            }
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "==": [
+                "mode",
+                2
+              ]
+            },
+            {
+              ">=": [
+                "accumulatedMs",
+                "param * 2"
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "accumulatedMs",
+            "value": "0"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_2": "brightnessGate",
+      "io_3": "mode != 0",
+      "io_4": {
+        "if": {
+          "or": [
+            {
+              "==": [
+                "mode",
+                0
+              ]
+            },
+            {
+              "==": [
+                "mode",
+                1
+              ]
+            }
+          ]
+        },
+        "then": "mode",
+        "else": "RealFunctions::floor(param)"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持io_1=false；对io_0施加一次按下-松开上升沿，再重复两次上升沿（每次上升沿之间保持io_0=false），中间持续推进io_5为非零增量。",
+        "oracle": "io_2在三段模式中依次表现为：模式0为0.0、模式1为随param变化的常亮值、模式2由呼吸逻辑随io_5更新；io_4显示mode（0/1）；io_3在mode!=0时为true。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "将mode切到常亮（通过io_0上升沿）。然后保持io_0=false，连续施加多次io_1按下上升沿（每次按下-松开），每次上升沿之间让io_5推进若干步。",
+        "oracle": "每次io_1上升沿后，常亮输出io_2的值随param递增/回绕更新；io_4在常亮模式下保持显示mode==1；io_3保持为true。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "将mode切到呼吸灯（通过io_0上升沿两次）。然后保持io_0=false，连续施加多次io_1按下上升沿，每次按下-松开并在呼吸期间持续推进io_5为非零增量。",
+        "oracle": "在呼吸模式下，io_4显示param（整数形式）；io_2随io_5和param按呼吸逻辑变化；io_3保持为true。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_5 : Integer;\n    attribute mode : Integer := 0;\n    attribute param : Integer := 128;\n    attribute brightnessGate : Real := 0.0;\n    attribute accumulatedMs : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then assign previousPressed := io_0;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign mode := (if ((mode) == (2)) ? 0 else ((mode) + (1)));\n      }\n      then if ((io_1) and ((not ((mode) == (2))))) {\n        first start;\n        then assign param := (if ((param) == (255)) ? 0 else ((param) + (16)));\n      } else {\n        first start;\n        then assign param := (if ((param) == (5000)) ? 500 else ((param) + (500)));\n      }\n      then if ((mode) == (0)) {\n        first start;\n        then assign brightnessGate := 0.0;\n      }\n      then if ((mode) == (1)) {\n        first start;\n        then assign brightnessGate := (if ((param) >= (255)) ? 255.0 else param * 1.0);\n      }\n      then if ((mode) == (2)) {\n        first start;\n        then assign accumulatedMs := accumulatedMs + io_5;\n        then assign brightnessGate := (if ((accumulatedMs) < (((param) * (1)))) ? (if ((accumulatedMs) >= (((param) / (2)))) ? ((((param) - (((((accumulatedMs) - (((param) / (2))))) / (1))))) / (1)) else ((accumulatedMs) / (((param) / (255))))) else 0.0);\n      }\n      then if ((((mode) == (2))) and (((accumulatedMs) >= (param * 2)))) {\n        first start;\n        then assign accumulatedMs := 0;\n      }\n    }\n    out attribute io_2 : Real = brightnessGate;\n    out attribute io_3 : Boolean = mode != 0;\n    out attribute io_4 : Integer = (if ((((mode) == (0))) or (((mode) == (1)))) ? mode else RealFunctions::floor(param));\n  }\n  part system : Controller;\n}\n"
+}

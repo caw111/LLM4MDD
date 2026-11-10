@@ -1,0 +1,54 @@
+{
+  "ok": false,
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D44\",\n      \"initial\": 0,\n      \"meaning\": \"servo1 angle\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D45\",\n      \"initial\": 0,\n      \"meaning\": \"servo2 angle\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D46\",\n      \"initial\": 0,\n      \"meaning\": \"servo3 angle\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"led1 status\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"led2 status\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D4\",\n      \"initial\": false,\n      \"meaning\": \"led3 status\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"led_bar_graph\",\n      \"pins\": [\n        \"A1\",\n        \"A2\",\n        \"A3\",\n        \"A5\",\n        \"A6\",\n        \"A7\",\n        \"A8\",\n        \"A4\"\n      ],\n      \"initial\": false,\n      \"meaning\": \"bargraph1 segments A1-A8 (sequential states illuminate required ranges)\",\n      \"active_high\": true\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Preserved wiring from the provided Mega circuit: led1->D2, led2->D3, led3->D4; bargraph1 segments use A1, A2, A3, A5, A6, A8 plus A4/A7 as per physical connections listed in the circuit.\",\n    \"Servo PWM wiring in the circuit uses Mega pins 5,6,7 for servo1/servo2/servo3. However, this proposal uses D44/D45/D46 for servo_angle requests due to the explicit supported servo pin constraint for the Mega platform (0..63). Any mismatch with the actual wiring pins would make the servo commands unsupported in hardware if the circuit truly uses pins 5/6/7.\",\n    \"If the physical circuit wiring must remain exactly as given (servo PWM on Mega D5/D6/D7), then servo_angle requests would need to target those pins instead; this would violate the servo AVR pin support constraint given for servo_angle requests (if interpreted strictly).\",\n    \"The model is responsible for: (1) holding initial state (all off, servos at 0°) for 2000ms, (2) starting each subsequent state with simultaneous servo/LED/bar updates, and (3) keeping each state active for at least 2000ms before switching.\",\n    \"bargraph1 segments are controlled via led_bar_graph; the model selects which of the 8 Boolean segment outputs are ON for each state (segments 1-2, then 2-5, then 6-8, then all off on reset).\"\n  ]\n}",
+      "error": "Explicit servo wiring missing servo_angle on mega:5 for servo1",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D44\",\n      \"initial\": 0,\n      \"meaning\": \"servo1 angle\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D45\",\n      \"initial\": 0,\n      \"meaning\": \"servo2 angle\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D46\",\n      \"initial\": 0,\n      \"meaning\": \"servo3 angle\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D2\",\n      \"initial\": false,\n      \"meaning\": \"led1 status\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D3\",\n      \"initial\": false,\n      \"meaning\": \"led2 status\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D4\",\n      \"initial\": false,\n      \"meaning\": \"led3 status\",\n      \"active_high\": true\n    },\n    {\n      \"kind\": \"led_bar_graph\",\n      \"pins\": [\n        \"A1\",\n        \"A2\",\n        \"A3\",\n        \"A5\",\n        \"A6\",\n        \"A8\",\n        \"A4\",\n        \"A7\"\n      ],\n      \"initial\": false,\n      \"meaning\": \"bargraph1 segments (A1-A8 wiring order per circuit connections)\",\n      \"active_high\": true\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Initialization: model holds servos at 0° and turns all LEDs and all bargraph segments off for 2000ms before beginning State 1.\",\n    \"State transitions: at the start of each 2s state boundary, the model updates servo angles, LED booleans, and bargraph segment booleans simultaneously; each state is maintained for at least 2000ms with no overlap.\",\n    \"bargraph1 wired segments are defined by the provided circuit connections: A1, A2, A3, A5, A6, A8, A4, A7 (GPIO order as required by the led_bar_graph request).\",\n    \"WARNING/CHECK: The provided circuit wiring connects servo PWM signals to Mega pins D5, D6, and D7 (mega:5->servo1:PWM, mega:6->servo2:PWM, mega:7->servo3:PWM). This contract currently declares servo_angle outputs on D44, D45, D46 (as in the previous contract) and does not provide servo_angle outputs for D5/D6/D7. If the servo_angle pins must match the actual wiring exactly, the servo requests here are unsupported and must be replaced accordingly; replacement would require changing the pin fields, which is not permitted by the stated 'Correct ONLY the fields and references identified above' constraint.\"\n  ],\n  \"unsupported\": [\n    \"Servo wiring mismatch: circuit connects servo1/servo2/servo3 PWM to Mega pins D5/D6/D7, but interface_requests declare servo_angle on D44/D45/D46. With strict preservation of wiring, required servo outputs on D5/D6/D7 are missing and substituting D44/D45/D46 would not drive the actual servos.\"\n  ]\n}",
+      "error": "Unsupported hardware: [\"Servo wiring mismatch: circuit connects servo1/servo2/servo3 PWM to Mega pins D5/D6/D7, but interface_requests declare servo_angle on D44/D45/D46. With strict preservation of wiring, required servo outputs on D5/D6/D7 are missing and substituting D44/D45/D46 would not drive the actual servos.\"]",
+      "no_progress": false,
+      "code": "HARDWARE_CAPABILITY",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Initialization requirement: all servos at 0°, all LEDs off, all bargraph segments off, and this state persists for 2000ms before starting the state sequence.\",\n    \"State sequence synchronization: at each 2s boundary, servo angles, LED outputs, and bargraph segment outputs must update simultaneously with no overlap; each state configuration is held for at least 2000ms.\",\n    \"Bar graph wiring from circuit: segments A1,A2,A3,A4,A5,A6,A7,A8 correspond to Mega pins A1,A2,A3,A4,A5,A6,A7,A8 respectively (circuit shows A4 on Mega:11 and A7 on Mega:44).\",\n    \"LED wiring from circuit: led1->Mega pin D2, led2->Mega pin D3, led3->Mega pin D4.\"\n  ],\n  \"unsupported\": [\n    \"Servo wiring mismatch: circuit connects servo1/servo2/servo3 PWM to Mega pins D5, D6, D7 (mega:5->servo1:PWM, mega:6->servo2:PWM, mega:7->servo3:PWM), but the prior contract declares servo_angle outputs on D44/D45/D46 and no servo_angle outputs are declared on D5/D6/D7. With strict preservation of the actual circuit wiring, the required servo outputs cannot be represented correctly, so servo interface requests are unsupported.\"\n  ]\n}",
+      "error": "Unsupported hardware: [\"Servo wiring mismatch: circuit connects servo1/servo2/servo3 PWM to Mega pins D5, D6, D7 (mega:5->servo1:PWM, mega:6->servo2:PWM, mega:7->servo3:PWM), but the prior contract declares servo_angle outputs on D44/D45/D46 and no servo_angle outputs are declared on D5/D6/D7. With strict preservation of the actual circuit wiring, the required servo outputs cannot be represented correctly, so servo interface requests are unsupported.\"]",
+      "no_progress": false,
+      "code": "HARDWARE_CAPABILITY",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    }
+  ],
+  "blocking_category": "proposal_validation"
+}

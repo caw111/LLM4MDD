@@ -1,0 +1,122 @@
+--- original.ino
++++ repaired.ino
+@@ -52,53 +52,25 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_2, bool io_3, bool io_4, double* io_0, double* io_1, bool* io_5, bool* io_6, bool* io_7) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_lazy_0 = 0;
+-    bool sysml_lazy_1 = 0;
+-    if (io_4) {
+-        sysml_state_servo1Angle = 0.0;
+-        sysml_state_servo2Angle = 0.0;
+-        sysml_state_rgbRed = false;
+-        sysml_state_rgbGreen = false;
+-        sysml_state_rgbBlue = true;
++    static bool previous[3]={};
++    static uint8_t color=0,angle1=0,angle2=0;
++    static uint32_t changed=0;
++    uint32_t now=millis();
++    bool buttons[]={io_2,io_3,io_4};
++    for (int i=2; i>=0; --i) if (buttons[i] && !previous[i] && (!color || (uint32_t)(now-changed)>=2000)) {
++        color=i+1;
++        if (i==0) angle1=90;
++        else if (i==1) angle2=90;
++        else angle1=angle2=0;
++        changed=now;
++        break;
+     }
+-    sysml_lazy_0 = io_2;
+-    if (sysml_lazy_0) {
+-        sysml_lazy_0 = !io_4;
+-    }
+-    if (sysml_lazy_0) {
+-        sysml_state_servo1Angle = 90.0;
+-        sysml_state_servo2Angle = 0.0;
+-        sysml_state_rgbRed = true;
+-        sysml_state_rgbGreen = false;
+-        sysml_state_rgbBlue = false;
+-    }
+-    sysml_lazy_1 = io_3;
+-    if (sysml_lazy_1) {
+-        sysml_lazy_1 = !io_4;
+-    }
+-    if (sysml_lazy_1) {
+-        sysml_state_servo1Angle = 0.0;
+-        sysml_state_servo2Angle = 90.0;
+-        sysml_state_rgbRed = false;
+-        sysml_state_rgbGreen = true;
+-        sysml_state_rgbBlue = false;
+-    }
+-    double sysml_value_0 = 0;
+-    sysml_value_0 = sysml_state_servo1Angle;
+-    double sysml_value_1 = 0;
+-    sysml_value_1 = sysml_state_servo2Angle;
+-    bool sysml_value_2 = 0;
+-    sysml_value_2 = sysml_state_rgbRed;
+-    bool sysml_value_3 = 0;
+-    sysml_value_3 = sysml_state_rgbGreen;
+-    bool sysml_value_4 = 0;
+-    sysml_value_4 = sysml_state_rgbBlue;
+-    *io_0 = sysml_value_0;
+-    *io_1 = sysml_value_1;
+-    *io_5 = sysml_value_2;
+-    *io_6 = sysml_value_3;
+-    *io_7 = sysml_value_4;
++    for (uint8_t i=0; i<3; ++i) previous[i]=buttons[i];
++    *io_0=angle1;
++    *io_1=angle2;
++    *io_5=color==1;
++    *io_6=color==2;
++    *io_7=color==3;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -130,6 +102,15 @@
+ static bool hw_value_io_6 = false;
+ static bool hw_value_io_7 = false;
+ 
++static bool manual_debounce_input(bool raw, uint8_t index) {
++  static bool previous[8]={}, stable[8]={};
++  static uint32_t changed[8]={};
++  uint32_t now=millis();
++  if(raw!=previous[index]) {previous[index]=raw;changed[index]=now;}
++  if((uint32_t)(now-changed[index])>=25UL) stable[index]=raw;
++  return stable[index];
++}
++
+ void setup() {
+   ProgramPage1_Init(&ProgramPage1_instance);
+   hw_servo_io_0.attach(8);
+@@ -146,9 +127,9 @@
+       hw_servo_io_1.write(command); hw_servo_previous_io_1 = command;
+     }
+   }
+-  pinMode(2, INPUT);
+-  pinMode(3, INPUT);
+-  pinMode(4, INPUT);
++  pinMode(2, INPUT_PULLUP);
++  pinMode(3, INPUT_PULLUP);
++  pinMode(4, INPUT_PULLUP);
+   pinMode(5, OUTPUT);
+   digitalWrite(5, hw_value_io_5 ? HIGH : LOW);
+   pinMode(6, OUTPUT);
+@@ -164,15 +145,15 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_2 || (uint32_t)(hw_now - hw_sampled_io_2) >= 5UL) {
+     hw_attempted_io_2 = true; hw_sampled_io_2 = hw_now;
+-    hw_value_io_2 = (digitalRead(2) == HIGH);
++    hw_value_io_2 = manual_debounce_input((digitalRead(2) == LOW), 0);
+   }
+   if (!hw_attempted_io_3 || (uint32_t)(hw_now - hw_sampled_io_3) >= 5UL) {
+     hw_attempted_io_3 = true; hw_sampled_io_3 = hw_now;
+-    hw_value_io_3 = (digitalRead(3) == HIGH);
++    hw_value_io_3 = manual_debounce_input((digitalRead(3) == LOW), 1);
+   }
+   if (!hw_attempted_io_4 || (uint32_t)(hw_now - hw_sampled_io_4) >= 5UL) {
+     hw_attempted_io_4 = true; hw_sampled_io_4 = hw_now;
+-    hw_value_io_4 = (digitalRead(4) == HIGH);
++    hw_value_io_4 = manual_debounce_input((digitalRead(4) == LOW), 2);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

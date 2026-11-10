@@ -1,0 +1,147 @@
+--- original.ino
++++ repaired.ino
+@@ -47,113 +47,14 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(double io_0, bool io_1, int32_t* io_2, bool* serial_0_trigger, double* serial_0_value_0, double* serial_0_value_1) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_conditional_0 = 0;
+-    bool sysml_conditional_1 = 0;
+-    int32_t sysml_conditional_2 = 0;
+-    int32_t sysml_conditional_3 = 0;
+-    bool sysml_lazy_4 = 0;
+-    int32_t sysml_conditional_5 = 0;
+-    bool sysml_lazy_6 = 0;
+-    bool sysml_lazy_7 = 0;
+-    int32_t sysml_conditional_8 = 0;
+-    int32_t sysml_conditional_9 = 0;
+-    int32_t sysml_conditional_10 = 0;
+-    double sysml_conditional_11 = 0;
+-    double sysml_conditional_12 = 0;
+-    if ((io_0 > sysml_state_maxAdc)) {
+-        sysml_state_maxAdc = io_0;
+-    }
+-    if (sysml_state_showMax) {
+-        if (sysml_state_displayMaxRemaining <= 1) {
+-            sysml_conditional_1 = false;
+-        }
+-        else {
+-            sysml_conditional_1 = true;
+-        }
+-        sysml_conditional_0 = sysml_conditional_1;
+-    }
+-    else {
+-        sysml_conditional_0 = sysml_state_showMax;
+-    }
+-    sysml_state_showMax = sysml_conditional_0;
+-    if (sysml_state_showMax) {
+-        if (sysml_state_displayMaxRemaining <= 1) {
+-            sysml_conditional_3 = 0;
+-        }
+-        else {
+-            sysml_conditional_3 = sysml_state_displayMaxRemaining - 1;
+-        }
+-        sysml_conditional_2 = sysml_conditional_3;
+-    }
+-    else {
+-        sysml_lazy_4 = io_1;
+-        if (sysml_lazy_4) {
+-            sysml_lazy_4 = !sysml_state_previousPressed;
+-        }
+-        if (sysml_lazy_4) {
+-            sysml_conditional_5 = 3000;
+-        }
+-        else {
+-            sysml_conditional_5 = sysml_state_displayMaxRemaining;
+-        }
+-        sysml_conditional_2 = sysml_conditional_5;
+-    }
+-    sysml_state_displayMaxRemaining = sysml_conditional_2;
+-    sysml_lazy_6 = !sysml_state_showMax;
+-    if (sysml_lazy_6) {
+-        sysml_lazy_7 = sysml_state_displayMaxRemaining >= 1;
+-        if (sysml_lazy_7) {
+-            sysml_lazy_7 = !io_1;
+-        }
+-        sysml_lazy_6 = sysml_lazy_7;
+-    }
+-    if (sysml_lazy_6) {
+-        sysml_state_displayMaxRemaining = 0;
+-    }
+-    sysml_state_previousPressed = io_1;
+-    int32_t sysml_value_0 = 0;
+-    if (sysml_state_showMax) {
+-        if (sysml_state_maxAdc < ((double)((int32_t)sysml_state_maxAdc))) {
+-            sysml_conditional_9 = 1;
+-        }
+-        else {
+-            sysml_conditional_9 = 0;
+-        }
+-        sysml_conditional_8 = ((int32_t)sysml_state_maxAdc) - sysml_conditional_9;
+-    }
+-    else {
+-        if (io_0 < ((double)((int32_t)io_0))) {
+-            sysml_conditional_10 = 1;
+-        }
+-        else {
+-            sysml_conditional_10 = 0;
+-        }
+-        sysml_conditional_8 = ((int32_t)io_0) - sysml_conditional_10;
+-    }
+-    sysml_value_0 = sysml_conditional_8;
+-    bool sysml_value_1 = 0;
+-    sysml_value_1 = true;
+-    double sysml_value_2 = 0;
+-    if (true) {
+-        sysml_conditional_11 = io_0;
+-    }
+-    else {
+-        sysml_conditional_11 = 0.0;
+-    }
+-    sysml_value_2 = sysml_conditional_11;
+-    double sysml_value_3 = 0;
+-    if (true) {
+-        sysml_conditional_12 = sysml_state_maxAdc;
+-    }
+-    else {
+-        sysml_conditional_12 = 0.0;
+-    }
+-    sysml_value_3 = sysml_conditional_12;
+-    *io_2 = sysml_value_0;
+-    *serial_0_trigger = sysml_value_1;
+-    *serial_0_value_0 = sysml_value_2;
+-    *serial_0_value_1 = sysml_value_3;
++    static unsigned long deadline=0;
++    if (io_0>sysml_state_maxAdc) sysml_state_maxAdc=io_0;
++    if (io_1 && !sysml_state_previousPressed) {deadline=millis()+3000UL;sysml_state_showMax=true;}
++    if (sysml_state_showMax && (int32_t)(millis()-deadline)>=0) sysml_state_showMax=false;
++    sysml_state_previousPressed=io_1;
++    *io_2=(int32_t)(sysml_state_showMax ? sysml_state_maxAdc : io_0);
++    *serial_0_trigger=true;
++    *serial_0_value_0=io_0; *serial_0_value_1=sysml_state_maxAdc;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -183,7 +84,7 @@
+   ProgramPage1_Init(&ProgramPage1_instance);
+   Serial.begin(9600);
+   pinMode(A1, INPUT);
+-  pinMode(2, INPUT);
++  pinMode(2, INPUT_PULLUP);
+   hw_display_io_2.setBrightness(7, true);
+   if (hw_value_io_2 != hw_display_previous_io_2) {
+     if (hw_value_io_2 < -999 || hw_value_io_2 > 9999) hw_display_io_2.clear();
+@@ -199,11 +100,11 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 10UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (analogRead(A1) * 1.0 + 0.0);
++    hw_value_io_0 = analogRead(A1)*500.0/1023.0;
+   }
+   if (!hw_attempted_io_1 || (uint32_t)(hw_now - hw_sampled_io_1) >= 10UL) {
+     hw_attempted_io_1 = true; hw_sampled_io_1 = hw_now;
+-    hw_value_io_1 = (digitalRead(2) == HIGH);
++    hw_value_io_1 = (digitalRead(2) == LOW);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;

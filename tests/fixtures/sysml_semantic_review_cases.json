@@ -1,0 +1,47 @@
+[
+  {
+    "case": "simple_025_constant_false",
+    "requirement": "Press once to start blinking; press again to stop blinking and turn the LED off.",
+    "sysml": "attribute flashing : Boolean := false;\nout attribute io_1 : Boolean = false;",
+    "model_quote": "out attribute io_1 : Boolean = false;",
+    "category": "coverage",
+    "target": "model",
+    "trigger": "first press toggles flashing to true",
+    "expected": "the LED blinks while flashing is true",
+    "actual": "io_1 remains false because its expression never reads flashing"
+  },
+  {
+    "case": "simple_028_missing_hold",
+    "requirement": "D2 turns the LED on and it stays on until D3 turns it off.",
+    "sysml": "out attribute io_2 : Boolean = (if io_0 ? true else (if io_1 ? false else false));",
+    "model_quote": "(if io_0 ? true else (if io_1 ? false else false))",
+    "category": "state",
+    "target": "model",
+    "trigger": "press D2 and then release it without pressing D3",
+    "expected": "the LED remains on",
+    "actual": "the expression returns false as soon as D2 is released"
+  },
+  {
+    "case": "medium_027_update_before_output",
+    "requirement": "Read the temperature and emit a serial report every 5 seconds.",
+    "sysml": "then if accumulatedMs >= 5000 { then assign accumulatedMs := accumulatedMs - 5000; }\nout attribute serial_0_trigger : Boolean = accumulatedMs >= 5000;",
+    "model_quote": "out attribute serial_0_trigger : Boolean = accumulatedMs >= 5000;",
+    "category": "timing",
+    "target": "model",
+    "trigger": "a step advances accumulatedMs from below 5000 to 5000",
+    "expected": "serial_0_trigger is true for that report instant",
+    "actual": "the ordered update subtracts 5000 before output evaluation, so the trigger is false"
+  },
+  {
+    "case": "medium_008_contract_press_level_conflict",
+    "requirement": "Increment the displayed counter once for each press of the D2 button.",
+    "sysml": "then if ((io_0) and ((not previousPressed))) { then assign counter := counter + 1; }",
+    "model_quote": "",
+    "category": "interface",
+    "target": "contract",
+    "contract_path": "interfaces.0.binding.active_high",
+    "trigger": "a pull-up button is physically pressed LOW",
+    "expected": "the normalized model input becomes true on press",
+    "actual": "the frozen binding declares active_high=true, so HIGH rather than LOW maps to true"
+  }
+]

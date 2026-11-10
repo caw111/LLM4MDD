@@ -1,0 +1,298 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_1",
+      "type": "f64"
+    },
+    {
+      "name": "io_2",
+      "type": "f64"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_3",
+      "type": "i32"
+    },
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? false : true)"
+      }
+    },
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        },
+        {
+          "name": "arg1",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "((arg0 && arg1) ? 0 : ((arg0 && (!arg1)) ? 0 : 0))"
+      }
+    },
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "(!arg0)"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "dhtValid"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "dhtValid"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "showTemp"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg1"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "dhtValid"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "dhtValid",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "lastTempValid",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "lastHumValid",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "showTemp",
+      "type": "bool",
+      "initial": "true"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "lastTempValid"
+            },
+            {
+              "kind": "state",
+              "name": "lastHumValid"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "showTemp",
+                "expression": "(!arg0)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "showTemp"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "showTemp",
+                "expression": "true",
+                "sources": []
+              }
+            ]
+          }
+        },
+        {
+          "kind": "assign",
+          "state": "lastTempValid",
+          "expression": "true",
+          "sources": []
+        },
+        {
+          "kind": "assign",
+          "state": "lastHumValid",
+          "expression": "true",
+          "sources": []
+        },
+        {
+          "kind": "assign",
+          "state": "dhtValid",
+          "expression": "(arg0 && arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "lastTempValid"
+            },
+            {
+              "kind": "state",
+              "name": "lastHumValid"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

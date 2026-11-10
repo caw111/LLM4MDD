@@ -1,0 +1,148 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"mode\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"param\",\n        \"type\": \"i32\",\n        \"initial\": 128\n      },\n      {\n        \"name\": \"brightnessGate\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      },\n      {\n        \"name\": \"accumulatedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": \"false\"\n      }\n    ],\n    \"updates\": [\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"mode\",\n            \"value\": \"mode == 2 ? 0 : mode + 1\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": {\n                \"==\": [\n                  \"mode\",\n                  2\n                ]\n              }\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"param\",\n            \"value\": \"param == 255 ? 0 : param + 16\"\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"param\",\n            \"value\": \"param == 5000 ? 500 : param + 500\"\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"mode\",\n            0\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"brightnessGate\",\n            \"value\": 0.0\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"mode\",\n            1\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"brightnessGate\",\n            \"value\": {\n              \"if\": {\n                \">=\": [\n                  \"param\",\n                  255\n                ]\n              },\n              \"then\": 255.0,\n              \"else\": \"param * 1.0\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"==\": [\n            \"mode\",\n            2\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"accumulatedMs + io_5\"\n          },\n          {\n            \"assign\": \"brightnessGate\",\n            \"value\": {\n              \"if\": {\n                \"<\": [\n                  \"accumulatedMs\",\n                  {\n                    \"*\": [\n                      \"param\",\n                      1\n                    ]\n                  }\n                ]\n              },\n              \"then\": {\n                \"if\": {\n                  \">=\": [\n                    \"accumulatedMs\",\n                    {\n                      \"/\": [\n                        \"param\",\n                        2\n                      ]\n                    }\n                  ]\n                },\n                \"then\": {\n                  \"/\": [\n                    {\n                      \"-\": [\n                        \"param\",\n                        {\n                          \"/\": [\n                            {\n                              \"-\": [\n                                \"accumulatedMs\",\n                                {\n                                  \"/\": [\n                                    \"param\",\n                                    2\n                                  ]\n                                }\n                              ]\n                            },\n                            1\n                          ]\n                        }\n                      ]\n                    },\n                    1\n                  ]\n                },\n                \"else\": {\n                  \"/\": [\n                    \"accumulatedMs\",\n                    {\n                      \"/\": [\n                        \"param\",\n                        255\n                      ]\n                    }\n                  ]\n                }\n              },\n              \"else\": 0.0\n            }\n          }\n        ]\n      },\n      {\n        \"if\": {\n          \"and\": [\n            {\n              \"==\": [\n                \"mode\",\n                2\n              ]\n            },\n            {\n              \">=\": [\n                \"accumulatedMs\",\n                \"param * 2\"\n              ]\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"accumulatedMs\",\n            \"value\": \"0\"\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_2\": \"brightnessGate\",\n      \"io_3\": \"mode != 0\",\n      \"io_4\": {\n        \"if\": {\n          \"or\": [\n            {\n              \"==\": [\n                \"mode\",\n                0\n              ]\n            },\n            {\n              \"==\": [\n                \"mode\",\n                1\n              ]\n            }\n          ]\n        },\n        \"then\": \"mode\",\n        \"else\": \"RealFunctions::floor(param)\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"保持io_1=false；对io_0施加一次按下-松开上升沿，再重复两次上升沿（每次上升沿之间保持io_0=false），中间持续推进io_5为非零增量。\",\n        \"oracle\": \"io_2在三段模式中依次表现为：模式0为0.0、模式1为随param变化的常亮值、模式2由呼吸逻辑随io_5更新；io_4显示mode（0/1）；io_3在mode!=0时为true。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将mode切到常亮（通过io_0上升沿）。然后保持io_0=false，连续施加多次io_1按下上升沿（每次按下-松开），每次上升沿之间让io_5推进若干步。\",\n        \"oracle\": \"每次io_1上升沿后，常亮输出io_2的值随param递增/回绕更新；io_4在常亮模式下保持显示mode==1；io_3保持为true。\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个双按钮模式控制的 LED 系统，使用按钮 D2、按钮 D3、PWM LED D9 和 TM1637（CLK=D4，DIO=D5）。D2 切换三种模式：常灭、常亮、呼吸灯；D3 用于调整当前模式参数，如常亮亮度或呼吸速度；数码管显示当前模式编号或参数值。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将mode切到呼吸灯（通过io_0上升沿两次）。然后保持io_0=false，连续施加多次io_1按下上升沿，每次按下-松开并在呼吸期间持续推进io_5为非零增量。\",\n        \"oracle\": \"在呼吸模式下，io_4显示param（整数形式）；io_2随io_5和param按呼吸逻辑变化；io_3保持为true。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [
+        {
+          "path": "/controller/updates/1/then/0/value",
+          "original": "mode == 2 ? 0 : mode + 1",
+          "normalized": {
+            "if": {
+              "==": [
+                "mode",
+                2
+              ]
+            },
+            "then": 0,
+            "else": {
+              "+": [
+                "mode",
+                1
+              ]
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/updates/2/then/0/value",
+          "original": "param == 255 ? 0 : param + 16",
+          "normalized": {
+            "if": {
+              "==": [
+                "param",
+                255
+              ]
+            },
+            "then": 0,
+            "else": {
+              "+": [
+                "param",
+                16
+              ]
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        },
+        {
+          "path": "/controller/updates/2/else/0/value",
+          "original": "param == 5000 ? 500 : param + 500",
+          "normalized": {
+            "if": {
+              "==": [
+                "param",
+                5000
+              ]
+            },
+            "then": 500,
+            "else": {
+              "+": [
+                "param",
+                500
+              ]
+            }
+          },
+          "rule": "equivalent_scalar_syntax"
+        }
+      ],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_5 : Integer;\n    attribute mode : Integer := 0;\n    attribute param : Integer := 128;\n    attribute brightnessGate : Real := 0.0;\n    attribute accumulatedMs : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then assign previousPressed := io_0;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign mode := (if ((mode) == (2)) ? 0 else ((mode) + (1)));\n      }\n      then if ((io_1) and ((not ((mode) == (2))))) {\n        first start;\n        then assign param := (if ((param) == (255)) ? 0 else ((param) + (16)));\n      } else {\n        first start;\n        then assign param := (if ((param) == (5000)) ? 500 else ((param) + (500)));\n      }\n      then if ((mode) == (0)) {\n        first start;\n        then assign brightnessGate := 0.0;\n      }\n      then if ((mode) == (1)) {\n        first start;\n        then assign brightnessGate := (if ((param) >= (255)) ? 255.0 else param * 1.0);\n      }\n      then if ((mode) == (2)) {\n        first start;\n        then assign accumulatedMs := accumulatedMs + io_5;\n        then assign brightnessGate := (if ((accumulatedMs) < (((param) * (1)))) ? (if ((accumulatedMs) >= (((param) / (2)))) ? ((((param) - (((((accumulatedMs) - (((param) / (2))))) / (1))))) / (1)) else ((accumulatedMs) / (((param) / (255))))) else 0.0);\n      }\n      then if ((((mode) == (2))) and (((accumulatedMs) >= (param * 2)))) {\n        first start;\n        then assign accumulatedMs := 0;\n      }\n    }\n    out attribute io_2 : Real = brightnessGate;\n    out attribute io_3 : Boolean = mode != 0;\n    out attribute io_4 : Integer = (if ((((mode) == (0))) or (((mode) == (1)))) ? mode else RealFunctions::floor(param));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

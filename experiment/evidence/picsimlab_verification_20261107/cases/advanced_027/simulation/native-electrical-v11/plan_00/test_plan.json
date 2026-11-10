@@ -1,0 +1,98 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises automatic tracking under maximal opposite light imbalances and a repeated reversal. Comparisons accept any distinct commanded angles without requiring a minimum angular separation. Mounting direction is unspecified, so these checks establish response to reversal rather than absolute physical orientation. Charging thresholds, low-voltage duration, voltage scaling, display contents, and manual-calibration controls are unspecified; those behaviors cannot be independently asserted reliably and remain uncovered.",
+  "assumptions": [
+    "Uses the disclosed bench defaults: D2 is a button to GND with INPUT_PULLUP, released HIGH. It remains explicitly released during this automatic-tracking test.",
+    "A0, A1, and A2 use raw ADC values 0..1023 and the default 5 V reference. A2 stays constant to isolate tracking; no application charging threshold is inferred.",
+    "Servo mounting orientation, starting angle, travel limits, adjustment increments, and tracking period are unspecified. Opposite sustained imbalances are checked for distinct commanded positions only.",
+    "Each light state is held for 20 seconds as a practical finite-suite response allowance, not a requirement-defined deadline.",
+    "The reference selects illustrative unspecified parameters: 0..180 degree travel, a 20-count light deadband, one-degree steps every 20 ms, direct 5 V voltage scaling, a 3 V low-charge threshold lasting 10 seconds, and voltage display in hundredths of a volt. Checks do not mandate these choices.",
+    "The reference implements usable manual calibration by mapping the relative A0/A1 readings to a manually selectable angle while in manual mode. Each debounced button press toggles modes. This calibration interface is a permitted design choice, not a candidate test assertion."
+  ],
+  "horizon_ms": 62000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 1023
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 0
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 1023
+    },
+    {
+      "at_ms": 20000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    },
+    {
+      "at_ms": 20000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 1023
+    },
+    {
+      "at_ms": 40000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 1023
+    },
+    {
+      "at_ms": 40000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "relation",
+      "id": "opposite_light_changes_tracking_position",
+      "requirement_quote": "系统自动比较左右光照调整舵机使其朝向更强光一侧",
+      "source": "servo",
+      "pin": 9,
+      "at_ms": [
+        19000,
+        39000
+      ],
+      "relation": "different",
+      "tolerance": 0
+    },
+    {
+      "kind": "relation",
+      "id": "returning_light_changes_tracking_position_again",
+      "requirement_quote": "系统自动比较左右光照调整舵机使其朝向更强光一侧",
+      "source": "servo",
+      "pin": 9,
+      "at_ms": [
+        39000,
+        59000
+      ],
+      "relation": "different",
+      "tolerance": 0
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <Servo.h>\n#include <TM1637Display.h>\n\nServo tracker;\nTM1637Display display(4, 5);\nint angle = 90;\nbool automaticMode = true;\nbool rawButton = HIGH;\nbool stableButton = HIGH;\nunsigned long buttonChanged = 0;\nunsigned long lastMove = 0;\nunsigned long lastDisplay = 0;\nunsigned long lowSince = 0;\nunsigned long lastReport = 0;\nbool lowPending = false;\nbool alarmActive = false;\nbool charging = false;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(6, OUTPUT);\n  Serial.begin(9600);\n  tracker.attach(9);\n  tracker.write(angle);\n  display.setBrightness(5);\n  display.showNumberDec(0);\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  bool reading = digitalRead(2);\n  if (reading != rawButton) {\n    rawButton = reading;\n    buttonChanged = now;\n  }\n  if (now - buttonChanged >= 40 && stableButton != rawButton) {\n    stableButton = rawButton;\n    if (stableButton == LOW) {\n      automaticMode = !automaticMode;\n      Serial.println(automaticMode ? \"automatic\" : \"manual calibration: adjust relative illumination to set angle\");\n    }\n  }\n\n  if (now - lastMove >= 20) {\n    lastMove = now;\n    int left = analogRead(A0);\n    int right = analogRead(A1);\n    if (automaticMode) {\n      int difference = left - right;\n      if (difference > 20 && angle < 180) ++angle;\n      else if (difference < -20 && angle > 0) --angle;\n    } else {\n      // In calibration mode the two light sensors are manual angle controls.\n      // Equal illumination selects center; shading either side selects travel.\n      angle = (int)map((long)left - right, -1023L, 1023L, 0L, 180L);\n      angle = constrain(angle, 0, 180);\n    }\n    tracker.write(angle);\n  }\n\n  float voltage = analogRead(A2) * (5.0f / 1023.0f);\n  bool newCharging = voltage >= 3.0f;\n  if (newCharging != charging) {\n    charging = newCharging;\n    Serial.println(charging ? \"charge voltage adequate\" : \"charge voltage low\");\n  }\n  if (now - lastDisplay >= 200) {\n    lastDisplay = now;\n    display.showNumberDec((int)(voltage * 100.0f + 0.5f), false);\n  }\n\n  if (voltage < 3.0f) {\n    if (!lowPending) {\n      lowPending = true;\n      lowSince = now;\n    }\n    if (now - lowSince >= 10000UL) {\n      if (!alarmActive) {\n        alarmActive = true;\n        tone(6, 2000);\n        Serial.println(\"low charge\");\n        lastReport = now;\n      } else if (now - lastReport >= 1000UL) {\n        Serial.println(\"low charge\");\n        lastReport = now;\n      }\n    }\n  } else {\n    lowPending = false;\n    if (alarmActive) {\n      noTone(6);\n      alarmActive = false;\n    }\n  }\n}\n",
+  "electrical_led_pins": {}
+}

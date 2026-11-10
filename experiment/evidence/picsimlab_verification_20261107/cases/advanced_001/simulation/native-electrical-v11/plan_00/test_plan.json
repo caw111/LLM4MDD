@@ -1,0 +1,643 @@
+{
+  "supported": true,
+  "coverage": "partial",
+  "coverage_explanation": "Exercises automatic fan ramp endpoints and midpoint, both digital thresholds, repeated manual selection and mode toggles, manual PWM and digital adjustment boundaries, retention of unselected actuators, sensor changes during manual operation, and restoration of automatic control. Separately injects invalid DHT acquisition and all four analog fault sentinels, requiring a serial report for each fault episode. Checks numeric display content with equal-valued sensors without imposing an unspecified startup display phase. Exact temperature/light/soil display rotation and its 2-second timing remain unverified because the supported display checks cannot express phase-independent frame occurrence windows. Audible D6 alarm activity remains unverified: an arbitrary instantaneous tone check would incorrectly constrain the unspecified alarm cadence. Serial checks establish fault-report emission, not the meaning of arbitrary report wording.",
+  "assumptions": [
+    "Uses the authoritative resolved Uno wiring, including TM1637 CLK D4/DIO D8 and DHT11 D7; no additional remapping is inferred.",
+    "Relies on the disclosed bench defaults: D2 and D3 connect to GND and use INPUT_PULLUP; the individual D9 LED is active HIGH. The disclosed relay polarity makes D10 active HIGH.",
+    "Uses the disclosed automatic startup mode, thresholds, PWM ramp, manual selection order, selected-output retention, and A2 mapping. PWM midpoint checks allow one count for integer rounding.",
+    "Manual button presses last 100ms and are separated sufficiently for ordinary debouncing. Checks at press/change plus 250ms use the public command-response deadline.",
+    "DHT states persist for at least 3 seconds. DHT-dependent automatic checks allow at least 3 seconds for cached acquisition.",
+    "The startup phase of the rotating display, alarm frequency/cadence, fault wording, behavior of actuators during sensor faults, and fault-clear indication are unspecified and are not imposed.",
+    "The reference chooses a continuous 1000Hz fault tone, reports when the nonzero fault mask changes, starts the display with temperature, and retains each automatic actuator when its corresponding sensor is invalid. These are witness choices, not additional acceptance requirements."
+  ],
+  "horizon_ms": 59000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 0,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 30
+    },
+    {
+      "at_ms": 0,
+      "kind": "humidity",
+      "pin": 7,
+      "value": 50
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 30
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 30
+    },
+    {
+      "at_ms": 0,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 0
+    },
+    {
+      "at_ms": 6500,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 25
+    },
+    {
+      "at_ms": 6500,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 400
+    },
+    {
+      "at_ms": 6500,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 400
+    },
+    {
+      "at_ms": 10000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 35
+    },
+    {
+      "at_ms": 10000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 399
+    },
+    {
+      "at_ms": 10000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 401
+    },
+    {
+      "at_ms": 13500,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 30
+    },
+    {
+      "at_ms": 13500,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 401
+    },
+    {
+      "at_ms": 13500,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 399
+    },
+    {
+      "at_ms": 17000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 17100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 17400,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 1023
+    },
+    {
+      "at_ms": 18000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 18100,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 18500,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 511
+    },
+    {
+      "at_ms": 19000,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 512
+    },
+    {
+      "at_ms": 19500,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 19600,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 19800,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 25
+    },
+    {
+      "at_ms": 19800,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 401
+    },
+    {
+      "at_ms": 19800,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 399
+    },
+    {
+      "at_ms": 20000,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 511
+    },
+    {
+      "at_ms": 20500,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 0
+    },
+    {
+      "at_ms": 21000,
+      "kind": "digital",
+      "pin": 3,
+      "value": 0
+    },
+    {
+      "at_ms": 21100,
+      "kind": "digital",
+      "pin": 3,
+      "value": 1
+    },
+    {
+      "at_ms": 21500,
+      "kind": "analog",
+      "pin": "A2",
+      "value": 512
+    },
+    {
+      "at_ms": 22000,
+      "kind": "digital",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 22100,
+      "kind": "digital",
+      "pin": 2,
+      "value": 1
+    },
+    {
+      "at_ms": 23000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": null
+    },
+    {
+      "at_ms": 27000,
+      "kind": "temperature",
+      "pin": 7,
+      "value": 30
+    },
+    {
+      "at_ms": 31000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 0
+    },
+    {
+      "at_ms": 35000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 401
+    },
+    {
+      "at_ms": 39000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 1023
+    },
+    {
+      "at_ms": 43000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 399
+    },
+    {
+      "at_ms": 47000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 1023
+    },
+    {
+      "at_ms": 51000,
+      "kind": "analog",
+      "pin": "A0",
+      "value": 401
+    },
+    {
+      "at_ms": 55000,
+      "kind": "analog",
+      "pin": "A1",
+      "value": 0
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "setup",
+      "id": "setup_deadline",
+      "requirement_quote": "setup() must return within 500ms.",
+      "max_ms": 500
+    },
+    {
+      "kind": "pin_mode",
+      "id": "mode_button_pullup",
+      "requirement_quote": "buttons connect the named input to GND with INPUT_PULLUP",
+      "pin": 2,
+      "expected": 2
+    },
+    {
+      "kind": "pin_mode",
+      "id": "selection_button_pullup",
+      "requirement_quote": "buttons connect the named input to GND with INPUT_PULLUP",
+      "pin": 3,
+      "expected": 2
+    },
+    {
+      "kind": "pwm",
+      "id": "automatic_midpoint",
+      "requirement_quote": "PWM ramps from 0 at 25C to 255 at 35C",
+      "pin": 5,
+      "at_ms": 3500,
+      "expected": 127,
+      "tolerance": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "automatic_dark_on",
+      "requirement_quote": "light turns on below ADC400",
+      "pin": 9,
+      "at_ms": 3500,
+      "expected": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "automatic_dry_on",
+      "requirement_quote": "pump turns on below soil ADC400",
+      "pin": 10,
+      "at_ms": 3500,
+      "expected": 1
+    },
+    {
+      "kind": "display",
+      "id": "equal_sensor_numeric_display_first",
+      "requirement_quote": "integer Celsius temperature and raw ADC light/soil display",
+      "name": "tm:4:8",
+      "at_ms": 3500,
+      "expected": "30",
+      "numeric": true
+    },
+    {
+      "kind": "display",
+      "id": "equal_sensor_numeric_display_later",
+      "requirement_quote": "integer Celsius temperature and raw ADC light/soil display",
+      "name": "tm:4:8",
+      "at_ms": 5500,
+      "expected": "30",
+      "numeric": true
+    },
+    {
+      "kind": "pwm",
+      "id": "automatic_25C_zero",
+      "requirement_quote": "PWM ramps from 0 at 25C to 255 at 35C",
+      "pin": 5,
+      "at_ms": 9500,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "light_threshold_400_off",
+      "requirement_quote": "light turns on below ADC400",
+      "pin": 9,
+      "at_ms": 6750,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "pump_threshold_400_off",
+      "requirement_quote": "pump turns on below soil ADC400",
+      "pin": 10,
+      "at_ms": 6750,
+      "expected": 0
+    },
+    {
+      "kind": "pwm",
+      "id": "automatic_35C_full",
+      "requirement_quote": "PWM ramps from 0 at 25C to 255 at 35C",
+      "pin": 5,
+      "at_ms": 13000,
+      "expected": 255
+    },
+    {
+      "kind": "gpio",
+      "id": "light_399_on",
+      "requirement_quote": "light turns on below ADC400",
+      "pin": 9,
+      "at_ms": 10250,
+      "expected": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "pump_401_off",
+      "requirement_quote": "pump turns on below soil ADC400",
+      "pin": 10,
+      "at_ms": 10250,
+      "expected": 0
+    },
+    {
+      "kind": "pwm",
+      "id": "automatic_return_midpoint",
+      "requirement_quote": "PWM ramps from 0 at 25C to 255 at 35C",
+      "pin": 5,
+      "at_ms": 16500,
+      "expected": 127,
+      "tolerance": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "light_401_off",
+      "requirement_quote": "light turns on below ADC400",
+      "pin": 9,
+      "at_ms": 13750,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "pump_399_on",
+      "requirement_quote": "pump turns on below soil ADC400",
+      "pin": 10,
+      "at_ms": 13750,
+      "expected": 1
+    },
+    {
+      "kind": "pwm",
+      "id": "manual_initial_fan_zero",
+      "requirement_quote": "Manual mode initially selects fan",
+      "pin": 5,
+      "at_ms": 17250,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "manual_entry_retains_light",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 9,
+      "at_ms": 17250,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "manual_entry_retains_pump",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 10,
+      "at_ms": 17250,
+      "expected": 1
+    },
+    {
+      "kind": "pwm",
+      "id": "manual_fan_full",
+      "requirement_quote": "A2 maps 0..1023 to PWM0..255 for fan",
+      "pin": 5,
+      "at_ms": 17650,
+      "expected": 255
+    },
+    {
+      "kind": "gpio",
+      "id": "first_D3_selects_light",
+      "requirement_quote": "each D3 press selects light,pump,fan in that order",
+      "pin": 9,
+      "at_ms": 18250,
+      "expected": 1
+    },
+    {
+      "kind": "pwm",
+      "id": "light_selection_retains_fan",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 5,
+      "at_ms": 18250,
+      "expected": 255
+    },
+    {
+      "kind": "gpio",
+      "id": "light_selection_retains_pump",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 10,
+      "at_ms": 18250,
+      "expected": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "manual_light_511_off",
+      "requirement_quote": "OFF/ON at ADC512 for the selected digital output",
+      "pin": 9,
+      "at_ms": 18750,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "manual_light_512_on",
+      "requirement_quote": "OFF/ON at ADC512 for the selected digital output",
+      "pin": 9,
+      "at_ms": 19250,
+      "expected": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "second_D3_selects_pump_on",
+      "requirement_quote": "each D3 press selects light,pump,fan in that order",
+      "pin": 10,
+      "at_ms": 19750,
+      "expected": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "manual_pump_511_off",
+      "requirement_quote": "OFF/ON at ADC512 for the selected digital output",
+      "pin": 10,
+      "at_ms": 20250,
+      "expected": 0
+    },
+    {
+      "kind": "pwm",
+      "id": "sensor_change_does_not_override_manual_fan",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 5,
+      "at_ms": 20750,
+      "expected": 255
+    },
+    {
+      "kind": "gpio",
+      "id": "manual_pump_zero_remains_off",
+      "requirement_quote": "OFF/ON at ADC512 for the selected digital output",
+      "pin": 10,
+      "at_ms": 20750,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "sensor_change_does_not_override_manual_light",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 9,
+      "at_ms": 20750,
+      "expected": 1
+    },
+    {
+      "kind": "pwm",
+      "id": "third_D3_wraps_to_fan",
+      "requirement_quote": "each D3 press selects light,pump,fan in that order",
+      "pin": 5,
+      "at_ms": 21250,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "fan_wrap_retains_light",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 9,
+      "at_ms": 21250,
+      "expected": 1
+    },
+    {
+      "kind": "gpio",
+      "id": "fan_wrap_retains_pump",
+      "requirement_quote": "A manual update changes only its selected actuator and retains the others until selected or auto mode resumes.",
+      "pin": 10,
+      "at_ms": 21250,
+      "expected": 0
+    },
+    {
+      "kind": "pwm",
+      "id": "manual_fan_midpoint",
+      "requirement_quote": "A2 maps 0..1023 to PWM0..255 for fan",
+      "pin": 5,
+      "at_ms": 21750,
+      "expected": 127,
+      "tolerance": 1
+    },
+    {
+      "kind": "pwm",
+      "id": "second_D2_restores_auto_fan",
+      "requirement_quote": "D2 toggles auto/manual",
+      "pin": 5,
+      "at_ms": 22250,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "second_D2_restores_auto_light",
+      "requirement_quote": "D2 toggles auto/manual",
+      "pin": 9,
+      "at_ms": 22250,
+      "expected": 0
+    },
+    {
+      "kind": "gpio",
+      "id": "second_D2_restores_auto_pump",
+      "requirement_quote": "D2 toggles auto/manual",
+      "pin": 10,
+      "at_ms": 22250,
+      "expected": 1
+    },
+    {
+      "kind": "serial",
+      "id": "invalid_DHT_fault_report",
+      "requirement_quote": "Fault drives D6 and a Serial fault report.",
+      "from_ms": 23000,
+      "to_ms": 26000,
+      "regex": ".+",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "light_zero_fault_report",
+      "requirement_quote": "analog inputs railed at 0/1023",
+      "from_ms": 31000,
+      "to_ms": 34000,
+      "regex": ".+",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "soil_1023_fault_report",
+      "requirement_quote": "analog inputs railed at 0/1023",
+      "from_ms": 39000,
+      "to_ms": 42000,
+      "regex": ".+",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "light_1023_fault_report",
+      "requirement_quote": "analog inputs railed at 0/1023",
+      "from_ms": 47000,
+      "to_ms": 50000,
+      "regex": ".+",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "soil_zero_fault_report",
+      "requirement_quote": "analog inputs railed at 0/1023",
+      "from_ms": 55000,
+      "to_ms": 58000,
+      "regex": ".+",
+      "min_count": 1,
+      "baud": 9600
+    }
+  ],
+  "electrical_led_pins": {}
+}

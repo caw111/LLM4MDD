@@ -1,0 +1,124 @@
+{
+  "supported": true,
+  "coverage": "full",
+  "coverage_explanation": "Tests correctly formatted humidity reports at 9600 baud across initial, changed, endpoint, and repeated humidity inputs, including sustained reporting during an unchanged input. Each observation window allows the DHT cache to refresh. Also verifies the public setup completion deadline.",
+  "assumptions": [
+    "The supplied wiring is authoritative: a DHT22 has its data pin on digital pin 2, with 5V power and ground. No bench-default LED or button wiring is used.",
+    "Serial baud is 9600 as supplied. The number of decimal places is unspecified; checks accept equivalent decimal representations.",
+    "No exact sampling period is specified. The reference uses a 2000ms sampling period, and tests allow up to 3000ms for a fresh report.",
+    "Invalid-reading behavior is unspecified and is not tested."
+  ],
+  "horizon_ms": 25000,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 64.5
+    },
+    {
+      "at_ms": 0,
+      "kind": "temperature",
+      "pin": 2,
+      "value": 23
+    },
+    {
+      "at_ms": 4500,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 18.2
+    },
+    {
+      "at_ms": 8500,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 100
+    },
+    {
+      "at_ms": 12500,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 0
+    },
+    {
+      "at_ms": 16500,
+      "kind": "humidity",
+      "pin": 2,
+      "value": 64.5
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [],
+  "checks": [
+    {
+      "kind": "setup",
+      "id": "setup_deadline",
+      "requirement_quote": "setup() must return within 500ms",
+      "max_ms": 500
+    },
+    {
+      "kind": "serial",
+      "id": "initial_humidity",
+      "requirement_quote": "Print humidity to the serial monitor in the following format:",
+      "from_ms": 0,
+      "to_ms": 3000,
+      "regex": "^Humidity: 64\\.50*$",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "changed_fractional_humidity",
+      "requirement_quote": "The correct humidity value is printed to the serial monitor.",
+      "from_ms": 4500,
+      "to_ms": 7500,
+      "regex": "^Humidity: 18\\.20*$",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "upper_endpoint",
+      "requirement_quote": "The correct humidity value is printed to the serial monitor.",
+      "from_ms": 8500,
+      "to_ms": 11500,
+      "regex": "^Humidity: 100(?:\\.0+)?$",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "lower_endpoint",
+      "requirement_quote": "The correct humidity value is printed to the serial monitor.",
+      "from_ms": 12500,
+      "to_ms": 15500,
+      "regex": "^Humidity: 0(?:\\.0+)?$",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "return_to_initial_value",
+      "requirement_quote": "The correct humidity value is printed to the serial monitor.",
+      "from_ms": 16500,
+      "to_ms": 19500,
+      "regex": "^Humidity: 64\\.50*$",
+      "min_count": 1,
+      "baud": 9600
+    },
+    {
+      "kind": "serial",
+      "id": "continued_stable_reporting",
+      "requirement_quote": "Continuously read the DHT sensor's humidity value",
+      "from_ms": 20500,
+      "to_ms": 23500,
+      "regex": "^Humidity: 64\\.50*$",
+      "min_count": 1,
+      "baud": 9600
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n\nDHT sensor(2, DHT22);\nunsigned long lastRead = 0;\nbool firstRead = true;\n\nvoid setup() {\n  Serial.begin(9600);\n  sensor.begin();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (firstRead || (unsigned long)(now - lastRead) >= 2000UL) {\n    firstRead = false;\n    lastRead = now;\n    float humidity = sensor.readHumidity();\n    if (!isnan(humidity)) {\n      Serial.print(\"Humidity: \");\n      Serial.println(humidity, 1);\n    }\n  }\n}\n",
+  "electrical_led_pins": {}
+}

@@ -1,0 +1,334 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousProximity",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "valveOn",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "valveRemainingMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "todayUses",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "alarmActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "alarmRemainingMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "lastDistanceValid",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "lastDisplayedPercent",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_3",
+            {
+              ">=": [
+                "io_2",
+                2.0
+              ]
+            },
+            {
+              "<=": [
+                "io_2",
+                400.0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "lastDistanceValid",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "assign": "lastDistanceValid",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "previousProximity"
+            }
+          ]
+        },
+        "then": [
+          {
+            "if": {
+              "and": [
+                "io_3",
+                {
+                  "<": [
+                    "io_2",
+                    10.0
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "alarmActive",
+                "value": true
+              },
+              {
+                "assign": "alarmRemainingMs",
+                "value": 3000
+              },
+              {
+                "assign": "valveOn",
+                "value": false
+              },
+              {
+                "assign": "valveRemainingMs",
+                "value": 0
+              }
+            ],
+            "else": [
+              {
+                "assign": "todayUses",
+                "value": "todayUses + 1"
+              },
+              {
+                "assign": "valveOn",
+                "value": true
+              },
+              {
+                "assign": "valveRemainingMs",
+                "value": 5000
+              },
+              {
+                "assign": "alarmActive",
+                "value": false
+              },
+              {
+                "assign": "alarmRemainingMs",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "valveOn",
+        "then": [
+          {
+            "assign": "valveRemainingMs",
+            "value": {
+              "-": [
+                "valveRemainingMs",
+                5
+              ]
+            }
+          },
+          {
+            "if": {
+              "<=": [
+                "valveRemainingMs",
+                0
+              ]
+            },
+            "then": [
+              {
+                "assign": "valveOn",
+                "value": false
+              },
+              {
+                "assign": "valveRemainingMs",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "alarmActive",
+        "then": [
+          {
+            "assign": "alarmRemainingMs",
+            "value": {
+              "-": [
+                "alarmRemainingMs",
+                5
+              ]
+            }
+          },
+          {
+            "if": {
+              "<=": [
+                "alarmRemainingMs",
+                0
+              ]
+            },
+            "then": [
+              {
+                "assign": "alarmActive",
+                "value": false
+              },
+              {
+                "assign": "alarmRemainingMs",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "lastDistanceValid",
+        "then": [
+          {
+            "assign": "lastDisplayedPercent",
+            "value": {
+              "if": {
+                "<": [
+                  "io_2",
+                  2.0
+                ]
+              },
+              "then": 0,
+              "else": {
+                "if": {
+                  ">": [
+                    "io_2",
+                    400.0
+                  ]
+                },
+                "then": 100,
+                "else": {
+                  "floor": {
+                    "*": [
+                      {
+                        "/": [
+                          {
+                            "-": [
+                              "io_2",
+                              2.0
+                            ]
+                          },
+                          398.0
+                        ]
+                      },
+                      100.0
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousProximity",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": "valveOn and lastDistanceValid and not alarmActive",
+      "io_4": {
+        "if": "lastDistanceValid",
+        "then": "lastDisplayedPercent",
+        "else": 0
+      },
+      "io_5": {
+        "if": "alarmActive",
+        "then": 2000,
+        "else": 0
+      },
+      "io_6": {
+        "if": "not lastDistanceValid",
+        "then": true,
+        "else": {
+          "if": "alarmActive",
+          "then": true,
+          "else": "io_0"
+        }
+      },
+      "serial_0_trigger": "io_0",
+      "serial_0_value_0": "todayUses",
+      "serial_0_value_1": {
+        "if": "lastDistanceValid",
+        "then": {
+          "floor": {
+            "/": [
+              {
+                "*": [
+                  "lastDisplayedPercent",
+                  1.0
+                ]
+              },
+              1.0
+            ]
+          }
+        },
+        "else": 0.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持io_3=true且io_2>=10.0，制造io_0的上升沿一次，然后保持io_0为true或false若干控制步；期间每步记录io_1与io_5",
+        "oracle": "io_1在接近上升沿后立即为true并保持固定时长后转为false；期间io_5应为0，alarmActive不被触发"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "将io_3=true且io_2<10.0，制造io_0上升沿一次；保持io_0随后变化若干控制步",
+        "oracle": "上升沿触发后io_1应保持false且不启动；io_5应为报警频率且报警持续固定时长后回到0"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在io_3=true时依次设置io_2为2.0、2.0+398.0/2、400.0并对每个值进行一次控制步；同时在中间值上升沿触发一次io_0",
+        "oracle": "io_4与显示百分比随io_2从0递增到约50再到100；有效水位上升沿触发一次后todayUses递增1，serial_0_value_0反映递增"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个公共卫生间节水控制系统，使用红外接近传感器 D2、水流电磁阀 D10、超声波液位模块 HC-SR04（Trig=D8，Echo=D9）用于水箱液位、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。检测到用户接近时开启水阀固定时长；如果水箱液位过低则禁止出水并报警；数码管显示剩余水位百分比和今日使用次数，串口可查询统计信息。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "将io_3=false并保持io_2任意，进行若干控制步，同时制造一次io_0上升沿",
+        "oracle": "io_6应指示无效液位（为true）；io_1不应开启；serial_0_trigger在io_0为true的控制步为true且serial_0_value_0/serial_0_value_1输出保持定义一致"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    attribute previousProximity : Boolean := false;\n    attribute valveOn : Boolean := false;\n    attribute valveRemainingMs : Integer := 0;\n    attribute todayUses : Integer := 0;\n    attribute alarmActive : Boolean := false;\n    attribute alarmRemainingMs : Integer := 0;\n    attribute lastDistanceValid : Boolean := false;\n    attribute lastDisplayedPercent : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_3) and (((io_2) >= (2.0))) and (((io_2) <= (400.0)))) {\n        first start;\n        then assign lastDistanceValid := true;\n      } else {\n        first start;\n        then assign lastDistanceValid := false;\n      }\n      then if ((io_0) and ((not previousProximity))) {\n        first start;\n        then if ((io_3) and (((io_2) < (10.0)))) {\n          first start;\n          then assign alarmActive := true;\n          then assign alarmRemainingMs := 3000;\n          then assign valveOn := false;\n          then assign valveRemainingMs := 0;\n        } else {\n          first start;\n          then assign todayUses := todayUses + 1;\n          then assign valveOn := true;\n          then assign valveRemainingMs := 5000;\n          then assign alarmActive := false;\n          then assign alarmRemainingMs := 0;\n        }\n      }\n      then if valveOn {\n        first start;\n        then assign valveRemainingMs := ((valveRemainingMs) - (5));\n        then if ((valveRemainingMs) <= (0)) {\n          first start;\n          then assign valveOn := false;\n          then assign valveRemainingMs := 0;\n        }\n      }\n      then if alarmActive {\n        first start;\n        then assign alarmRemainingMs := ((alarmRemainingMs) - (5));\n        then if ((alarmRemainingMs) <= (0)) {\n          first start;\n          then assign alarmActive := false;\n          then assign alarmRemainingMs := 0;\n        }\n      }\n      then if lastDistanceValid {\n        first start;\n        then assign lastDisplayedPercent := (if ((io_2) < (2.0)) ? 0 else (if ((io_2) > (400.0)) ? 100 else RealFunctions::floor(((((((io_2) - (2.0))) / (398.0))) * (100.0)))));\n      }\n      then assign previousProximity := io_0;\n    }\n    out attribute io_1 : Boolean = valveOn and lastDistanceValid and not alarmActive;\n    out attribute io_4 : Integer = (if lastDistanceValid ? lastDisplayedPercent else 0);\n    out attribute io_5 : Integer = (if alarmActive ? 2000 else 0);\n    out attribute io_6 : Boolean = (if not lastDistanceValid ? true else (if alarmActive ? true else io_0));\n    out attribute serial_0_trigger : Boolean = io_0;\n    out attribute serial_0_value_0 : Integer = todayUses;\n    out attribute serial_0_value_1 : Real = (if lastDistanceValid ? RealFunctions::floor(((((lastDisplayedPercent) * (1.0))) / (1.0))) else 0.0);\n  }\n  part system : Controller;\n}\n"
+}

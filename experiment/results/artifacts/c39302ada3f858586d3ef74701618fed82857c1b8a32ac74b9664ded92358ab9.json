@@ -1,0 +1,468 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeIsAuto",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "manualTargetIsFan",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "previousD2Pressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousD3Pressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "fanPwmManual",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "ledOnManual",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "pumpOnManual",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "tmItemIndex",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "tmElapsedMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "lastTempValid",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "lastHumValid",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "lastIo3",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "prevSoilHumValid",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "assign": "lastTempValid",
+            "value": "io_0"
+          },
+          {
+            "assign": "lastHumValid",
+            "value": "io_1"
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "true",
+        "then": [
+          {
+            "assign": "lastIo3",
+            "value": "io_3"
+          },
+          {
+            "assign": "prevSoilHumValid",
+            "value": "io_4"
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "io_11",
+            {
+              "not": "previousD2Pressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeIsAuto",
+            "value": {
+              "not": "modeIsAuto"
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "io_12",
+            {
+              "not": "previousD3Pressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "manualTargetIsFan",
+            "value": {
+              "not": "manualTargetIsFan"
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousD2Pressed",
+        "value": "io_11"
+      },
+      {
+        "assign": "previousD3Pressed",
+        "value": "io_12"
+      },
+      {
+        "assign": "fanPwmManual",
+        "value": {
+          "if": "manualTargetIsFan",
+          "then": {
+            "if": "io_5 < 0.0",
+            "then": 0.0,
+            "else": {
+              "if": "io_5 > 1023.0",
+              "then": 1023.0,
+              "else": "io_5"
+            }
+          },
+          "else": 0.0
+        }
+      },
+      {
+        "assign": "ledOnManual",
+        "value": {
+          "if": "manualTargetIsFan",
+          "then": false,
+          "else": {
+            "if": "io_5 >= 512.0",
+            "then": true,
+            "else": false
+          }
+        }
+      },
+      {
+        "assign": "pumpOnManual",
+        "value": {
+          "if": "manualTargetIsFan",
+          "then": false,
+          "else": {
+            "if": "io_5 >= 256.0",
+            "then": true,
+            "else": false
+          }
+        }
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "modeIsAuto"
+            },
+            "true"
+          ]
+        },
+        "then": [
+          {
+            "assign": "tmItemIndex",
+            "value": "tmItemIndex"
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "true",
+        "then": [
+          {
+            "assign": "tmElapsedMs",
+            "value": "tmElapsedMs + 10"
+          },
+          {
+            "assign": "tmItemIndex",
+            "value": {
+              "if": "tmElapsedMs >= 2000",
+              "then": {
+                "if": "tmItemIndex == 2",
+                "then": 0,
+                "else": "tmItemIndex + 1"
+              },
+              "else": "tmItemIndex"
+            }
+          },
+          {
+            "assign": "tmElapsedMs",
+            "value": {
+              "if": "tmElapsedMs >= 2000",
+              "then": 0,
+              "else": "tmElapsedMs"
+            }
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "true",
+        "then": [
+          {
+            "assign": "tmItemIndex",
+            "value": "tmItemIndex"
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_6": {
+        "if": {
+          "and": [
+            "modeIsAuto",
+            "io_2"
+          ]
+        },
+        "then": {
+          "if": "lastTempValid >= 30.0",
+          "then": {
+            "if": "lastTempValid >= 40.0",
+            "then": 1023.0,
+            "else": "(lastTempValid - 30.0) * 1023.0 / 10.0"
+          },
+          "else": 0.0
+        },
+        "else": {
+          "if": {
+            "and": [
+              {
+                "not": "modeIsAuto"
+              },
+              "manualTargetIsFan"
+            ]
+          },
+          "then": {
+            "if": "fanPwmManual < 0.0",
+            "then": 0.0,
+            "else": {
+              "if": "fanPwmManual > 1023.0",
+              "then": 1023.0,
+              "else": "fanPwmManual"
+            }
+          },
+          "else": 0.0
+        }
+      },
+      "io_7": {
+        "if": {
+          "and": [
+            "modeIsAuto",
+            "io_2"
+          ]
+        },
+        "then": {
+          "if": {
+            ">=": [
+              "lastIo3",
+              600.0
+            ]
+          },
+          "then": true,
+          "else": false
+        },
+        "else": {
+          "if": {
+            "and": [
+              {
+                "not": "modeIsAuto"
+              },
+              {
+                "not": "manualTargetIsFan"
+              }
+            ]
+          },
+          "then": "ledOnManual",
+          "else": false
+        }
+      },
+      "io_8": {
+        "if": {
+          "and": [
+            "modeIsAuto",
+            "io_2"
+          ]
+        },
+        "then": {
+          "if": {
+            "<=": [
+              "prevSoilHumValid",
+              400.0
+            ]
+          },
+          "then": true,
+          "else": false
+        },
+        "else": {
+          "if": {
+            "and": [
+              {
+                "not": "modeIsAuto"
+              },
+              {
+                "not": "manualTargetIsFan"
+              }
+            ]
+          },
+          "then": "pumpOnManual",
+          "else": false
+        }
+      },
+      "io_9": {
+        "if": {
+          "or": [
+            {
+              "not": "io_2"
+            },
+            {
+              "<": [
+                "io_3",
+                0.0
+              ]
+            },
+            {
+              "<": [
+                "io_4",
+                0.0
+              ]
+            }
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_10": {
+        "if": "tmItemIndex == 0",
+        "then": {
+          "floor": "lastTempValid"
+        },
+        "else": {
+          "if": "tmItemIndex == 1",
+          "then": {
+            "floor": "lastIo3"
+          },
+          "else": {
+            "floor": "prevSoilHumValid"
+          }
+        }
+      },
+      "serial_0_trigger": {
+        "or": [
+          {
+            "not": "io_2"
+          },
+          {
+            "<": [
+              "io_3",
+              0.0
+            ]
+          },
+          {
+            "<": [
+              "io_4",
+              0.0
+            ]
+          }
+        ]
+      },
+      "serial_0_value_0": {
+        "or": [
+          {
+            "not": "io_2"
+          },
+          {
+            "<": [
+              "io_3",
+              0.0
+            ]
+          },
+          {
+            "<": [
+              "io_4",
+              0.0
+            ]
+          }
+        ]
+      },
+      "serial_1_trigger": "io_2",
+      "serial_1_value_0": {
+        "if": "io_2",
+        "then": "lastTempValid",
+        "else": "lastTempValid"
+      },
+      "serial_1_value_1": "lastIo3",
+      "serial_1_value_2": "prevSoilHumValid"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "初始默认模式为自动；保持 io_2=true 且令 io_0=35.0、io_3=500、io_4=500；随后切换 io_0=45.0；再将 io_0=25.0。",
+        "oracle": "io_6(风扇PWM)在35.0时>0且<1023；45.0时=1023；25.0时=0；io_7/io_8按光照与土壤湿度规则稳定为未报警状态，io_9=0且serial_0_trigger=false，serial_1_trigger=true。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "按下D2(形成io_11 rising)，进入手动；此时manualTargetIsFan初始为true；将 io_5=0、再 io_5=1023；然后按下D3(形成io_12 rising)切换到非风扇对象；将 io_5=400、再 io_5=700。",
+        "oracle": "手动且目标为风扇时：io_6随io_5变化(0->0，1023->1023)且io_7=false、io_8=false；切换到非风扇对象后：io_6=0；io_7在io_5>=512时为true否则false；io_8在io_5>=256时为true否则false；io_9=0且serial_0_trigger=false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在自动模式下维持io_2=true，设置 io_0=25.2、io_3=111、io_4=333；连续运行多控制步直到tmItemIndex循环至少一次；随后令 io_2=false。",
+        "oracle": "TM1637输出io_10在多个阶段依次对应(温度 floor=25)、(光照 floor=111)、(土壤 floor=333)；当io_2=false时：io_9=1000，serial_0_trigger=true，serial_1_trigger=false(不因无效DHT而上报)。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个多模式智能温室控制系统，使用 DHT11（D7）、光敏电阻（A0）、土壤湿度传感器（A1）、风扇 PWM（D5）、补光 LED（D9）、水泵继电器（D10）、TM1637（CLK=D4，DIO=D5）和按钮 D2、D3。系统需要支持自动模式和手动模式：自动模式下根据温度、光照和土壤湿度分别控制风扇、补光灯和水泵；手动模式下通过按钮切换当前控制对象并用电位器 A2 调整其输出。TM1637 轮流显示温度、光照和土壤湿度；若任一传感器读数异常则蜂鸣器 D6 报警并通过串口输出故障信息。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "在自动模式下令 io_2=true 但设置 io_3=-1 (光照异常)；随后将 io_3恢复为非负；保持 io_0=30、io_4=500。",
+        "oracle": "光照异常阶段：io_9=1000，serial_0_trigger=true；恢复非负后：io_9回到0，serial_0_trigger=false，并按温度阈值与土壤湿度阈值恢复风扇/补光/水泵控制。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_5 : Real;\n    in attribute io_11 : Boolean;\n    in attribute io_12 : Boolean;\n    attribute modeIsAuto : Boolean := true;\n    attribute manualTargetIsFan : Boolean := true;\n    attribute previousD2Pressed : Boolean := false;\n    attribute previousD3Pressed : Boolean := false;\n    attribute fanPwmManual : Real := 0.0;\n    attribute ledOnManual : Boolean := false;\n    attribute pumpOnManual : Boolean := false;\n    attribute tmItemIndex : Integer := 0;\n    attribute tmElapsedMs : Integer := 0;\n    attribute lastTempValid : Real := 0.0;\n    attribute lastHumValid : Real := 0.0;\n    attribute lastIo3 : Real := 0.0;\n    attribute prevSoilHumValid : Real := 0.0;\n    perform action tick {\n      first start;\n      then if io_2 {\n        first start;\n        then assign lastTempValid := io_0;\n        then assign lastHumValid := io_1;\n      }\n      then if true {\n        first start;\n        then assign lastIo3 := io_3;\n        then assign prevSoilHumValid := io_4;\n      }\n      then if ((io_11) and ((not previousD2Pressed))) {\n        first start;\n        then assign modeIsAuto := (not modeIsAuto);\n      }\n      then if ((io_12) and ((not previousD3Pressed))) {\n        first start;\n        then assign manualTargetIsFan := (not manualTargetIsFan);\n      }\n      then assign previousD2Pressed := io_11;\n      then assign previousD3Pressed := io_12;\n      then assign fanPwmManual := (if manualTargetIsFan ? (if io_5 < 0.0 ? 0.0 else (if io_5 > 1023.0 ? 1023.0 else io_5)) else 0.0);\n      then assign ledOnManual := (if manualTargetIsFan ? false else (if io_5 >= 512.0 ? true else false));\n      then assign pumpOnManual := (if manualTargetIsFan ? false else (if io_5 >= 256.0 ? true else false));\n      then if (((not modeIsAuto)) and (true)) {\n        first start;\n        then assign tmItemIndex := tmItemIndex;\n      }\n      then if true {\n        first start;\n        then assign tmElapsedMs := tmElapsedMs + 10;\n        then assign tmItemIndex := (if tmElapsedMs >= 2000 ? (if tmItemIndex == 2 ? 0 else tmItemIndex + 1) else tmItemIndex);\n        then assign tmElapsedMs := (if tmElapsedMs >= 2000 ? 0 else tmElapsedMs);\n      }\n      then if true {\n        first start;\n        then assign tmItemIndex := tmItemIndex;\n      }\n    }\n    out attribute io_6 : Real = (if ((modeIsAuto) and (io_2)) ? (if lastTempValid >= 30.0 ? (if lastTempValid >= 40.0 ? 1023.0 else (lastTempValid - 30.0) * 1023.0 / 10.0) else 0.0) else (if (((not modeIsAuto)) and (manualTargetIsFan)) ? (if fanPwmManual < 0.0 ? 0.0 else (if fanPwmManual > 1023.0 ? 1023.0 else fanPwmManual)) else 0.0));\n    out attribute io_7 : Boolean = (if ((modeIsAuto) and (io_2)) ? (if ((lastIo3) >= (600.0)) ? true else false) else (if (((not modeIsAuto)) and ((not manualTargetIsFan))) ? ledOnManual else false));\n    out attribute io_8 : Boolean = (if ((modeIsAuto) and (io_2)) ? (if ((prevSoilHumValid) <= (400.0)) ? true else false) else (if (((not modeIsAuto)) and ((not manualTargetIsFan))) ? pumpOnManual else false));\n    out attribute io_9 : Integer = (if (((not io_2)) or (((io_3) < (0.0))) or (((io_4) < (0.0)))) ? 1000 else 0);\n    out attribute io_10 : Integer = (if tmItemIndex == 0 ? RealFunctions::floor(lastTempValid) else (if tmItemIndex == 1 ? RealFunctions::floor(lastIo3) else RealFunctions::floor(prevSoilHumValid)));\n    out attribute serial_0_trigger : Boolean = (((not io_2)) or (((io_3) < (0.0))) or (((io_4) < (0.0))));\n    out attribute serial_0_value_0 : Boolean = (((not io_2)) or (((io_3) < (0.0))) or (((io_4) < (0.0))));\n    out attribute serial_1_trigger : Boolean = io_2;\n    out attribute serial_1_value_0 : Real = (if io_2 ? lastTempValid else lastTempValid);\n    out attribute serial_1_value_1 : Real = lastIo3;\n    out attribute serial_1_value_2 : Real = prevSoilHumValid;\n  }\n  part system : Controller;\n}\n"
+}

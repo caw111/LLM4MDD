@@ -1,0 +1,36 @@
+--- original.ino
++++ repaired.ino
+@@ -26,13 +26,11 @@
+ }
+ /* Update function of CompositeActor named "ProgramPage1" */
+ void ProgramPage1(bool io_0, bool* serial_0_trigger, bool* serial_0_value_0) {
+-    /* Calculate code of CompositeActor named "ProgramPage1.body" */
+-    bool sysml_value_0 = 0;
+-    sysml_value_0 = true;
+-    bool sysml_value_1 = 0;
+-    sysml_value_1 = io_0;
+-    *serial_0_trigger = sysml_value_0;
+-    *serial_0_value_0 = sysml_value_1;
++    static bool initialized=false,previous=false;
++    static uint32_t last=0;
++    bool report=!initialized||io_0!=previous||(uint32_t)(millis()-last)>=250;
++    if(report) {initialized=true;last=millis();}
++    *serial_0_trigger=report;*serial_0_value_0=io_0;previous=io_0;
+ }
+ // END COMPILED SYSML MODEL
+ 
+@@ -63,12 +61,12 @@
+   if (hw_elapsed > 2147483647UL) return;
+   if (!hw_attempted_io_0 || (uint32_t)(hw_now - hw_sampled_io_0) >= 5UL) {
+     hw_attempted_io_0 = true; hw_sampled_io_0 = hw_now;
+-    hw_value_io_0 = (digitalRead(4) == HIGH);
++    hw_value_io_0 = (digitalRead(4) == LOW);
+   }
+   hw_now = (uint32_t)millis();
+   hw_elapsed = hw_started ? (uint32_t)(hw_now - hw_last_step) : 0;
+   if (hw_elapsed > 2147483647UL) return;
+   hw_last_step = hw_now; hw_started = true;
+   ProgramPage1(hw_value_io_0, &hw_value_serial_0_trigger, &hw_value_serial_0_value_0);
+-  if (hw_value_serial_0_trigger) { Serial.print("button_pressed"); Serial.println(hw_value_serial_0_value_0); }
++  if (hw_value_serial_0_trigger) Serial.println(hw_value_serial_0_value_0 ? "Button pressed" : "Button not pressed");
+ }

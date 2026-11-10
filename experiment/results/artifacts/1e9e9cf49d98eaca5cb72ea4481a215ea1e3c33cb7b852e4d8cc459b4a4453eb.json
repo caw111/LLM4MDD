@@ -1,0 +1,282 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeManual",
+        "type": "bool",
+        "initial": "true"
+      },
+      {
+        "name": "prevBtn1Pressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevBtn2Pressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "debounceBtn1Remaining",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "debounceBtn2Remaining",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "stableBtn1Pressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "stableBtn2Pressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "autoPhase",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "transitionElapsed",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "toMax",
+        "type": "bool",
+        "initial": "true"
+      },
+      {
+        "name": "prevStableBtn1Pressed",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "prevStableBtn2Pressed",
+        "type": "bool",
+        "initial": "false"
+      }
+    ],
+    "updates": [
+      {
+        "if": "debounceBtn1Remaining > 0",
+        "then": [
+          {
+            "assign": "debounceBtn1Remaining",
+            "value": "debounceBtn1Remaining - io_6"
+          },
+          {
+            "if": "debounceBtn1Remaining - io_6 <= 0",
+            "then": [
+              {
+                "assign": "stableBtn1Pressed",
+                "value": "io_1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "debounceBtn1Remaining <= 0 and io_1 and not prevBtn1Pressed",
+        "then": [
+          {
+            "assign": "debounceBtn1Remaining",
+            "value": "150"
+          }
+        ]
+      },
+      {
+        "if": "debounceBtn2Remaining > 0",
+        "then": [
+          {
+            "assign": "debounceBtn2Remaining",
+            "value": "debounceBtn2Remaining - io_6"
+          },
+          {
+            "if": "debounceBtn2Remaining - io_6 <= 0",
+            "then": [
+              {
+                "assign": "stableBtn2Pressed",
+                "value": "io_2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": "debounceBtn2Remaining <= 0 and io_2 and not prevBtn2Pressed",
+        "then": [
+          {
+            "assign": "debounceBtn2Remaining",
+            "value": "150"
+          }
+        ]
+      },
+      {
+        "assign": "prevBtn1Pressed",
+        "value": "io_1"
+      },
+      {
+        "assign": "prevBtn2Pressed",
+        "value": "io_2"
+      },
+      {
+        "if": "modeManual and stableBtn1Pressed and not prevStableBtn1Pressed",
+        "then": [
+          {
+            "assign": "modeManual",
+            "value": "false"
+          },
+          {
+            "assign": "autoPhase",
+            "value": "0"
+          },
+          {
+            "assign": "transitionElapsed",
+            "value": "0"
+          },
+          {
+            "assign": "toMax",
+            "value": "true"
+          }
+        ]
+      },
+      {
+        "if": "not modeManual and stableBtn2Pressed and not prevStableBtn2Pressed",
+        "then": [
+          {
+            "assign": "modeManual",
+            "value": "true"
+          },
+          {
+            "assign": "transitionElapsed",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "if": "not modeManual",
+        "then": [
+          {
+            "assign": "transitionElapsed",
+            "value": "transitionElapsed + io_6"
+          },
+          {
+            "if": "transitionElapsed >= 2000",
+            "then": [
+              {
+                "assign": "transitionElapsed",
+                "value": "transitionElapsed - 2000"
+              },
+              {
+                "assign": "toMax",
+                "value": "not toMax"
+              },
+              {
+                "assign": "autoPhase",
+                "value": "autoPhase + 1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "prevStableBtn1Pressed",
+        "value": "stableBtn1Pressed"
+      },
+      {
+        "assign": "prevStableBtn2Pressed",
+        "value": "stableBtn2Pressed"
+      }
+    ],
+    "outputs": {
+      "io_0": {
+        "if": "modeManual",
+        "then": {
+          "if": "io_3 <= 0.0",
+          "then": "0.0",
+          "else": {
+            "if": "io_3 >= 1023.0",
+            "then": "255.0",
+            "else": "io_3 * 255.0 / 1023.0"
+          }
+        },
+        "else": {
+          "if": "transitionElapsed >= 2000",
+          "then": {
+            "if": "toMax",
+            "then": {
+              "if": "io_5 >= 1023.0",
+              "then": "255.0",
+              "else": "io_5 * 255.0 / 1023.0"
+            },
+            "else": {
+              "if": "io_4 <= 0.0",
+              "then": "0.0",
+              "else": {
+                "if": "io_4 >= 1023.0",
+                "then": "255.0",
+                "else": "io_4 * 255.0 / 1023.0"
+              }
+            }
+          },
+          "else": {
+            "if": "toMax",
+            "then": {
+              "if": "io_4 <= 0.0",
+              "then": {
+                "if": "io_5 >= 1023.0",
+                "then": "transitionElapsed * 255.0 / 2000.0",
+                "else": "(io_5 * 255.0 / 1023.0) * (transitionElapsed / 2000.0)"
+              },
+              "else": {
+                "if": "io_5 >= 1023.0",
+                "then": "(io_4 * 255.0 / 1023.0) + (255.0 - (io_4 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0)",
+                "else": "(io_4 * 255.0 / 1023.0) + ((io_5 * 255.0 / 1023.0) - (io_4 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0)"
+              }
+            },
+            "else": {
+              "if": "io_5 <= 0.0",
+              "then": {
+                "if": "io_4 >= 1023.0",
+                "then": "255.0",
+                "else": "io_4 * 255.0 / 1023.0"
+              },
+              "else": {
+                "if": "io_4 <= 0.0",
+                "then": {
+                  "if": "io_5 >= 1023.0",
+                  "then": "255.0 + ((io_4 * 255.0 / 1023.0) - 255.0) * (transitionElapsed / 2000.0)",
+                  "else": "(io_5 * 255.0 / 1023.0) + ((io_4 * 255.0 / 1023.0) - (io_5 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0)"
+                },
+                "else": {
+                  "if": "io_5 >= 1023.0",
+                  "then": "255.0 + ((io_4 * 255.0 / 1023.0) - 255.0) * (transitionElapsed / 2000.0)",
+                  "else": "(io_5 * 255.0 / 1023.0) + ((io_4 * 255.0 / 1023.0) - (io_5 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0)"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control the brightness and behavior of an LED (led1) using two push buttons (btn1, btn2) and three slide potentiometers (pot1, pot2, pot3). The LED's brightness will be controlled by the potentiometers, and the buttons will determine the mode of operation. The system should have two modes: Manual Mode and Auto Mode. In Manual Mode, the LED's brightness is directly controlled by one potentiometer. In Auto Mode, the LED's brightness cycles through a range determined by the other two potentiometers.\n\n**Detail Rules**:\n1. **Initialization**: Upon powering on or resetting, the LED (led1) should be off, and the system should start in Manual Mode.\n2. **Manual Mode**:\n   - The brightness of the LED (led1) is controlled by the value of the first potentiometer (pot1). The value of pot1 is mapped to the LED's brightness (0 to 255).\n   - The second potentiometer (pot2) and third potentiometer (pot3) are ignored in this mode.\n   - Pressing the first button (btn1) switches the system to Auto Mode.\n3. **Auto Mode**:\n   - The LED (led1) cycles through a brightness range determined by the second potentiometer (pot2) and third potentiometer (pot3). The minimum brightness is set by pot2, and the maximum brightness is set by pot3.\n   - The LED's brightness smoothly transitions between the minimum and maximum values, with each transition taking 2 seconds.\n   - Pressing the second button (btn2) switches the system back to Manual Mode.\n4. **Button Debouncing**: Both buttons (btn1, btn2) must be debounced to avoid false triggers caused by mechanical vibrations. A debounce delay of 150 milliseconds should be used.\n5. **Mode Indication**: The current mode (Manual or Auto) should be indicated by the LED's behavior:\n   - In Manual Mode, the LED's brightness is static and directly controlled by pot1.\n   - In Auto Mode, the LED's brightness cycles between the minimum and maximum values set by pot2 and pot3.\n6. **State Persistence**: Each state (Manual or Auto Mode) should persist for at least 2 seconds before switching to ensure proper verification.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-led\", \"id\": \"led1\", \"top\": -70.8, \"left\": 13.4, \"attrs\": {\"color\": \"red\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot3\", \"top\": -158, \"left\": -408.8, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"led1:C\", \"black\"], [\"led1:A\", \"mega:2\", \"red\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:3\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:4\", \"btn2:1.l\", \"green\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"pot3:GND\", \"mega:GND.1\", \"black\"], [\"pot3:VCC\", \"mega:5V\", \"red\"], [\"pot3:SIG\", \"mega:A5\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Power-on with io_3=0, io_4 arbitrary, io_5 arbitrary, hold io_1=false and io_2=false for several steps; then press/release btn1 with bouncing on io_1 (true pulses separated by <150ms) while sampling every step; keep btn1 stable after debounce and verify transition to Auto; later press btn2 with bouncing on io_2 to return to Manual.",
+        "oracle": "At startup, io_0 outputs 0.0 and behavior matches Manual mode (io_0 tracks mapped io_3). After debounced rising edge of io_1 with at-least 150ms stable behavior, io_0 begins cycling linearly between mapped io_4(min) and mapped io_5(max) with 2s transitions and holds each mode at least 2s before switching back; after debounced rising edge of io_2, io_0 returns to static mapped io_3 and ignores io_4/io_5."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Real;\n    in attribute io_5 : Real;\n    in attribute io_6 : Integer;\n    attribute modeManual : Boolean := true;\n    attribute prevBtn1Pressed : Boolean := false;\n    attribute prevBtn2Pressed : Boolean := false;\n    attribute debounceBtn1Remaining : Integer := 0;\n    attribute debounceBtn2Remaining : Integer := 0;\n    attribute stableBtn1Pressed : Boolean := false;\n    attribute stableBtn2Pressed : Boolean := false;\n    attribute autoPhase : Integer := 0;\n    attribute transitionElapsed : Integer := 0;\n    attribute toMax : Boolean := true;\n    attribute prevStableBtn1Pressed : Boolean := false;\n    attribute prevStableBtn2Pressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if debounceBtn1Remaining > 0 {\n        first start;\n        then assign debounceBtn1Remaining := debounceBtn1Remaining - io_6;\n        then if debounceBtn1Remaining - io_6 <= 0 {\n          first start;\n          then assign stableBtn1Pressed := io_1;\n        }\n      }\n      then if debounceBtn1Remaining <= 0 and io_1 and not prevBtn1Pressed {\n        first start;\n        then assign debounceBtn1Remaining := 150;\n      }\n      then if debounceBtn2Remaining > 0 {\n        first start;\n        then assign debounceBtn2Remaining := debounceBtn2Remaining - io_6;\n        then if debounceBtn2Remaining - io_6 <= 0 {\n          first start;\n          then assign stableBtn2Pressed := io_2;\n        }\n      }\n      then if debounceBtn2Remaining <= 0 and io_2 and not prevBtn2Pressed {\n        first start;\n        then assign debounceBtn2Remaining := 150;\n      }\n      then assign prevBtn1Pressed := io_1;\n      then assign prevBtn2Pressed := io_2;\n      then if modeManual and stableBtn1Pressed and not prevStableBtn1Pressed {\n        first start;\n        then assign modeManual := false;\n        then assign autoPhase := 0;\n        then assign transitionElapsed := 0;\n        then assign toMax := true;\n      }\n      then if not modeManual and stableBtn2Pressed and not prevStableBtn2Pressed {\n        first start;\n        then assign modeManual := true;\n        then assign transitionElapsed := 0;\n      }\n      then if not modeManual {\n        first start;\n        then assign transitionElapsed := transitionElapsed + io_6;\n        then if transitionElapsed >= 2000 {\n          first start;\n          then assign transitionElapsed := transitionElapsed - 2000;\n          then assign toMax := not toMax;\n          then assign autoPhase := autoPhase + 1;\n        }\n      }\n      then assign prevStableBtn1Pressed := stableBtn1Pressed;\n      then assign prevStableBtn2Pressed := stableBtn2Pressed;\n    }\n    out attribute io_0 : Real = (if modeManual ? (if io_3 <= 0.0 ? 0.0 else (if io_3 >= 1023.0 ? 255.0 else io_3 * 255.0 / 1023.0)) else (if transitionElapsed >= 2000 ? (if toMax ? (if io_5 >= 1023.0 ? 255.0 else io_5 * 255.0 / 1023.0) else (if io_4 <= 0.0 ? 0.0 else (if io_4 >= 1023.0 ? 255.0 else io_4 * 255.0 / 1023.0))) else (if toMax ? (if io_4 <= 0.0 ? (if io_5 >= 1023.0 ? transitionElapsed * 255.0 / 2000.0 else (io_5 * 255.0 / 1023.0) * (transitionElapsed / 2000.0)) else (if io_5 >= 1023.0 ? (io_4 * 255.0 / 1023.0) + (255.0 - (io_4 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0) else (io_4 * 255.0 / 1023.0) + ((io_5 * 255.0 / 1023.0) - (io_4 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0))) else (if io_5 <= 0.0 ? (if io_4 >= 1023.0 ? 255.0 else io_4 * 255.0 / 1023.0) else (if io_4 <= 0.0 ? (if io_5 >= 1023.0 ? 255.0 + ((io_4 * 255.0 / 1023.0) - 255.0) * (transitionElapsed / 2000.0) else (io_5 * 255.0 / 1023.0) + ((io_4 * 255.0 / 1023.0) - (io_5 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0)) else (if io_5 >= 1023.0 ? 255.0 + ((io_4 * 255.0 / 1023.0) - 255.0) * (transitionElapsed / 2000.0) else (io_5 * 255.0 / 1023.0) + ((io_4 * 255.0 / 1023.0) - (io_5 * 255.0 / 1023.0)) * (transitionElapsed / 2000.0)))))));\n  }\n  part system : Controller;\n}\n"
+}

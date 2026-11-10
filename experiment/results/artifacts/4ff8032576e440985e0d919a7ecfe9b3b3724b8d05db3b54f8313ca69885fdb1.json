@@ -1,0 +1,167 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_1",
+      "type": "i32"
+    },
+    {
+      "name": "io_1_valid",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_0",
+      "type": "i32"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "i32"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 ? 500 : 0)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "buzzActive"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "buzzActive",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "buzzElapsedMs",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && (arg1 == 1))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1_valid"
+            },
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "buzzActive",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "buzzElapsedMs",
+                "expression": "0",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "arg0",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "buzzActive"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "buzzElapsedMs",
+                "expression": "arg0",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "buzzElapsedMs"
+                  }
+                ]
+              },
+              {
+                "kind": "if",
+                "condition": "(arg0 >= 500)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "buzzElapsedMs"
+                  }
+                ],
+                "then": {
+                  "kind": "sequence",
+                  "steps": [
+                    {
+                      "kind": "assign",
+                      "state": "buzzActive",
+                      "expression": "false",
+                      "sources": []
+                    }
+                  ]
+                },
+                "else": null
+              }
+            ]
+          },
+          "else": null
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

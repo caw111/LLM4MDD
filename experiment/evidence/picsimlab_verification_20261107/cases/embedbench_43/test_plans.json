@@ -1,0 +1,1831 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "horizon_ms": 30700,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A3",
+          "value": 1023
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A4",
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A5",
+          "value": 0
+        },
+        {
+          "at_ms": 28500,
+          "kind": "analog",
+          "pin": "A3",
+          "value": 1023
+        },
+        {
+          "at_ms": 28500,
+          "kind": "analog",
+          "pin": "A4",
+          "value": 1023
+        },
+        {
+          "at_ms": 28500,
+          "kind": "analog",
+          "pin": "A5",
+          "value": 1023
+        },
+        {
+          "at_ms": 29300,
+          "kind": "analog",
+          "pin": "A3",
+          "value": 0
+        },
+        {
+          "at_ms": 29300,
+          "kind": "analog",
+          "pin": "A4",
+          "value": 1023
+        },
+        {
+          "at_ms": 29300,
+          "kind": "analog",
+          "pin": "A5",
+          "value": 1023
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [
+        {
+          "data_pin": "A0",
+          "clock_pin": "A2",
+          "latch_pin": "A1",
+          "registers": 1,
+          "displays": [
+            {
+              "name": "sevseg1",
+              "register_index": 0,
+              "segment_bits": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "common_anode": true
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "id": "native_1_0",
+          "kind": "display",
+          "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1), a 10-segment LED bar graph (bargraph1), and three slide potentiometers (pot1, p",
+          "name": "sevseg1",
+          "at_ms": 4500,
+          "expected": "2",
+          "numeric": true
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\nconst int SHCP_PIN = A2;  \nconst int STCP_PIN = A1;  \nconst int DS_PIN = A0;    \nconst int POT1_PIN = A3;  \nconst int POT2_PIN = A4;  \nconst int POT3_PIN = A5;  \nconst int BARGRAPH_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11};  \nconst byte segmentCodes[] = {\n  0b11000000, \n  0b11111001, \n  0b10100100, \n  0b10110000, \n  0b10011001, \n  0b10010010, \n  0b10000010, \n  0b11111000, \n  0b10000000, \n  0b10010000, \n};\nint currentDigit = 0;\nunsigned long lastUpdateTime = 0;\nint updateInterval = 2000; \n\nvoid setup();\nvoid loop();\nvoid displayDigit(int digit);\nvoid updateBarGraph(int digit);\nvoid setup() {\n  pinMode(SHCP_PIN, OUTPUT);\n  pinMode(STCP_PIN, OUTPUT);\n  pinMode(DS_PIN, OUTPUT);\n  for (int i = 0; i < 10; i++) {\n    pinMode(BARGRAPH_PINS[i], OUTPUT);\n  }\n  displayDigit(currentDigit);\n  updateBarGraph(currentDigit);\n}\nvoid loop() {\n  unsigned long currentTime = millis();\n  int brightness = map(analogRead(POT1_PIN), 0, 1023, 0, 255);\n  int speed2 = map(analogRead(POT2_PIN), 0, 1023, 1000, 2000);\n  int speed3 = map(analogRead(POT3_PIN), 0, 1023, 1000, 2000);\n  updateInterval = speed2+speed3;\n  if (currentTime - lastUpdateTime >= updateInterval) {\n    currentDigit = (currentDigit + 1) % 10;\n    displayDigit(currentDigit);\n    updateBarGraph(currentDigit);\n    lastUpdateTime = currentTime;\n  }\n  for (int i = 0; i < 10; i++) {\n    analogWrite(BARGRAPH_PINS[i], (i < currentDigit) ? brightness : 0);\n  }\n}\nvoid displayDigit(int digit) {\n  byte code = segmentCodes[digit];\n  shiftOut(DS_PIN, SHCP_PIN, MSBFIRST, code);\n  digitalWrite(STCP_PIN, HIGH);\n  digitalWrite(STCP_PIN, LOW);\n}\nvoid updateBarGraph(int digit) {\n  for (int i = 0; i < 10; i++) {\n    digitalWrite(BARGRAPH_PINS[i], (i < digit) ? HIGH : LOW);\n  }\n}",
+      "coverage": "partial",
+      "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+      "native_test_entries": [
+        "test1: {'time': 4.5, 'state': {'sevseg1': '2', 'bargraph1': '2 segments lit (brightness controlled by pot1 at position 1)', 'pot1': 'position 1', 'pot2': 'position 0', 'pot3': 'position 0'}, 'description': 'After initial 4.2 seconds (plus 0.3 seconds sleep), the 7-segment display should show digit 2 (since it increments every 2 seconds from 0). The LED bar graph should have 2 segments lit with brightness controlled by pot1 at position 1. Pot2 and pot3 remain at initial position 0.'}",
+        "test2: {'time': 28.9, 'state': {'sevseg1': 'digit increments by 1 from previous state', 'bargraph1': 'number of lit segments matches new digit', 'pot1': 'position 1', 'pot2': 'position 1', 'pot3': 'position 1'}, 'description': 'After moving pot2 and pot3 to position 1 (adding 0.5 seconds each), waiting 12.2 seconds, then checking digit, then waiting another 4 seconds (total 16.2 seconds from previous check). The digit should increment by exactly 1 during the 4-second interval (since pot2+pot3 speed control reduces interval from 2 seconds). The LED bar graph should have number of lit segments matching the new digit. All pots are at position 1.'}",
+        "test3: {'time': 29.7, 'state': {'sevseg1': 'unchanged from test2', 'bargraph1': 'all segments off', 'pot1': 'position 0', 'pot2': 'position 1', 'pot3': 'position 1'}, 'description': 'After moving pot1 to position 0 and waiting 0.8 seconds, the LED bar graph should turn completely off (brightness controlled by pot1 at minimum), while the 7-segment display continues showing the same digit. Pot2 and pot3 remain at position 1.'}"
+      ],
+      "skipped_conditions": [
+        {
+          "test": 0,
+          "part": "bargraph1",
+          "reason": "unrecognized_bargraph_state",
+          "value": "2 segments lit (brightness controlled by pot1 at position 1)"
+        },
+        {
+          "test": 1,
+          "part": "bargraph1",
+          "reason": "unrecognized_bargraph_state",
+          "value": "number of lit segments matches new digit"
+        },
+        {
+          "test": 2,
+          "part": "bargraph1",
+          "reason": "unrecognized_bargraph_state",
+          "value": "all segments off"
+        }
+      ],
+      "assumptions": [
+        "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+        "Normalized potentiometer positions0..1 map to ADC0..1023.",
+        "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+        "Reference preflight required; no claim that reference consistency proves all prose requirements."
+      ]
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "horizon_ms": 32500,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "pin": "A3",
+          "value": 1023,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 2700,
+          "pin": "A3",
+          "value": 512,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 10500,
+          "pin": "A3",
+          "value": 0,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 18500,
+          "pin": "A3",
+          "value": 1023,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 0,
+          "pin": "A4",
+          "value": 0,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 6500,
+          "pin": "A4",
+          "value": 1023,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 0,
+          "pin": "A5",
+          "value": 0,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 6500,
+          "pin": "A5",
+          "value": 1023,
+          "kind": "analog"
+        },
+        {
+          "at_ms": 14500,
+          "pin": "A5",
+          "value": 0,
+          "kind": "analog"
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [
+        {
+          "data_pin": "A0",
+          "clock_pin": "A2",
+          "latch_pin": "A1",
+          "registers": 1,
+          "displays": [
+            {
+              "name": "sevseg1",
+              "register_index": 0,
+              "segment_bits": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "common_anode": true
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "kind": "display",
+          "id": "display_sevseg1_250",
+          "at_ms": 250,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_2250",
+          "at_ms": 2250,
+          "expected": "1",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_2250",
+          "at_ms": 2250,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_2250",
+          "at_ms": 2250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_2950",
+          "at_ms": 2950,
+          "expected": "1",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_2950",
+          "at_ms": 2950,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_2950",
+          "at_ms": 2950,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_4300",
+          "at_ms": 4300,
+          "expected": "2",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_4300",
+          "at_ms": 4300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_4300",
+          "at_ms": 4300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_4300",
+          "at_ms": 4300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_6300",
+          "at_ms": 6300,
+          "expected": "3",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_6300",
+          "at_ms": 6300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_6300",
+          "at_ms": 6300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_6300",
+          "at_ms": 6300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_6300",
+          "at_ms": 6300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_6300",
+          "at_ms": 6300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_6300",
+          "at_ms": 6300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_6300",
+          "at_ms": 6300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_6300",
+          "at_ms": 6300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_6300",
+          "at_ms": 6300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_6300",
+          "at_ms": 6300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_9750",
+          "at_ms": 9750,
+          "expected": "3",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_9750",
+          "at_ms": 9750,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_9750",
+          "at_ms": 9750,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_9750",
+          "at_ms": 9750,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_9750",
+          "at_ms": 9750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_9750",
+          "at_ms": 9750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_9750",
+          "at_ms": 9750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_9750",
+          "at_ms": 9750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_9750",
+          "at_ms": 9750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_9750",
+          "at_ms": 9750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_9750",
+          "at_ms": 9750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_10300",
+          "at_ms": 10300,
+          "expected": "4",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_10300",
+          "at_ms": 10300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_10300",
+          "at_ms": 10300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_10300",
+          "at_ms": 10300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_10300",
+          "at_ms": 10300,
+          "expected": 127,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_10300",
+          "at_ms": 10300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_10300",
+          "at_ms": 10300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_10300",
+          "at_ms": 10300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_10300",
+          "at_ms": 10300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_10300",
+          "at_ms": 10300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_10300",
+          "at_ms": 10300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_10750",
+          "at_ms": 10750,
+          "expected": "4",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_10750",
+          "at_ms": 10750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_14300",
+          "at_ms": 14300,
+          "expected": "5",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_14300",
+          "at_ms": 14300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_16750",
+          "at_ms": 16750,
+          "expected": "5",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_16750",
+          "at_ms": 16750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_17300",
+          "at_ms": 17300,
+          "expected": "6",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_17300",
+          "at_ms": 17300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_18750",
+          "at_ms": 18750,
+          "expected": "6",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_18750",
+          "at_ms": 18750,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_18750",
+          "at_ms": 18750,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_18750",
+          "at_ms": 18750,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_18750",
+          "at_ms": 18750,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_18750",
+          "at_ms": 18750,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_18750",
+          "at_ms": 18750,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_18750",
+          "at_ms": 18750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_18750",
+          "at_ms": 18750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_18750",
+          "at_ms": 18750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_18750",
+          "at_ms": 18750,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_20300",
+          "at_ms": 20300,
+          "expected": "7",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_20300",
+          "at_ms": 20300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_20300",
+          "at_ms": 20300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_20300",
+          "at_ms": 20300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_20300",
+          "at_ms": 20300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_20300",
+          "at_ms": 20300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_20300",
+          "at_ms": 20300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_20300",
+          "at_ms": 20300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_20300",
+          "at_ms": 20300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_20300",
+          "at_ms": 20300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_20300",
+          "at_ms": 20300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_23300",
+          "at_ms": 23300,
+          "expected": "8",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_23300",
+          "at_ms": 23300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_23300",
+          "at_ms": 23300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_23300",
+          "at_ms": 23300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_26300",
+          "at_ms": 26300,
+          "expected": "9",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_26300",
+          "at_ms": 26300,
+          "expected": 255,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_26300",
+          "at_ms": 26300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        },
+        {
+          "kind": "display",
+          "id": "display_sevseg1_29300",
+          "at_ms": 29300,
+          "expected": "0",
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "name": "sevseg1"
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_2_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 2,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_3_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 3,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_4_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 4,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_5_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 5,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_6_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 6,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_7_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 7,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_8_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 8,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_9_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 9,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_10_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 10,
+          "tolerance": 1
+        },
+        {
+          "kind": "pwm",
+          "id": "pwm_11_29300",
+          "at_ms": 29300,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 11,
+          "tolerance": 1
+        }
+      ],
+      "coverage": "targeted_core_regression",
+      "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+      "native_test_entries": [
+        "test1: {'time': 4.5, 'state': {'sevseg1': '2', 'bargraph1': '2 segments lit (brightness controlled by pot1 at position 1)', 'pot1': 'position 1', 'pot2': 'position 0', 'pot3': 'position 0'}, 'description': 'After initial 4.2 seconds (plus 0.3 seconds sleep), the 7-segment display should show digit 2 (since it increments every 2 seconds from 0). The LED bar graph should have 2 segments lit with brightness controlled by pot1 at position 1. Pot2 and pot3 remain at initial position 0.'}",
+        "test2: {'time': 28.9, 'state': {'sevseg1': 'digit increments by 1 from previous state', 'bargraph1': 'number of lit segments matches new digit', 'pot1': 'position 1', 'pot2': 'position 1', 'pot3': 'position 1'}, 'description': 'After moving pot2 and pot3 to position 1 (adding 0.5 seconds each), waiting 12.2 seconds, then checking digit, then waiting another 4 seconds (total 16.2 seconds from previous check). The digit should increment by exactly 1 during the 4-second interval (since pot2+pot3 speed control reduces interval from 2 seconds). The LED bar graph should have number of lit segments matching the new digit. All pots are at position 1.'}",
+        "test3: {'time': 29.7, 'state': {'sevseg1': 'unchanged from test2', 'bargraph1': 'all segments off', 'pot1': 'position 0', 'pot2': 'position 1', 'pot3': 'position 1'}, 'description': 'After moving pot1 to position 0 and waiting 0.8 seconds, the LED bar graph should turn completely off (brightness controlled by pot1 at minimum), while the 7-segment display continues showing the same digit. Pot2 and pot3 remain at position 1.'}"
+      ],
+      "skipped_conditions": [
+        {
+          "test": 0,
+          "part": "bargraph1",
+          "reason": "unrecognized_bargraph_state",
+          "value": "2 segments lit (brightness controlled by pot1 at position 1)"
+        },
+        {
+          "test": 1,
+          "part": "bargraph1",
+          "reason": "unrecognized_bargraph_state",
+          "value": "number of lit segments matches new digit"
+        },
+        {
+          "test": 2,
+          "part": "bargraph1",
+          "reason": "unrecognized_bargraph_state",
+          "value": "all segments off"
+        }
+      ],
+      "assumptions": [
+        "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+        "Normalized potentiometer positions0..1 map to ADC0..1023.",
+        "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+        "Reference preflight required; no claim that reference consistency proves all prose requirements."
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

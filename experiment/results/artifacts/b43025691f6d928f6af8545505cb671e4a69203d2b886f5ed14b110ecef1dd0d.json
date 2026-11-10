@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"stageIndex\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"paused\",\n        \"type\": \"bool\",\n        \"initial\": true\n      },\n      {\n        \"name\": \"completed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevIo0\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevIo1\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevIo2\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"stage1RemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"stage2RemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"stage3RemainingMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"stage1ElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"stage2ElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"stage3ElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"totalElapsedMs\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_2 and not prevIo2\",\n        \"then\": [\n          {\n            \"assign\": \"paused\",\n            \"value\": {\n              \"if\": \"completed\",\n              \"then\": false,\n              \"else\": {\n                \"not\": \"paused\"\n              }\n            }\n          },\n          {\n            \"assign\": \"completed\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"if\": \"io_1 and not prevIo1\",\n        \"then\": [\n          {\n            \"assign\": \"stageIndex\",\n            \"value\": {\n              \"if\": \"stageIndex == 2\",\n              \"then\": 0,\n              \"else\": \"stageIndex + 1\"\n            }\n          }\n        ]\n      },\n      {\n        \"if\": \"io_0 and not prevIo0\",\n        \"then\": [\n          {\n            \"if\": \"stageIndex == 0\",\n            \"then\": [\n              {\n                \"assign\": \"stage1RemainingMs\",\n                \"value\": \"stage1RemainingMs + 1000\"\n              }\n            ],\n            \"else\": [\n              {\n                \"if\": \"stageIndex == 1\",\n                \"then\": [\n                  {\n                    \"assign\": \"stage2RemainingMs\",\n                    \"value\": \"stage2RemainingMs + 1000\"\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"assign\": \"stage3RemainingMs\",\n                    \"value\": \"stage3RemainingMs + 1000\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"if\": \"not completed and not paused\",\n        \"then\": [\n          {\n            \"if\": \"stageIndex == 0\",\n            \"then\": [\n              {\n                \"if\": \"stage1RemainingMs <= 0\",\n                \"then\": [\n                  {\n                    \"assign\": \"stageIndex\",\n                    \"value\": {\n                      \"if\": \"stageIndex == 2\",\n                      \"then\": 2,\n                      \"else\": 1\n                    }\n                  }\n                ]\n              }\n            ],\n            \"else\": [\n              {\n                \"if\": \"stageIndex == 1\",\n                \"then\": [\n                  {\n                    \"if\": \"stage2RemainingMs <= 0\",\n                    \"then\": [\n                      {\n                        \"assign\": \"stageIndex\",\n                        \"value\": 2\n                      }\n                    ]\n                  }\n                ],\n                \"else\": [\n                  {\n                    \"if\": \"stageIndex == 2\",\n                    \"then\": [\n                      {\n                        \"if\": \"stage3RemainingMs <= 0\",\n                        \"then\": [\n                          {\n                            \"assign\": \"completed\",\n                            \"value\": true\n                          }\n                        ]\n                      }\n                    ]\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevIo0\",\n        \"value\": \"io_0\"\n      },\n      {\n        \"assign\": \"prevIo1\",\n        \"value\": \"io_1\"\n      },\n      {\n        \"assign\": \"prevIo2\",\n        \"value\": \"io_2\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": \"completed\",\n      \"io_4\": {\n        \"if\": \"completed\",\n        \"then\": 0,\n        \"else\": 0\n      },\n      \"io_5\": {\n        \"if\": \"completed\",\n        \"then\": 0,\n        \"else\": {\n          \"if\": \"stageIndex == 0\",\n          \"then\": \"stage1RemainingMs\",\n          \"else\": {\n            \"if\": \"stageIndex == 1\",\n            \"then\": \"stage2RemainingMs\",\n            \"else\": \"stage3RemainingMs\"\n          }\n        }\n      },\n      \"serial_0_trigger\": \"completed\",\n      \"serial_0_value_0\": \"totalElapsedMs\",\n      \"serial_0_value_1\": \"stage1ElapsedMs\",\n      \"serial_0_value_2\": \"stage2ElapsedMs\",\n      \"serial_0_value_3\": \"stage3ElapsedMs\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个可配置多阶段倒计时与工序提醒系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、D3、D7、蜂鸣器 D6 和 LED D13。系统支持设置三个连续阶段的倒计时时长，每个阶段结束时以不同次数的蜂鸣器鸣叫提示，并自动进入下一阶段；按钮用于增加时间、切换阶段和开始/暂停。所有阶段完成后 LED 常亮，串口输出 process complete 以及每阶段实际耗时。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"在初始状态下保持未按下D2/D3/D7若干控制步；观察输出。\",\n        \"oracle\": \"LED(io_3)保持为false；蜂鸣器频率(io_4)为0；TM1637显示(io_5)为0；serial触发(serial_0_trigger)为false，且各stage elapsed与total保持为0。\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    attribute stageIndex : Integer := 0;\n    attribute paused : Boolean := true;\n    attribute completed : Boolean := false;\n    attribute prevIo0 : Boolean := false;\n    attribute prevIo1 : Boolean := false;\n    attribute prevIo2 : Boolean := false;\n    attribute stage1RemainingMs : Integer := 0;\n    attribute stage2RemainingMs : Integer := 0;\n    attribute stage3RemainingMs : Integer := 0;\n    attribute stage1ElapsedMs : Integer := 0;\n    attribute stage2ElapsedMs : Integer := 0;\n    attribute stage3ElapsedMs : Integer := 0;\n    attribute totalElapsedMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_2 and not prevIo2 {\n        first start;\n        then assign paused := (if completed ? false else (not paused));\n        then assign completed := false;\n      }\n      then if io_1 and not prevIo1 {\n        first start;\n        then assign stageIndex := (if stageIndex == 2 ? 0 else stageIndex + 1);\n      }\n      then if io_0 and not prevIo0 {\n        first start;\n        then if stageIndex == 0 {\n          first start;\n          then assign stage1RemainingMs := stage1RemainingMs + 1000;\n        } else {\n          first start;\n          then if stageIndex == 1 {\n            first start;\n            then assign stage2RemainingMs := stage2RemainingMs + 1000;\n          } else {\n            first start;\n            then assign stage3RemainingMs := stage3RemainingMs + 1000;\n          }\n        }\n      }\n      then if not completed and not paused {\n        first start;\n        then if stageIndex == 0 {\n          first start;\n          then if stage1RemainingMs <= 0 {\n            first start;\n            then assign stageIndex := (if stageIndex == 2 ? 2 else 1);\n          }\n        } else {\n          first start;\n          then if stageIndex == 1 {\n            first start;\n            then if stage2RemainingMs <= 0 {\n              first start;\n              then assign stageIndex := 2;\n            }\n          } else {\n            first start;\n            then if stageIndex == 2 {\n              first start;\n              then if stage3RemainingMs <= 0 {\n                first start;\n                then assign completed := true;\n              }\n            }\n          }\n        }\n      }\n      then assign prevIo0 := io_0;\n      then assign prevIo1 := io_1;\n      then assign prevIo2 := io_2;\n    }\n    out attribute io_3 : Boolean = completed;\n    out attribute io_4 : Integer = (if completed ? 0 else 0);\n    out attribute io_5 : Integer = (if completed ? 0 else (if stageIndex == 0 ? stage1RemainingMs else (if stageIndex == 1 ? stage2RemainingMs else stage3RemainingMs)));\n    out attribute serial_0_trigger : Boolean = completed;\n    out attribute serial_0_value_0 : Integer = totalElapsedMs;\n    out attribute serial_0_value_1 : Integer = stage1ElapsedMs;\n    out attribute serial_0_value_2 : Integer = stage2ElapsedMs;\n    out attribute serial_0_value_3 : Integer = stage3ElapsedMs;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

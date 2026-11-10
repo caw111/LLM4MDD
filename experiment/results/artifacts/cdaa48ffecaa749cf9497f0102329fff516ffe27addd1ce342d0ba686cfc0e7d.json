@@ -1,0 +1,170 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "accum3sMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "consecCloseCount",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "prevDhtTemp",
+        "type": "f64",
+        "initial": "0.0"
+      },
+      {
+        "name": "prevDhtHum",
+        "type": "f64",
+        "initial": "0.0"
+      },
+      {
+        "name": "prevDistCm",
+        "type": "f64",
+        "initial": "0.0"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "accum3sMs",
+        "value": "accum3sMs + io_6"
+      },
+      {
+        "if": "accum3sMs >= 3000",
+        "then": [
+          {
+            "assign": "accum3sMs",
+            "value": "accum3sMs - 3000"
+          }
+        ]
+      },
+      {
+        "if": "io_5",
+        "then": [
+          {
+            "if": "io_4 < 20.0",
+            "then": [
+              {
+                "assign": "consecCloseCount",
+                "value": "consecCloseCount + 1"
+              }
+            ],
+            "else": [
+              {
+                "assign": "consecCloseCount",
+                "value": "0"
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "consecCloseCount",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "if": "io_3",
+        "then": [
+          {
+            "assign": "prevDhtTemp",
+            "value": "io_1"
+          },
+          {
+            "assign": "prevDhtHum",
+            "value": "io_2"
+          }
+        ]
+      },
+      {
+        "if": "io_5",
+        "then": [
+          {
+            "assign": "prevDistCm",
+            "value": "io_4"
+          }
+        ]
+      },
+      {
+        "if": "consecCloseCount > 3",
+        "then": [
+          {
+            "assign": "consecCloseCount",
+            "value": "3"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_0": "consecCloseCount >= 3 and io_5",
+      "io_8": "consecCloseCount >= 3 and io_5 and (accum3sMs >= 0)",
+      "serial_0_trigger": "consecCloseCount >= 0 and (accum3sMs >= 3000 or (accum3sMs + io_6) >= 3000)",
+      "serial_0_value_0": {
+        "if": "io_3",
+        "then": "io_1",
+        "else": "prevDhtTemp"
+      },
+      "serial_0_value_1": {
+        "if": "io_3",
+        "then": "io_2",
+        "else": "prevDhtHum"
+      },
+      "serial_0_value_2": {
+        "if": "io_5",
+        "then": "io_4",
+        "else": "prevDistCm"
+      },
+      "serial_0_value_3": "io_5",
+      "serial_0_value_4": "io_3"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "令 io_6 在若干步累计恰好跨越 3000ms；在每次跨越前确保 io_3/io_5 分别为 true 且提供有效 io_1/io_2/io_4，记录 serial_0_trigger 与 serial_0_value_*。",
+        "oracle": "在累计跨越 3000ms 的控制步，serial_0_trigger 为 true 且 serial_0_value_0/io_1、serial_0_value_1/io_2、serial_0_value_2/io_4、serial_0_value_3/io_5、serial_0_value_4/io_3 与输入一致。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持 io_5=true，连续提供 3 次 io_4=19.9（中间跨越 3秒轮询节拍的时间）；同时让 io_6 正常累计触发巡检输出。",
+        "oracle": "在达到连续3次距离都<20cm之后，io_0 为 true，并且 io_8 在触发固定文本门控的控制步为 true，从而输出文本 persistent object detected。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "保持 io_5=true，提供距离序列：19.9、19.9、20.0（第三次不小于20）；跨越时间触发至少一次 3秒轮询输出。",
+        "oracle": "当任意一次距离不满足 <20cm 时，连续计数被清零，因而 io_0 在未形成连续3次<20cm时保持为 false，io_8 不触发 persistent object detected。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "先给出一次有效 DHT：io_3=true 并设置 io_1=25.0、io_2=60.0；随后把 io_3 置为 false（保持 io_1/io_2 可为任意值），同时跨越 3秒轮询节拍，记录 serial_0_value_0/serial_0_value_1。",
+        "oracle": "在 io_3=false 的轮询输出控制步，serial_0_value_0/serial_0_value_1 保持上一有效温湿度值，而 serial_0_value_4=io_3=false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个定时巡检系统，使用 DHT11（D7）、HC-SR04（Trig=D8，Echo=D9）、LED D13 和串口。系统每 3 秒轮询一次温度与距离并通过串口输出；若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected。",
+        "test_point_id": "T5",
+        "test_method": "trace",
+        "stimulus": "先给出一次有效超声：io_5=true 并设置 io_4=15.0；随后把 io_5=false（保持 io_4 可为任意值），并跨越 3秒轮询节拍，记录 serial_0_value_2。",
+        "oracle": "在 io_5=false 的轮询输出控制步，serial_0_value_2 保持上一有效距离值，而 serial_0_value_3=io_5=false。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Real;\n    in attribute io_2 : Real;\n    in attribute io_3 : Boolean;\n    in attribute io_4 : Real;\n    in attribute io_5 : Boolean;\n    in attribute io_6 : Integer;\n    in attribute io_7 : Integer;\n    in attribute io_7_valid : Boolean;\n    attribute accum3sMs : Integer := 0;\n    attribute consecCloseCount : Integer := 0;\n    attribute prevDhtTemp : Real := 0.0;\n    attribute prevDhtHum : Real := 0.0;\n    attribute prevDistCm : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign accum3sMs := accum3sMs + io_6;\n      then if accum3sMs >= 3000 {\n        first start;\n        then assign accum3sMs := accum3sMs - 3000;\n      }\n      then if io_5 {\n        first start;\n        then if io_4 < 20.0 {\n          first start;\n          then assign consecCloseCount := consecCloseCount + 1;\n        } else {\n          first start;\n          then assign consecCloseCount := 0;\n        }\n      } else {\n        first start;\n        then assign consecCloseCount := 0;\n      }\n      then if io_3 {\n        first start;\n        then assign prevDhtTemp := io_1;\n        then assign prevDhtHum := io_2;\n      }\n      then if io_5 {\n        first start;\n        then assign prevDistCm := io_4;\n      }\n      then if consecCloseCount > 3 {\n        first start;\n        then assign consecCloseCount := 3;\n      }\n    }\n    out attribute io_0 : Boolean = consecCloseCount >= 3 and io_5;\n    out attribute io_8 : Boolean = consecCloseCount >= 3 and io_5 and (accum3sMs >= 0);\n    out attribute serial_0_trigger : Boolean = consecCloseCount >= 0 and (accum3sMs >= 3000 or (accum3sMs + io_6) >= 3000);\n    out attribute serial_0_value_0 : Real = (if io_3 ? io_1 else prevDhtTemp);\n    out attribute serial_0_value_1 : Real = (if io_3 ? io_2 else prevDhtHum);\n    out attribute serial_0_value_2 : Real = (if io_5 ? io_4 else prevDistCm);\n    out attribute serial_0_value_3 : Boolean = io_5;\n    out attribute serial_0_value_4 : Boolean = io_3;\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "control_period_ms": 100,
+  "interfaces": [
+    {
+      "name": "temperatureC",
+      "direction": "input",
+      "type": "f64",
+      "unit": "degC",
+      "meaning": "有效温度测量值",
+      "sample_period_ms": 2000,
+      "initial": 0.0,
+      "device": "DHT22",
+      "hardware": "D2; DHT library; invalid reading must not be substituted by a constant",
+      "binding": {
+        "kind": "dht_temperature",
+        "pin": 2,
+        "sensor": "DHT22",
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "humidityPercent",
+      "direction": "input",
+      "type": "f64",
+      "unit": "%RH",
+      "meaning": "有效相对湿度测量值",
+      "sample_period_ms": 2000,
+      "initial": 0.0,
+      "device": "DHT22",
+      "hardware": "D2 shared DHT22; retain latest valid sample",
+      "binding": {
+        "kind": "dht_humidity",
+        "pin": 2,
+        "sensor": "DHT22",
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "direction": "input",
+      "sample_period_ms": 2000,
+      "meaning": "latest DHT frame validity",
+      "hardware": "D2 DHT22",
+      "device": "DHT22",
+      "name": "environmentValid",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "binding": {
+        "kind": "dht_valid",
+        "pin": 2,
+        "sensor": "DHT22",
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "distanceValid",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 100,
+      "meaning": "distanceValid",
+      "hardware": "TRIG=D8 ECHO=D9",
+      "device": "HC-SR04",
+      "binding": {
+        "kind": "ultrasonic_valid",
+        "trigger_pin": 8,
+        "echo_pin": 9,
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "distanceCm",
+      "direction": "input",
+      "type": "f64",
+      "unit": "cm",
+      "initial": 0,
+      "sample_period_ms": 100,
+      "meaning": "distanceCm",
+      "hardware": "TRIG=D8 ECHO=D9",
+      "device": "HC-SR04",
+      "binding": {
+        "kind": "ultrasonic_distance",
+        "trigger_pin": 8,
+        "echo_pin": 9,
+        "sensor": "HC-SR04",
+        "timeout_us": 25000,
+        "invalid_policy": "hold_last_valid"
+      }
+    },
+    {
+      "name": "elapsedMilliseconds",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "meaning": "距上次控制步实际经过时间；0..4999，超范围须报告采样故障",
+      "sample_period_ms": 100,
+      "initial": 0,
+      "device": "clock",
+      "hardware": "unsigned millis delta; cast only after range check",
+      "binding": {
+        "kind": "elapsed_ms"
+      }
+    },
+    {
+      "name": "measuredTemperature",
+      "direction": "output",
+      "type": "f64",
+      "unit": "degC",
+      "meaning": "报告温度值",
+      "sample_period_ms": 100,
+      "initial": 0.0,
+      "device": "Serial",
+      "hardware": "Serial 115200; format only when reportDue",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "reportDue",
+        "label": "Temperature (C): ",
+        "baud": 115200
+      }
+    },
+    {
+      "name": "measuredHumidity",
+      "direction": "output",
+      "type": "f64",
+      "unit": "%RH",
+      "meaning": "报告湿度值",
+      "sample_period_ms": 100,
+      "initial": 0.0,
+      "device": "Serial",
+      "hardware": "Serial 115200; format only when reportDue",
+      "binding": {
+        "kind": "serial_value",
+        "trigger": "reportDue",
+        "label": "Humidity (%RH): ",
+        "baud": 115200
+      }
+    },
+    {
+      "name": "reportDue",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "meaning": "每累计5000ms为真一个控制步",
+      "sample_period_ms": 100,
+      "initial": false,
+      "device": "Serial",
+      "hardware": "gate report formatting; no adapter report timer",
+      "binding": {
+        "kind": "report_trigger"
+      }
+    },
+    {
+      "name": "highTemperature",
+      "direction": "output",
+      "type": "bool",
+      "unit": "1",
+      "meaning": "Combined alarm: valid temperature >32 degC OR valid distance <15 cm; an invalid channel does not stop the other channel.",
+      "sample_period_ms": 100,
+      "initial": false,
+      "device": "LED",
+      "hardware": "D13 digitalWrite; true=HIGH",
+      "binding": {
+        "kind": "digital_output",
+        "pin": 13,
+        "active_high": true
+      }
+    }
+  ],
+  "required_dependencies": {
+    "measuredTemperature": [
+      "temperatureC"
+    ],
+    "measuredHumidity": [
+      "humidityPercent"
+    ],
+    "reportDue": [
+      "elapsedMilliseconds",
+      "environmentValid"
+    ],
+    "highTemperature": [
+      "temperatureC",
+      "environmentValid",
+      "distanceCm",
+      "distanceValid"
+    ]
+  },
+  "required_states": [
+    {
+      "name": "accumulated",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "reportPulse",
+      "type": "bool",
+      "initial": "false"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "Report temperature and humidity every 5 seconds when valid; alarm for valid temperature above 32 C or valid distance below 15 cm. Failed DHT must not stop distance alarm or model time.",
+      "assertion_ids": [
+        "mixed_continuity",
+        "report_clock",
+        "validity"
+      ]
+    }
+  ],
+  "board": "arduino:avr:uno"
+}

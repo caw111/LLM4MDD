@@ -1,0 +1,135 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"displayHum\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"fanEnabled\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"pwmOut\",\n        \"type\": \"f64\",\n        \"initial\": 0.0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_5\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"displayHum\",\n            \"value\": {\n              \"not\": \"displayHum\"\n            }\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_5\"\n      },\n      {\n        \"if\": {\n          \">=\": [\n            \"io_0\",\n            30.0\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"fanEnabled\",\n            \"value\": true\n          },\n          {\n            \"assign\": \"pwmOut\",\n            \"value\": {\n              \"if\": [\n                {\n                  \"<=\": [\n                    \"io_0\",\n                    30.0\n                  ]\n                },\n                0.0,\n                {\n                  \"if\": [\n                    {\n                      \"<\": [\n                        \"io_0\",\n                        60.0\n                      ]\n                    },\n                    {\n                      \"*\": [\n                        \"((io_0 - 30.0) * 255.0)\",\n                        1.0\n                      ]\n                    },\n                    255.0\n                  ]\n                }\n              ]\n            }\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"fanEnabled\",\n            \"value\": false\n          },\n          {\n            \"assign\": \"pwmOut\",\n            \"value\": 0.0\n          }\n        ]\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": \"fanEnabled\",\n        \"then\": \"pwmOut\",\n        \"else\": 0.0\n      },\n      \"io_4\": {\n        \"if\": \"displayHum\",\n        \"then\": {\n          \"if\": {\n            \"==\": [\n              \"io_2\",\n              true\n            ]\n          },\n          \"then\": {\n            \"RealFunctions::floor\": \"io_1\"\n          },\n          \"else\": {\n            \"RealFunctions::floor\": \"io_1\"\n          }\n        },\n        \"else\": {\n          \"if\": {\n            \"==\": [\n              \"io_2\",\n              true\n            ]\n          },\n          \"then\": {\n            \"RealFunctions::floor\": \"io_0\"\n          },\n          \"else\": {\n            \"RealFunctions::floor\": \"io_0\"\n          }\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_0=29.9（温度低于30），io_5保持false，采样有效io_2=true；观察输出\",\n        \"oracle\": \"io_3=0.0；io_4显示温度（displayHum初始为false）且为floor(io_0)\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"按键产生一次按下上升沿：将io_5从false->true，再回到false；同时保持io_0=25.0、io_2=true、io_1=55.0\",\n        \"oracle\": \"displayHum切换为true后，io_4变为floor(io_1)，且风扇仍保持关闭（io_3=0.0）\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"将io_0从30.0逐步增加：30.1、45.0、60.0，且io_2=true，io_5保持false\",\n        \"oracle\": \"每步满足：io_3在温度≥30后为非零并随温度升高不减；在io_0=60.0时io_3到达封顶255.0\"\n      }\n    ]\n  }\n}",
+      "issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/2/then/1/value: Unknown expression object {'if': [{'<=': ['io_0', 30.0]}, 0.0, {'if': [{'<': ['io_0', 60.0]}, {'*': ['((io_0 - 30.0) * 255.0)', 1.0]}, 255.0]}]}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/updates/2/then/1/value"
+        }
+      ],
+      "ok": false,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "",
+      "stages": {},
+      "focus_issues": [
+        {
+          "severity": "error",
+          "code": "EXPRESSION_SYNTAX",
+          "message": "/controller/updates/2/then/1/value: Unknown expression object {'if': [{'<=': ['io_0', 30.0]}, 0.0, {'if': [{'<': ['io_0', 60.0]}, {'*': ['((io_0 - 30.0) * 255.0)', 1.0]}, 255.0]}]}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements.",
+          "path": "/controller/updates/2/then/1/value"
+        }
+      ],
+      "coverage": {
+        "status": "not_run"
+      },
+      "diagnostic_fingerprint": [
+        [
+          "EXPRESSION_SYNTAX",
+          "/controller/updates/2/then/1/value: Unknown expression object {'if': [{'<=': ['io_0', 30.0]}, 0.0, {'if': [{'<': ['io_0', 60.0]}, {'*': ['((io_0 - 30.0) * 255.0)', 1.0]}, 255.0]}]}. Use {\"not\": expression}, {\"floor\": numericExpression}, {\"and\": [left, right]}, a supported binary operator with two operands, or {\"if\": condition, \"then\": value, \"else\": value}; action arrays belong only in statements."
+        ]
+      ],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": "sysml_generation"
+    },
+    {
+      "attempt": 2,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"showHumidity\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"prevPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"pwmCountFan\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": \"io_5 and not prevPressed\",\n        \"then\": [\n          {\n            \"assign\": \"showHumidity\",\n            \"value\": {\n              \"not\": \"showHumidity\"\n            }\n          }\n        ],\n        \"else\": []\n      },\n      {\n        \"if\": {\n          \"and\": [\n            \"not showHumidity\",\n            \"io_2\"\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"pwmCountFan\",\n            \"value\": {\n              \"if\": \"io_0 > 30.0\",\n              \"then\": {\n                \"if\": \"io_0 >= 40.0\",\n                \"then\": 255,\n                \"else\": {\n                  \"if\": \"io_0 <= 30.0\",\n                  \"then\": 0,\n                  \"else\": {\n                    \"floor\": \"(io_0 - 30.0) * 25.5\"\n                  }\n                }\n              },\n              \"else\": 0\n            }\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"pwmCountFan\",\n            \"value\": {\n              \"if\": {\n                \"and\": [\n                  \"io_2\",\n                  \"io_0 > 30.0\"\n                ]\n              },\n              \"then\": {\n                \"if\": \"io_0 >= 40.0\",\n                \"then\": 255,\n                \"else\": {\n                  \"if\": \"io_0 <= 30.0\",\n                  \"then\": 0,\n                  \"else\": {\n                    \"floor\": \"(io_0 - 30.0) * 25.5\"\n                  }\n                }\n              },\n              \"else\": 0\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"prevPressed\",\n        \"value\": \"io_5\"\n      }\n    ],\n    \"outputs\": {\n      \"io_3\": {\n        \"if\": {\n          \"and\": [\n            \"io_2\",\n            \"io_0 > 30.0\"\n          ]\n        },\n        \"then\": \"pwmCountFan\",\n        \"else\": 0.0\n      },\n      \"io_4\": {\n        \"if\": \"showHumidity\",\n        \"then\": {\n          \"if\": \"io_2\",\n          \"then\": {\n            \"floor\": \"io_1\"\n          },\n          \"else\": 0\n        },\n        \"else\": {\n          \"if\": \"io_2\",\n          \"then\": {\n            \"floor\": \"io_0\"\n          },\n          \"else\": 0\n        }\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"io_2=false (initial), io_5 rising edge (pressed), keep io_0 and io_1 unchanged\",\n        \"oracle\": \"io_4 remains valid selection gate output derived from retained-if-valid logic; with io_2=false, io_4 outputs 0 and io_3 outputs 0.0; showHumidity toggles only on press rising edge\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_2=true, io_0=30.0, io_1 arbitrary, io_5 held false\",\n        \"oracle\": \"io_3=0.0 and io_4=floor(io_0)=30 when showHumidity=false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_2=true, io_0=35.0, io_1 arbitrary, io_5 held false; then set io_0=40.0 with io_2=true\",\n        \"oracle\": \"io_3 increases with temperature: pwmCountFan=floor((io_0-30.0)*25.5); at 35.0 it is between 0 and 255, at 40.0 io_3=255.0; io_4 shows floor(io_0)=35 then 40 when showHumidity=false\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"实现一个温湿度与风扇联动系统，使用 DHT11（D7）、风扇 PWM 引脚 D5、TM1637（CLK=D4，DIO=D5）和按钮 D2。默认显示温度，每按一次按钮切换显示温度或湿度；当温度高于 30℃ 时自动打开风扇并根据温度升高程度提升转速。\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Set io_2=true, io_0=25.0, io_1=55.0; create one press rising edge on io_5 (false->true), then hold io_5 true for another step\",\n        \"oracle\": \"After rising edge: showHumidity toggles to true so io_4=floor(io_1)=55 while io_3 stays 0.0 (since io_0<=30.0); holding io_5 true does not toggle again\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_5 : Boolean;\n    attribute showHumidity : Boolean := false;\n    attribute prevPressed : Boolean := false;\n    attribute pwmCountFan : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_5 and not prevPressed {\n        first start;\n        then assign showHumidity := (not showHumidity);\n      }\n      then if ((not showHumidity) and (io_2)) {\n        first start;\n        then assign pwmCountFan := (if io_0 > 30.0 ? (if io_0 >= 40.0 ? 255 else (if io_0 <= 30.0 ? 0 else RealFunctions::floor((io_0 - 30.0) * 25.5))) else 0);\n      } else {\n        first start;\n        then assign pwmCountFan := (if ((io_2) and (io_0 > 30.0)) ? (if io_0 >= 40.0 ? 255 else (if io_0 <= 30.0 ? 0 else RealFunctions::floor((io_0 - 30.0) * 25.5))) else 0);\n      }\n      then assign prevPressed := io_5;\n    }\n    out attribute io_3 : Real = (if ((io_2) and (io_0 > 30.0)) ? pwmCountFan else 0.0);\n    out attribute io_4 : Integer = (if showHumidity ? (if io_2 ? RealFunctions::floor(io_1) else 0) else (if io_2 ? RealFunctions::floor(io_0) else 0));\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

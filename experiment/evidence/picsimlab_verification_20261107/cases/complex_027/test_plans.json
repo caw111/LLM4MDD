@@ -1,0 +1,600 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Exercises numeric temperature/distance reporting, a near-distance interval shorter than two polling periods (so at most two qualifying polls for any startup phase), interruption at the strict 20 cm boundary, and a fresh sustained near-distance run that must activate both LED and alarm. All negative alarm assertions precede any possible legitimate detection, so unspecified LED latching is permitted. Exact polling cadence is not independently verified: the available interval check cannot select arbitrary-format numeric reports without imposing a serial format. Alarm repetition, LED clearing, and invalid-sensor handling are unspecified and not constrained.",
+      "assumptions": [
+        "The bench default active-HIGH LED wiring applies to D13.",
+        "DHT11 uses D7; HC-SR04 uses trigger D8 and echo D9.",
+        "Reported temperature and distance are numeric degrees Celsius and centimetres; labels and line layout are unrestricted.",
+        "The periodic polling sequence begins within the first 3 seconds, with no fixed startup phase.",
+        "Exactly 20 cm is not less than 20 cm and interrupts a qualifying sequence.",
+        "LED clearing and alarm repetition are unspecified. The reference latches the LED and emits the alarm once per qualifying run."
+      ],
+      "horizon_ms": 35000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 24
+        },
+        {
+          "at_ms": 0,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 50
+        },
+        {
+          "at_ms": 0,
+          "kind": "distance",
+          "pin": 9,
+          "value": 45
+        },
+        {
+          "at_ms": 10000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 28
+        },
+        {
+          "at_ms": 10000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 10
+        },
+        {
+          "at_ms": 15500,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 32
+        },
+        {
+          "at_ms": 15500,
+          "kind": "distance",
+          "pin": 9,
+          "value": 20
+        },
+        {
+          "at_ms": 22000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 36
+        },
+        {
+          "at_ms": 22000,
+          "kind": "distance",
+          "pin": 9,
+          "value": 10
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [
+        {
+          "trigger_pin": 8,
+          "echo_pin": 9
+        }
+      ],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "serial",
+          "id": "initial_temperature",
+          "requirement_quote": "系统每 3 秒轮询一次温度与距离并通过串口输出",
+          "from_ms": 200,
+          "to_ms": 9700,
+          "expected": 24,
+          "tolerance": 0.5,
+          "min_count": 3
+        },
+        {
+          "kind": "serial",
+          "id": "initial_distance",
+          "requirement_quote": "系统每 3 秒轮询一次温度与距离并通过串口输出",
+          "from_ms": 200,
+          "to_ms": 9700,
+          "expected": 45,
+          "tolerance": 1,
+          "min_count": 3
+        },
+        {
+          "kind": "gpio",
+          "id": "initial_far_led",
+          "requirement_quote": "若连续 3 次距离都小于 20cm，则点亮 LED",
+          "pin": 13,
+          "at_ms": 9500,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "serial",
+          "id": "first_near_temperature",
+          "requirement_quote": "轮询一次温度与距离并通过串口输出",
+          "from_ms": 12300,
+          "to_ms": 15400,
+          "expected": 28,
+          "tolerance": 0.5,
+          "min_count": 1
+        },
+        {
+          "kind": "serial",
+          "id": "first_near_distance",
+          "requirement_quote": "轮询一次温度与距离并通过串口输出",
+          "from_ms": 10300,
+          "to_ms": 15400,
+          "expected": 10,
+          "tolerance": 0.5,
+          "min_count": 1
+        },
+        {
+          "kind": "gpio",
+          "id": "short_near_run_insufficient",
+          "requirement_quote": "若连续 3 次距离都小于 20cm，则点亮 LED",
+          "pin": 13,
+          "at_ms": 15400,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "serial",
+          "id": "boundary_distance",
+          "requirement_quote": "轮询一次温度与距离并通过串口输出",
+          "from_ms": 15800,
+          "to_ms": 21900,
+          "expected": 20,
+          "tolerance": 0.5,
+          "min_count": 2
+        },
+        {
+          "kind": "serial",
+          "id": "boundary_temperature",
+          "requirement_quote": "轮询一次温度与距离并通过串口输出",
+          "from_ms": 18000,
+          "to_ms": 21900,
+          "expected": 32,
+          "tolerance": 0.5,
+          "min_count": 1
+        },
+        {
+          "kind": "gpio",
+          "id": "boundary_does_not_detect",
+          "requirement_quote": "连续 3 次距离都小于 20cm",
+          "pin": 13,
+          "at_ms": 21800,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "gpio",
+          "id": "fresh_run_requires_three",
+          "requirement_quote": "连续 3 次距离都小于 20cm",
+          "pin": 13,
+          "at_ms": 27200,
+          "expected": 0,
+          "tolerance": 0
+        },
+        {
+          "kind": "serial",
+          "id": "no_premature_alarm",
+          "requirement_quote": "若连续 3 次距离都小于 20cm，则点亮 LED 并输出 persistent object detected",
+          "from_ms": 0,
+          "to_ms": 27200,
+          "contains": "persistent object detected",
+          "min_count": 0,
+          "max_count": 0
+        },
+        {
+          "kind": "serial",
+          "id": "final_temperature",
+          "requirement_quote": "轮询一次温度与距离并通过串口输出",
+          "from_ms": 24500,
+          "to_ms": 34500,
+          "expected": 36,
+          "tolerance": 0.5,
+          "min_count": 3
+        },
+        {
+          "kind": "serial",
+          "id": "final_distance",
+          "requirement_quote": "轮询一次温度与距离并通过串口输出",
+          "from_ms": 22300,
+          "to_ms": 34500,
+          "expected": 10,
+          "tolerance": 0.5,
+          "min_count": 3
+        },
+        {
+          "kind": "gpio",
+          "id": "persistent_led",
+          "requirement_quote": "则点亮 LED",
+          "pin": 13,
+          "at_ms": 31500,
+          "expected": 1,
+          "tolerance": 0
+        },
+        {
+          "kind": "serial",
+          "id": "persistent_alarm",
+          "requirement_quote": "输出 persistent object detected",
+          "from_ms": 27200,
+          "to_ms": 31500,
+          "contains": "persistent object detected",
+          "min_count": 1
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <math.h>\n\nDHT dht(7, DHT11);\nunsigned long lastPoll = 0;\nunsigned int consecutiveNear = 0;\nbool reportedRun = false;\n\nfloat readDistanceCm() {\n  digitalWrite(8, LOW);\n  delayMicroseconds(2);\n  digitalWrite(8, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(8, LOW);\n  unsigned long duration = pulseIn(9, HIGH, 30000UL);\n  if (duration == 0) return NAN;\n  return duration / 58.0f;\n}\n\nvoid setup() {\n  pinMode(8, OUTPUT);\n  digitalWrite(8, LOW);\n  pinMode(9, INPUT);\n  pinMode(13, OUTPUT);\n  digitalWrite(13, LOW);\n  Serial.begin(9600);\n  dht.begin();\n  lastPoll = millis();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if ((unsigned long)(now - lastPoll) < 3000UL) return;\n  lastPoll += 3000UL;\n  float temperature = dht.readTemperature();\n  float distance = readDistanceCm();\n  Serial.print(\"Temperature C: \");\n  Serial.println(temperature);\n  Serial.print(\"Distance cm: \");\n  Serial.println(distance);\n  if (!isnan(distance) && distance < 20.0f) {\n    if (consecutiveNear < 3) ++consecutiveNear;\n    if (consecutiveNear >= 3) {\n      digitalWrite(13, HIGH);\n      if (!reportedRun) {\n        Serial.println(\"persistent object detected\");\n        reportedRun = true;\n      }\n    }\n  } else {\n    consecutiveNear = 0;\n    reportedRun = false;\n  }\n}\n"
+    },
+    "engine": null
+  },
+  {
+    "name": "supplement",
+    "plan": {
+      "supported": true,
+      "coverage": "targeted_core_regression",
+      "coverage_explanation": "Exercises numeric temperature/distance reporting, a near-distance interval shorter than two polling periods (so at most two qualifying polls for any startup phase), interruption at the strict 20 cm boundary, and a fresh sustained near-distance run that must activate both LED and alarm. All negative alarm assertions precede any possible legitimate detection, so unspecified LED latching is permitted. Exact polling cadence is not independently verified: the available interval check cannot select arbitrary-format numeric reports without imposing a serial format. Alarm repetition, LED clearing, and invalid-sensor handling are unspecified and not constrained.",
+      "assumptions": [
+        "The bench default active-HIGH LED wiring applies to D13.",
+        "DHT11 uses D7; HC-SR04 uses trigger D8 and echo D9.",
+        "Reported temperature and distance are numeric degrees Celsius and centimetres; labels and line layout are unrestricted.",
+        "The periodic polling sequence begins within the first 3 seconds, with no fixed startup phase.",
+        "Exactly 20 cm is not less than 20 cm and interrupts a qualifying sequence.",
+        "LED clearing and alarm repetition are unspecified. The reference latches the LED and emits the alarm once per qualifying run."
+      ],
+      "horizon_ms": 26500,
+      "input_steps": [
+        {
+          "kind": "temperature",
+          "pin": 7,
+          "at_ms": 0,
+          "value": 24
+        },
+        {
+          "kind": "temperature",
+          "pin": 7,
+          "at_ms": 5400,
+          "value": 28
+        },
+        {
+          "kind": "temperature",
+          "pin": 7,
+          "at_ms": 11400,
+          "value": 26
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 0,
+          "value": 35
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 2500,
+          "value": 10
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 5400,
+          "value": 18
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 8500,
+          "value": 14
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 11400,
+          "value": null
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 14500,
+          "value": 12
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 17500,
+          "value": 20
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 20500,
+          "value": 12
+        },
+        {
+          "kind": "distance",
+          "pin": 9,
+          "at_ms": 23500,
+          "value": 15
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [
+        {
+          "trigger_pin": 8,
+          "echo_pin": 9
+        }
+      ],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "gpio",
+          "id": "gpio_13_250",
+          "at_ms": 250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_3250",
+          "at_ms": 3250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_6250",
+          "at_ms": 6250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_9250",
+          "at_ms": 9250,
+          "expected": 1,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_12250",
+          "at_ms": 12250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_15250",
+          "at_ms": 15250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_21250",
+          "at_ms": 21250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "gpio",
+          "id": "gpio_13_24250",
+          "at_ms": 24250,
+          "expected": 0,
+          "requirement_quote": "Original task primary behavior, independently checked after manual sketch correction",
+          "pin": 13
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_0",
+          "from_ms": 0,
+          "to_ms": 200,
+          "regex": "^Temperature24(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_0",
+          "from_ms": 0,
+          "to_ms": 200,
+          "regex": "^Distance35(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_3000",
+          "from_ms": 3000,
+          "to_ms": 3200,
+          "regex": "^Temperature24(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_3000",
+          "from_ms": 3000,
+          "to_ms": 3200,
+          "regex": "^Distance10(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_6000",
+          "from_ms": 6000,
+          "to_ms": 6200,
+          "regex": "^Temperature28(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_6000",
+          "from_ms": 6000,
+          "to_ms": 6200,
+          "regex": "^Distance18(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_9000",
+          "from_ms": 9000,
+          "to_ms": 9200,
+          "regex": "^Temperature28(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_9000",
+          "from_ms": 9000,
+          "to_ms": 9200,
+          "regex": "^Distance14(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_12000",
+          "from_ms": 12000,
+          "to_ms": 12200,
+          "regex": "^Temperature26(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_12000",
+          "from_ms": 12000,
+          "to_ms": 12200,
+          "regex": "(?i)^Distancenan$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_15000",
+          "from_ms": 15000,
+          "to_ms": 15200,
+          "regex": "^Temperature26(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_15000",
+          "from_ms": 15000,
+          "to_ms": 15200,
+          "regex": "^Distance12(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_18000",
+          "from_ms": 18000,
+          "to_ms": 18200,
+          "regex": "^Temperature26(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_18000",
+          "from_ms": 18000,
+          "to_ms": 18200,
+          "regex": "^Distance20(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_21000",
+          "from_ms": 21000,
+          "to_ms": 21200,
+          "regex": "^Temperature26(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_21000",
+          "from_ms": 21000,
+          "to_ms": 21200,
+          "regex": "^Distance12(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "temperature_24000",
+          "from_ms": 24000,
+          "to_ms": 24200,
+          "regex": "^Temperature26(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "distance_24000",
+          "from_ms": 24000,
+          "to_ms": 24200,
+          "regex": "^Distance15(?:\\.0+)?$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "persistent_on_third",
+          "from_ms": 9000,
+          "to_ms": 9250,
+          "regex": "^persistent object detected$",
+          "min_count": 1,
+          "max_count": 1,
+          "requirement_quote": "Required serial output for the scenario"
+        },
+        {
+          "kind": "serial",
+          "id": "no_false_persistent",
+          "from_ms": 12000,
+          "to_ms": 26000,
+          "regex": "^persistent object detected$",
+          "min_count": 0,
+          "max_count": 0,
+          "requirement_quote": "Required serial output for the scenario"
+        }
+      ],
+      "test_origin": "manual_requirement_derived_supplement; retained original test plan is unchanged"
+    },
+    "engine": null
+  }
+]

@@ -1,0 +1,114 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "modeManual",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_4",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "modeManual",
+            "value": {
+              "not": "modeManual"
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_4"
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": {
+          "or": [
+            "modeManual",
+            {
+              "and": [
+                {
+                  ">": [
+                    "io_0",
+                    0.0
+                  ]
+                },
+                "io_2"
+              ]
+            }
+          ]
+        },
+        "then": 255.0,
+        "else": 0.0
+      },
+      "io_5": {
+        "if": "modeManual",
+        "then": true,
+        "else": {
+          "and": [
+            {
+              ">": [
+                "io_0",
+                0.0
+              ]
+            },
+            "io_2"
+          ]
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_4 rising edge (press) while io_0=10.0, io_2=false",
+        "oracle": "io_5=true and io_3=255.0 after the button press step (manual forced-on)."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Second button press (another rising edge on io_4) while io_0=10.0, io_2=false",
+        "oracle": "io_5=false and io_3=0.0 after the second press step (returned to auto; no approach validity so LED off)."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "No button press; set io_0=10.0, io_2=true",
+        "oracle": "io_5=true and io_3=255.0 (auto-on when approach valid; brightness condition satisfied by io_0>0)."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "构建一个节能照明系统，使用光敏电阻 A0、人体接近检测 HC-SR04（Trig=D8，Echo=D9）、PWM LED D9 和按钮 D2。只有当环境较暗且检测到有人接近时才自动点亮 LED；按钮用于强制常亮模式与自动模式切换。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "No button press; set io_0=0.0, io_2=true",
+        "oracle": "io_5=false and io_3=0.0 (auto remains off when environment-brightness gate fails: io_0>0 not satisfied)."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_4 : Boolean;\n    attribute modeManual : Boolean := false;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_4) and ((not previousPressed))) {\n        first start;\n        then assign modeManual := (not modeManual);\n      }\n      then assign previousPressed := io_4;\n    }\n    out attribute io_3 : Real = (if ((modeManual) or (((((io_0) > (0.0))) and (io_2)))) ? 255.0 else 0.0);\n    out attribute io_5 : Boolean = (if modeManual ? true else ((((io_0) > (0.0))) and (io_2)));\n  }\n  part system : Controller;\n}\n"
+}

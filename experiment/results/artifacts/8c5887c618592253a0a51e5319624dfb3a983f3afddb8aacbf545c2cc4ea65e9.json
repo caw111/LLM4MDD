@@ -1,0 +1,95 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "count",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "debouncedPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "debouncedPressed",
+            "value": true
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "not": "io_1"
+            },
+            "previousPressed"
+          ]
+        },
+        "then": [
+          {
+            "assign": "debouncedPressed",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "debouncedPressed",
+        "then": [
+          {
+            "assign": "count",
+            "value": {
+              "if": "count == 9",
+              "then": 0,
+              "else": "count + 3"
+            }
+          },
+          {
+            "assign": "debouncedPressed",
+            "value": false
+          }
+        ],
+        "else": []
+      },
+      {
+        "assign": "previousPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_0": "count"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) using a push button (btn1). The goal is to create a counter that increments by 3 each time the button is pressed, and the current count is displayed on the 7-segment display. The counter should reset to 0 after reaching 9.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment display should show 0.\nButton Interaction: Each press of the button (btn1) should increment the counter by 3. The counter should wrap around to 0 after reaching 9. The updated count should be immediately displayed on the 7-segment display.\nDebouncing: Ensure that the button press is debounced to avoid multiple increments from a single press.\nDisplay Update: The 7-segment display should accurately reflect the current count after each button press.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "On initial step with io_1=false (unpressed), then apply one press by driving io_1 from false to true for at least one control step, then hold io_1=true, then release by driving io_1 from true to false; repeat this press cycle multiple times.",
+        "oracle": "io_0 starts at 0. On each debounced press (rising edge sequence from false->true), io_0 immediately increases by 3 and wraps to 0 when it would reach/exceed 9 per reaching count==9; holding the button does not cause additional increments until a release occurs."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Boolean;\n    attribute count : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute debouncedPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign debouncedPressed := true;\n      }\n      then if (((not io_1)) and (previousPressed)) {\n        first start;\n        then assign debouncedPressed := false;\n      }\n      then if debouncedPressed {\n        first start;\n        then assign count := (if count == 9 ? 0 else count + 3);\n        then assign debouncedPressed := false;\n      }\n      then assign previousPressed := io_1;\n    }\n    out attribute io_0 : Integer = count;\n  }\n  part system : Controller;\n}\n"
+}

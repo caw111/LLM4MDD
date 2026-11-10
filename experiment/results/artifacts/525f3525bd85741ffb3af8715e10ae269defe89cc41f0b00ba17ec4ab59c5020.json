@@ -1,0 +1,129 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "servoStep",
+        "type": "i32",
+        "initial": 1
+      },
+      {
+        "name": "prevPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "stateHoldMs",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_0",
+            {
+              "not": "prevPressed"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "servoStep",
+            "value": {
+              "if": "servoStep == 1",
+              "then": 2,
+              "else": {
+                "if": "servoStep == 2",
+                "then": 3,
+                "else": {
+                  "if": "servoStep == 3",
+                  "then": 4,
+                  "else": {
+                    "if": "servoStep == 4",
+                    "then": 5,
+                    "else": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "assign": "stateHoldMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "prevPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "servoStep == 1",
+        "then": 0.0,
+        "else": {
+          "if": "servoStep == 2",
+          "then": 90.0,
+          "else": {
+            "if": "servoStep == 3",
+            "then": 180.0,
+            "else": {
+              "if": "servoStep == 4",
+              "then": 45.0,
+              "else": 0.0
+            }
+          }
+        }
+      },
+      "io_2": {
+        "if": "servoStep == 1",
+        "then": 0.0,
+        "else": {
+          "if": "servoStep == 2",
+          "then": 45.0,
+          "else": {
+            "if": "servoStep == 3",
+            "then": 90.0,
+            "else": {
+              "if": "servoStep == 4",
+              "then": 135.0,
+              "else": 0.0
+            }
+          }
+        }
+      },
+      "io_3": {
+        "if": "servoStep == 1",
+        "then": 0.0,
+        "else": {
+          "if": "servoStep == 2",
+          "then": 135.0,
+          "else": {
+            "if": "servoStep == 3",
+            "then": 0.0,
+            "else": {
+              "if": "servoStep == 4",
+              "then": 90.0,
+              "else": 0.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control three servo motors (servo1, servo2, servo3) using a push button (btn1). Each press of the button will cycle through a sequence of predefined angles for the servos. The servos should move to their respective angles in the sequence, and each state should be maintained for at least 2 seconds before transitioning to the next state.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, all servos (servo1, servo2, servo3) should be set to their initial position of 0 degrees.\nButton Interaction: Each press of the button (btn1) will advance the system to the next state in the sequence. The sequence of states is as follows:\n1. State 1: Servo1 = 0°, Servo2 = 0°, Servo3 = 0°.\n2. State 2: Servo1 = 90°, Servo2 = 45°, Servo3 = 135°.\n3. State 3: Servo1 = 180°, Servo2 = 90°, Servo3 = 0°.\n4. State 4: Servo1 = 45°, Servo2 = 135°, Servo3 = 90°.\n5. State 5: Servo1 = 0°, Servo2 = 0°, Servo3 = 0° (reset to initial state).\nState Transition: After reaching State 5, the sequence should reset to State 1 on the next button press.\nDebouncing: The button press should be debounced to avoid false triggers caused by mechanical vibrations.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo3\", \"left\": -201.6, \"top\": 170.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:3\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:4\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:5\", \"servo3:PWM\", \"orange\"], [\"mega:5V\", \"servo3:V+\", \"red\"], [\"mega:GND.1\", \"servo3:GND\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Power on, then apply five debounced rising press edges on io_0 (low-to-high model transition), with at least 2 seconds between presses.",
+        "oracle": "Initially all outputs are 0.0 deg (State 1). After each press edge, outputs advance through (90,45,135) (State 2), (180,90,0) (State 3), (45,135,90) (State 4), (0,0,0) (State 5) and then the next press returns to State 1."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    attribute servoStep : Integer := 1;\n    attribute prevPressed : Boolean := false;\n    attribute stateHoldMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not prevPressed))) {\n        first start;\n        then assign servoStep := (if servoStep == 1 ? 2 else (if servoStep == 2 ? 3 else (if servoStep == 3 ? 4 else (if servoStep == 4 ? 5 else 1))));\n        then assign stateHoldMs := 0;\n      }\n      then assign prevPressed := io_0;\n    }\n    out attribute io_1 : Real = (if servoStep == 1 ? 0.0 else (if servoStep == 2 ? 90.0 else (if servoStep == 3 ? 180.0 else (if servoStep == 4 ? 45.0 else 0.0))));\n    out attribute io_2 : Real = (if servoStep == 1 ? 0.0 else (if servoStep == 2 ? 45.0 else (if servoStep == 3 ? 90.0 else (if servoStep == 4 ? 135.0 else 0.0))));\n    out attribute io_3 : Real = (if servoStep == 1 ? 0.0 else (if servoStep == 2 ? 135.0 else (if servoStep == 3 ? 0.0 else (if servoStep == 4 ? 90.0 else 0.0))));\n  }\n  part system : Controller;\n}\n"
+}

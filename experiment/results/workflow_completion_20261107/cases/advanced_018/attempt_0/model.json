@@ -1,0 +1,305 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "heaterCommand",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "cachedTemperature",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "hasReading",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousOutside",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "outsideDuration",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "alarmActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "reportRaised",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "components": [
+      {
+        "kind": "edge_toggle",
+        "name": "setpointMode",
+        "input": "io_7",
+        "edge": "rising",
+        "initial": false,
+        "previous_input": false
+      },
+      {
+        "kind": "periodic_pulse",
+        "name": "ventilation",
+        "delta": "io_9",
+        "enabled": "true",
+        "period_ms": 300000,
+        "pulse_ms": 10000,
+        "first_pulse": "after_period",
+        "pause": "preserve"
+      }
+    ],
+    "updates": [
+      {
+        "assign": "reportRaised",
+        "value": false
+      },
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "cachedTemperature",
+            "value": "io_0"
+          },
+          {
+            "assign": "hasReading",
+            "value": true
+          },
+          {
+            "if": {
+              "<": [
+                "io_0",
+                37.0
+              ]
+            },
+            "then": [
+              {
+                "assign": "heaterCommand",
+                "value": true
+              }
+            ],
+            "else": [
+              {
+                "if": {
+                  ">": [
+                    "io_0",
+                    38.0
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "heaterCommand",
+                    "value": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "if": {
+              "or": [
+                {
+                  "<": [
+                    "io_0",
+                    37.0
+                  ]
+                },
+                {
+                  ">": [
+                    "io_0",
+                    38.0
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "if": "previousOutside",
+                "then": [
+                  {
+                    "assign": "outsideDuration",
+                    "value": {
+                      "if": {
+                        ">=": [
+                          "io_9",
+                          "60000 - outsideDuration"
+                        ]
+                      },
+                      "then": 60000,
+                      "else": "outsideDuration + io_9"
+                    }
+                  }
+                ],
+                "else": [
+                  {
+                    "assign": "outsideDuration",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "if": {
+                  "and": [
+                    {
+                      ">=": [
+                        "outsideDuration",
+                        60000
+                      ]
+                    },
+                    {
+                      "not": "alarmActive"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "reportRaised",
+                    "value": true
+                  },
+                  {
+                    "assign": "alarmActive",
+                    "value": true
+                  }
+                ]
+              }
+            ],
+            "else": [
+              {
+                "assign": "outsideDuration",
+                "value": 0
+              },
+              {
+                "assign": "alarmActive",
+                "value": false
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "heaterCommand",
+            "value": false
+          },
+          {
+            "assign": "outsideDuration",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "previousOutside",
+        "value": {
+          "and": [
+            "io_1",
+            {
+              "or": [
+                {
+                  "<": [
+                    "io_0",
+                    37.0
+                  ]
+                },
+                {
+                  ">": [
+                    "io_0",
+                    38.0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "io_2": "heaterCommand",
+      "io_3": {
+        "or": [
+          "component_ventilation_value",
+          {
+            "and": [
+              "io_1",
+              {
+                ">": [
+                  "io_0",
+                  38.0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "io_4": {
+        "if": "alarmActive",
+        "then": 1000,
+        "else": 0
+      },
+      "io_5": {
+        "if": "hasReading",
+        "then": {
+          "if": "component_setpointMode_value",
+          "then": 38,
+          "else": {
+            "floor": "cachedTemperature + 0.5"
+          }
+        },
+        "else": 10000
+      },
+      "io_6": "alarmActive",
+      "io_8": "reportRaised"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Start with io_1=false and io_9=0. Supply valid temperatures 36.0, 37.0, 37.5, 38.0, 39.0, 38.0 and 36.0.",
+        "oracle": "Startup heater, fan, tone, LED and serial gate are off; display is blank (10000). Heater turns on below 37, holds its command throughout the inclusive 37–38 band, and turns off above 38. Valid overtemperature also runs the fan.",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。\nDisclosed configurable bench parameters where the source leaves them unspecified: temperature lower=37 Celsius, upper=38 Celsius, setpoint=37.5 Celsius; ventilation runs 10 seconds every 5 minutes. Heater uses hysteresis between those limits; fan ventilates and can cool above the upper limit. Temperature outside either bound continuously for 60 seconds raises the alarm; returning inside the band resets that persistence timer. Display current temperature or setpoint as whole Celsius; every D2 press cycles the mode. Bench Serial baud is 9600. The existing configuration policy explicitly resolves the fan/TM1637 D5 pin collision; the original requirement is retained alongside the resolution."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "Keep valid temperature at 37.5 and advance actual io_9 deltas through 299990, 300000, 309990, 310000, 600000 and 610000 ms after initialization, including irregular step sizes.",
+        "oracle": "Scheduled ventilation is initially off, starts at 300000 ms, lasts 10000 ms, and repeats every 300000 ms start-to-start indefinitely. It does not depend on display mode or sensor validity.",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。\nDisclosed configurable bench parameters where the source leaves them unspecified: temperature lower=37 Celsius, upper=38 Celsius, setpoint=37.5 Celsius; ventilation runs 10 seconds every 5 minutes. Heater uses hysteresis between those limits; fan ventilates and can cool above the upper limit. Temperature outside either bound continuously for 60 seconds raises the alarm; returning inside the band resets that persistence timer. Display current temperature or setpoint as whole Celsius; every D2 press cycles the mode. Bench Serial baud is 9600. The existing configuration policy explicitly resolves the fan/TM1637 D5 pin collision; the original requirement is retained alongside the resolution."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "Begin a valid out-of-band episode at 36.0 or 39.0. Advance 59990 then 10 ms from episode onset; continue outside the band, return to 37.0 or 38.0, and repeat another full episode.",
+        "oracle": "No alarm before 60000 ms of continuous valid out-of-band conditions. At 60000 ms the tone becomes 1000 Hz, LED turns on, and io_8 is true for exactly one step, emitting incubation abnormal at the registered 9600 baud. Sustained alarm does not repeat the line. Either inclusive boundary clears the alarm and timer; a subsequent complete episode emits one new line.",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。\nDisclosed configurable bench parameters where the source leaves them unspecified: temperature lower=37 Celsius, upper=38 Celsius, setpoint=37.5 Celsius; ventilation runs 10 seconds every 5 minutes. Heater uses hysteresis between those limits; fan ventilates and can cool above the upper limit. Temperature outside either bound continuously for 60 seconds raises the alarm; returning inside the band resets that persistence timer. Display current temperature or setpoint as whole Celsius; every D2 press cycles the mode. Bench Serial baud is 9600. The existing configuration policy explicitly resolves the fan/TM1637 D5 pin collision; the original requirement is retained alongside the resolution."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "Supply a valid 36.4 reading; press and hold io_7, release, then press again. Change the valid temperature to 37.6. Also press before the first valid reading.",
+        "oracle": "Current-temperature mode initially shows the rounded reading. Each normalized rising press toggles once, with no repeat while held. Setpoint mode shows 38; current mode shows 36 then 38 for the respective readings. Changes occur on the control step, within 250 ms. Display remains blank until the first valid reading.",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。\nDisclosed configurable bench parameters where the source leaves them unspecified: temperature lower=37 Celsius, upper=38 Celsius, setpoint=37.5 Celsius; ventilation runs 10 seconds every 5 minutes. Heater uses hysteresis between those limits; fan ventilates and can cool above the upper limit. Temperature outside either bound continuously for 60 seconds raises the alarm; returning inside the band resets that persistence timer. Display current temperature or setpoint as whole Celsius; every D2 press cycles the mode. Bench Serial baud is 9600. The existing configuration policy explicitly resolves the fan/TM1637 D5 pin collision; the original requirement is retained alongside the resolution."
+      },
+      {
+        "requirement_id": "R1",
+        "test_point_id": "T5",
+        "test_method": "trace",
+        "stimulus": "Inject invalid acquisitions during heating, during an incomplete abnormal episode, and while an alarm is already active. Continue button presses and advance ventilation time. Recover first outside the band, then inside it.",
+        "oracle": "Explicit invalid-data policy: heater switches off; the incomplete persistence timer resets and restarts from zero on valid out-of-band recovery. An already-active alarm remains latched until a valid in-band measurement clears it. Invalid retained values cannot newly raise or clear the alarm or command cooling. The display retains the last valid reading, mode switching remains functional, and scheduled ventilation continues.",
+        "requirement_text": "构建一个智能孵化箱控制系统，使用 DHT11（D7）、加热器继电器 D10、风扇 D5、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和按钮 D2。系统需要维持温度在目标范围内并周期性通风；按钮可切换设定值查看模式和当前值显示模式。若温度连续 1 分钟高于上限或低于下限则报警并串口输出 incubation abnormal。\nDisclosed configurable bench parameters where the source leaves them unspecified: temperature lower=37 Celsius, upper=38 Celsius, setpoint=37.5 Celsius; ventilation runs 10 seconds every 5 minutes. Heater uses hysteresis between those limits; fan ventilates and can cool above the upper limit. Temperature outside either bound continuously for 60 seconds raises the alarm; returning inside the band resets that persistence timer. Display current temperature or setpoint as whole Celsius; every D2 press cycles the mode. Bench Serial baud is 9600. The existing configuration policy explicitly resolves the fan/TM1637 D5 pin collision; the original requirement is retained alongside the resolution."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_7 : Boolean;\n    in attribute io_9 : Integer;\n    attribute component_setpointMode_value : Boolean := false;\n    attribute component_setpointMode_previous : Boolean := false;\n    attribute component_ventilation_phase : Integer := 0;\n    attribute component_ventilation_started : Boolean := false;\n    attribute component_ventilation_enabled : Boolean := false;\n    attribute component_ventilation_remainder : Integer := 0;\n    attribute component_ventilation_value : Boolean := false;\n    attribute heaterCommand : Boolean := false;\n    attribute cachedTemperature : Real := 0.0;\n    attribute hasReading : Boolean := false;\n    attribute previousOutside : Boolean := false;\n    attribute outsideDuration : Integer := 0;\n    attribute alarmActive : Boolean := false;\n    attribute reportRaised : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_7 and not component_setpointMode_previous {\n        first start;\n        then assign component_setpointMode_value := not component_setpointMode_value;\n      }\n      then assign component_setpointMode_previous := io_7;\n      then if component_ventilation_enabled and io_9 > 0 {\n        first start;\n        then if io_9 >= 300000 - component_ventilation_phase {\n          first start;\n          then assign component_ventilation_started := true;\n        }\n        then assign component_ventilation_remainder := io_9;\n        then if component_ventilation_remainder >= 1228800000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 1228800000;\n        }\n        then if component_ventilation_remainder >= 614400000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 614400000;\n        }\n        then if component_ventilation_remainder >= 307200000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 307200000;\n        }\n        then if component_ventilation_remainder >= 153600000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 153600000;\n        }\n        then if component_ventilation_remainder >= 76800000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 76800000;\n        }\n        then if component_ventilation_remainder >= 38400000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 38400000;\n        }\n        then if component_ventilation_remainder >= 19200000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 19200000;\n        }\n        then if component_ventilation_remainder >= 9600000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 9600000;\n        }\n        then if component_ventilation_remainder >= 4800000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 4800000;\n        }\n        then if component_ventilation_remainder >= 2400000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 2400000;\n        }\n        then if component_ventilation_remainder >= 1200000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 1200000;\n        }\n        then if component_ventilation_remainder >= 600000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 600000;\n        }\n        then if component_ventilation_remainder >= 300000 {\n          first start;\n          then assign component_ventilation_remainder := component_ventilation_remainder - 300000;\n        }\n        then if component_ventilation_remainder >= 300000 - component_ventilation_phase {\n          first start;\n          then assign component_ventilation_phase := component_ventilation_remainder - (300000 - component_ventilation_phase);\n        } else {\n          first start;\n          then assign component_ventilation_phase := component_ventilation_phase + component_ventilation_remainder;\n        }\n      }\n      then assign component_ventilation_value := (true) and component_ventilation_started and component_ventilation_phase < 10000;\n      then assign component_ventilation_enabled := true;\n      then assign reportRaised := false;\n      then if io_1 {\n        first start;\n        then assign cachedTemperature := io_0;\n        then assign hasReading := true;\n        then if ((io_0) < (37.0)) {\n          first start;\n          then assign heaterCommand := true;\n        } else {\n          first start;\n          then if ((io_0) > (38.0)) {\n            first start;\n            then assign heaterCommand := false;\n          }\n        }\n        then if ((((io_0) < (37.0))) or (((io_0) > (38.0)))) {\n          first start;\n          then if previousOutside {\n            first start;\n            then assign outsideDuration := (if ((io_9) >= (60000 - outsideDuration)) ? 60000 else outsideDuration + io_9);\n          } else {\n            first start;\n            then assign outsideDuration := 0;\n          }\n          then if ((((outsideDuration) >= (60000))) and ((not alarmActive))) {\n            first start;\n            then assign reportRaised := true;\n            then assign alarmActive := true;\n          }\n        } else {\n          first start;\n          then assign outsideDuration := 0;\n          then assign alarmActive := false;\n        }\n      } else {\n        first start;\n        then assign heaterCommand := false;\n        then assign outsideDuration := 0;\n      }\n      then assign previousOutside := ((io_1) and (((((io_0) < (37.0))) or (((io_0) > (38.0))))));\n    }\n    out attribute io_2 : Boolean = heaterCommand;\n    out attribute io_3 : Boolean = ((component_ventilation_value) or (((io_1) and (((io_0) > (38.0))))));\n    out attribute io_4 : Integer = (if alarmActive ? 1000 else 0);\n    out attribute io_5 : Integer = (if hasReading ? (if component_setpointMode_value ? 38 else RealFunctions::floor(cachedTemperature + 0.5)) else 10000);\n    out attribute io_6 : Boolean = alarmActive;\n    out attribute io_8 : Boolean = reportRaised;\n  }\n  part system : Controller;\n}\n"
+}

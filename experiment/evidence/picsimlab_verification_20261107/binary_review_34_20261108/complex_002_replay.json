@@ -1,0 +1,170 @@
+[
+  {
+    "name": "binary_review_original_core",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests meaningful display responsiveness in both button-selected modes without requiring a startup mode, temperature threshold, PWM curve, or manual gear numbering. In each mode, both inputs move between widely separated endpoints, so the displayed current temperature or manual setting must change. Two separate button presses exercise mode selection and return. These checks cannot independently establish that a button actually switched modes, distinguish the controlling inputs, or validate the unspecified fan-speed mappings; a controller permanently displaying temperature could pass. Coverage is therefore partial.",
+      "assumptions": [
+        "Authoritative wiring is LM35 A1, potentiometer A0, fan PWM D5, button D2, and TM1637 CLK D4 / DIO D3.",
+        "The disclosed bench defaults supply a D2-to-GND active-LOW button using INPUT_PULLUP. Explicit released HIGH levels are injected.",
+        "Analog inputs use raw ADC values with a nominal 5 V reference. The LM35 nominal conversion is 10 mV per degree Celsius; ADC 307 represents approximately 150 degrees Celsius.",
+        "Startup mode, automatic thresholds and speed curve, manual gear scale, display precision, and debounce timing are unspecified.",
+        "The endpoint display checks interpret displaying the manual setting as distinguishing the potentiometer's minimum and maximum settings; no particular gear numbers or ordering are required.",
+        "Each endpoint is allowed several seconds to settle. The requirement supplies no hard response deadline, so this is a practical finite-test observation allowance.",
+        "The reference selects automatic startup, a linear automatic speed curve between 0 and 100 degrees Celsius, and manual levels 0 through 10. These are permitted reference choices, not candidate acceptance criteria."
+      ],
+      "horizon_ms": 25000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 0
+        },
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 0
+        },
+        {
+          "at_ms": 4000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 1023
+        },
+        {
+          "at_ms": 4000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 307
+        },
+        {
+          "at_ms": 8000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 8250,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 8500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 0
+        },
+        {
+          "at_ms": 8500,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 0
+        },
+        {
+          "at_ms": 12000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 1023
+        },
+        {
+          "at_ms": 12000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 307
+        },
+        {
+          "at_ms": 16000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 16250,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 16500,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 0
+        },
+        {
+          "at_ms": 16500,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 0
+        },
+        {
+          "at_ms": 20000,
+          "kind": "analog",
+          "pin": "A0",
+          "value": 1023
+        },
+        {
+          "at_ms": 20000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 307
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "relation",
+          "id": "initial_mode_display_tracks_endpoint_change",
+          "requirement_quote": "数码管显示当前温度或手动档位",
+          "source": "display",
+          "name": "tm:4:3",
+          "at_ms": [
+            3000,
+            7000
+          ],
+          "relation": "different",
+          "tolerance": 0
+        },
+        {
+          "kind": "relation",
+          "id": "display_tracks_endpoints_after_first_press",
+          "requirement_quote": "数码管显示当前温度或手动档位",
+          "source": "display",
+          "name": "tm:4:3",
+          "at_ms": [
+            11500,
+            15000
+          ],
+          "relation": "different",
+          "tolerance": 0
+        },
+        {
+          "kind": "relation",
+          "id": "display_tracks_endpoints_after_second_press",
+          "requirement_quote": "数码管显示当前温度或手动档位",
+          "source": "display",
+          "name": "tm:4:3",
+          "at_ms": [
+            19500,
+            23500
+          ],
+          "relation": "different",
+          "tolerance": 0
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n\nTM1637Display display(4, 3);\nbool automaticMode = true;\nint lastRawButton = HIGH;\nint stableButton = HIGH;\nunsigned long rawChangedAt = 0;\nunsigned long lastUpdate = 0;\nbool firstUpdate = true;\n\nvoid updateOutputs() {\n  int temperatureRaw = analogRead(A1);\n  int potentiometer = analogRead(A0);\n  float temperatureC = temperatureRaw * (500.0f / 1023.0f);\n  int pwm;\n  int shown;\n  if (automaticMode) {\n    float requested = temperatureC * 255.0f / 100.0f;\n    if (requested < 0.0f) requested = 0.0f;\n    if (requested > 255.0f) requested = 255.0f;\n    pwm = (int)(requested + 0.5f);\n    shown = (int)(temperatureC + 0.5f);\n  } else {\n    pwm = (int)((potentiometer * 255L + 511L) / 1023L);\n    shown = (int)((potentiometer * 10L + 511L) / 1023L);\n  }\n  analogWrite(5, pwm);\n  display.showNumberDec(shown, false);\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(5, OUTPUT);\n  display.setBrightness(7);\n  updateOutputs();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  int raw = digitalRead(2);\n  if (raw != lastRawButton) {\n    lastRawButton = raw;\n    rawChangedAt = now;\n  }\n  if (raw != stableButton && now - rawChangedAt >= 40UL) {\n    stableButton = raw;\n    if (stableButton == LOW) {\n      automaticMode = !automaticMode;\n      updateOutputs();\n    }\n  }\n  if (firstUpdate || now - lastUpdate >= 100UL) {\n    firstUpdate = false;\n    lastUpdate = now;\n    updateOutputs();\n  }\n}\n"
+    }
+  }
+]

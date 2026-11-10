@@ -1,0 +1,174 @@
+{
+  "contract_sha256": "5009aca70823fd01adb6a04c02ede12e946f5118ee3f1619a03d5bfc5de8f82d",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_3": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "io_6": {
+        "direction": "output",
+        "type": "i32"
+      },
+      "serial_0_trigger": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_0": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_1": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "serial_0_value_2": {
+        "direction": "output",
+        "type": "bool"
+      },
+      "serial_0_value_3": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": [
+      {
+        "id": "serial_0",
+        "trigger_port": "serial_0_trigger",
+        "value_ports": [
+          "serial_0_value_0",
+          "serial_0_value_1",
+          "serial_0_value_2",
+          "serial_0_value_3"
+        ]
+      }
+    ]
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A0\",\n      \"initial\": 0,\n      \"meaning\": \"冷库环境温度（LM35）\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A1\",\n      \"initial\": 0,\n      \"meaning\": \"冷库蒸发器温度（LM35）\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"active_high\": true,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"门磁开关状态（门开=报警/暂停部分控制）\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D5\",\n      \"active_high\": true,\n      \"initial\": false,\n      \"meaning\": \"风扇控制输出（由环境温度决定）\"\n    },\n    {\n      \"kind\": \"digital_output\",\n      \"pin\": \"D10\",\n      \"active_high\": true,\n      \"initial\": false,\n      \"meaning\": \"除霜继电器控制输出（由蒸发器结霜判断）\"\n    },\n    {\n      \"kind\": \"tone_output\",\n      \"pin\": \"D6\",\n      \"initial\": 0,\n      \"meaning\": \"蜂鸣器报警输出（不同级别鸣叫由模型决定频率/静音）\",\n      \"invalid_policy\": \"silence\"\n    },\n    {\n      \"kind\": \"tm1637_number\",\n      \"clk_pin\": \"D4\",\n      \"dio_pin\": \"D3\",\n      \"initial\": 0,\n      \"meaning\": \"TM1637 显示：多级告警与详细状态（内容由模型写入数字）\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"串口状态上报触发（由模型根据告警级别/门长时间未关/除霜流程等条件周期性置位）\"\n      },\n      \"values\": [\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"环境温度当前值（用于串口显示/诊断）\",\n          \"label\": \"env_temp_degC\"\n        },\n        {\n          \"type\": \"f64\",\n          \"unit\": \"degC\",\n          \"initial\": 0,\n          \"meaning\": \"蒸发器温度当前值（用于串口显示/诊断）\",\n          \"label\": \"evap_temp_degC\"\n        },\n        {\n          \"type\": \"bool\",\n          \"unit\": \"1\",\n          \"initial\": false,\n          \"meaning\": \"门磁状态：true=门打开\",\n          \"label\": \"door_open\"\n        },\n        {\n          \"type\": \"i32\",\n          \"unit\": \"1\",\n          \"initial\": 0,\n          \"meaning\": \"当前告警级别ID/阶段ID（模型决定编码）\",\n          \"label\": \"alarm_level_id\"\n        }\n      ]\n    }\n  ],\n  \"planning_notes\": [\n    \"已按权威 pin assignments 保留：LM35环境温度接A0、LM35蒸发器温度接A1；门磁D2；风扇继电器/控制输出D5；除霜继电器D10；蜂鸣器D6（tone）；TM1637 CLK=D4、DIO=D3。\",\n    \"门磁数字输入的极性未在原始文字中给出；在无额外电路事实时假设使用内部上拉（pullup=true）且门开=模型true（active_high=true）。如实际为低电平有效需在模型层/参数层调整，但本接口层仍保持该假设。\",\n    \"TM1637 显示内容（告警与详细状态的具体数字编码/刷新节奏）属于 SysML 模型逻辑；本提案仅提供一个 tm1637_number 端口用于写入数字。\",\n    \"串口未给出具体固定文本/字段协议；本提案选定一个使用同一触发条件的状态数值上报通道，并把告警级别/阶段ID作为 i32 编码字段。若需要固定文本行（serial_text_output）或更细分的多条触发条件，应在进一步需求中明确。\",\n    \"未列出任何 DHT、超声、移位寄存器、伺服等器件；也未在 wiring 中出现其引脚，因此不创建相应 catalog 请求。\",\n    \"控制周期选为 10ms：满足控制粒度与串口触发判断的常用需求；真实的采样/门计时/告警持续时长/上报周期均应由 SysML 模型使用 elapsed_ms 来实现。\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:uno",
+    "devices": [
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A0"
+        },
+        "resolved": {
+          "pin": "A0"
+        }
+      },
+      {
+        "kind": "analog_input",
+        "original": {
+          "pin": "A1"
+        },
+        "resolved": {
+          "pin": "A1"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D10"
+        },
+        "resolved": {
+          "pin": "D10"
+        }
+      },
+      {
+        "kind": "digital_output",
+        "original": {
+          "pin": "D5"
+        },
+        "resolved": {
+          "pin": "D5"
+        }
+      },
+      {
+        "kind": "tone_output",
+        "original": {
+          "pin": "D6"
+        },
+        "resolved": {
+          "pin": "D6"
+        }
+      },
+      {
+        "kind": "tm1637_number",
+        "original": {
+          "clk_pin": "D4",
+          "dio_pin": "D5"
+        },
+        "resolved": {
+          "clk_pin": "D4",
+          "dio_pin": "D3"
+        }
+      }
+    ],
+    "serial": {
+      "baud": 9600,
+      "framing": "line_or_idle",
+      "idle_timeout_ms": 20
+    },
+    "original_requirement": "实现一个冷库多级告警与保护系统，使用两个 LM35，环境温度 A0、蒸发器温度 A1，门磁 D2、风扇 D5、除霜继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）和串口。系统需要根据环境温度控制风扇，根据蒸发器温度判断是否进入除霜流程；门打开时暂停部分控制并计时。若环境温度超上限、蒸发器结霜严重或门长时间未关，则进入不同级别告警并输出详细状态。",
+    "effective_requirement": "实现一个冷库多级告警与保护系统，使用两个 LM35，环境温度 A0、蒸发器温度 A1，门磁 D2、风扇 D5、除霜继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D3）和串口。系统需要根据环境温度控制风扇，根据蒸发器温度判断是否进入除霜流程；门打开时暂停部分控制并计时。若环境温度超上限、蒸发器结霜严重或门长时间未关，则进入不同级别告警并输出详细状态。\nResolved hardware configuration (authoritative pin assignments; original conflicts were explicitly remapped). This is a PARTIAL inventory of recognized roles, not a whitelist: all other explicit source wiring remains required. device_role identifies wiring only, not the final catalog operation: preserve requested PWM, calibration, thresholds, timers and all other behavior.\n{\"version\": \"configuration-defaults-v3\", \"board\": \"arduino:avr:uno\", \"devices\": [{\"device_role\": \"analog_input\", \"pin\": \"A0\"}, {\"device_role\": \"analog_input\", \"pin\": \"A1\"}, {\"device_role\": \"digital_output\", \"pin\": \"D10\"}, {\"device_role\": \"digital_output\", \"pin\": \"D5\"}, {\"device_role\": \"tone_output\", \"pin\": \"D6\"}, {\"device_role\": \"tm1637_number\", \"clk_pin\": \"D4\", \"dio_pin\": \"D3\"}], \"serial\": {\"baud\": 9600, \"framing\": \"line_or_idle\", \"idle_timeout_ms\": 20}}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.",
+    "pins": {},
+    "changes": [
+      {
+        "field": "serial.baud",
+        "original": null,
+        "resolved": 9600,
+        "reason": "unspecified transport configuration"
+      },
+      {
+        "device": "tm1637_number",
+        "field": "dio_pin",
+        "original": "D5",
+        "resolved": "D3",
+        "reason": "conflict or incompatible pin"
+      }
+    ],
+    "circuit_preserved": false
+  }
+}

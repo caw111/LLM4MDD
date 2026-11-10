@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "board": "arduino:avr:mega",
+  "control_period_ms": 10,
+  "interfaces": [
+    {
+      "name": "up",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 10,
+      "meaning": "up",
+      "device": "digital_input",
+      "hardware": "2",
+      "binding": {
+        "kind": "digital_input",
+        "pin": 2,
+        "pullup": true,
+        "active_high": false
+      }
+    },
+    {
+      "name": "down",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 10,
+      "meaning": "down",
+      "device": "digital_input",
+      "hardware": "3",
+      "binding": {
+        "kind": "digital_input",
+        "pin": 3,
+        "pullup": true,
+        "active_high": false
+      }
+    },
+    {
+      "name": "reset",
+      "direction": "input",
+      "type": "bool",
+      "unit": "1",
+      "initial": false,
+      "sample_period_ms": 10,
+      "meaning": "reset",
+      "device": "digital_input",
+      "hardware": "4",
+      "binding": {
+        "kind": "digital_input",
+        "pin": 4,
+        "pullup": true,
+        "active_high": false
+      }
+    },
+    {
+      "name": "speedAdc",
+      "direction": "input",
+      "type": "f64",
+      "unit": "adc_count",
+      "initial": 511.0,
+      "sample_period_ms": 10,
+      "meaning": "speedAdc",
+      "device": "analog_input",
+      "hardware": "A3",
+      "binding": {
+        "kind": "analog_input",
+        "pin": "A3",
+        "scale": 1.0,
+        "offset": 0.0
+      }
+    },
+    {
+      "name": "dt",
+      "direction": "input",
+      "type": "i32",
+      "unit": "ms",
+      "initial": 0,
+      "sample_period_ms": 10,
+      "meaning": "Actual elapsed milliseconds since previous model step",
+      "device": "clock",
+      "hardware": "millis delta",
+      "binding": {
+        "kind": "elapsed_ms"
+      }
+    },
+    {
+      "name": "displayNumber",
+      "direction": "output",
+      "type": "i32",
+      "unit": "1",
+      "meaning": "Unsigned two-digit decimal value; initial 00",
+      "sample_period_ms": 10,
+      "initial": 0,
+      "device": "sevseg1 and sevseg2",
+      "hardware": "A0 data, A2 shift clock, A1 latch; sr1 tens nearest MCU, sr2 units; common anode; MR=5V, OE=GND",
+      "binding": {
+        "kind": "shift595_number",
+        "data_pin": "A0",
+        "clock_pin": "A2",
+        "latch_pin": "A1",
+        "leading_zero": true,
+        "invalid_policy": "blank",
+        "registers": [
+          {
+            "register": "sr1",
+            "display": "sevseg1",
+            "digit": 0,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          },
+          {
+            "register": "sr2",
+            "display": "sevseg2",
+            "digit": 1,
+            "segment_bits": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "active_low": true
+          }
+        ]
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "验收约定：目标板Mega2560；保留原接线，D2加一、D3减一、D4清零，均INPUT_PULLUP低电平按下；A3原始ADC线性映射重复间隔100+floor(ADC*900/1023)毫秒。初始00，按下立即执行一步；长按重复，间隔从上一次步进算起，旋钮变化立即改变当前间隔，松开停止，新的按下重新计时。上溢99回0，下溢0回99。清零优先并重置重复计时；加减同时按下时不步进。响应及重复时间容差20ms。数码管保留前导零，sr1十位、sr2个位。",
+      "assertion_ids": [
+        "independent_hold_and_wrap"
+      ]
+    }
+  ],
+  "required_dependencies": {
+    "displayNumber": [
+      "up",
+      "down",
+      "reset",
+      "speedAdc",
+      "dt"
+    ]
+  },
+  "required_states": [],
+  "planning_notes": [
+    "Static single-digit common-anode displays; Q0..Q6 connect A..G; unused Q7 stays inactive. No multiplexing."
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "inWashStage",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "faultActive",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "endConfirmed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "not io_4",
+        "then": [
+          {
+            "assign": "faultActive",
+            "value": false
+          },
+          {
+            "assign": "endConfirmed",
+            "value": false
+          },
+          {
+            "assign": "inWashStage",
+            "value": 0
+          },
+          {
+            "assign": "prevPressed",
+            "value": false
+          }
+        ],
+        "else": [
+          {
+            "if": "faultActive",
+            "then": [
+              {
+                "assign": "inWashStage",
+                "value": 0
+              },
+              {
+                "assign": "endConfirmed",
+                "value": "endConfirmed"
+              }
+            ]
+          },
+          {
+            "if": {
+              "and": [
+                "io_0",
+                "not prevPressed"
+              ]
+            },
+            "then": [
+              {
+                "assign": "endConfirmed",
+                "value": true
+              }
+            ]
+          },
+          {
+            "if": {
+              "and": [
+                "not faultActive",
+                "not endConfirmed"
+              ]
+            },
+            "then": [
+              {
+                "assign": "inWashStage",
+                "value": 3
+              }
+            ],
+            "else": [
+              {
+                "assign": "inWashStage",
+                "value": "inWashStage"
+              }
+            ]
+          },
+          {
+            "assign": "prevPressed",
+            "value": "io_4"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_1": {
+        "if": "faultActive",
+        "then": false,
+        "else": {
+          "if": {
+            "and": [
+              "inWashStage == 3",
+              "not endConfirmed"
+            ]
+          },
+          "then": true,
+          "else": false
+        }
+      },
+      "io_2": {
+        "if": "faultActive",
+        "then": 0,
+        "else": {
+          "if": {
+            "and": [
+              "inWashStage == 3",
+              "not endConfirmed"
+            ]
+          },
+          "then": 1000,
+          "else": 0
+        }
+      },
+      "io_3": "inWashStage",
+      "serial_0_trigger": "faultActive",
+      "serial_0_value_0": {
+        "if": "faultActive",
+        "then": 1,
+        "else": 0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "让io_4为true（按钮未按下语义下为true的电平），并保持io_0为false；观察多步输出。",
+        "oracle": "阶段编号保持初始值0；蜂鸣器为0；LED为false；serial_0_trigger为false，serial_0_value_0为0。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "在保持faultActive未置位的情况下，将io_0从false->true并保持io_4为true（不再发生按钮边沿）；观察蜂鸣/LED/显示。",
+        "oracle": "当inWashStage被置为3且endConfirmed未确认时，io_1为true、io_2为1000、io_3为3；serial_0_trigger为false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在endConfirmed为false且inWashStage==3时，将io_4产生一次上升沿（previous为false到当前为true）；之后保持io_4为true。",
+        "oracle": "触发确认后endConfirmed变为true，随后io_1为false、io_2为0、io_3仍保持3（不再鸣叫/不闪烁），serial_0_trigger保持false。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个智能洗衣流程监控系统，使用振动传感器 D2、水位传感器 A0、蜂鸣器 D6、LED D13、TM1637（CLK=D4，DIO=D5）和按钮 D3。系统根据振动和水位判断洗衣机处于进水、洗涤、甩干和结束四个阶段，并在数码管显示阶段编号；当检测到结束阶段时蜂鸣器鸣叫并闪烁 LED，直到用户按键确认。若长时间无振动且水位异常，则串口输出 wash fault。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "将io_4从true->false（表示按钮输入模型值变为false）；观察下一步输出。",
+        "oracle": "faultActive被清零，endConfirmed被清零，inWashStage被重置为0；io_1为false、io_2为0、io_3为0、serial_0_trigger为false、serial_0_value_0为0。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_4 : Boolean;\n    in attribute io_5 : Real;\n    attribute inWashStage : Integer := 0;\n    attribute prevPressed : Boolean := false;\n    attribute faultActive : Boolean := false;\n    attribute endConfirmed : Boolean := false;\n    perform action tick {\n      first start;\n      then if not io_4 {\n        first start;\n        then assign faultActive := false;\n        then assign endConfirmed := false;\n        then assign inWashStage := 0;\n        then assign prevPressed := false;\n      } else {\n        first start;\n        then if faultActive {\n          first start;\n          then assign inWashStage := 0;\n          then assign endConfirmed := endConfirmed;\n        }\n        then if ((io_0) and (not prevPressed)) {\n          first start;\n          then assign endConfirmed := true;\n        }\n        then if ((not faultActive) and (not endConfirmed)) {\n          first start;\n          then assign inWashStage := 3;\n        } else {\n          first start;\n          then assign inWashStage := inWashStage;\n        }\n        then assign prevPressed := io_4;\n      }\n    }\n    out attribute io_1 : Boolean = (if faultActive ? false else (if ((inWashStage == 3) and (not endConfirmed)) ? true else false));\n    out attribute io_2 : Integer = (if faultActive ? 0 else (if ((inWashStage == 3) and (not endConfirmed)) ? 1000 else 0));\n    out attribute io_3 : Integer = inWashStage;\n    out attribute serial_0_trigger : Boolean = faultActive;\n    out attribute serial_0_value_0 : Integer = (if faultActive ? 1 else 0);\n  }\n  part system : Controller;\n}\n"
+}

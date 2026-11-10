@@ -1,0 +1,1495 @@
+{
+  "status": "passed",
+  "contract_revisions": 0,
+  "rounds": [
+    {
+      "revision": 0,
+      "contract": {
+        "version": 1,
+        "board": "arduino:avr:uno",
+        "control_period_ms": 10,
+        "planning_notes": [
+          "Preserve the DS1307 wiring on A4/A5 and the active-HIGH button on D2 with its external 10000 ohm pull-down resistor; do not enable the internal pull-up.",
+          "Assume a 100 ms continuous reporting interval because the original requirement specifies no interval. Generate report timing and button-change reports in the SysML model using actual elapsed time.",
+          "Use the catalog default periodic RTC sampling consistently for both RTC requests. Check validity in the model and suppress timestamp reports until a valid RTC acquisition is available and whenever validity is false.",
+          "Apply the UTC+9 offset in the SysML model before formatting so date rollovers are handled by epoch-based ISO rendering. Print only YYYY-MM-DDTHH:MM:SS followed by the serial line terminator, without a prefix or timezone suffix.",
+          "The supplied RTC initTime is simulator configuration, not a timestamp to write to the RTC or substitute for acquired time.",
+          "Initialize the RTC and serial connection without an artificial startup delay; setup must return within 500 ms.",
+          "Serial receive framing and idle timeout are inapplicable because this application requires no serial receiver."
+        ],
+        "interfaces": [
+          {
+            "name": "io_0",
+            "direction": "input",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Button pressed; true when D2 reads HIGH through the externally pulled-down button circuit",
+            "sample_period_ms": 10,
+            "device": "push button1",
+            "hardware": "{\"active_high\": true, \"kind\": \"digital_input\", \"pin\": \"D2\", \"pullup\": false}",
+            "binding": {
+              "kind": "digital_input",
+              "active_high": true,
+              "pullup": false,
+              "pin": "D2"
+            },
+            "model_semantics": {
+              "kind": "digital_boolean",
+              "true_level": "HIGH",
+              "false_level": "LOW"
+            }
+          },
+          {
+            "name": "io_1",
+            "direction": "input",
+            "type": "i32",
+            "unit": "s",
+            "initial": 0,
+            "meaning": "Current UTC Unix timestamp acquired from the DS1307",
+            "sample_period_ms": 10,
+            "device": "rtc module1",
+            "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_epoch\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+            "binding": {
+              "kind": "rtc_epoch",
+              "address": 104,
+              "acquisition": "periodic",
+              "sda_pin": "A4",
+              "scl_pin": "A5"
+            }
+          },
+          {
+            "name": "io_2",
+            "direction": "input",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Validity of the current DS1307 acquisition",
+            "sample_period_ms": 10,
+            "device": "rtc module1",
+            "hardware": "{\"acquisition\": \"periodic\", \"address\": 104, \"kind\": \"rtc_valid\", \"scl_pin\": \"A5\", \"sda_pin\": \"A4\"}",
+            "binding": {
+              "kind": "rtc_valid",
+              "address": 104,
+              "acquisition": "periodic",
+              "sda_pin": "A4",
+              "scl_pin": "A5"
+            }
+          },
+          {
+            "name": "io_3",
+            "direction": "input",
+            "type": "i32",
+            "unit": "ms",
+            "initial": 0,
+            "meaning": "Actual elapsed milliseconds since the previous control step for continuous reporting cadence",
+            "sample_period_ms": 10,
+            "device": "elapsed_ms",
+            "hardware": "{\"kind\": \"elapsed_ms\", \"semantics\": \"delta_since_previous_step\"}",
+            "binding": {
+              "kind": "elapsed_ms",
+              "semantics": "delta_since_previous_step"
+            }
+          },
+          {
+            "name": "serial_0_trigger",
+            "direction": "output",
+            "type": "bool",
+            "unit": "1",
+            "initial": false,
+            "meaning": "Print a valid timestamp on the first valid acquisition, on button state changes, and every 100 ms while RTC data is valid",
+            "sample_period_ms": 10,
+            "device": "Serial report control",
+            "hardware": "{\"kind\": \"report_trigger\", \"format\": \"{0:iso}\", \"values\": [\"serial_0_value_0\"]}",
+            "binding": {
+              "kind": "report_trigger",
+              "format": "{0:iso}",
+              "values": [
+                "serial_0_value_0"
+              ]
+            }
+          },
+          {
+            "name": "serial_0_value_0",
+            "direction": "output",
+            "type": "i32",
+            "unit": "s",
+            "initial": 0,
+            "meaning": "RTC UTC epoch plus 32400 seconds when the button is pressed, otherwise the unmodified UTC epoch",
+            "sample_period_ms": 10,
+            "device": "Serial value",
+            "hardware": "{\"baud\": 9600, \"kind\": \"serial_value\", \"label\": \"\", \"trigger\": \"serial_0_trigger\"}",
+            "binding": {
+              "kind": "serial_value",
+              "trigger": "serial_0_trigger",
+              "baud": 9600,
+              "label": ""
+            }
+          }
+        ],
+        "required_dependencies": {},
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}",
+          "effective_requirement": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\"version\": 1.0, \"author\": \"Blind Author\", \"description\": \"Get the current time using an RTC sensor, and change into different timezone\", \"parts\": [{\"type\": \"wokwi-arduino-uno\", \"id\": \"arduino uno1\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-ds1307\", \"id\": \"rtc module1\", \"top\": 244.2, \"left\": 278.5, \"attrs\": {\"initTime\": \"2024-11-24T04:48:00\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"push button1\", \"top\": -109, \"left\": 249.6, \"attrs\": {\"color\": \"green\", \"xray\": \"1\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor1\", \"top\": -82.45, \"left\": 345.6, \"attrs\": {\"value\": \"10000 ohm\"}}], \"connections\": [[\"rtc module1:SCL\", \"arduino uno1:A5\", \"green\", [\"h0\"]], [\"rtc module1:SDA\", \"arduino uno1:A4\", \"green\", [\"h0\"]], [\"rtc module1:5V\", \"arduino uno1:5V\", \"red\", [\"h0\"]], [\"rtc module1:GND\", \"arduino uno1:GND.2\", \"black\", [\"h0\"]], [\"push button1:2.l\", \"arduino uno1:2\", \"green\", [\"h0\"]], [\"push button1:2.r\", \"resistor1:1\", \"green\", [\"h0\"]], [\"resistor1:2\", \"arduino uno1:GND.2\", \"green\", [\"v0\", \"h18\", \"v240\", \"h-249.6\"]], [\"push button1:1.r\", \"arduino uno1:5V\", \"green\", [\"v0\", \"h125\", \"v240\", \"h-278.4\"]]]}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [
+            {
+              "device": "resistor1",
+              "terminal": "value",
+              "original": "10000",
+              "resolved": "10000 ohm",
+              "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+            },
+            {
+              "field": "serial.baud",
+              "original": null,
+              "resolved": 9600,
+              "reason": "unspecified transport configuration"
+            }
+          ],
+          "serial": {
+            "baud": 9600,
+            "framing": "line_or_idle",
+            "idle_timeout_ms": 20
+          },
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Get the current time using an RTC sensor, and change into different timezone",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 0,
+                  "left": 0,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ds1307",
+                  "id": "rtc module1",
+                  "top": 244.2,
+                  "left": 278.5,
+                  "attrs": {
+                    "initTime": "2024-11-24T04:48:00"
+                  }
+                },
+                {
+                  "type": "wokwi-pushbutton",
+                  "id": "push button1",
+                  "top": -109,
+                  "left": 249.6,
+                  "attrs": {
+                    "color": "green",
+                    "xray": "1"
+                  }
+                },
+                {
+                  "type": "wokwi-resistor",
+                  "id": "resistor1",
+                  "top": -82.45,
+                  "left": 345.6,
+                  "attrs": {
+                    "value": "10000 ohm"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "rtc module1:SCL",
+                  "arduino uno1:A5",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:SDA",
+                  "arduino uno1:A4",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:5V",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:GND",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "push button1:2.l",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "push button1:2.r",
+                  "resistor1:1",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "resistor1:2",
+                  "arduino uno1:GND.2",
+                  "green",
+                  [
+                    "v0",
+                    "h18",
+                    "v240",
+                    "h-249.6"
+                  ]
+                ],
+                [
+                  "push button1:1.r",
+                  "arduino uno1:5V",
+                  "green",
+                  [
+                    "v0",
+                    "h125",
+                    "v240",
+                    "h-278.4"
+                  ]
+                ]
+              ]
+            }
+          ],
+          "circuit_preserved": false
+        },
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}",
+            "assertion_ids": [
+              "source_requirement_R1"
+            ]
+          }
+        ],
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "io_2": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_3": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "serial_0_trigger": {
+              "direction": "output",
+              "type": "bool"
+            },
+            "serial_0_value_0": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": [
+            {
+              "id": "serial_0",
+              "trigger_port": "serial_0_trigger",
+              "value_ports": [
+                "serial_0_value_0"
+              ]
+            }
+          ]
+        }
+      },
+      "planning": {
+        "contract_sha256": "25f87111358c6fcb4523d4e60e0f464505d9582bd1caed2e0500541f08771db0",
+        "provenance": "program_assembled",
+        "interface_registry": {
+          "version": 1,
+          "ports": {
+            "io_0": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_1": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "io_2": {
+              "direction": "input",
+              "type": "bool"
+            },
+            "io_3": {
+              "direction": "input",
+              "type": "i32"
+            },
+            "serial_0_trigger": {
+              "direction": "output",
+              "type": "bool"
+            },
+            "serial_0_value_0": {
+              "direction": "output",
+              "type": "i32"
+            }
+          },
+          "serial_channels": [
+            {
+              "id": "serial_0",
+              "trigger_port": "serial_0_trigger",
+              "value_ports": [
+                "serial_0_value_0"
+              ]
+            }
+          ]
+        },
+        "registered_relationships": "verified",
+        "functional_status": "unverified",
+        "attempts": [
+          {
+            "ok": true,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:uno\",\n  \"control_period_ms\": 10,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"device\": \"push button1\",\n      \"pin\": \"D2\",\n      \"active_high\": true,\n      \"pullup\": false,\n      \"initial\": false,\n      \"meaning\": \"Button pressed; true when D2 reads HIGH through the externally pulled-down button circuit\"\n    },\n    {\n      \"kind\": \"rtc_epoch\",\n      \"device\": \"rtc module1\",\n      \"sda_pin\": \"A4\",\n      \"scl_pin\": \"A5\",\n      \"address\": 104,\n      \"acquisition\": \"periodic\",\n      \"initial\": 0,\n      \"meaning\": \"Current UTC Unix timestamp acquired from the DS1307\"\n    },\n    {\n      \"kind\": \"rtc_valid\",\n      \"device\": \"rtc module1\",\n      \"sda_pin\": \"A4\",\n      \"scl_pin\": \"A5\",\n      \"address\": 104,\n      \"acquisition\": \"periodic\",\n      \"initial\": false,\n      \"meaning\": \"Validity of the current DS1307 acquisition\"\n    },\n    {\n      \"kind\": \"elapsed_ms\",\n      \"semantics\": \"delta_since_previous_step\",\n      \"initial\": 0,\n      \"meaning\": \"Actual elapsed milliseconds since the previous control step for continuous reporting cadence\"\n    }\n  ],\n  \"serial_channels\": [\n    {\n      \"baud\": 9600,\n      \"trigger\": {\n        \"initial\": false,\n        \"meaning\": \"Print a valid timestamp on the first valid acquisition, on button state changes, and every 100 ms while RTC data is valid\"\n      },\n      \"values\": [\n        {\n          \"type\": \"i32\",\n          \"unit\": \"s\",\n          \"initial\": 0,\n          \"meaning\": \"RTC UTC epoch plus 32400 seconds when the button is pressed, otherwise the unmodified UTC epoch\",\n          \"label\": \"\"\n        }\n      ],\n      \"format\": \"{0:iso}\"\n    }\n  ],\n  \"planning_notes\": [\n    \"Preserve the DS1307 wiring on A4/A5 and the active-HIGH button on D2 with its external 10000 ohm pull-down resistor; do not enable the internal pull-up.\",\n    \"Assume a 100 ms continuous reporting interval because the original requirement specifies no interval. Generate report timing and button-change reports in the SysML model using actual elapsed time.\",\n    \"Use the catalog default periodic RTC sampling consistently for both RTC requests. Check validity in the model and suppress timestamp reports until a valid RTC acquisition is available and whenever validity is false.\",\n    \"Apply the UTC+9 offset in the SysML model before formatting so date rollovers are handled by epoch-based ISO rendering. Print only YYYY-MM-DDTHH:MM:SS followed by the serial line terminator, without a prefix or timezone suffix.\",\n    \"The supplied RTC initTime is simulator configuration, not a timestamp to write to the RTC or substitute for acquired time.\",\n    \"Initialize the RTC and serial connection without an artificial startup delay; setup must return within 500 ms.\",\n    \"Serial receive framing and idle timeout are inapplicable because this application requires no serial receiver.\"\n  ]\n}",
+            "construction": [
+              "catalog_interfaces_and_serial_channels_assembled"
+            ],
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            }
+          }
+        ],
+        "configuration_resolution": {
+          "version": "configuration-defaults-v3",
+          "board": "arduino:avr:uno",
+          "original_requirement": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\n    \"version\": 1.0,\n    \"author\": \"Blind Author\",\n    \"description\": \"Get the current time using an RTC sensor, and change into different timezone\",\n    \"parts\": [\n        {\n            \"type\": \"wokwi-arduino-uno\",\n            \"id\": \"arduino uno1\",\n            \"top\": 0,\n            \"left\": 0,\n            \"attrs\": {}\n        },\n        {\n            \"type\": \"wokwi-ds1307\",\n            \"id\": \"rtc module1\",\n            \"top\": 244.2,\n            \"left\": 278.5,\n            \"attrs\": {\n                \"initTime\": \"2024-11-24T04:48:00\"\n            }\n        },\n        {\n            \"type\": \"wokwi-pushbutton\",\n            \"id\": \"push button1\",\n            \"top\": -109,\n            \"left\": 249.6,\n            \"attrs\": {\n                \"color\": \"green\",\n                \"xray\": \"1\"\n            }\n        },\n        {\n            \"type\": \"wokwi-resistor\",\n            \"id\": \"resistor1\",\n            \"top\": -82.45,\n            \"left\": 345.6,\n            \"attrs\": {\n                \"value\": \"10000\"\n            }\n        }\n    ],\n    \"connections\": [\n        [\n            \"rtc module1:SCL\",\n            \"arduino uno1:A5\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:SDA\",\n            \"arduino uno1:A4\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:5V\",\n            \"arduino uno1:5V\",\n            \"red\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"rtc module1:GND\",\n            \"arduino uno1:GND.2\",\n            \"black\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.l\",\n            \"arduino uno1:2\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"push button1:2.r\",\n            \"resistor1:1\",\n            \"green\",\n            [\n                \"h0\"\n            ]\n        ],\n        [\n            \"resistor1:2\",\n            \"arduino uno1:GND.2\",\n            \"green\",\n            [\n                \"v0\",\n                \"h18\",\n                \"v240\",\n                \"h-249.6\"\n            ]\n        ],\n        [\n            \"push button1:1.r\",\n            \"arduino uno1:5V\",\n            \"green\",\n            [\n                \"v0\",\n                \"h125\",\n                \"v240\",\n                \"h-278.4\"\n            ]\n        ]\n    ]\n}",
+          "effective_requirement": "# Button RTC timezone\n\n## Project Description\nThis is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\n\n## Hardware Components\n- Arduino Uno\n- Push Button\n- 10kΩ resistor\n- RTC module\n\n## Circuit Description\nThe RTC module is connected to the Arduino. The VCC pin is connected to 5V, the GND pin to gnd3, the SDA pin to A4, and the SCL pin to A5. Push button is connected to pin2 for input, and reads high when it is pressed.\n\n## Expected Behavior\nWhen the Arduino powers up, it should:\n1. Configure the button pin as an input\n2. Initialize the serial monitor\n3. Check if the RTC module is available and initialize it\n4. Continuously retrieve the current time from the RTC\n5. Check the button state, and if it is pressed, add 9 hours to adjust the timezone\n6. Print the resulting timestamp\n\n## Success Criteria\nThe test is successful when:\n1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed\n\n## Notes for Implementation\n- The button input will read HIGH when pressed.\n- When the button is not pressed, pin1.l is connected to pin1.r and pin2.l is connected to pin2.r. When the button is pressed, all the pins are connected together.\n- The format of timestamp is YYYY-MM-DDTHH:MM:SS.\n\n## Attributes\n- To use 10kΩ resistor, set the property name \"value\" to \"10000 ohm\".\nGiven circuit (must preserve wiring):\n{\"version\": 1.0, \"author\": \"Blind Author\", \"description\": \"Get the current time using an RTC sensor, and change into different timezone\", \"parts\": [{\"type\": \"wokwi-arduino-uno\", \"id\": \"arduino uno1\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-ds1307\", \"id\": \"rtc module1\", \"top\": 244.2, \"left\": 278.5, \"attrs\": {\"initTime\": \"2024-11-24T04:48:00\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"push button1\", \"top\": -109, \"left\": 249.6, \"attrs\": {\"color\": \"green\", \"xray\": \"1\"}}, {\"type\": \"wokwi-resistor\", \"id\": \"resistor1\", \"top\": -82.45, \"left\": 345.6, \"attrs\": {\"value\": \"10000 ohm\"}}], \"connections\": [[\"rtc module1:SCL\", \"arduino uno1:A5\", \"green\", [\"h0\"]], [\"rtc module1:SDA\", \"arduino uno1:A4\", \"green\", [\"h0\"]], [\"rtc module1:5V\", \"arduino uno1:5V\", \"red\", [\"h0\"]], [\"rtc module1:GND\", \"arduino uno1:GND.2\", \"black\", [\"h0\"]], [\"push button1:2.l\", \"arduino uno1:2\", \"green\", [\"h0\"]], [\"push button1:2.r\", \"resistor1:1\", \"green\", [\"h0\"]], [\"resistor1:2\", \"arduino uno1:GND.2\", \"green\", [\"v0\", \"h18\", \"v240\", \"h-249.6\"]], [\"push button1:1.r\", \"arduino uno1:5V\", \"green\", [\"v0\", \"h125\", \"v240\", \"h-278.4\"]]]}\nSerial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\nOperational acceptance profile operational-acceptance-v4 (additional public experimental conditions, not raw dataset text):\n- Explicit original requirements and supplied circuit connections override every default below.\n- Where no electrical wiring is supplied, individual LEDs are active HIGH to GND and buttons connect the named input to GND with INPUT_PULLUP; model pressed values are normalized independently of electrical level.\n- When unspecified, a counter starts at zero and an LED starts OFF. An explicitly required ON state takes precedence.\n- When the original gives no reaction deadline, a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available. This does not impose physical motor travel time, shorten an explicit delay, or change a specified sensor/report period.\n- When the original gives no display refresh period or response deadline, a changed input must be reflected in the display within 250ms. Explicit original display periods, delays and startup sequences override this default. This additional display bound was explicitly authorized for this experimental variant.\n- Where the requirement asks to continuously stream a Boolean button/switch state over Serial but gives no repeat interval, respond to a changed state within 250ms and emit its correct state message at least once in every 500ms stable-state interval after settling. Explicit original report periods and event-only reporting rules override this default. This authorized additional continuous-state-report condition does not apply to startup-only messages, command echoes, sensor sampling or persistent display contents. A display retaining the correct visible state requires no repeated print calls unless the source explicitly requires redraws.\n- Unless the original specifies a warmup or delayed startup, setup() must return within 500ms. Deadlines stated after initialization are measured from the observed setup() return, not power-on.\n- An unspecified continuous DHT report must eventually emit a fresh valid reading within 3000ms of that measurement becoming available; explicit reporting periods override this bound.",
+          "pins": {},
+          "devices": [],
+          "changes": [
+            {
+              "device": "resistor1",
+              "terminal": "value",
+              "original": "10000",
+              "resolved": "10000 ohm",
+              "reason": "Explicit equivalent-resistance property representation; wiring and resistance unchanged"
+            },
+            {
+              "field": "serial.baud",
+              "original": null,
+              "resolved": 9600,
+              "reason": "unspecified transport configuration"
+            }
+          ],
+          "serial": {
+            "baud": 9600,
+            "framing": "line_or_idle",
+            "idle_timeout_ms": 20
+          },
+          "resolved_circuits": [
+            {
+              "version": 1.0,
+              "author": "Blind Author",
+              "description": "Get the current time using an RTC sensor, and change into different timezone",
+              "parts": [
+                {
+                  "type": "wokwi-arduino-uno",
+                  "id": "arduino uno1",
+                  "top": 0,
+                  "left": 0,
+                  "attrs": {}
+                },
+                {
+                  "type": "wokwi-ds1307",
+                  "id": "rtc module1",
+                  "top": 244.2,
+                  "left": 278.5,
+                  "attrs": {
+                    "initTime": "2024-11-24T04:48:00"
+                  }
+                },
+                {
+                  "type": "wokwi-pushbutton",
+                  "id": "push button1",
+                  "top": -109,
+                  "left": 249.6,
+                  "attrs": {
+                    "color": "green",
+                    "xray": "1"
+                  }
+                },
+                {
+                  "type": "wokwi-resistor",
+                  "id": "resistor1",
+                  "top": -82.45,
+                  "left": 345.6,
+                  "attrs": {
+                    "value": "10000 ohm"
+                  }
+                }
+              ],
+              "connections": [
+                [
+                  "rtc module1:SCL",
+                  "arduino uno1:A5",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:SDA",
+                  "arduino uno1:A4",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:5V",
+                  "arduino uno1:5V",
+                  "red",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "rtc module1:GND",
+                  "arduino uno1:GND.2",
+                  "black",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "push button1:2.l",
+                  "arduino uno1:2",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "push button1:2.r",
+                  "resistor1:1",
+                  "green",
+                  [
+                    "h0"
+                  ]
+                ],
+                [
+                  "resistor1:2",
+                  "arduino uno1:GND.2",
+                  "green",
+                  [
+                    "v0",
+                    "h18",
+                    "v240",
+                    "h-249.6"
+                  ]
+                ],
+                [
+                  "push button1:1.r",
+                  "arduino uno1:5V",
+                  "green",
+                  [
+                    "v0",
+                    "h125",
+                    "v240",
+                    "h-278.4"
+                  ]
+                ]
+              ]
+            }
+          ],
+          "circuit_preserved": false
+        }
+      },
+      "validation": {
+        "validator_version": "2026-08 / 0.62.0",
+        "attempts": [
+          {
+            "attempt": 1,
+            "model": "openai/gpt-6.1-sol",
+            "response": "{\n  \"controller\": {\n    \"states\": [\n      {\"name\": \"reportAge\", \"type\": \"i32\", \"initial\": 0},\n      {\"name\": \"previousPressed\", \"type\": \"bool\", \"initial\": false},\n      {\"name\": \"previousValid\", \"type\": \"bool\", \"initial\": false},\n      {\"name\": \"reportNow\", \"type\": \"bool\", \"initial\": false}\n    ],\n    \"calculations\": [\n      {\n        \"name\": \"deltaPhase\",\n        \"type\": \"i32\",\n        \"expression\": \"io_3 - 100 * RealFunctions::floor(io_3 / 100)\"\n      }\n    ],\n    \"updates\": [\n      {\"assign\": \"reportNow\", \"value\": false},\n      {\n        \"if\": \"io_2\",\n        \"then\": [\n          {\n            \"if\": {\n              \"or\": [\n                {\"not\": \"previousValid\"},\n                {\"!=\": [\"io_0\", \"previousPressed\"]}\n              ]\n            },\n            \"then\": [\n              {\"assign\": \"reportNow\", \"value\": true},\n              {\"assign\": \"reportAge\", \"value\": 0}\n            ],\n            \"else\": [\n              {\n                \"if\": {\">=\": [\"io_3\", \"100 - reportAge\"]},\n                \"then\": [\n                  {\"assign\": \"reportNow\", \"value\": true}\n                ]\n              },\n              {\"assign\": \"reportAge\", \"value\": \"reportAge + deltaPhase\"},\n              {\n                \"if\": {\">=\": [\"reportAge\", 100]},\n                \"then\": [\n                  {\"assign\": \"reportAge\", \"value\": \"reportAge - 100\"}\n                ]\n              }\n            ]\n          }\n        ],\n        \"else\": [\n          {\"assign\": \"reportAge\", \"value\": 0}\n        ]\n      },\n      {\"assign\": \"previousValid\", \"value\": \"io_2\"},\n      {\"assign\": \"previousPressed\", \"value\": \"io_0\"}\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"reportNow\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_0\",\n        \"then\": \"io_1 + 32400\",\n        \"else\": \"io_1\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_2=false, then supply a valid RTC acquisition with io_0=false. Advance io_3 in 10 ms increments while supplying current RTC epochs.\",\n        \"oracle\": \"No timestamp is emitted while invalid. The first valid acquisition emits immediately; subsequent stable-state reports occur every 100 ms and contain the acquired UTC timestamp formatted YYYY-MM-DDTHH:MM:SS followed by one newline.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"While io_2=true, press, hold, and release the active-HIGH D2 button, including changes between periodic report deadlines.\",\n        \"oracle\": \"Each button change produces an immediate report. While pressed, serial_0_value_0 equals io_1 + 32400; while released it equals io_1. Holding the button does not toggle the selected timezone.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Supply valid RTC epochs near midnight, month end, leap-day boundaries, and year end with io_0=true.\",\n        \"oracle\": \"The reported ISO timestamp represents the acquired UTC instant plus nine hours, including the correct calendar rollover, with no prefix or timezone suffix.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Invalidate RTC acquisitions during reporting, change the button while invalid, and then restore validity with a fresh epoch. Also exercise irregular elapsed deltas crossing multiple 100 ms intervals.\",\n        \"oracle\": \"Invalid acquisitions never trigger a report. Restored validity triggers an immediate report using the fresh epoch and current button state. Periodic timing uses actual elapsed deltas, retains residual phase, and emits at most once per control step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T5\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Boot the assembled application with the supplied DS1307, D2 button, external 10000 ohm pull-down, and preserved circuit connections.\",\n        \"oracle\": \"Setup returns within 500 ms; Serial initializes at 9600 baud; D2 uses INPUT without an internal pull-up; the RTC initializes on A4/A5. Timestamp reports use acquired RTC time rather than a substituted simulator initialization constant.\"\n      }\n    ]\n  }\n}",
+            "issues": [],
+            "ok": true,
+            "usage": {
+              "completion_tokens": 1448,
+              "prompt_tokens": 14041,
+              "total_tokens": 15489,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 366,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 14038,
+                "video_tokens": 0
+              },
+              "cost": 0.049581,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.049581,
+                "upstream_inference_prompt_cost": 0.035101,
+                "upstream_inference_completions_cost": 0.01448
+              }
+            },
+            "structural_validation_passed": true,
+            "deterministic_behavior_passed": true,
+            "final_compile_passed": true,
+            "semantic_review": {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Push button is connected to pin2 for input, and reads high when it is pressed.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true and pullup=false. Registered acquisition configures INPUT and samples before the first controller tick. This matches the supplied external pull-down circuit, including a button already pressed at startup.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\",\n      \"reason\": \"The resolved circuit retains all supplied connections, including RTC SDA=A4, SCL=A5, 5V and ground, and the D2 button with its external pull-down. The resistor property is resolved to 10000 ohm without changing resistance. Despite the circuit_preserved metadata flag being false, the concrete resolved connections show no wiring change.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"The registered serial adapter initializes at 9600 baud and appends one newline per triggered formatted report. The configuration retains the specified framing and idle timeout. No serial receive behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"For valid RTC data, either button transition triggers a report in the same controller step that observes it. Sampling and control periods are both 10 ms, consistent with the 250 ms bound. Outputs observe the updated reportNow and current button value, rather than the previous state. Invalid RTC data suppresses reports until validity returns.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute reportNow : Boolean := false;\",\n      \"reason\": \"The model introduces no startup delay or wait sequence, and the contract calls for initialization without an artificial delay. There is no model-boundary contradiction of the setup deadline; actual setup duration remains a post-generation execution obligation. The profile's LED, counter, display and DHT defaults do not apply to this project.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Configure the button pin as an input\\n2. Initialize the serial monitor\\n3. Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign reportNow := false;\\n      then if io_2 {\",\n      \"reason\": \"Registered adapters provide D2 INPUT setup, Serial.begin at 9600 baud, and native DS1307 initialization and acquisition validity on A4/A5 at address 104. The controller gates reporting on that validity. These responsibilities need not be represented as library calls in SysML. Initial scalar defaults are not emitted as acquired timestamps.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\\n    in attribute io_2 : Boolean;\\n    in attribute io_3 : Integer;\",\n      \"reason\": \"The contract periodically acquires the RTC Unix epoch and validity every 10 ms. The controller uses the acquired epoch directly rather than a constant or independently accumulated clock. Its stable-state reporting timer uses the actual elapsed_ms input: the threshold detects interval crossings and modulo phase accumulation retains residual elapsed time, including deltas exceeding one interval.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"Released selects the unmodified UTC epoch; pressed selects that epoch plus 32400 seconds, exactly nine hours. The selection is level-sensitive, not a toggle or repeated cumulative addition. Holding the button retains the selected timezone. A first valid acquisition triggers a report even if the button was already held at startup, and restored validity reports the fresh epoch with the current button state.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"6. Print the resulting timestamp\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"Ordered updates clear the trigger each step, assert it on first validity or a button change, and otherwise assert it when accumulated actual elapsed time crosses the reporting interval. The registered level-sensitive adapter emits after the step. Thus valid stable states continue reporting, while invalid acquisitions suppress emission. The assumed 100 ms cadence does not conflict with any source-specified report period.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The format of timestamp is YYYY-MM-DDTHH:MM:SS.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The contract formats this model-selected epoch using {0:iso}, with an empty serial label. Registered formatting supplies the calendar timestamp and one newline. Applying the offset to epoch seconds before formatting allows the formatter to handle day, month and year rollovers without model-side string construction.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not demonstrated runtime success.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, native RTC initialization and availability checking, and ongoing peripheral acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, compilation and actual serial/peripheral execution remain downstream acceptance obligations.\",\n    \"The supplied req_test_map describes proposed tests; it is not executed evidence.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1655,
+                    "prompt_tokens": 21596,
+                    "total_tokens": 23251,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 104,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 21593,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0705385,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0705385,
+                      "upstream_inference_prompt_cost": 0.0539885,
+                      "upstream_inference_completions_cost": 0.01655
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: SOURCE-1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 958,
+                    "prompt_tokens": 23228,
+                    "total_tokens": 24186,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 39,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 23225,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0676485,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0676485,
+                      "upstream_inference_prompt_cost": 0.0580685,
+                      "upstream_inference_completions_cost": 0.00958
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 958,
+                "prompt_tokens": 23228,
+                "total_tokens": 24186,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 39,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 23225,
+                  "video_tokens": 0
+                },
+                "cost": 0.0676485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0676485,
+                  "upstream_inference_prompt_cost": 0.0580685,
+                  "upstream_inference_completions_cost": 0.00958
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.",
+                    "status": "satisfied",
+                    "model_quote": "out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);",
+                    "reason": "The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed",
+                    "status": "satisfied",
+                    "model_quote": "then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\n          first start;\n          then assign reportNow := true;\n          then assign reportAge := 0;",
+                    "reason": "All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.",
+                  "After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.",
+                  "Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.",
+                  "Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.",
+                  "The supplied req_test_map contains proposed tests, not executed evidence."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468"
+              }
+            },
+            "completion": {
+              "finish_reason": "stop",
+              "refusal": null,
+              "response_format": {
+                "type": "json_object"
+              }
+            },
+            "normalizations": [
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id",
+              "frozen_requirement_text_restored_by_id"
+            ],
+            "generation_mode": "contract_assembly",
+            "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Integer;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Integer;\n    attribute reportAge : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute previousValid : Boolean := false;\n    attribute reportNow : Boolean := false;\n    attribute deltaPhase : Integer = io_3 - 100 * RealFunctions::floor(io_3 / 100);\n    perform action tick {\n      first start;\n      then assign reportNow := false;\n      then if io_2 {\n        first start;\n        then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\n          first start;\n          then assign reportNow := true;\n          then assign reportAge := 0;\n        } else {\n          first start;\n          then if ((io_3) >= (100 - reportAge)) {\n            first start;\n            then assign reportNow := true;\n          }\n          then assign reportAge := reportAge + deltaPhase;\n          then if ((reportAge) >= (100)) {\n            first start;\n            then assign reportAge := reportAge - 100;\n          }\n        }\n      } else {\n        first start;\n        then assign reportAge := 0;\n      }\n      then assign previousValid := io_2;\n      then assign previousPressed := io_0;\n    }\n    out attribute serial_0_trigger : Boolean = reportNow;\n    out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\n  }\n  part system : Controller;\n}\n",
+            "stages": {
+              "sysml_generation": true,
+              "sysml_to_ir": true,
+              "ir_to_il": true
+            },
+            "focus_issues": [],
+            "coverage": {
+              "status": "structural_pass",
+              "issues": [],
+              "functional_status": "unverified",
+              "startup": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+              },
+              "pause": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+              },
+              "periodic": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+              },
+              "numeric": {
+                "status": "not_requested",
+                "checked": 0,
+                "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+              },
+              "source_behavior": {
+                "status": "not_requested",
+                "checked": 0,
+                "traces": [],
+                "scope": "Only the exact source-derived scenarios; not full functionality proof"
+              },
+              "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+            },
+            "diagnostic_fingerprint": [],
+            "no_progress": false,
+            "failed_obligation_keys": [],
+            "repeated_requirement": false,
+            "repair_locations": [],
+            "repair_example": null,
+            "failure_stage": null
+          }
+        ],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "semantic_review": {
+          "enabled": true,
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "review_calls": 2,
+          "max_review_calls": 6,
+          "repair_count": 0,
+          "rounds": [
+            {
+              "enabled": true,
+              "status": "pass",
+              "reason": null,
+              "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468",
+              "policy_version": "sysml-semantic-review-v2-native-boundaries",
+              "response_attempts": [
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Push button is connected to pin2 for input, and reads high when it is pressed.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true and pullup=false. Registered acquisition configures INPUT and samples before the first controller tick. This matches the supplied external pull-down circuit, including a button already pressed at startup.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\",\n      \"reason\": \"The resolved circuit retains all supplied connections, including RTC SDA=A4, SCL=A5, 5V and ground, and the D2 button with its external pull-down. The resistor property is resolved to 10000 ohm without changing resistance. Despite the circuit_preserved metadata flag being false, the concrete resolved connections show no wiring change.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"The registered serial adapter initializes at 9600 baud and appends one newline per triggered formatted report. The configuration retains the specified framing and idle timeout. No serial receive behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"For valid RTC data, either button transition triggers a report in the same controller step that observes it. Sampling and control periods are both 10 ms, consistent with the 250 ms bound. Outputs observe the updated reportNow and current button value, rather than the previous state. Invalid RTC data suppresses reports until validity returns.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute reportNow : Boolean := false;\",\n      \"reason\": \"The model introduces no startup delay or wait sequence, and the contract calls for initialization without an artificial delay. There is no model-boundary contradiction of the setup deadline; actual setup duration remains a post-generation execution obligation. The profile's LED, counter, display and DHT defaults do not apply to this project.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Configure the button pin as an input\\n2. Initialize the serial monitor\\n3. Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign reportNow := false;\\n      then if io_2 {\",\n      \"reason\": \"Registered adapters provide D2 INPUT setup, Serial.begin at 9600 baud, and native DS1307 initialization and acquisition validity on A4/A5 at address 104. The controller gates reporting on that validity. These responsibilities need not be represented as library calls in SysML. Initial scalar defaults are not emitted as acquired timestamps.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\\n    in attribute io_2 : Boolean;\\n    in attribute io_3 : Integer;\",\n      \"reason\": \"The contract periodically acquires the RTC Unix epoch and validity every 10 ms. The controller uses the acquired epoch directly rather than a constant or independently accumulated clock. Its stable-state reporting timer uses the actual elapsed_ms input: the threshold detects interval crossings and modulo phase accumulation retains residual elapsed time, including deltas exceeding one interval.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"Released selects the unmodified UTC epoch; pressed selects that epoch plus 32400 seconds, exactly nine hours. The selection is level-sensitive, not a toggle or repeated cumulative addition. Holding the button retains the selected timezone. A first valid acquisition triggers a report even if the button was already held at startup, and restored validity reports the fresh epoch with the current button state.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"6. Print the resulting timestamp\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"Ordered updates clear the trigger each step, assert it on first validity or a button change, and otherwise assert it when accumulated actual elapsed time crosses the reporting interval. The registered level-sensitive adapter emits after the step. Thus valid stable states continue reporting, while invalid acquisitions suppress emission. The assumed 100 ms cadence does not conflict with any source-specified report period.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The format of timestamp is YYYY-MM-DDTHH:MM:SS.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The contract formats this model-selected epoch using {0:iso}, with an empty serial label. Registered formatting supplies the calendar timestamp and one newline. Applying the offset to epoch seconds before formatting allows the formatter to handle day, month and year rollovers without model-side string construction.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not demonstrated runtime success.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, native RTC initialization and availability checking, and ongoing peripheral acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, compilation and actual serial/peripheral execution remain downstream acceptance obligations.\",\n    \"The supplied req_test_map describes proposed tests; it is not executed evidence.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 1655,
+                    "prompt_tokens": 21596,
+                    "total_tokens": 23251,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 104,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 21593,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0705385,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0705385,
+                      "upstream_inference_prompt_cost": 0.0539885,
+                      "upstream_inference_completions_cost": 0.01655
+                    }
+                  },
+                  "valid": false,
+                  "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+                  "error": "Unknown or duplicate requirement_id: SOURCE-1"
+                },
+                {
+                  "model": "openai/gpt-6.1-sol",
+                  "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+                  "usage": {
+                    "completion_tokens": 958,
+                    "prompt_tokens": 23228,
+                    "total_tokens": 24186,
+                    "completion_tokens_details": {
+                      "accepted_prediction_tokens": null,
+                      "audio_tokens": 0,
+                      "reasoning_tokens": 39,
+                      "rejected_prediction_tokens": null,
+                      "image_tokens": 0
+                    },
+                    "prompt_tokens_details": {
+                      "audio_tokens": 0,
+                      "cached_tokens": 0,
+                      "cache_write_tokens": 23225,
+                      "video_tokens": 0
+                    },
+                    "cost": 0.0676485,
+                    "is_byok": false,
+                    "cost_details": {
+                      "upstream_inference_cost": 0.0676485,
+                      "upstream_inference_prompt_cost": 0.0580685,
+                      "upstream_inference_completions_cost": 0.00958
+                    }
+                  },
+                  "valid": true
+                }
+              ],
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+              "completion": {
+                "finish_reason": "stop",
+                "refusal": null,
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "usage": {
+                "completion_tokens": 958,
+                "prompt_tokens": 23228,
+                "total_tokens": 24186,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 39,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 23225,
+                  "video_tokens": 0
+                },
+                "cost": 0.0676485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0676485,
+                  "upstream_inference_prompt_cost": 0.0580685,
+                  "upstream_inference_completions_cost": 0.00958
+                }
+              },
+              "validation": {
+                "valid": true
+              },
+              "result": {
+                "verdict": "pass",
+                "requirement_checks": [
+                  {
+                    "requirement_id": "SOURCE-1",
+                    "requirement_quote": "This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.",
+                    "status": "satisfied",
+                    "model_quote": "out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);",
+                    "reason": "The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion."
+                  },
+                  {
+                    "requirement_id": "R1",
+                    "requirement_quote": "1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed",
+                    "status": "satisfied",
+                    "model_quote": "then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\n          first start;\n          then assign reportNow := true;\n          then assign reportAge := 0;",
+                    "reason": "All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration."
+                  }
+                ],
+                "issues": [],
+                "limitations": [
+                  "This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.",
+                  "After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.",
+                  "Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.",
+                  "Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.",
+                  "The supplied req_test_map contains proposed tests, not executed evidence."
+                ],
+                "validated": true,
+                "policy_version": "sysml-semantic-review-v2-native-boundaries",
+                "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468"
+              }
+            }
+          ],
+          "final_status": "passed",
+          "failure_category": null
+        },
+        "call_counts": {
+          "generation_and_repair": 1,
+          "semantic_review": 2
+        },
+        "usage": {
+          "generation_and_repair": [
+            {
+              "completion_tokens": 1448,
+              "prompt_tokens": 14041,
+              "total_tokens": 15489,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 366,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 14038,
+                "video_tokens": 0
+              },
+              "cost": 0.049581,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.049581,
+                "upstream_inference_prompt_cost": 0.035101,
+                "upstream_inference_completions_cost": 0.01448
+              }
+            }
+          ],
+          "semantic_review": [
+            {
+              "completion_tokens": 958,
+              "prompt_tokens": 23228,
+              "total_tokens": 24186,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": null,
+                "audio_tokens": 0,
+                "reasoning_tokens": 39,
+                "rejected_prediction_tokens": null,
+                "image_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 23225,
+                "video_tokens": 0
+              },
+              "cost": 0.0676485,
+              "is_byok": false,
+              "cost_details": {
+                "upstream_inference_cost": 0.0676485,
+                "upstream_inference_prompt_cost": 0.0580685,
+                "upstream_inference_completions_cost": 0.00958
+              }
+            }
+          ]
+        },
+        "final_status": "accepted"
+      },
+      "status": "passed"
+    }
+  ],
+  "validation": {
+    "validator_version": "2026-08 / 0.62.0",
+    "attempts": [
+      {
+        "attempt": 1,
+        "model": "openai/gpt-6.1-sol",
+        "response": "{\n  \"controller\": {\n    \"states\": [\n      {\"name\": \"reportAge\", \"type\": \"i32\", \"initial\": 0},\n      {\"name\": \"previousPressed\", \"type\": \"bool\", \"initial\": false},\n      {\"name\": \"previousValid\", \"type\": \"bool\", \"initial\": false},\n      {\"name\": \"reportNow\", \"type\": \"bool\", \"initial\": false}\n    ],\n    \"calculations\": [\n      {\n        \"name\": \"deltaPhase\",\n        \"type\": \"i32\",\n        \"expression\": \"io_3 - 100 * RealFunctions::floor(io_3 / 100)\"\n      }\n    ],\n    \"updates\": [\n      {\"assign\": \"reportNow\", \"value\": false},\n      {\n        \"if\": \"io_2\",\n        \"then\": [\n          {\n            \"if\": {\n              \"or\": [\n                {\"not\": \"previousValid\"},\n                {\"!=\": [\"io_0\", \"previousPressed\"]}\n              ]\n            },\n            \"then\": [\n              {\"assign\": \"reportNow\", \"value\": true},\n              {\"assign\": \"reportAge\", \"value\": 0}\n            ],\n            \"else\": [\n              {\n                \"if\": {\">=\": [\"io_3\", \"100 - reportAge\"]},\n                \"then\": [\n                  {\"assign\": \"reportNow\", \"value\": true}\n                ]\n              },\n              {\"assign\": \"reportAge\", \"value\": \"reportAge + deltaPhase\"},\n              {\n                \"if\": {\">=\": [\"reportAge\", 100]},\n                \"then\": [\n                  {\"assign\": \"reportAge\", \"value\": \"reportAge - 100\"}\n                ]\n              }\n            ]\n          }\n        ],\n        \"else\": [\n          {\"assign\": \"reportAge\", \"value\": 0}\n        ]\n      },\n      {\"assign\": \"previousValid\", \"value\": \"io_2\"},\n      {\"assign\": \"previousPressed\", \"value\": \"io_0\"}\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"reportNow\",\n      \"serial_0_value_0\": {\n        \"if\": \"io_0\",\n        \"then\": \"io_1 + 32400\",\n        \"else\": \"io_1\"\n      }\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with io_2=false, then supply a valid RTC acquisition with io_0=false. Advance io_3 in 10 ms increments while supplying current RTC epochs.\",\n        \"oracle\": \"No timestamp is emitted while invalid. The first valid acquisition emits immediately; subsequent stable-state reports occur every 100 ms and contain the acquired UTC timestamp formatted YYYY-MM-DDTHH:MM:SS followed by one newline.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"While io_2=true, press, hold, and release the active-HIGH D2 button, including changes between periodic report deadlines.\",\n        \"oracle\": \"Each button change produces an immediate report. While pressed, serial_0_value_0 equals io_1 + 32400; while released it equals io_1. Holding the button does not toggle the selected timezone.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T3\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Supply valid RTC epochs near midnight, month end, leap-day boundaries, and year end with io_0=true.\",\n        \"oracle\": \"The reported ISO timestamp represents the acquired UTC instant plus nine hours, including the correct calendar rollover, with no prefix or timezone suffix.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T4\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Invalidate RTC acquisitions during reporting, change the button while invalid, and then restore validity with a fresh epoch. Also exercise irregular elapsed deltas crossing multiple 100 ms intervals.\",\n        \"oracle\": \"Invalid acquisitions never trigger a report. Restored validity triggers an immediate report using the fresh epoch and current button state. Periodic timing uses actual elapsed deltas, retains residual phase, and emits at most once per control step.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"test_point_id\": \"T5\",\n        \"test_method\": \"integration\",\n        \"stimulus\": \"Boot the assembled application with the supplied DS1307, D2 button, external 10000 ohm pull-down, and preserved circuit connections.\",\n        \"oracle\": \"Setup returns within 500 ms; Serial initializes at 9600 baud; D2 uses INPUT without an internal pull-up; the RTC initializes on A4/A5. Timestamp reports use acquired RTC time rather than a substituted simulator initialization constant.\"\n      }\n    ]\n  }\n}",
+        "issues": [],
+        "ok": true,
+        "usage": {
+          "completion_tokens": 1448,
+          "prompt_tokens": 14041,
+          "total_tokens": 15489,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 366,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 14038,
+            "video_tokens": 0
+          },
+          "cost": 0.049581,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.049581,
+            "upstream_inference_prompt_cost": 0.035101,
+            "upstream_inference_completions_cost": 0.01448
+          }
+        },
+        "structural_validation_passed": true,
+        "deterministic_behavior_passed": true,
+        "final_compile_passed": true,
+        "semantic_review": {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Push button is connected to pin2 for input, and reads high when it is pressed.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true and pullup=false. Registered acquisition configures INPUT and samples before the first controller tick. This matches the supplied external pull-down circuit, including a button already pressed at startup.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\",\n      \"reason\": \"The resolved circuit retains all supplied connections, including RTC SDA=A4, SCL=A5, 5V and ground, and the D2 button with its external pull-down. The resistor property is resolved to 10000 ohm without changing resistance. Despite the circuit_preserved metadata flag being false, the concrete resolved connections show no wiring change.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"The registered serial adapter initializes at 9600 baud and appends one newline per triggered formatted report. The configuration retains the specified framing and idle timeout. No serial receive behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"For valid RTC data, either button transition triggers a report in the same controller step that observes it. Sampling and control periods are both 10 ms, consistent with the 250 ms bound. Outputs observe the updated reportNow and current button value, rather than the previous state. Invalid RTC data suppresses reports until validity returns.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute reportNow : Boolean := false;\",\n      \"reason\": \"The model introduces no startup delay or wait sequence, and the contract calls for initialization without an artificial delay. There is no model-boundary contradiction of the setup deadline; actual setup duration remains a post-generation execution obligation. The profile's LED, counter, display and DHT defaults do not apply to this project.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Configure the button pin as an input\\n2. Initialize the serial monitor\\n3. Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign reportNow := false;\\n      then if io_2 {\",\n      \"reason\": \"Registered adapters provide D2 INPUT setup, Serial.begin at 9600 baud, and native DS1307 initialization and acquisition validity on A4/A5 at address 104. The controller gates reporting on that validity. These responsibilities need not be represented as library calls in SysML. Initial scalar defaults are not emitted as acquired timestamps.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\\n    in attribute io_2 : Boolean;\\n    in attribute io_3 : Integer;\",\n      \"reason\": \"The contract periodically acquires the RTC Unix epoch and validity every 10 ms. The controller uses the acquired epoch directly rather than a constant or independently accumulated clock. Its stable-state reporting timer uses the actual elapsed_ms input: the threshold detects interval crossings and modulo phase accumulation retains residual elapsed time, including deltas exceeding one interval.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"Released selects the unmodified UTC epoch; pressed selects that epoch plus 32400 seconds, exactly nine hours. The selection is level-sensitive, not a toggle or repeated cumulative addition. Holding the button retains the selected timezone. A first valid acquisition triggers a report even if the button was already held at startup, and restored validity reports the fresh epoch with the current button state.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"6. Print the resulting timestamp\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"Ordered updates clear the trigger each step, assert it on first validity or a button change, and otherwise assert it when accumulated actual elapsed time crosses the reporting interval. The registered level-sensitive adapter emits after the step. Thus valid stable states continue reporting, while invalid acquisitions suppress emission. The assumed 100 ms cadence does not conflict with any source-specified report period.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The format of timestamp is YYYY-MM-DDTHH:MM:SS.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The contract formats this model-selected epoch using {0:iso}, with an empty serial label. Registered formatting supplies the calendar timestamp and one newline. Applying the offset to epoch seconds before formatting allows the formatter to handle day, month and year rollovers without model-side string construction.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not demonstrated runtime success.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, native RTC initialization and availability checking, and ongoing peripheral acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, compilation and actual serial/peripheral execution remain downstream acceptance obligations.\",\n    \"The supplied req_test_map describes proposed tests; it is not executed evidence.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1655,
+                "prompt_tokens": 21596,
+                "total_tokens": 23251,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 104,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 21593,
+                  "video_tokens": 0
+                },
+                "cost": 0.0705385,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0705385,
+                  "upstream_inference_prompt_cost": 0.0539885,
+                  "upstream_inference_completions_cost": 0.01655
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: SOURCE-1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 958,
+                "prompt_tokens": 23228,
+                "total_tokens": 24186,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 39,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 23225,
+                  "video_tokens": 0
+                },
+                "cost": 0.0676485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0676485,
+                  "upstream_inference_prompt_cost": 0.0580685,
+                  "upstream_inference_completions_cost": 0.00958
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 958,
+            "prompt_tokens": 23228,
+            "total_tokens": 24186,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 39,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 23225,
+              "video_tokens": 0
+            },
+            "cost": 0.0676485,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0676485,
+              "upstream_inference_prompt_cost": 0.0580685,
+              "upstream_inference_completions_cost": 0.00958
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.",
+                "status": "satisfied",
+                "model_quote": "out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);",
+                "reason": "The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed",
+                "status": "satisfied",
+                "model_quote": "then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\n          first start;\n          then assign reportNow := true;\n          then assign reportAge := 0;",
+                "reason": "All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.",
+              "After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.",
+              "Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.",
+              "Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.",
+              "The supplied req_test_map contains proposed tests, not executed evidence."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468"
+          }
+        },
+        "completion": {
+          "finish_reason": "stop",
+          "refusal": null,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "normalizations": [
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id",
+          "frozen_requirement_text_restored_by_id"
+        ],
+        "generation_mode": "contract_assembly",
+        "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Integer;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Integer;\n    attribute reportAge : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute previousValid : Boolean := false;\n    attribute reportNow : Boolean := false;\n    attribute deltaPhase : Integer = io_3 - 100 * RealFunctions::floor(io_3 / 100);\n    perform action tick {\n      first start;\n      then assign reportNow := false;\n      then if io_2 {\n        first start;\n        then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\n          first start;\n          then assign reportNow := true;\n          then assign reportAge := 0;\n        } else {\n          first start;\n          then if ((io_3) >= (100 - reportAge)) {\n            first start;\n            then assign reportNow := true;\n          }\n          then assign reportAge := reportAge + deltaPhase;\n          then if ((reportAge) >= (100)) {\n            first start;\n            then assign reportAge := reportAge - 100;\n          }\n        }\n      } else {\n        first start;\n        then assign reportAge := 0;\n      }\n      then assign previousValid := io_2;\n      then assign previousPressed := io_0;\n    }\n    out attribute serial_0_trigger : Boolean = reportNow;\n    out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\n  }\n  part system : Controller;\n}\n",
+        "stages": {
+          "sysml_generation": true,
+          "sysml_to_ir": true,
+          "ir_to_il": true
+        },
+        "focus_issues": [],
+        "coverage": {
+          "status": "structural_pass",
+          "issues": [],
+          "functional_status": "unverified",
+          "startup": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+          },
+          "pause": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+          },
+          "periodic": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+          },
+          "numeric": {
+            "status": "not_requested",
+            "checked": 0,
+            "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+          },
+          "source_behavior": {
+            "status": "not_requested",
+            "checked": 0,
+            "traces": [],
+            "scope": "Only the exact source-derived scenarios; not full functionality proof"
+          },
+          "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+        },
+        "diagnostic_fingerprint": [],
+        "no_progress": false,
+        "failed_obligation_keys": [],
+        "repeated_requirement": false,
+        "repair_locations": [],
+        "repair_example": null,
+        "failure_stage": null
+      }
+    ],
+    "coverage": {
+      "status": "structural_pass",
+      "issues": [],
+      "functional_status": "unverified",
+      "startup": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+      },
+      "pause": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+      },
+      "periodic": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+      },
+      "numeric": {
+        "status": "not_requested",
+        "checked": 0,
+        "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+      },
+      "source_behavior": {
+        "status": "not_requested",
+        "checked": 0,
+        "traces": [],
+        "scope": "Only the exact source-derived scenarios; not full functionality proof"
+      },
+      "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+    },
+    "semantic_review": {
+      "enabled": true,
+      "policy_version": "sysml-semantic-review-v2-native-boundaries",
+      "review_calls": 2,
+      "max_review_calls": 6,
+      "repair_count": 0,
+      "rounds": [
+        {
+          "enabled": true,
+          "status": "pass",
+          "reason": null,
+          "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468",
+          "policy_version": "sysml-semantic-review-v2-native-boundaries",
+          "response_attempts": [
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Push button is connected to pin2 for input, and reads high when it is pressed.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_0 : Boolean;\",\n      \"reason\": \"The contract binds io_0 to D2 with active_high=true and pullup=false. Registered acquisition configures INPUT and samples before the first controller tick. This matches the supplied external pull-down circuit, including a button already pressed at startup.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Given circuit (must preserve wiring):\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\",\n      \"reason\": \"The resolved circuit retains all supplied connections, including RTC SDA=A4, SCL=A5, 5V and ground, and the D2 button with its external pull-down. The resistor property is resolved to 10000 ohm without changing resistance. Despite the circuit_preserved metadata flag being false, the concrete resolved connections show no wiring change.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Serial baud=9600; framing=line_or_idle; idle_timeout_ms=20.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"The registered serial adapter initializes at 9600 baud and appends one newline per triggered formatted report. The configuration retains the specified framing and idle timeout. No serial receive behavior is required.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"a digital/button/serial command, PWM duty command or servo ANGLE COMMAND must update within 250ms of its input event becoming available.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"For valid RTC data, either button transition triggers a report in the same controller step that observes it. Sampling and control periods are both 10 ms, consistent with the 250 ms bound. Outputs observe the updated reportNow and current button value, rather than the previous state. Invalid RTC data suppresses reports until validity returns.\"\n    },\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"Unless the original specifies a warmup or delayed startup, setup() must return within 500ms.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"attribute reportNow : Boolean := false;\",\n      \"reason\": \"The model introduces no startup delay or wait sequence, and the contract calls for initialization without an artificial delay. There is no model-boundary contradiction of the setup deadline; actual setup duration remains a post-generation execution obligation. The profile's LED, counter, display and DHT defaults do not apply to this project.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. Configure the button pin as an input\\n2. Initialize the serial monitor\\n3. Check if the RTC module is available and initialize it\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then assign reportNow := false;\\n      then if io_2 {\",\n      \"reason\": \"Registered adapters provide D2 INPUT setup, Serial.begin at 9600 baud, and native DS1307 initialization and acquisition validity on A4/A5 at address 104. The controller gates reporting on that validity. These responsibilities need not be represented as library calls in SysML. Initial scalar defaults are not emitted as acquired timestamps.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"4. Continuously retrieve the current time from the RTC\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"in attribute io_1 : Integer;\\n    in attribute io_2 : Boolean;\\n    in attribute io_3 : Integer;\",\n      \"reason\": \"The contract periodically acquires the RTC Unix epoch and validity every 10 ms. The controller uses the acquired epoch directly rather than a constant or independently accumulated clock. Its stable-state reporting timer uses the actual elapsed_ms input: the threshold detects interval crossings and modulo phase accumulation retains residual elapsed time, including deltas exceeding one interval.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"Released selects the unmodified UTC epoch; pressed selects that epoch plus 32400 seconds, exactly nine hours. The selection is level-sensitive, not a toggle or repeated cumulative addition. Holding the button retains the selected timezone. A first valid acquisition triggers a report even if the button was already held at startup, and restored validity reports the fresh epoch with the current button state.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"6. Print the resulting timestamp\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_trigger : Boolean = reportNow;\",\n      \"reason\": \"Ordered updates clear the trigger each step, assert it on first validity or a button change, and otherwise assert it when accumulated actual elapsed time crosses the reporting interval. The registered level-sensitive adapter emits after the step. Thus valid stable states continue reporting, while invalid acquisitions suppress emission. The assumed 100 ms cadence does not conflict with any source-specified report period.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"The format of timestamp is YYYY-MM-DDTHH:MM:SS.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The contract formats this model-selected epoch using {0:iso}, with an empty serial label. Registered formatting supplies the calendar timestamp and one newline. Applying the offset to epoch seconds before formatting allows the formatter to handle day, month and year rollovers without model-side string construction.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"Satisfied means consistency at the model boundary, not demonstrated runtime success.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, native RTC initialization and availability checking, and ongoing peripheral acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, compilation and actual serial/peripheral execution remain downstream acceptance obligations.\",\n    \"The supplied req_test_map describes proposed tests; it is not executed evidence.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 1655,
+                "prompt_tokens": 21596,
+                "total_tokens": 23251,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 104,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 21593,
+                  "video_tokens": 0
+                },
+                "cost": 0.0705385,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0705385,
+                  "upstream_inference_prompt_cost": 0.0539885,
+                  "upstream_inference_completions_cost": 0.01655
+                }
+              },
+              "valid": false,
+              "code": "SEMANTIC_REVIEW_REQUIREMENT_ID",
+              "error": "Unknown or duplicate requirement_id: SOURCE-1"
+            },
+            {
+              "model": "openai/gpt-6.1-sol",
+              "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+              "usage": {
+                "completion_tokens": 958,
+                "prompt_tokens": 23228,
+                "total_tokens": 24186,
+                "completion_tokens_details": {
+                  "accepted_prediction_tokens": null,
+                  "audio_tokens": 0,
+                  "reasoning_tokens": 39,
+                  "rejected_prediction_tokens": null,
+                  "image_tokens": 0
+                },
+                "prompt_tokens_details": {
+                  "audio_tokens": 0,
+                  "cached_tokens": 0,
+                  "cache_write_tokens": 23225,
+                  "video_tokens": 0
+                },
+                "cost": 0.0676485,
+                "is_byok": false,
+                "cost_details": {
+                  "upstream_inference_cost": 0.0676485,
+                  "upstream_inference_prompt_cost": 0.0580685,
+                  "upstream_inference_completions_cost": 0.00958
+                }
+              },
+              "valid": true
+            }
+          ],
+          "model": "openai/gpt-6.1-sol",
+          "raw_response": "{\n  \"verdict\": \"pass\",\n  \"requirement_checks\": [\n    {\n      \"requirement_id\": \"SOURCE-1\",\n      \"requirement_quote\": \"This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);\",\n      \"reason\": \"The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion.\"\n    },\n    {\n      \"requirement_id\": \"R1\",\n      \"requirement_quote\": \"1. The UTC timestamp is printed when the button is not pressed\\n2. The UTC+9 timestamp is printed when the button is pressed\",\n      \"status\": \"satisfied\",\n      \"model_quote\": \"then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\\n          first start;\\n          then assign reportNow := true;\\n          then assign reportAge := 0;\",\n      \"reason\": \"All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration.\"\n    }\n  ],\n  \"issues\": [],\n  \"limitations\": [\n    \"This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.\",\n    \"After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.\",\n    \"Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.\",\n    \"Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.\",\n    \"The supplied req_test_map contains proposed tests, not executed evidence.\"\n  ]\n}",
+          "completion": {
+            "finish_reason": "stop",
+            "refusal": null,
+            "response_format": {
+              "type": "json_object"
+            }
+          },
+          "usage": {
+            "completion_tokens": 958,
+            "prompt_tokens": 23228,
+            "total_tokens": 24186,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": 0,
+              "reasoning_tokens": 39,
+              "rejected_prediction_tokens": null,
+              "image_tokens": 0
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": 0,
+              "cached_tokens": 0,
+              "cache_write_tokens": 23225,
+              "video_tokens": 0
+            },
+            "cost": 0.0676485,
+            "is_byok": false,
+            "cost_details": {
+              "upstream_inference_cost": 0.0676485,
+              "upstream_inference_prompt_cost": 0.0580685,
+              "upstream_inference_completions_cost": 0.00958
+            }
+          },
+          "validation": {
+            "valid": true
+          },
+          "result": {
+            "verdict": "pass",
+            "requirement_checks": [
+              {
+                "requirement_id": "SOURCE-1",
+                "requirement_quote": "This is a Arduino project that prints UTC and UTC+9 timestamp with a RTC module.",
+                "status": "satisfied",
+                "model_quote": "out attribute serial_0_value_0 : Integer = (if io_0 ? io_1 + 32400 else io_1);",
+                "reason": "The model and registered contract are consistent with the complete source requirement and its applicable acceptance conditions. D2 is configured as INPUT without pull-up, with HIGH normalized to pressed. The resolved circuit preserves the supplied connections, RTC initialization configuration, and external 10000 ohm resistor; the false circuit_preserved metadata flag does not demonstrate a wiring change because the concrete connections are unchanged. Native adapters initialize and periodically acquire the DS1307 epoch and validity on A4/A5 at address 104. Serial is registered at 9600 baud, with the supplied transport configuration retained. The model gates emission on RTC validity, reports the first valid acquisition, selects the current epoch while released and adds exactly 32400 seconds while pressed, and uses registered ISO calendar formatting with no prefix and one newline. Either sampled button transition triggers reporting in that step; the 10 ms acquisition and control periods are consistent with the 250 ms response bound. A button held at startup is handled by the first-valid condition, rather than relying on a synthetic edge. Stable valid states continue reporting using actual elapsed milliseconds. No artificial startup delay contradicts the 500 ms setup bound. The LED, counter, display, and DHT defaults are inapplicable; the Boolean-state streaming default does not impose an additional timestamp-report requirement. These conclusions establish model-boundary consistency, not runtime completion."
+              },
+              {
+                "requirement_id": "R1",
+                "requirement_quote": "1. The UTC timestamp is printed when the button is not pressed\n2. The UTC+9 timestamp is printed when the button is pressed",
+                "status": "satisfied",
+                "model_quote": "then if (((not previousValid)) or (((io_0) != (previousPressed)))) {\n          first start;\n          then assign reportNow := true;\n          then assign reportAge := 0;",
+                "reason": "All clauses of R1 were reviewed, including wiring, initialization, continuous acquisition, timezone selection, timestamp emission, and formatting. The contract binds the button to active-HIGH D2 INPUT with the supplied external pull-down and preserves the RTC power, ground, SDA=A4 and SCL=A5 connections. Its resolved resistor property is 10000 ohm. Registered adapters provide serial initialization and RTC initialization/availability acquisition; SysML need not contain library calls. Ordered updates clear reportNow before evaluating validity. Invalid acquisitions therefore cannot emit an initial placeholder timestamp. The first valid acquisition or either button transition asserts the trigger before outputs are evaluated. Updating previousPressed afterward does not erase that report. Restored validity likewise reports a fresh acquisition using the current button state. The output selects io_1 when released and io_1 + 32400 when pressed, so holding the button neither toggles nor cumulatively shifts time. In a stable valid state, the timer compares the actual elapsed delta with the remaining interval and retains residual phase modulo 100 ms, allowing continuous reporting without treating control ticks as elapsed time. Registered level-sensitive emission occurs after the controller step. The {0:iso} formatter renders the already-selected epoch as YYYY-MM-DDTHH:MM:SS, including calendar rollover, and appends one newline. The simulator initTime is not substituted for acquired time. No model or contract behavior contradicts the required startup configuration."
+              }
+            ],
+            "issues": [],
+            "limitations": [
+              "This is a model-boundary review only. Satisfied checks do not establish runtime success or final code acceptance.",
+              "After code generation, verify actual Serial.begin(9600), D2 INPUT configuration, RTC initialization and availability checking, and ongoing native RTC acquisition.",
+              "Measure actual setup completion against the 500 ms bound and verify generated scheduling and end-to-end button response against the 250 ms bound.",
+              "Generated numeric representation, calendar formatting, target compilation, and actual serial/peripheral execution require downstream verification.",
+              "The supplied req_test_map contains proposed tests, not executed evidence."
+            ],
+            "validated": true,
+            "policy_version": "sysml-semantic-review-v2-native-boundaries",
+            "candidate_sha256": "989c4695dd057b017f4fcbbb07b6607a1b3f4816a5c3cc37d27420737b0b5468"
+          }
+        }
+      ],
+      "final_status": "passed",
+      "failure_category": null
+    },
+    "call_counts": {
+      "generation_and_repair": 1,
+      "semantic_review": 2
+    },
+    "usage": {
+      "generation_and_repair": [
+        {
+          "completion_tokens": 1448,
+          "prompt_tokens": 14041,
+          "total_tokens": 15489,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 366,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 14038,
+            "video_tokens": 0
+          },
+          "cost": 0.049581,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.049581,
+            "upstream_inference_prompt_cost": 0.035101,
+            "upstream_inference_completions_cost": 0.01448
+          }
+        }
+      ],
+      "semantic_review": [
+        {
+          "completion_tokens": 958,
+          "prompt_tokens": 23228,
+          "total_tokens": 24186,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 39,
+            "rejected_prediction_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0,
+            "cache_write_tokens": 23225,
+            "video_tokens": 0
+          },
+          "cost": 0.0676485,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0676485,
+            "upstream_inference_prompt_cost": 0.0580685,
+            "upstream_inference_completions_cost": 0.00958
+          }
+        }
+      ]
+    },
+    "final_status": "accepted"
+  }
+}

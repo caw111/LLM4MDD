@@ -1,0 +1,215 @@
+{
+  "contract_sha256": "3db124c8c9b79e0b03fcd7f1d3696d199c336457b5dc8a8e7a807a41b36ccc22",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "bool"
+      },
+      "io_2": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_3": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_4": {
+        "direction": "output",
+        "type": "f64"
+      },
+      "io_5": {
+        "direction": "output",
+        "type": "f64"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D2\",\n      \"active_high\": false,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"btn1 pressed command gate (debounced in model)\"\n    },\n    {\n      \"kind\": \"digital_input\",\n      \"pin\": \"D3\",\n      \"active_high\": false,\n      \"pullup\": true,\n      \"initial\": false,\n      \"meaning\": \"btn2 pressed command gate (debounced in model)\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A3\",\n      \"initial\": 0,\n      \"meaning\": \"pot1 position mapped to servo1 target angle 0..180°\",\n      \"scale\": 1\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A4\",\n      \"initial\": 0,\n      \"meaning\": \"pot2 position mapped to servo2 target angle 0..180°\",\n      \"scale\": 1\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D4\",\n      \"initial\": 0,\n      \"meaning\": \"servo1 target angle (degrees), set to 0° at startup\"\n    },\n    {\n      \"kind\": \"servo_angle\",\n      \"pin\": \"D5\",\n      \"initial\": 0,\n      \"meaning\": \"servo2 target angle (degrees), set to 0° at startup\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Wiring preserved: btn1->D2 (INPUT_PULLUP, active-low), btn2->D3 (INPUT_PULLUP, active-low), pot1->A3, pot2->A4, servo1 PWM/control->D4, servo2 PWM/control->D5; shared 5V and GND as per circuit.\",\n    \"Debouncing for btn1/btn2 is implemented in the model (e.g., require stable pressed state for a short time) and then triggers angle updates from the latest potentiometer reading.\",\n    \"Model mapping: each potentiometer ADC value is mapped to servo angle range [0,180] degrees, clamped to bounds.\",\n    \"Servo position is held until the corresponding button press triggers a new update based on the current potentiometer value.\",\n    \"No serial reporting or command inputs are specified in the requirements, so no serial interfaces are requested.\",\n    \"Exact ADC-to-angle mapping strategy (linear map of raw ADC to 0..180) is assumed; thresholds and debounce timing are business/model parameters.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two servo motors (servo1, servo2) using two push buttons (btn1, btn2) and two slide potentiometers (pot1, pot2). The servo motors should rotate to specific angles based on the values of the potentiometers when the corresponding buttons are pressed. Each button controls one servo motor, and the potentiometers determine the target angle for the respective servo.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both servo motors (servo1, servo2) should be set to their initial position (0 degrees).\nButton and Potentiometer Interaction:\n1. When the first button (btn1) is pressed, the first servo motor (servo1) should rotate to an angle determined by the value of the first potentiometer (pot1). The potentiometer value should be mapped to a range of 0 to 180 degrees.\n2. When the second button (btn2) is pressed, the second servo motor (servo2) should rotate to an angle determined by the value of the second potentiometer (pot2). The potentiometer value should also be mapped to a range of 0 to 180 degrees.\n3. The servo motors should maintain their positions until the corresponding button is pressed again with a new potentiometer value.\n4. Each button press should be debounced to avoid false triggers caused by mechanical vibrations.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:4\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:5\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two servo motors (servo1, servo2) using two push buttons (btn1, btn2) and two slide potentiometers (pot1, pot2). The servo motors should rotate to specific angles based on the values of the potentiometers when the corresponding buttons are pressed. Each button controls one servo motor, and the potentiometers determine the target angle for the respective servo.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, both servo motors (servo1, servo2) should be set to their initial position (0 degrees).\nButton and Potentiometer Interaction:\n1. When the first button (btn1) is pressed, the first servo motor (servo1) should rotate to an angle determined by the value of the first potentiometer (pot1). The potentiometer value should be mapped to a range of 0 to 180 degrees.\n2. When the second button (btn2) is pressed, the second servo motor (servo2) should rotate to an angle determined by the value of the second potentiometer (pot2). The potentiometer value should also be mapped to a range of 0 to 180 degrees.\n3. The servo motors should maintain their positions until the corresponding button is pressed again with a new potentiometer value.\n4. Each button press should be debounced to avoid false triggers caused by mechanical vibrations.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"], [\"mega:4\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:5\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn1",
+            "top": -195.4,
+            "left": 19.2,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-pushbutton",
+            "id": "btn2",
+            "top": -195.4,
+            "left": 105.0,
+            "attrs": {
+              "color": "green"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo1",
+            "left": -201.6,
+            "top": -11.6,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-servo",
+            "id": "servo2",
+            "left": -201.6,
+            "top": 79.4,
+            "attrs": {}
+          }
+        ],
+        "connections": [
+          [
+            "mega:GND.1",
+            "btn1:2.r",
+            "black"
+          ],
+          [
+            "mega:2",
+            "btn1:1.l",
+            "green"
+          ],
+          [
+            "mega:GND.1",
+            "btn2:2.r",
+            "black"
+          ],
+          [
+            "mega:3",
+            "btn2:1.l",
+            "green"
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black"
+          ],
+          [
+            "mega:4",
+            "servo1:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo1:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo1:GND",
+            "black"
+          ],
+          [
+            "mega:5",
+            "servo2:PWM",
+            "orange"
+          ],
+          [
+            "mega:5V",
+            "servo2:V+",
+            "red"
+          ],
+          [
+            "mega:GND.1",
+            "servo2:GND",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

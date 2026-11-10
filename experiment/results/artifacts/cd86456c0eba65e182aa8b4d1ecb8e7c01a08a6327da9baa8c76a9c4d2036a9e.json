@@ -1,0 +1,179 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "doorOpenMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "prevDoorOpen",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "doorOpenSeconds",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "fanCoolRelayOn",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "doorOpenMs",
+            "value": "doorOpenMs + 10"
+          }
+        ],
+        "else": [
+          {
+            "assign": "doorOpenMs",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "assign": "doorOpenSeconds",
+        "value": {
+          "if": "doorOpenMs >= 0",
+          "then": {
+            "RealFunctions::floor": "doorOpenMs / 1000.0"
+          },
+          "else": 0
+        }
+      },
+      {
+        "assign": "fanCoolRelayOn",
+        "value": "fanCoolRelayOn"
+      },
+      {
+        "if": {
+          "and": [
+            "io_0 >= 300.0",
+            {
+              "not": "io_1"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "fanCoolRelayOn",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_0 <= 280.0",
+            {
+              "not": "io_1"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "fanCoolRelayOn",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            "fanCoolRelayOn"
+          ]
+        },
+        "then": [
+          {
+            "assign": "fanCoolRelayOn",
+            "value": false
+          }
+        ]
+      },
+      {
+        "assign": "prevDoorOpen",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": "fanCoolRelayOn",
+      "io_3": {
+        "if": "doorOpenMs > 10000",
+        "then": 2500,
+        "else": 0
+      },
+      "io_4": {
+        "if": "io_1",
+        "then": {
+          "RealFunctions::floor": "io_0"
+        },
+        "else": {
+          "RealFunctions::floor": "io_0"
+        }
+      },
+      "io_5": {
+        "if": "doorOpenMs > 10000",
+        "then": true,
+        "else": false
+      },
+      "serial_0_trigger": {
+        "and": [
+          "io_0 > 30.0",
+          {
+            "not": "io_1"
+          }
+        ]
+      },
+      "serial_0_value_0": 1,
+      "serial_1_trigger": {
+        "not": {
+          "and": [
+            "io_0 > 30.0",
+            {
+              "not": "io_1"
+            }
+          ]
+        }
+      },
+      "serial_1_value_0": "io_0",
+      "serial_1_value_1": "doorOpenSeconds"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_1保持为true（门打开），维持io_0为任意正常温度条件，连续推进多个控制步使doorOpenMs>10000（等效>10s）",
+        "oracle": "io_3输出为非零鸣叫频率且io_5为true（报警与LED指示激活）；serial_1_trigger持续为true或至少不触发serial_0_trigger"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "将io_1置为false（门关闭），将io_0置为高于上限阈值（io_0>30.0）并保持一段时间",
+        "oracle": "serial_0_trigger为true且serial_0_value_0持续输出critical cooling loss代码；同时serial_1_trigger为false"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个实验室冰箱温控与门开监测系统，使用 LM35（A1）、门磁开关 D2、风扇/制冷继电器 D10、蜂鸣器 D6、TM1637（CLK=D4，DIO=D5）、LED D13 和串口。系统根据温度控制制冷继电器启停；当门连续打开超过 10 秒时蜂鸣器报警并闪烁 LED；若温度高于上限且门未关闭，则串口持续输出 critical cooling loss。TM1637 显示当前温度和门打开时长。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "门关闭io_1=false；先设置io_0>=300.0维持若干步，再设置io_0<=280.0维持若干步",
+        "oracle": "io_2在io_0>=300.0且门关闭时为true；在io_0<=280.0且门关闭时为false"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute doorOpenMs : Integer := 0;\n    attribute prevDoorOpen : Boolean := false;\n    attribute doorOpenSeconds : Integer := 0;\n    attribute fanCoolRelayOn : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign doorOpenMs := doorOpenMs + 10;\n      } else {\n        first start;\n        then assign doorOpenMs := 0;\n      }\n      then assign doorOpenSeconds := (if doorOpenMs >= 0 ? RealFunctions::floor(doorOpenMs / 1000.0) else 0);\n      then assign fanCoolRelayOn := fanCoolRelayOn;\n      then if ((io_0 >= 300.0) and ((not io_1))) {\n        first start;\n        then assign fanCoolRelayOn := true;\n      }\n      then if ((io_0 <= 280.0) and ((not io_1))) {\n        first start;\n        then assign fanCoolRelayOn := false;\n      }\n      then if ((io_1) and (fanCoolRelayOn)) {\n        first start;\n        then assign fanCoolRelayOn := false;\n      }\n      then assign prevDoorOpen := io_1;\n    }\n    out attribute io_2 : Boolean = fanCoolRelayOn;\n    out attribute io_3 : Integer = (if doorOpenMs > 10000 ? 2500 else 0);\n    out attribute io_4 : Integer = (if io_1 ? RealFunctions::floor(io_0) else RealFunctions::floor(io_0));\n    out attribute io_5 : Boolean = (if doorOpenMs > 10000 ? true else false);\n    out attribute serial_0_trigger : Boolean = ((io_0 > 30.0) and ((not io_1)));\n    out attribute serial_0_value_0 : Integer = 1;\n    out attribute serial_1_trigger : Boolean = (not ((io_0 > 30.0) and ((not io_1))));\n    out attribute serial_1_value_0 : Real = io_0;\n    out attribute serial_1_value_1 : Integer = doorOpenSeconds;\n  }\n  part system : Controller;\n}\n"
+}

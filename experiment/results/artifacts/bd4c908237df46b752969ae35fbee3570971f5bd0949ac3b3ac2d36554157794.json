@@ -1,0 +1,67 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "io_2_lastValidDistCmQuantized",
+        "type": "i32",
+        "initial": 10000
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "assign": "io_2_lastValidDistCmQuantized",
+            "value": {
+              "if": "io_0 < 2.0",
+              "then": 10000,
+              "else": {
+                "if": "io_0 > 400.0",
+                "then": 10000,
+                "else": "RealFunctions::floor(io_0 + 0.5)"
+              }
+            }
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "io_1",
+        "then": {
+          "if": "io_0 < 2.0",
+          "then": 10000,
+          "else": {
+            "if": "io_0 > 400.0",
+            "then": 10000,
+            "else": "RealFunctions::floor(io_0 + 0.5)"
+          }
+        },
+        "else": "io_2_lastValidDistCmQuantized"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 TM1637 + HC-SR04（D8/D9）：显示距离\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_1=false initially with io_0=0.0; then io_1=true with io_0=25.0; then io_1=false with io_0=0.0; then io_1=true with io_0=26.0",
+        "oracle": "io_2 outputs 10000 (blank) when io_1=false; updates to nearest integer cm (26 for 25.0, 26 for 26.0) when io_1=true; while io_1 remains false, io_2 holds the last valid quantized value rather than treating invalid as 0cm."
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 TM1637 + HC-SR04（D8/D9）：显示距离\n验收约定：目标板Uno；HC-SR04 TRIG=D8、ECHO=D9，TM1637 CLK=D4、DIO=D5。距离以cm为单位，回波微秒数除58；有效范围2..400cm，显示整数厘米（量化容差1cm，前导零或空白均可）。采样开始间隔60..160ms，变化250ms内反映（包含测量等待和显示传输）。每次等待回波必须有25000us超时；无回波、卡高或越界时显示空白，恢复后继续显示真实距离。初始显示空白；测量值和有效性必须区分，不得将超时当成0cm。原需求未指定的CLK/DIO采用上述公开接线，各组相同。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_1=true with io_0=1.0; then io_1=true with io_0=2.0; then io_1=true with io_0=400.0; then io_1=true with io_0=401.0",
+        "oracle": "When io_1=true but io_0 out of [2,400], io_2 is 10000 (blank); when io_0 is exactly 2.0 or 400.0, io_2 shows 2 or 400 respectively."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    attribute io_2_lastValidDistCmQuantized : Integer := 10000;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then assign io_2_lastValidDistCmQuantized := (if io_0 < 2.0 ? 10000 else (if io_0 > 400.0 ? 10000 else RealFunctions::floor(io_0 + 0.5)));\n      }\n    }\n    out attribute io_2 : Integer = (if io_1 ? (if io_0 < 2.0 ? 10000 else (if io_0 > 400.0 ? 10000 else RealFunctions::floor(io_0 + 0.5))) else io_2_lastValidDistCmQuantized);\n  }\n  part system : Controller;\n}\n"
+}

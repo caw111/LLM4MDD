@@ -1,0 +1,320 @@
+[
+  {
+    "name": "binary_review_original_core",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Tests default temperature display, repeated button toggles, stable display mode during a sustained button hold, live temperature and humidity updates, the 30°C boundary, fan activation above the threshold in both display modes, and cooling back to off. No strict comparison between two hot-state PWM values is imposed: unspecified quantization and saturation could legitimately make them equal. Temperature-dependent speed adjustment remains a coverage gap because the available check schema cannot independently enforce it without prescribing an unsupported speed mapping.",
+      "assumptions": [
+        "Uses the bench default button wiring: D2 is connected to GND when pressed, uses INPUT_PULLUP, and is HIGH when released.",
+        "Fan PWM on D5 is active HIGH, with the fan off at or below 30°C.",
+        "TM1637 numeric displays may use leading blanks or zeros.",
+        "Button switching may occur on either press or release. During a settled sustained hold, the display mode must remain stable; completed-press checks require the toggled mode.",
+        "No exact response period or debounce interval is specified. Sensor states persist for four seconds, with sensor-update checks allowing at least 2.5 seconds to settle.",
+        "No PWM slope, quantization, or saturation temperature is specified. Hot-state checks require nonzero PWM but do not prescribe relative duties.",
+        "The reference chooses a linear PWM ramp saturating at 50°C as a permitted implementation, not a candidate requirement. Invalid sensor-reading behavior is unspecified and untested."
+      ],
+      "horizon_ms": 24000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 0,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 25
+        },
+        {
+          "at_ms": 0,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 60
+        },
+        {
+          "at_ms": 1000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 1800,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 2500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 2800,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 4000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 30
+        },
+        {
+          "at_ms": 4000,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 45
+        },
+        {
+          "at_ms": 8000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 31
+        },
+        {
+          "at_ms": 8000,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 55
+        },
+        {
+          "at_ms": 12000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 38
+        },
+        {
+          "at_ms": 12000,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 70
+        },
+        {
+          "at_ms": 15000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 15300,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 16000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 45
+        },
+        {
+          "at_ms": 16000,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 80
+        },
+        {
+          "at_ms": 20000,
+          "kind": "temperature",
+          "pin": 7,
+          "value": 25
+        },
+        {
+          "at_ms": 20000,
+          "kind": "humidity",
+          "pin": 7,
+          "value": 40
+        },
+        {
+          "at_ms": 22500,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 22800,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "display",
+          "id": "default_temperature",
+          "requirement_quote": "默认显示温度",
+          "name": "tm:4:3",
+          "at_ms": 800,
+          "expected": "25",
+          "numeric": true
+        },
+        {
+          "kind": "pwm",
+          "id": "cool_fan_off",
+          "requirement_quote": "当温度高于 30℃ 时自动打开风扇",
+          "pin": 5,
+          "at_ms": 800,
+          "expected": 0
+        },
+        {
+          "kind": "relation",
+          "id": "stable_mode_during_hold",
+          "requirement_quote": "每按一次按钮切换显示温度或湿度",
+          "source": "display",
+          "name": "tm:4:3",
+          "at_ms": [
+            1320,
+            1430,
+            1570,
+            1720
+          ],
+          "relation": "equal",
+          "tolerance": 0
+        },
+        {
+          "kind": "display",
+          "id": "completed_held_press_humidity",
+          "requirement_quote": "每按一次按钮切换显示温度或湿度",
+          "name": "tm:4:3",
+          "at_ms": 2150,
+          "expected": "60",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "mode_stays_after_release",
+          "requirement_quote": "每按一次按钮切换显示温度或湿度",
+          "name": "tm:4:3",
+          "at_ms": 2400,
+          "expected": "60",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "second_press_temperature",
+          "requirement_quote": "每按一次按钮切换显示温度或湿度",
+          "name": "tm:4:3",
+          "at_ms": 3300,
+          "expected": "25",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "temperature_boundary",
+          "requirement_quote": "默认显示温度",
+          "name": "tm:4:3",
+          "at_ms": 7300,
+          "expected": "30",
+          "numeric": true
+        },
+        {
+          "kind": "pwm",
+          "id": "strict_threshold",
+          "requirement_quote": "当温度高于 30℃ 时自动打开风扇",
+          "pin": 5,
+          "at_ms": 7300,
+          "expected": 0
+        },
+        {
+          "kind": "display",
+          "id": "temperature_just_above",
+          "requirement_quote": "默认显示温度",
+          "name": "tm:4:3",
+          "at_ms": 11300,
+          "expected": "31",
+          "numeric": true
+        },
+        {
+          "kind": "pwm",
+          "id": "fan_just_above",
+          "requirement_quote": "当温度高于 30℃ 时自动打开风扇",
+          "pin": 5,
+          "at_ms": 11300,
+          "min": 1,
+          "max": 255
+        },
+        {
+          "kind": "display",
+          "id": "temperature_hot",
+          "requirement_quote": "默认显示温度",
+          "name": "tm:4:3",
+          "at_ms": 14500,
+          "expected": "38",
+          "numeric": true
+        },
+        {
+          "kind": "pwm",
+          "id": "fan_hot",
+          "requirement_quote": "当温度高于 30℃ 时自动打开风扇",
+          "pin": 5,
+          "at_ms": 14500,
+          "min": 1,
+          "max": 255
+        },
+        {
+          "kind": "display",
+          "id": "third_press_humidity",
+          "requirement_quote": "每按一次按钮切换显示温度或湿度",
+          "name": "tm:4:3",
+          "at_ms": 15700,
+          "expected": "70",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "humidity_updates",
+          "requirement_quote": "切换显示温度或湿度",
+          "name": "tm:4:3",
+          "at_ms": 19300,
+          "expected": "80",
+          "numeric": true
+        },
+        {
+          "kind": "pwm",
+          "id": "fan_hot_in_humidity_mode",
+          "requirement_quote": "当温度高于 30℃ 时自动打开风扇",
+          "pin": 5,
+          "at_ms": 19300,
+          "min": 1,
+          "max": 255
+        },
+        {
+          "kind": "display",
+          "id": "humidity_return",
+          "requirement_quote": "切换显示温度或湿度",
+          "name": "tm:4:3",
+          "at_ms": 22300,
+          "expected": "40",
+          "numeric": true
+        },
+        {
+          "kind": "pwm",
+          "id": "fan_returns_off",
+          "requirement_quote": "当温度高于 30℃ 时自动打开风扇",
+          "pin": 5,
+          "at_ms": 23300,
+          "expected": 0
+        },
+        {
+          "kind": "display",
+          "id": "fourth_press_temperature",
+          "requirement_quote": "每按一次按钮切换显示温度或湿度",
+          "name": "tm:4:3",
+          "at_ms": 23500,
+          "expected": "25",
+          "numeric": true
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <DHT.h>\n#include <TM1637Display.h>\n#include <math.h>\n\nDHT sensor(7, DHT11);\nTM1637Display display(4, 3);\nbool showHumidity = false;\nbool haveReading = false;\nfloat temperatureValue = 0;\nfloat humidityValue = 0;\nint lastRaw = HIGH;\nint stableButton = HIGH;\nunsigned long changedAt = 0;\nunsigned long sampledAt = 0;\nbool firstSample = true;\n\nvoid refreshOutputs() {\n  if (!haveReading) return;\n  int duty = 0;\n  if (temperatureValue > 30.0f) {\n    duty = constrain((int)ceil((temperatureValue - 30.0f) * 255.0f / 20.0f), 1, 255);\n  }\n  analogWrite(5, duty);\n  float value = showHumidity ? humidityValue : temperatureValue;\n  display.showNumberDec((int)round(value), false);\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(5, OUTPUT);\n  analogWrite(5, 0);\n  sensor.begin();\n  display.setBrightness(7);\n  display.clear();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  int raw = digitalRead(2);\n  if (raw != lastRaw) {\n    lastRaw = raw;\n    changedAt = now;\n  }\n  if (raw != stableButton && now - changedAt >= 40) {\n    stableButton = raw;\n    if (stableButton == LOW) {\n      showHumidity = !showHumidity;\n      refreshOutputs();\n    }\n  }\n  if (firstSample || now - sampledAt >= 2000) {\n    firstSample = false;\n    sampledAt = now;\n    float h = sensor.readHumidity();\n    float t = sensor.readTemperature();\n    if (!isnan(t) && !isnan(h)) {\n      temperatureValue = t;\n      humidityValue = h;\n      haveReading = true;\n      refreshOutputs();\n    }\n  }\n}\n"
+    }
+  }
+]

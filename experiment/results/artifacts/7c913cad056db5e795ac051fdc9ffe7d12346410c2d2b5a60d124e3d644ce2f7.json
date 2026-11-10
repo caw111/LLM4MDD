@@ -1,0 +1,225 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "running",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousStartPausePressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousResetPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "seconds",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "beepRemainingSeconds",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "if": {
+              "and": [
+                "io_1",
+                {
+                  "not": "previousResetPressed"
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "seconds",
+                "value": 0
+              },
+              {
+                "assign": "beepRemainingSeconds",
+                "value": 0
+              },
+              {
+                "assign": "running",
+                "value": false
+              }
+            ],
+            "else": []
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "io_0",
+        "then": [
+          {
+            "if": {
+              "and": [
+                "io_0",
+                {
+                  "not": "previousStartPausePressed"
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "running",
+                "value": {
+                  "if": {
+                    "if": "running",
+                    "then": false,
+                    "else": true
+                  },
+                  "then": false,
+                  "else": true
+                }
+              }
+            ],
+            "else": []
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": {
+          "and": [
+            "running",
+            {
+              "==": [
+                "beepRemainingSeconds",
+                0
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "seconds",
+            "value": "seconds + 1"
+          },
+          {
+            "if": {
+              "==": [
+                "seconds",
+                60
+              ]
+            },
+            "then": [
+              {
+                "assign": "beepRemainingSeconds",
+                "value": 1
+              }
+            ],
+            "else": []
+          }
+        ],
+        "else": [
+          {
+            "if": {
+              "and": [
+                "running",
+                {
+                  ">": [
+                    "beepRemainingSeconds",
+                    0
+                  ]
+                }
+              ]
+            },
+            "then": [
+              {
+                "assign": "beepRemainingSeconds",
+                "value": "beepRemainingSeconds - 1"
+              },
+              {
+                "assign": "seconds",
+                "value": "seconds + 1"
+              },
+              {
+                "if": {
+                  "==": [
+                    "seconds",
+                    60
+                  ]
+                },
+                "then": [
+                  {
+                    "assign": "beepRemainingSeconds",
+                    "value": 1
+                  }
+                ],
+                "else": []
+              }
+            ],
+            "else": []
+          }
+        ]
+      },
+      {
+        "assign": "previousStartPausePressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousResetPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": {
+          "and": [
+            "running",
+            {
+              ">": [
+                "beepRemainingSeconds",
+                0
+              ]
+            }
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_3": "seconds"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "io_0 rising edge to start, then keep io_0 and io_1 false for 60 control steps, then hold running true for 1 more step",
+        "oracle": "io_3 increments from 0 up to 60 and when seconds reaches 60, io_2 becomes nonzero for exactly 1 step then returns to 0 while counting continues"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "io_0 rising edge to start, run for 10 control steps, then io_0 rising edge again to pause and keep it held false afterwards for 5 steps",
+        "oracle": "io_3 stops incrementing while paused and io_2 remains 0"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个学习计时器系统，使用 TM1637（CLK=D4，DIO=D5）、按钮 D2、按钮 D3 和蜂鸣器 D6。D2 用于开始/暂停计时，D3 用于清零；数码管显示秒数，到达 60 秒时蜂鸣器鸣叫 1 秒，并继续计时。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "start via io_0 rising edge, run for 20 control steps, then apply io_1 rising edge while keeping io_0 false",
+        "oracle": "seconds resets to 0 immediately on reset edge, io_3 reads 0, io_2 is 0, and counting is not running until the next start/pause edge"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    attribute running : Boolean := false;\n    attribute previousStartPausePressed : Boolean := false;\n    attribute previousResetPressed : Boolean := false;\n    attribute seconds : Integer := 0;\n    attribute beepRemainingSeconds : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_1 {\n        first start;\n        then if ((io_1) and ((not previousResetPressed))) {\n          first start;\n          then assign seconds := 0;\n          then assign beepRemainingSeconds := 0;\n          then assign running := false;\n        }\n      }\n      then if io_0 {\n        first start;\n        then if ((io_0) and ((not previousStartPausePressed))) {\n          first start;\n          then assign running := (if (if running ? false else true) ? false else true);\n        }\n      }\n      then if ((running) and (((beepRemainingSeconds) == (0)))) {\n        first start;\n        then assign seconds := seconds + 1;\n        then if ((seconds) == (60)) {\n          first start;\n          then assign beepRemainingSeconds := 1;\n        }\n      } else {\n        first start;\n        then if ((running) and (((beepRemainingSeconds) > (0)))) {\n          first start;\n          then assign beepRemainingSeconds := beepRemainingSeconds - 1;\n          then assign seconds := seconds + 1;\n          then if ((seconds) == (60)) {\n            first start;\n            then assign beepRemainingSeconds := 1;\n          }\n        }\n      }\n      then assign previousStartPausePressed := io_0;\n      then assign previousResetPressed := io_1;\n    }\n    out attribute io_2 : Integer = (if ((running) and (((beepRemainingSeconds) > (0)))) ? 1000 else 0);\n    out attribute io_3 : Integer = seconds;\n  }\n  part system : Controller;\n}\n"
+}

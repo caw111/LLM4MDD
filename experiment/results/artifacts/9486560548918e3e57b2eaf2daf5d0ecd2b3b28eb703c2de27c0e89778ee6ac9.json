@@ -1,0 +1,184 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "f64"
+    },
+    {
+      "name": "io_1",
+      "type": "i32"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "serial_0_trigger",
+      "type": "bool"
+    },
+    {
+      "name": "serial_0_value_0",
+      "type": "f64"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_serial_0_trigger",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "i32"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "(arg0 >= 1000)"
+      }
+    },
+    {
+      "id": "compute_serial_0_value_0",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "accumulatedMs"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_trigger",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_trigger"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "lastTempForReport"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_serial_0_value_0",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "serial_0_value_0"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "accumulatedMs",
+      "type": "i32",
+      "initial": "0"
+    },
+    {
+      "name": "lastTempForReport",
+      "type": "f64",
+      "initial": "0.0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "assign",
+          "state": "accumulatedMs",
+          "expression": "(arg0 + arg1)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "accumulatedMs"
+            },
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ]
+        },
+        {
+          "kind": "if",
+          "condition": "(arg0 >= 1000)",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "accumulatedMs"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "accumulatedMs",
+                "expression": "(arg0 - 1000)",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "accumulatedMs"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "lastTempForReport",
+                "expression": "arg0",
+                "sources": [
+                  {
+                    "kind": "input",
+                    "name": "io_0"
+                  }
+                ]
+              }
+            ]
+          },
+          "else": null
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}

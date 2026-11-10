@@ -1,0 +1,37 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousPressed",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "assign": "previousPressed",
+        "value": "io_0"
+      }
+    ],
+    "outputs": {
+      "io_2": {
+        "if": "io_0",
+        "then": "RealFunctions::floor(io_1 * 255.0 / 1023.0)",
+        "else": 0.0
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "使用 D2 按钮 + A0 电位器 + D9 LED：按钮按下时电位器控制亮度，否则 LED 关闭\n验收约定：D2使用INPUT_PULLUP，低电平表示按下；按下时A0的0..1023线性映射到D9的PWM值0..255（取整容差1），松开时输出0。输入变化响应时间不超过20ms。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "开始：io_0=false, io_1任意。随后将io_0上拉至未按下(模型false)，保持若干步；再将io_0按下(模型true)并将io_1=0，随后io_1=1023，最后松开io_0。",
+        "oracle": "当io_0=false时，io_2恒为0.0；当io_0=true且io_1=0时，io_2为0（按整容差1允许）；当io_0=true且io_1=1023时，io_2为255（按整容差1允许）；松开后io_2回到0.0。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Real;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then assign previousPressed := io_0;\n    }\n    out attribute io_2 : Real = (if io_0 ? RealFunctions::floor(io_1 * 255.0 / 1023.0) else 0.0);\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,246 @@
+[
+  {
+    "name": "after",
+    "plan": {
+      "supported": true,
+      "coverage": "partial",
+      "coverage_explanation": "Exercises live temperature display, retained and updated historical maxima, repeated button-triggered three-second views, and return to the latest temperature. Temperature changes twice during a history view, including a new peak; a later history request verifies that sampling and maximum tracking continued during that view. Serial timing assertions are omitted because no reporting interval is specified: even a two-second reporting schedule can miss a short sensor state. Consequently, continuous serial reporting and transient serial values are not independently verified. The available check schema also cannot verify Serial.begin(9600). The reference implements both serial requirements.",
+      "assumptions": [
+        "Relies on the disclosed bench defaults: D2 connects to GND when pressed, is released HIGH, and uses INPUT_PULLUP.",
+        "LM35 uses its standard 10 mV per degree Celsius transfer function. A1 uses raw ADC readings with the bench-default 5 V reference.",
+        "Display precision and rounding are unspecified; numeric ranges allow ordinary integer rounding or truncation.",
+        "Sampling rate, serial reporting interval, serial labels, and debounce duration are unspecified. No particular serial cadence or text format is asserted.",
+        "Whether the displayed maximum updates immediately during an active history view is unspecified. Checks during the view precede the new peak; the updated peak is checked on a subsequent press.",
+        "No overlapping button presses are used. Timing checks allow settling around the specified three-second view."
+      ],
+      "horizon_ms": 26000,
+      "input_steps": [
+        {
+          "at_ms": 0,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 205
+        },
+        {
+          "at_ms": 0,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 2500,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 410
+        },
+        {
+          "at_ms": 5000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 0
+        },
+        {
+          "at_ms": 7000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 7200,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 11000,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 205
+        },
+        {
+          "at_ms": 13000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 13200,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 13700,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 614
+        },
+        {
+          "at_ms": 15100,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 0
+        },
+        {
+          "at_ms": 19000,
+          "kind": "digital",
+          "pin": 2,
+          "value": 0
+        },
+        {
+          "at_ms": 19200,
+          "kind": "digital",
+          "pin": 2,
+          "value": 1
+        },
+        {
+          "at_ms": 23500,
+          "kind": "analog",
+          "pin": "A1",
+          "value": 205
+        }
+      ],
+      "serial_inputs": [],
+      "ultrasonic": [],
+      "seven_segments": [],
+      "shift_registers": [],
+      "checks": [
+        {
+          "kind": "pin_mode",
+          "id": "button_pullup",
+          "requirement_quote": "按钮 D2",
+          "pin": 2,
+          "expected": 2
+        },
+        {
+          "kind": "display",
+          "id": "initial_current",
+          "requirement_quote": "默认显示当前温度",
+          "name": "tm:4:5",
+          "at_ms": 1800,
+          "min": 99,
+          "max": 101,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "higher_current",
+          "requirement_quote": "系统实时读取温度",
+          "name": "tm:4:5",
+          "at_ms": 4300,
+          "min": 199,
+          "max": 201,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "zero_current",
+          "requirement_quote": "默认显示当前温度",
+          "name": "tm:4:5",
+          "at_ms": 6500,
+          "expected": "0",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "first_history",
+          "requirement_quote": "按下按钮后显示历史最高温度 3 秒",
+          "name": "tm:4:5",
+          "at_ms": 7600,
+          "min": 199,
+          "max": 201,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "history_still_visible",
+          "requirement_quote": "显示历史最高温度 3 秒",
+          "name": "tm:4:5",
+          "at_ms": 9600,
+          "min": 199,
+          "max": 201,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "first_return",
+          "requirement_quote": "然后恢复当前温度",
+          "name": "tm:4:5",
+          "at_ms": 10600,
+          "expected": "0",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "live_repeated_input",
+          "requirement_quote": "默认显示当前温度",
+          "name": "tm:4:5",
+          "at_ms": 12500,
+          "min": 99,
+          "max": 101,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "retained_peak_before_live_changes",
+          "requirement_quote": "保存运行以来的最高温度",
+          "name": "tm:4:5",
+          "at_ms": 13500,
+          "min": 199,
+          "max": 201,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "return_to_latest_not_prepress_temperature",
+          "requirement_quote": "然后恢复当前温度",
+          "name": "tm:4:5",
+          "at_ms": 16700,
+          "expected": "0",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "peak_sampled_during_history",
+          "requirement_quote": "保存运行以来的最高温度",
+          "name": "tm:4:5",
+          "at_ms": 19600,
+          "min": 299,
+          "max": 301,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "updated_history_duration",
+          "requirement_quote": "显示历史最高温度 3 秒",
+          "name": "tm:4:5",
+          "at_ms": 21600,
+          "min": 299,
+          "max": 301,
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "updated_history_return",
+          "requirement_quote": "然后恢复当前温度",
+          "name": "tm:4:5",
+          "at_ms": 22700,
+          "expected": "0",
+          "numeric": true
+        },
+        {
+          "kind": "display",
+          "id": "live_operation_after_repeated_views",
+          "requirement_quote": "系统实时读取温度",
+          "name": "tm:4:5",
+          "at_ms": 25200,
+          "min": 99,
+          "max": 101,
+          "numeric": true
+        }
+      ],
+      "reference_cpp": "#include <Arduino.h>\n#include <TM1637Display.h>\n#include <math.h>\n\nTM1637Display display(4, 5);\nfloat currentTemperature = 0.0f;\nfloat maximumTemperature = 0.0f;\nbool haveTemperature = false;\nbool historyActive = false;\nunsigned long historyStarted = 0;\nunsigned long lastSample = 0;\nunsigned long lastReport = 0;\nunsigned long buttonChanged = 0;\nint rawButton = HIGH;\nint stableButton = HIGH;\n\nvoid sampleTemperature() {\n  currentTemperature = analogRead(A1) * (500.0f / 1023.0f);\n  if (!haveTemperature || currentTemperature > maximumTemperature) {\n    maximumTemperature = currentTemperature;\n  }\n  haveTemperature = true;\n}\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n  display.setBrightness(7);\n  sampleTemperature();\n}\n\nvoid loop() {\n  unsigned long now = millis();\n  if (now - lastSample >= 100) {\n    lastSample = now;\n    sampleTemperature();\n  }\n  int reading = digitalRead(2);\n  if (reading != rawButton) {\n    rawButton = reading;\n    buttonChanged = now;\n  }\n  if (now - buttonChanged >= 30 && stableButton != rawButton) {\n    stableButton = rawButton;\n    if (stableButton == LOW) {\n      historyActive = true;\n      historyStarted = now;\n    }\n  }\n  if (historyActive && now - historyStarted >= 3000) {\n    historyActive = false;\n  }\n  float shown = historyActive ? maximumTemperature : currentTemperature;\n  display.showNumberDec((int)lroundf(shown), false);\n  if (now - lastReport >= 250) {\n    lastReport = now;\n    Serial.print(\"Current: \");\n    Serial.print(currentTemperature, 2);\n    Serial.print(\" Maximum: \");\n    Serial.println(maximumTemperature, 2);\n  }\n}\n"
+    },
+    "engine": null
+  }
+]

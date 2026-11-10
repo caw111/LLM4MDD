@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"count\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_1\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"count\",\n            \"value\": {\n              \"if\": {\n                \"==\": [\n                  \"count\",\n                  9\n                ]\n              },\n              \"then\": 0,\n              \"else\": {\n                \"if\": {\n                  \">=\": [\n                    \"count\",\n                    7\n                  ]\n                },\n                \"then\": 0,\n                \"else\": {\n                  \"if\": {\n                    \"==\": [\n                      \"count\",\n                      8\n                    ]\n                  },\n                  \"then\": 0,\n                  \"else\": \"count + 3\"\n                }\n              }\n            }\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_1\"\n      }\n    ],\n    \"outputs\": {\n      \"io_0\": \"count\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\\n\\n**Task**:\\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) using a push button (btn1). The goal is to create a counter that increments by 3 each time the button is pressed, and the current count is displayed on the 7-segment display. The counter should reset to 0 after reaching 9.\\n\\n**Detail Rules**:\\nInitialization: Upon powering on or resetting, the 7-segment display should show 0.\\nButton Interaction: Each press of the button (btn1) should increment the counter by 3. The counter should wrap around to 0 after reaching 9. The updated count should be immediately displayed on the 7-segment display.\\nDebouncing: Ensure that the button press is debounced to avoid multiple increments from a single press.\\nDisplay Update: The 7-segment display should accurately reflect the current count after each button press.\\n\\nGiven circuit (must preserve wiring):\\n{\\\"version\\\": 1, \\\"author\\\": \\\"Anonymous maker\\\", \\\"editor\\\": \\\"wokwi\\\", \\\"parts\\\": [{\\\"type\\\": \\\"wokwi-arduino-mega\\\", \\\"id\\\": \\\"mega\\\", \\\"top\\\": 0, \\\"left\\\": 0, \\\"attrs\\\": {}}, {\\\"type\\\": \\\"wokwi-7segment\\\", \\\"id\\\": \\\"sevseg1\\\", \\\"top\\\": -196.6, \\\"left\\\": 408.3, \\\"attrs\\\": {}}, {\\\"type\\\": \\\"wokwi-74hc595\\\", \\\"id\\\": \\\"sr1\\\", \\\"top\\\": -87.6, \\\"left\\\": 408.3, \\\"attrs\\\": {}}, {\\\"type\\\": \\\"wokwi-pushbutton\\\", \\\"id\\\": \\\"btn1\\\", \\\"top\\\": -195.4, \\\"left\\\": 19.2, \\\"attrs\\\": {\\\"color\\\": \\\"green\\\"}}], \\\"connections\\\": [[\\\"mega:5V\\\", \\\"sr1:VCC\\\", \\\"red\\\"], [\\\"mega:A2\\\", \\\"sr1:SHCP\\\", \\\"gray\\\"], [\\\"mega:A1\\\", \\\"sr1:STCP\\\", \\\"purple\\\"], [\\\"mega:A0\\\", \\\"sr1:DS\\\", \\\"blue\\\"], [\\\"sr1:VCC\\\", \\\"sr1:MR\\\", \\\"red\\\"], [\\\"sr1:MR\\\", \\\"sevseg1:COM.1\\\", \\\"red\\\"], [\\\"sr1:Q1\\\", \\\"sevseg1:B\\\", \\\"green\\\"], [\\\"sr1:Q2\\\", \\\"sevseg1:C\\\", \\\"green\\\"], [\\\"sr1:Q3\\\", \\\"sevseg1:D\\\", \\\"green\\\"], [\\\"sr1:Q4\\\", \\\"sevseg1:E\\\", \\\"green\\\"], [\\\"mega:GND.3\\\", \\\"sr1:GND\\\", \\\"black\\\"], [\\\"sr1:GND\\\", \\\"sr1:OE\\\", \\\"black\\\"], [\\\"sr1:Q0\\\", \\\"sevseg1:A\\\", \\\"green\\\"], [\\\"sr1:Q5\\\", \\\"sevseg1:F\\\", \\\"green\\\"], [\\\"sr1:Q6\\\", \\\"sevseg1:G\\\", \\\"green\\\"], [\\\"mega:GND.1\\\", \\\"btn1:2.r\\\", \\\"black\\\"], [\\\"mega:2\\\", \\\"btn1:1.l\\\", \\\"green\\\"]], \\\"dependencies\\\": {}}\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Start with model reset; then apply a sequence of button presses on io_1 with each press represented as a single rising edge (io_1: false->true for one step, then false) repeatedly enough to observe wrap behavior.\",\n        \"oracle\": \"io_0 initializes to 0. Each distinct rising edge increments by 3; after reaching 9, the next increment wraps so the displayed value becomes 0, and io_0 always matches the latest updated count immediately after the press edge.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_1 : Boolean;\n    attribute count : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_1) and ((not previousPressed))) {\n        first start;\n        then assign count := (if ((count) == (9)) ? 0 else (if ((count) >= (7)) ? 0 else (if ((count) == (8)) ? 0 else count + 3)));\n      }\n      then assign previousPressed := io_1;\n    }\n    out attribute io_0 : Integer = count;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

@@ -1,0 +1,275 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousDoor",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousVibration",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "abnormalCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "doorOpenCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "vibrationEventCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "isAlarmLatched",
+        "type": "bool",
+        "initial": false
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_6_valid",
+        "then": [
+          {
+            "if": {
+              "==": [
+                "io_6",
+                1
+              ]
+            },
+            "then": [
+              {
+                "assign": "isAlarmLatched",
+                "value": true
+              }
+            ]
+          },
+          {
+            "if": {
+              "==": [
+                "io_6",
+                0
+              ]
+            },
+            "then": [
+              {
+                "assign": "isAlarmLatched",
+                "value": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "if": {
+          ">=": [
+            "io_0",
+            30.0
+          ]
+        },
+        "then": [
+          {
+            "assign": "abnormalCount",
+            "value": {
+              "+": [
+                "abnormalCount",
+                1
+              ]
+            }
+          },
+          {
+            "assign": "isAlarmLatched",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_2",
+            {
+              "not": "previousDoor"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "doorOpenCount",
+            "value": {
+              "+": [
+                "doorOpenCount",
+                1
+              ]
+            }
+          },
+          {
+            "assign": "abnormalCount",
+            "value": {
+              "+": [
+                "abnormalCount",
+                1
+              ]
+            }
+          },
+          {
+            "assign": "isAlarmLatched",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "not": "previousVibration"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "vibrationEventCount",
+            "value": {
+              "+": [
+                "vibrationEventCount",
+                1
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "assign": "previousDoor",
+        "value": "io_2"
+      },
+      {
+        "assign": "previousVibration",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_3": "isAlarmLatched",
+      "io_4": {
+        "if": "isAlarmLatched",
+        "then": 2000,
+        "else": 0
+      },
+      "io_5": {
+        "if": {
+          ">=": [
+            "io_0",
+            30.0
+          ]
+        },
+        "then": "abnormalCount",
+        "else": 0
+      },
+      "serial_0_trigger": {
+        "or": [
+          {
+            ">=": [
+              "io_0",
+              30.0
+            ]
+          },
+          {
+            "and": [
+              "io_2",
+              {
+                "not": "previousDoor"
+              }
+            ]
+          },
+          {
+            "and": [
+              "io_1",
+              {
+                "not": "previousVibration"
+              }
+            ]
+          },
+          "isAlarmLatched"
+        ]
+      },
+      "serial_0_value_0": {
+        "if": "io_6_valid",
+        "then": "io_0",
+        "else": "io_0"
+      },
+      "serial_0_value_1": "abnormalCount",
+      "serial_0_value_2": {
+        "if": "io_6_valid",
+        "then": {
+          "+": [
+            0,
+            0
+          ]
+        },
+        "else": 0
+      },
+      "serial_0_value_3": {
+        "if": "io_6_valid",
+        "then": {
+          "+": [
+            0,
+            0
+          ]
+        },
+        "else": 0
+      },
+      "serial_1_trigger": {
+        "and": [
+          {
+            "not": "isAlarmLatched"
+          },
+          "io_6_valid"
+        ]
+      },
+      "serial_1_value_0": "io_0",
+      "serial_1_value_1": "abnormalCount"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "保持 io_1=false, io_2=false, io_6_valid=false；将 io_0 从 25.0 提高到 30.0 且在后续步骤保持 >=30.0",
+        "oracle": "io_3 变为 true 且 io_4 为 2000；serial_0_trigger 在触发温度到达与保持期间应为 true；serial_0_value_0 等于 io_0，serial_0_value_1 为异常计数"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持 io_0=25.0；将 io_2 从 false 翻转为 true（一次开箱上升沿），其余 io_1=false，io_6_valid=false",
+        "oracle": "开箱上升沿发生的步，previousDoor 在同一步之前用于边沿检测，abnormalCount 与 doorOpenCount 增加；io_3 变为 true 且 io_4 为 2000；serial_0_trigger 为 true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "保持 io_0<30.0 且 io_2 始终为 false；让 io_1 从 false 上升为 true 再回到 false（一次震动上升沿），io_6_valid=false",
+        "oracle": "vibrationEventCount 增加一次；若未满足温度异常或开箱，isAlarmLatched 不因震动而强制为 true；serial_0_trigger 在震动上升沿步应为 true"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。",
+        "test_point_id": "T4",
+        "test_method": "trace",
+        "stimulus": "将 isAlarmLatched 通过 serial输入保持在 false：先保持 io_0=25.0, io_2=false, io_1=false；随后让 io_6_valid=true 且 io_6=0，接着维持 io_6_valid=true",
+        "oracle": "当 isAlarmLatched 为 false 且 io_6_valid=true，serial_1_trigger 为 true，serial_1_value_0 等于 io_0，serial_1_value_1 等于异常计数；io_3 为 false 且 io_4 为 0"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_6 : Integer;\n    in attribute io_6_valid : Boolean;\n    attribute previousDoor : Boolean := false;\n    attribute previousVibration : Boolean := false;\n    attribute abnormalCount : Integer := 0;\n    attribute doorOpenCount : Integer := 0;\n    attribute vibrationEventCount : Integer := 0;\n    attribute isAlarmLatched : Boolean := false;\n    perform action tick {\n      first start;\n      then if io_6_valid {\n        first start;\n        then if ((io_6) == (1)) {\n          first start;\n          then assign isAlarmLatched := true;\n        }\n        then if ((io_6) == (0)) {\n          first start;\n          then assign isAlarmLatched := false;\n        }\n      }\n      then if ((io_0) >= (30.0)) {\n        first start;\n        then assign abnormalCount := ((abnormalCount) + (1));\n        then assign isAlarmLatched := true;\n      }\n      then if ((io_2) and ((not previousDoor))) {\n        first start;\n        then assign doorOpenCount := ((doorOpenCount) + (1));\n        then assign abnormalCount := ((abnormalCount) + (1));\n        then assign isAlarmLatched := true;\n      }\n      then if ((io_1) and ((not previousVibration))) {\n        first start;\n        then assign vibrationEventCount := ((vibrationEventCount) + (1));\n      }\n      then assign previousDoor := io_2;\n      then assign previousVibration := io_1;\n    }\n    out attribute io_3 : Boolean = isAlarmLatched;\n    out attribute io_4 : Integer = (if isAlarmLatched ? 2000 else 0);\n    out attribute io_5 : Integer = (if ((io_0) >= (30.0)) ? abnormalCount else 0);\n    out attribute serial_0_trigger : Boolean = ((((io_0) >= (30.0))) or (((io_2) and ((not previousDoor)))) or (((io_1) and ((not previousVibration)))) or (isAlarmLatched));\n    out attribute serial_0_value_0 : Real = (if io_6_valid ? io_0 else io_0);\n    out attribute serial_0_value_1 : Integer = abnormalCount;\n    out attribute serial_0_value_2 : Integer = (if io_6_valid ? ((0) + (0)) else 0);\n    out attribute serial_0_value_3 : Integer = (if io_6_valid ? ((0) + (0)) else 0);\n    out attribute serial_1_trigger : Boolean = (((not isAlarmLatched)) and (io_6_valid));\n    out attribute serial_1_value_0 : Real = io_0;\n    out attribute serial_1_value_1 : Integer = abnormalCount;\n  }\n  part system : Controller;\n}\n"
+}

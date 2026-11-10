@@ -1,0 +1,291 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "dhtValidLatched",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "tempLatched",
+        "type": "f64",
+        "initial": "0.0"
+      },
+      {
+        "name": "distLatched",
+        "type": "f64",
+        "initial": "0.0"
+      },
+      {
+        "name": "alarmOn",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "alarmPhaseMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "prevAlarmOn",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "lastReasonAny",
+        "type": "bool",
+        "initial": "false"
+      },
+      {
+        "name": "displaySwitchAccumMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "displayIsTemp",
+        "type": "bool",
+        "initial": "true"
+      },
+      {
+        "name": "reportGateHoldMs",
+        "type": "i32",
+        "initial": "0"
+      },
+      {
+        "name": "reportEveryAccumMs",
+        "type": "i32",
+        "initial": "0"
+      }
+    ],
+    "updates": [
+      {
+        "if": "io_2",
+        "then": [
+          {
+            "assign": "dhtValidLatched",
+            "value": "true"
+          },
+          {
+            "assign": "tempLatched",
+            "value": "io_0"
+          }
+        ]
+      },
+      {
+        "if": "not io_2",
+        "then": [
+          {
+            "assign": "dhtValidLatched",
+            "value": "false"
+          }
+        ]
+      },
+      {
+        "if": "io_4",
+        "then": [
+          {
+            "assign": "distLatched",
+            "value": "io_3"
+          }
+        ]
+      },
+      {
+        "if": "not io_4",
+        "then": [
+          {
+            "assign": "distLatched",
+            "value": "distLatched"
+          }
+        ]
+      },
+      {
+        "assign": "displaySwitchAccumMs",
+        "value": "displaySwitchAccumMs + io_7"
+      },
+      {
+        "if": "displaySwitchAccumMs >= 2000",
+        "then": [
+          {
+            "assign": "displaySwitchAccumMs",
+            "value": "displaySwitchAccumMs - 2000"
+          },
+          {
+            "assign": "displayIsTemp",
+            "value": "not displayIsTemp"
+          }
+        ]
+      },
+      {
+        "assign": "alarmOn",
+        "value": "((dhtValidLatched and (tempLatched > 32.0)) or (io_4 and (distLatched < 15.0)))"
+      },
+      {
+        "if": "alarmOn",
+        "then": [
+          {
+            "if": "prevAlarmOn",
+            "then": [
+              {
+                "assign": "alarmPhaseMs",
+                "value": "alarmPhaseMs + io_7"
+              }
+            ],
+            "else": [
+              {
+                "assign": "alarmPhaseMs",
+                "value": "0"
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "alarmPhaseMs",
+            "value": "alarmPhaseMs"
+          }
+        ]
+      },
+      {
+        "assign": "prevAlarmOn",
+        "value": "alarmOn"
+      },
+      {
+        "assign": "lastReasonAny",
+        "value": "alarmOn"
+      },
+      {
+        "if": "alarmOn",
+        "then": [
+          {
+            "assign": "reportEveryAccumMs",
+            "value": "reportEveryAccumMs + io_7"
+          },
+          {
+            "if": "reportEveryAccumMs >= 1000",
+            "then": [
+              {
+                "assign": "reportEveryAccumMs",
+                "value": "reportEveryAccumMs - 1000"
+              },
+              {
+                "assign": "reportGateHoldMs",
+                "value": "200"
+              }
+            ],
+            "else": [
+              {
+                "assign": "reportGateHoldMs",
+                "value": "reportGateHoldMs"
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "reportEveryAccumMs",
+            "value": "0"
+          },
+          {
+            "assign": "reportGateHoldMs",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "if": "reportGateHoldMs > 0",
+        "then": [
+          {
+            "assign": "reportGateHoldMs",
+            "value": "reportGateHoldMs - io_7"
+          }
+        ],
+        "else": [
+          {
+            "assign": "reportGateHoldMs",
+            "value": "reportGateHoldMs"
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "io_5": {
+        "if": "displayIsTemp",
+        "then": {
+          "if": "dhtValidLatched",
+          "then": "RealFunctions::floor(tempLatched)",
+          "else": "0"
+        },
+        "else": {
+          "if": "io_4",
+          "then": "RealFunctions::floor(distLatched)",
+          "else": "0"
+        }
+      },
+      "io_6": {
+        "if": "alarmOn",
+        "then": {
+          "if": "alarmPhaseMs < 500",
+          "then": "1000",
+          "else": "0"
+        },
+        "else": "0"
+      },
+      "serial_0_trigger": {
+        "if": "alarmOn",
+        "then": {
+          "if": "reportGateHoldMs > 0",
+          "then": "true",
+          "else": "false"
+        },
+        "else": "false"
+      },
+      "serial_0_value_0": {
+        "if": "dhtValidLatched",
+        "then": {
+          "if": "tempLatched > 32.0",
+          "then": "true",
+          "else": "false"
+        },
+        "else": "false"
+      },
+      "serial_0_value_1": {
+        "if": "io_4",
+        "then": {
+          "if": "distLatched < 15.0",
+          "then": "true",
+          "else": "false"
+        },
+        "else": "false"
+      }
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能环境监测与报警系统，使用 DHT11 温湿度传感器（数据引脚 D7）、HC-SR04 超声波模块（Trig=D8，Echo=D9）、TM1637 数码管（CLK=D4，DIO=D5）和蜂鸣器（D6）。默认每 2 秒轮流显示温度和距离；当温度高于 32℃ 或距离小于 15cm 时，蜂鸣器间歇报警，并通过串口输出报警原因。\n验收约定：目标Uno，DHT11数据D7，HC-SR04 TRIG=D8/ECHO=D9，TM1637 CLK=D4/DIO=D5，无源蜂鸣器D6。DHT采样开始间隔2000..2200ms；距离采样开始间隔60..180ms，回波等待必须有25000us超时，有效范围2..400cm，距离=回波微秒/58。温度默认先显示，之后每2000ms交替显示温度和距离，显示整数且量化容差1，页面切换容差150ms；所选测量无效时空白，初始温度无效须空白。每次新读数到输出的响应容差200ms，DHT缓存期间保留最近读数；失败必须标为无效，不能阻塞其他设备或模型计时。仅有效温度严格>32℃或有效距离严格<15cm触发报警，先比较原始测量再取显示整数；任一原因成立立即开始1000Hz鸣叫，500ms响/500ms静，完整周期1000ms，边沿容差100ms；所有原因消失后200ms内静音。持续报警时原因变化不重启蜂鸣相位。串口115200：报警开始、原因变化后200ms内，以及持续报警每1000ms（容差200ms）报告所有当前成立原因。温度原因包含ALARM_TEMP，距离原因包含ALARM_DISTANCE，可同行或分行；不得报告不成立原因，其余状态文本不限。首次采样200ms内开始；设备故障恢复后继续真实测量。以上补充约定对各组相同。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "在DHT有效后给io_0从30.0升到33.0(在io_2为true的步写入)且保持io_4为false；持续推进io_7直到多次蜂鸣周期；随后将io_0降回31.0并使io_2保持true若干步；最后停止报警条件",
+        "oracle": "io_6在报警开始后进入1000Hz间歇：500ms为1000Hz、500ms为0Hz，边沿容差100ms；报警期间串口触发门控serial_0_trigger在报警开始与每1000ms内出现，serial_0_value_0仅在tempLatched严格>32.0且dhtValidLatched为true时为true，serial_0_value_1保持false；当两原因消失后约200ms内io_6归0且串口门控停止"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能环境监测与报警系统，使用 DHT11 温湿度传感器（数据引脚 D7）、HC-SR04 超声波模块（Trig=D8，Echo=D9）、TM1637 数码管（CLK=D4，DIO=D5）和蜂鸣器（D6）。默认每 2 秒轮流显示温度和距离；当温度高于 32℃ 或距离小于 15cm 时，蜂鸣器间歇报警，并通过串口输出报警原因。\n验收约定：目标Uno，DHT11数据D7，HC-SR04 TRIG=D8/ECHO=D9，TM1637 CLK=D4/DIO=D5，无源蜂鸣器D6。DHT采样开始间隔2000..2200ms；距离采样开始间隔60..180ms，回波等待必须有25000us超时，有效范围2..400cm，距离=回波微秒/58。温度默认先显示，之后每2000ms交替显示温度和距离，显示整数且量化容差1，页面切换容差150ms；所选测量无效时空白，初始温度无效须空白。每次新读数到输出的响应容差200ms，DHT缓存期间保留最近读数；失败必须标为无效，不能阻塞其他设备或模型计时。仅有效温度严格>32℃或有效距离严格<15cm触发报警，先比较原始测量再取显示整数；任一原因成立立即开始1000Hz鸣叫，500ms响/500ms静，完整周期1000ms，边沿容差100ms；所有原因消失后200ms内静音。持续报警时原因变化不重启蜂鸣相位。串口115200：报警开始、原因变化后200ms内，以及持续报警每1000ms（容差200ms）报告所有当前成立原因。温度原因包含ALARM_TEMP，距离原因包含ALARM_DISTANCE，可同行或分行；不得报告不成立原因，其余状态文本不限。首次采样200ms内开始；设备故障恢复后继续真实测量。以上补充约定对各组相同。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持io_2为false(使dhtValidLatched为false)，周期性更新io_4为true并在io_3写入20.0到14.0(跨越15cm阈值)，同时推进io_7以覆盖多个距离变化和至少一个2s页面切换",
+        "oracle": "当且仅当io_4为true且io_3(经distLatched)严格<15.0时触发报警：io_6在报警期间按500ms响/500ms静间歇；serial_0_value_1仅在距离原因成立时为true，serial_0_value_0始终false；TM1637显示io_5在displayIsTemp=true时保持空白/0(初始温度无效)，在displayIsTemp切到距离页且io_4为true时显示距离整数"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "设计一个智能环境监测与报警系统，使用 DHT11 温湿度传感器（数据引脚 D7）、HC-SR04 超声波模块（Trig=D8，Echo=D9）、TM1637 数码管（CLK=D4，DIO=D5）和蜂鸣器（D6）。默认每 2 秒轮流显示温度和距离；当温度高于 32℃ 或距离小于 15cm 时，蜂鸣器间歇报警，并通过串口输出报警原因。\n验收约定：目标Uno，DHT11数据D7，HC-SR04 TRIG=D8/ECHO=D9，TM1637 CLK=D4/DIO=D5，无源蜂鸣器D6。DHT采样开始间隔2000..2200ms；距离采样开始间隔60..180ms，回波等待必须有25000us超时，有效范围2..400cm，距离=回波微秒/58。温度默认先显示，之后每2000ms交替显示温度和距离，显示整数且量化容差1，页面切换容差150ms；所选测量无效时空白，初始温度无效须空白。每次新读数到输出的响应容差200ms，DHT缓存期间保留最近读数；失败必须标为无效，不能阻塞其他设备或模型计时。仅有效温度严格>32℃或有效距离严格<15cm触发报警，先比较原始测量再取显示整数；任一原因成立立即开始1000Hz鸣叫，500ms响/500ms静，完整周期1000ms，边沿容差100ms；所有原因消失后200ms内静音。持续报警时原因变化不重启蜂鸣相位。串口115200：报警开始、原因变化后200ms内，以及持续报警每1000ms（容差200ms）报告所有当前成立原因。温度原因包含ALARM_TEMP，距离原因包含ALARM_DISTANCE，可同行或分行；不得报告不成立原因，其余状态文本不限。首次采样200ms内开始；设备故障恢复后继续真实测量。以上补充约定对各组相同。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "先让温度原因成立：将io_2=true写入io_0=33.0(保持dhtValidLatched为true)并保持io_4=true但io_3=20.0(不成立距离原因)；在持续报警期间，将io_0降到31.0同时保持io_2为true(温度原因消失)，再在后续步骤把io_3降到14.0并保持io_4为true(距离原因成立)；同时推进io_7覆盖至少一次相位区间与一次serial_0_trigger周期",
+        "oracle": "持续报警期间蜂鸣相位不重启(即当原因从仅ALARM_TEMP切换到仅ALARM_DISTANCE时，io_6的响/静相位延续而不是回到500ms起点)；serial_0_value_0和serial_0_value_1随原因变化互斥/组合反映当前成立集合，serial_0_trigger在原因变化后的200ms内出现且不报告未成立原因"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Real;\n    in attribute io_2 : Boolean;\n    in attribute io_3 : Real;\n    in attribute io_4 : Boolean;\n    in attribute io_7 : Integer;\n    attribute dhtValidLatched : Boolean := false;\n    attribute tempLatched : Real := 0.0;\n    attribute distLatched : Real := 0.0;\n    attribute alarmOn : Boolean := false;\n    attribute alarmPhaseMs : Integer := 0;\n    attribute prevAlarmOn : Boolean := false;\n    attribute lastReasonAny : Boolean := false;\n    attribute displaySwitchAccumMs : Integer := 0;\n    attribute displayIsTemp : Boolean := true;\n    attribute reportGateHoldMs : Integer := 0;\n    attribute reportEveryAccumMs : Integer := 0;\n    perform action tick {\n      first start;\n      then if io_2 {\n        first start;\n        then assign dhtValidLatched := true;\n        then assign tempLatched := io_0;\n      }\n      then if not io_2 {\n        first start;\n        then assign dhtValidLatched := false;\n      }\n      then if io_4 {\n        first start;\n        then assign distLatched := io_3;\n      }\n      then if not io_4 {\n        first start;\n        then assign distLatched := distLatched;\n      }\n      then assign displaySwitchAccumMs := displaySwitchAccumMs + io_7;\n      then if displaySwitchAccumMs >= 2000 {\n        first start;\n        then assign displaySwitchAccumMs := displaySwitchAccumMs - 2000;\n        then assign displayIsTemp := not displayIsTemp;\n      }\n      then assign alarmOn := ((dhtValidLatched and (tempLatched > 32.0)) or (io_4 and (distLatched < 15.0)));\n      then if alarmOn {\n        first start;\n        then if prevAlarmOn {\n          first start;\n          then assign alarmPhaseMs := alarmPhaseMs + io_7;\n        } else {\n          first start;\n          then assign alarmPhaseMs := 0;\n        }\n      } else {\n        first start;\n        then assign alarmPhaseMs := alarmPhaseMs;\n      }\n      then assign prevAlarmOn := alarmOn;\n      then assign lastReasonAny := alarmOn;\n      then if alarmOn {\n        first start;\n        then assign reportEveryAccumMs := reportEveryAccumMs + io_7;\n        then if reportEveryAccumMs >= 1000 {\n          first start;\n          then assign reportEveryAccumMs := reportEveryAccumMs - 1000;\n          then assign reportGateHoldMs := 200;\n        } else {\n          first start;\n          then assign reportGateHoldMs := reportGateHoldMs;\n        }\n      } else {\n        first start;\n        then assign reportEveryAccumMs := 0;\n        then assign reportGateHoldMs := 0;\n      }\n      then if reportGateHoldMs > 0 {\n        first start;\n        then assign reportGateHoldMs := reportGateHoldMs - io_7;\n      } else {\n        first start;\n        then assign reportGateHoldMs := reportGateHoldMs;\n      }\n    }\n    out attribute io_5 : Integer = (if displayIsTemp ? (if dhtValidLatched ? RealFunctions::floor(tempLatched) else 0) else (if io_4 ? RealFunctions::floor(distLatched) else 0));\n    out attribute io_6 : Integer = (if alarmOn ? (if alarmPhaseMs < 500 ? 1000 else 0) else 0);\n    out attribute serial_0_trigger : Boolean = (if alarmOn ? (if reportGateHoldMs > 0 ? true else false) else false);\n    out attribute serial_0_value_0 : Boolean = (if dhtValidLatched ? (if tempLatched > 32.0 ? true else false) else false);\n    out attribute serial_0_value_1 : Boolean = (if io_4 ? (if distLatched < 15.0 ? true else false) else false);\n  }\n  part system : Controller;\n}\n"
+}

@@ -1,0 +1,226 @@
+{
+  "contract_sha256": "f0b6f66383d77d5dddd2aa281849e9a76a1f5bc14babd365bd828a9878c5ad51",
+  "provenance": "program_assembled",
+  "interface_registry": {
+    "version": 1,
+    "ports": {
+      "io_0": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_1": {
+        "direction": "input",
+        "type": "f64"
+      },
+      "io_2": {
+        "direction": "output",
+        "type": "i32"
+      }
+    },
+    "serial_channels": []
+  },
+  "registered_relationships": "verified",
+  "functional_status": "unverified",
+  "attempts": [
+    {
+      "ok": false,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A3\",\n      \"initial\": 0,\n      \"meaning\": \"pot1 (tens-digit potentiometer) raw position 0..1023\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A4\",\n      \"initial\": 0,\n      \"meaning\": \"pot2 (units-digit potentiometer) raw position 0..1023\"\n    },\n    {\n      \"kind\": \"shift595_number\",\n      \"data_pin\": \"A0\",\n      \"clock_pin\": \"A2\",\n      \"latch_pin\": \"A1\",\n      \"initial\": 0,\n      \"meaning\": \"sevseg1 display number (sum of mapped pot1 and pot2 digits, wrapped to last digit)\"\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Wiring preserved as provided: pot1(SIG->A3), pot2(SIG->A4), shift register sr1 uses DS->A0, SHCP->A2, STCP->A1; 7-seg digit is driven via sr1/Q0..Q6 to sevseg1 A..G segments.\",\n    \"The 7-segment hardware is modeled using shift595_number for the WHOLE displayed digit (0..9). Tens/units digit selection and wrap-to-last-digit behavior belong in SysML model logic, not in port configuration.\",\n    \"Startup requirement (display '0') is satisfied by shift595_number initial=0. Sensor initial values are set to 0; model logic will continuously update display from analog inputs at runtime.\",\n    \"Mapping of pot analog values to digits 0..9 and summing+wrap (e.g., 12->2) are implemented in SysML business logic using the raw analog inputs.\",\n    \"No serial I/O requests were provided in the requirements, so serial_channels is empty.\",\n    \"No additional ports are created for SR1 OE/MR since the circuit ties MR and OE to GND and they are not available as separately controlled program-owned ports in this proposal.\"\n  ]\n}",
+      "error": "shift595_number requires 1..4 static single-digit registers; multiplexing is unsupported",
+      "no_progress": false,
+      "code": "CONTRACT_FORMAT",
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "field_diagnostics": []
+    },
+    {
+      "ok": true,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"version\": 1,\n  \"board\": \"arduino:avr:mega\",\n  \"control_period_ms\": 5,\n  \"interface_requests\": [\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A3\",\n      \"initial\": 0,\n      \"meaning\": \"pot1 (tens-digit potentiometer) raw position 0..1023\"\n    },\n    {\n      \"kind\": \"analog_input\",\n      \"pin\": \"A4\",\n      \"initial\": 0,\n      \"meaning\": \"pot2 (units-digit potentiometer) raw position 0..1023\"\n    },\n    {\n      \"kind\": \"shift595_number\",\n      \"clock_pin\": \"A2\",\n      \"data_pin\": \"A0\",\n      \"latch_pin\": \"A1\",\n      \"leading_zero\": false,\n      \"invalid_policy\": \"blank\",\n      \"initial\": 0,\n      \"meaning\": \"sevseg1 displayed single digit (mapped sum of pot1 and pot2 digits, wrapped to last digit 0..9)\",\n      \"registers\": [\n        {\n          \"register\": \"sr1\",\n          \"display\": \"sevseg1\",\n          \"digit\": 0,\n          \"segment_bits\": [\n            0,\n            1,\n            2,\n            3,\n            4,\n            5,\n            6\n          ],\n          \"active_low\": true\n        }\n      ]\n    }\n  ],\n  \"serial_channels\": [],\n  \"planning_notes\": [\n    \"Board and wiring preserved: mega:A3->pot1(SIG), mega:A4->pot2(SIG); shift register sr1 uses DS->A0, SHCP->A2, STCP->A1 and drives sevseg1 segments Q0..Q6 (A..G respectively) with active_low=true as provided.\",\n    \"Use shift595_number because the display is a static 7-segment digit driven by a 74HC595; multiplexing/two-digit control is not modeled by port objects.\",\n    \"Startup requirement 'display 0' is satisfied by shift595_number initial=0.\",\n    \"Continuous pot-driven update and the mapping of 0..1023 to 0..9, then summing and wrap-to-last-digit (sum%10) are implemented in the SysML model, not in port configuration.\",\n    \"No serial I/O requests were provided in the requirements; serial_channels is empty.\"\n  ]\n}",
+      "construction": [
+        "catalog_interfaces_and_serial_channels_assembled"
+      ],
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      }
+    }
+  ],
+  "configuration_resolution": {
+    "version": "configuration-defaults-v3",
+    "board": "arduino:avr:mega",
+    "original_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) using a shift register (sr1) and two slide potentiometers (pot1, pot2). The 7-segment display will show a number between 0 and 9, which is determined by the combined values of the two potentiometers. The first potentiometer (pot1) will control the tens digit, and the second potentiometer (pot2) will control the units digit. The displayed number will be the sum of the mapped values of the two potentiometers.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment display should show \"0\".\nPotentiometer Interaction:\n1. The first potentiometer (pot1) will control the first digit. Its value (0 to 1023) will be mapped to a range of 0 to 9.\n2. The second potentiometer (pot2) will control the second digit. Its value (0 to 1023) will also be mapped to a range of 0 to 9.\n3. The displayed number on the 7-segment display will be the sum of the mapped values of the two potentiometers.\n4. If the sum exceeds 9, the display should show the last digit of the sum (e.g., 12 → 2, 15 → 5).\n5. The display should update continuously based on the current values of the potentiometers.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+    "effective_requirement": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1) using a shift register (sr1) and two slide potentiometers (pot1, pot2). The 7-segment display will show a number between 0 and 9, which is determined by the combined values of the two potentiometers. The first potentiometer (pot1) will control the tens digit, and the second potentiometer (pot2) will control the units digit. The displayed number will be the sum of the mapped values of the two potentiometers.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment display should show \"0\".\nPotentiometer Interaction:\n1. The first potentiometer (pot1) will control the first digit. Its value (0 to 1023) will be mapped to a range of 0 to 9.\n2. The second potentiometer (pot2) will control the second digit. Its value (0 to 1023) will also be mapped to a range of 0 to 9.\n3. The displayed number on the 7-segment display will be the sum of the mapped values of the two potentiometers.\n4. If the sum exceeds 9, the display should show the last digit of the sum (e.g., 12 → 2, 15 → 5).\n5. The display should update continuously based on the current values of the potentiometers.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+    "pins": {},
+    "devices": [],
+    "changes": [],
+    "serial": null,
+    "resolved_circuits": [
+      {
+        "version": 1,
+        "author": "Anonymous maker",
+        "editor": "wokwi",
+        "parts": [
+          {
+            "type": "wokwi-arduino-mega",
+            "id": "mega",
+            "top": 0,
+            "left": 0,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-7segment",
+            "id": "sevseg1",
+            "top": -196.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-74hc595",
+            "id": "sr1",
+            "top": -87.6,
+            "left": 408.3,
+            "attrs": {}
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot1",
+            "top": -158,
+            "left": -178.4,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          },
+          {
+            "type": "wokwi-slide-potentiometer",
+            "id": "pot2",
+            "top": -158,
+            "left": -293.6,
+            "rotate": 270,
+            "attrs": {
+              "travelLength": "30"
+            }
+          }
+        ],
+        "connections": [
+          [
+            "mega:5V",
+            "sr1:VCC",
+            "red"
+          ],
+          [
+            "mega:A2",
+            "sr1:SHCP",
+            "gray"
+          ],
+          [
+            "mega:A1",
+            "sr1:STCP",
+            "purple"
+          ],
+          [
+            "mega:A0",
+            "sr1:DS",
+            "blue"
+          ],
+          [
+            "sr1:VCC",
+            "sr1:MR",
+            "red"
+          ],
+          [
+            "sr1:MR",
+            "sevseg1:COM.1",
+            "red"
+          ],
+          [
+            "sr1:Q1",
+            "sevseg1:B",
+            "green"
+          ],
+          [
+            "sr1:Q2",
+            "sevseg1:C",
+            "green"
+          ],
+          [
+            "sr1:Q3",
+            "sevseg1:D",
+            "green"
+          ],
+          [
+            "sr1:Q4",
+            "sevseg1:E",
+            "green"
+          ],
+          [
+            "mega:GND.3",
+            "sr1:GND",
+            "black"
+          ],
+          [
+            "sr1:GND",
+            "sr1:OE",
+            "black"
+          ],
+          [
+            "sr1:Q0",
+            "sevseg1:A",
+            "green"
+          ],
+          [
+            "sr1:Q5",
+            "sevseg1:F",
+            "green"
+          ],
+          [
+            "sr1:Q6",
+            "sevseg1:G",
+            "green"
+          ],
+          [
+            "pot1:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot1:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot1:SIG",
+            "mega:A3",
+            "black"
+          ],
+          [
+            "pot2:GND",
+            "mega:GND.1",
+            "black"
+          ],
+          [
+            "pot2:VCC",
+            "mega:5V",
+            "red"
+          ],
+          [
+            "pot2:SIG",
+            "mega:A4",
+            "black"
+          ]
+        ],
+        "dependencies": {}
+      }
+    ],
+    "circuit_preserved": true
+  }
+}

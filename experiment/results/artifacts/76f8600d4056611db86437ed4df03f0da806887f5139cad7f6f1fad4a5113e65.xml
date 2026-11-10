@@ -1,0 +1,86 @@
+<Root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.example.org/IRMetadata">
+  <Config>
+    <IterationCount Value="1" />
+    <MainInitFunction Name="ProgramPage1_Init" />
+    <MainExecFunction Name="ProgramPage1" />
+    <MainCompositeState Name="ProgramPage1_state" />
+  </Config>
+  <File Name="ProgramPage1">
+    <Struct Name="ProgramPage1_state" />
+    <GlobalVariable Name="ProgramPage1_instance" Type="ProgramPage1_state" />
+    <Function Name="ProgramPage1_Init" Type="FunctionInit" ReturnType="void">
+      <Ref Actor="CompositeActor" Path="ProgramPage1" />
+      <Input Name="self" Type="ProgramPage1_state" IsAddress="1" />
+      <Schedule>
+        <Calculate Name="ProgramPage1_reset">
+          <Ref Actor="CompositeActor" Path="ProgramPage1.reset" />
+          <Expression Expression="sysml_state_currentPositionDeg = 0" />
+          <Expression Expression="sysml_state_directionForward = true" />
+          <Expression Expression="sysml_state_moving = true" />
+          <Expression Expression="sysml_state_reportPending = true" />
+        </Calculate>
+      </Schedule>
+    </Function>
+    <GlobalVariable Name="sysml_state_currentPositionDeg" Type="int" DefaultValue="0" />
+    <GlobalVariable Name="sysml_state_directionForward" Type="bool" DefaultValue="true" />
+    <GlobalVariable Name="sysml_state_moving" Type="bool" DefaultValue="true" />
+    <GlobalVariable Name="sysml_state_reportPending" Type="bool" DefaultValue="true" />
+    <Function Name="ProgramPage1" Type="FunctionExec" ReturnType="void">
+      <Ref Actor="CompositeActor" Path="ProgramPage1" />
+      <Output Name="io_0" Type="double" />
+      <Output Name="serial_0_trigger" Type="bool" />
+      <Output Name="serial_0_value_0" Type="int" />
+      <Schedule>
+        <Calculate Name="ProgramPage1_body">
+          <Ref Actor="CompositeActor" Path="ProgramPage1.body" />
+          <Output Name="io_0" Type="double" />
+          <Output Name="serial_0_trigger" Type="bool" />
+          <Output Name="serial_0_value_0" Type="int" />
+          <LocalVariable Name="sysml_conditional_0" Type="int" />
+          <If Condition="sysml_state_moving">
+            <If Condition="sysml_state_directionForward">
+              <If Condition="(sysml_state_currentPositionDeg &lt; 180)">
+                <Expression Expression="sysml_state_currentPositionDeg = (sysml_state_currentPositionDeg + 1)" />
+              </If>
+              <Else>
+                <Expression Expression="sysml_state_moving = false" />
+                <Expression Expression="sysml_state_reportPending = true" />
+              </Else>
+            </If>
+            <Else>
+              <If Condition="(sysml_state_currentPositionDeg &gt; 0)">
+                <Expression Expression="sysml_state_currentPositionDeg = (sysml_state_currentPositionDeg - 1)" />
+              </If>
+              <Else>
+                <Expression Expression="sysml_state_moving = false" />
+                <Expression Expression="sysml_state_reportPending = true" />
+              </Else>
+            </Else>
+          </If>
+          <Else>
+            <If Condition="sysml_state_reportPending">
+              <Expression Expression="sysml_state_reportPending = false" />
+              <Expression Expression="sysml_state_directionForward = (!sysml_state_directionForward)" />
+              <Expression Expression="sysml_state_moving = true" />
+            </If>
+          </Else>
+          <LocalVariable Name="sysml_value_0" Type="double" />
+          <Expression Expression="sysml_value_0 = sysml_state_currentPositionDeg" />
+          <LocalVariable Name="sysml_value_1" Type="bool" />
+          <Expression Expression="sysml_value_1 = sysml_state_reportPending" />
+          <LocalVariable Name="sysml_value_2" Type="int" />
+          <If Condition="sysml_state_reportPending">
+            <Expression Expression="sysml_conditional_0 = sysml_state_currentPositionDeg" />
+          </If>
+          <Else>
+            <Expression Expression="sysml_conditional_0 = 0" />
+          </Else>
+          <Expression Expression="sysml_value_2 = sysml_conditional_0" />
+          <Expression Expression="*io_0 = sysml_value_0" />
+          <Expression Expression="*serial_0_trigger = sysml_value_1" />
+          <Expression Expression="*serial_0_value_0 = sysml_value_2" />
+        </Calculate>
+      </Schedule>
+    </Function>
+  </File>
+</Root>

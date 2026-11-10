@@ -1,0 +1,149 @@
+{
+  "horizon_ms": 8500,
+  "input_steps": [
+    {
+      "at_ms": 0,
+      "kind": "digital",
+      "pin": "2",
+      "value": 1
+    },
+    {
+      "at_ms": 2100,
+      "kind": "digital",
+      "pin": "2",
+      "value": 0
+    },
+    {
+      "at_ms": 2300,
+      "kind": "digital",
+      "pin": "2",
+      "value": 1
+    },
+    {
+      "at_ms": 4600,
+      "kind": "digital",
+      "pin": "2",
+      "value": 0
+    },
+    {
+      "at_ms": 4800,
+      "kind": "digital",
+      "pin": "2",
+      "value": 1
+    },
+    {
+      "at_ms": 7100,
+      "kind": "digital",
+      "pin": "2",
+      "value": 0
+    },
+    {
+      "at_ms": 7300,
+      "kind": "digital",
+      "pin": "2",
+      "value": 1
+    }
+  ],
+  "serial_inputs": [],
+  "ultrasonic": [],
+  "seven_segments": [],
+  "shift_registers": [
+    {
+      "data_pin": "A0",
+      "clock_pin": "A2",
+      "latch_pin": "A1",
+      "registers": 1,
+      "displays": [
+        {
+          "name": "sevseg1",
+          "register_index": 0,
+          "segment_bits": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "common_anode": true
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "native_1_0",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1), a push button (btn1), and a 10-segment LED bar graph (bargraph1). The 7-segment",
+      "name": "sevseg1",
+      "at_ms": 2500,
+      "expected": "1",
+      "numeric": true
+    },
+    {
+      "id": "native_2_1",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1), a push button (btn1), and a 10-segment LED bar graph (bargraph1). The 7-segment",
+      "name": "sevseg1",
+      "at_ms": 5000,
+      "expected": "9",
+      "numeric": true
+    },
+    {
+      "id": "native_3_2",
+      "kind": "display",
+      "requirement_quote": "**Task**:\nYou are tasked with programming an Arduino (uno) to control a 7-segment display (sevseg1), a push button (btn1), and a 10-segment LED bar graph (bargraph1). The 7-segment",
+      "name": "sevseg1",
+      "at_ms": 7500,
+      "expected": "0",
+      "numeric": true
+    }
+  ],
+  "reference_cpp": "#include <Arduino.h>\nconst int SHCP_PIN = A2;  \nconst int STCP_PIN = A1;  \nconst int DS_PIN = A0;    \nconst int BUTTON_PIN = 2; \nconst int BARGRAPH_PINS[] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12}; \nconst byte segmentCodes[] = {\n  0b11000000, \n  0b11111001, \n  0b10100100, \n  0b10110000, \n  0b10011001, \n  0b10010010, \n  0b10000010, \n  0b11111000, \n  0b10000000, \n  0b10010000, \n};\nint currentNumber = 0;\n\nvoid setup();\nvoid loop();\nvoid displayNumber(int number);\nvoid updateBargraph(int number);\nvoid setup() {\n  pinMode(SHCP_PIN, OUTPUT);\n  pinMode(STCP_PIN, OUTPUT);\n  pinMode(DS_PIN, OUTPUT);\n  pinMode(BUTTON_PIN, INPUT_PULLUP); \n  for (int i = 0; i < 10; i++) {\n    pinMode(BARGRAPH_PINS[i], OUTPUT);\n    digitalWrite(BARGRAPH_PINS[i], LOW); \n  }\n  displayNumber(currentNumber);\n  updateBargraph(currentNumber);\n}\nvoid loop() {\n  if (digitalRead(BUTTON_PIN) == LOW) {\n    delay(100); \n    if (digitalRead(BUTTON_PIN) == LOW) {\n      currentNumber++;\n      if (currentNumber > 9) {\n        currentNumber = 0;\n      }\n      displayNumber(currentNumber);\n      updateBargraph(currentNumber);\n      while (digitalRead(BUTTON_PIN) == LOW); \n    }\n  }\n}\nvoid displayNumber(int number) {\n  byte code = segmentCodes[number];\n  shiftOut(DS_PIN, SHCP_PIN, MSBFIRST, code);\n  digitalWrite(STCP_PIN, HIGH);\n  digitalWrite(STCP_PIN, LOW);\n}\nvoid updateBargraph(int number) {\n  for (int i = 0; i < 10; i++) {\n    digitalWrite(BARGRAPH_PINS[i], (i < number) ? HIGH : LOW);\n  }\n}",
+  "coverage": "partial",
+  "origin": "supplied_EmbedBench_descriptive_tests_and_original_reference",
+  "native_test_entries": [
+    "test1: {'time': 'after first button press', 'state': {'sevseg1': '1', 'bargraph1': '1 LED lit'}, 'description': 'After pressing the button once, the 7-segment display shows 1, and exactly 1 LED on the bar graph is lit.'}",
+    "test2: {'time': 'after 8 more button presses', 'state': {'sevseg1': '9', 'bargraph1': '9 LEDs lit'}, 'description': 'After pressing the button 8 more times (total 9 presses), the 7-segment display shows 9, and exactly 9 LEDs on the bar graph are lit.'}",
+    "test3: {'time': 'after one additional button press', 'state': {'sevseg1': '0', 'bargraph1': '0 LEDs lit'}, 'description': 'After pressing the button one more time (total 10 presses), the number exceeds 9 and resets to 0. The 7-segment display shows 0, and no LEDs on the bar graph are lit.'}"
+  ],
+  "skipped_conditions": [
+    {
+      "test": 0,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "1 LED lit"
+    },
+    {
+      "test": 1,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "9 LEDs lit"
+    },
+    {
+      "test": 2,
+      "part": "bargraph1",
+      "reason": "unrecognized_bargraph_state",
+      "value": "0 LEDs lit"
+    }
+  ],
+  "assumptions": [
+    "Convert numeric test time to milliseconds; apply changed controls 400ms before observation unless explicit hold duration exists.",
+    "Normalized potentiometer positions0..1 map to ADC0..1023.",
+    "Every inferred button press is released after200ms unless an explicit hold duration is supplied.",
+    "Reference preflight required; no claim that reference consistency proves all prose requirements."
+  ],
+  "electrical_led_pins": {
+    "3": 1,
+    "4": 1,
+    "5": 1,
+    "6": 1,
+    "7": 1,
+    "8": 1,
+    "9": 1,
+    "10": 1,
+    "11": 1,
+    "12": 1
+  }
+}

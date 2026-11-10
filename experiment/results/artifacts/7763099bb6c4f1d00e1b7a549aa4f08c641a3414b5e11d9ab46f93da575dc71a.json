@@ -1,0 +1,87 @@
+{
+  "validator_version": "2026-08 / 0.62.0",
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "openai/gpt-5.4-nano",
+      "response": "{\n  \"controller\": {\n    \"states\": [\n      {\n        \"name\": \"count\",\n        \"type\": \"i32\",\n        \"initial\": 0\n      },\n      {\n        \"name\": \"previousPressed\",\n        \"type\": \"bool\",\n        \"initial\": false\n      },\n      {\n        \"name\": \"pendingReport\",\n        \"type\": \"bool\",\n        \"initial\": false\n      }\n    ],\n    \"updates\": [\n      {\n        \"if\": {\n          \"and\": [\n            \"io_0\",\n            {\n              \"not\": \"previousPressed\"\n            }\n          ]\n        },\n        \"then\": [\n          {\n            \"assign\": \"count\",\n            \"value\": \"count + 1\"\n          },\n          {\n            \"assign\": \"pendingReport\",\n            \"value\": true\n          }\n        ],\n        \"else\": [\n          {\n            \"assign\": \"pendingReport\",\n            \"value\": false\n          }\n        ]\n      },\n      {\n        \"assign\": \"previousPressed\",\n        \"value\": \"io_0\"\n      }\n    ],\n    \"outputs\": {\n      \"serial_0_trigger\": \"pendingReport\",\n      \"serial_0_value_0\": \"count\"\n    }\n  },\n  \"req_test_map\": {\n    \"requirements_to_testpoints\": [\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D2 按钮进行计数，每按一次计数加 1，并通过串口输出当前计数值。\",\n        \"test_point_id\": \"T1\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Keep io_0=false initially for some steps. Then generate a single press as a rising edge of io_0 (false->true for one or more steps, then release true->false). Apply any values for io_1 (including 0 first delta) and hold io_2 constant (no commands).\",\n        \"oracle\": \"serial_0_trigger is false during non-press steps. On the control step where io_0 rises (press event), serial_0_trigger becomes true for exactly that step, and serial_0_value_0 equals the updated count value after increment.\"\n      },\n      {\n        \"requirement_id\": \"R1\",\n        \"requirement_text\": \"使用 D2 按钮进行计数，每按一次计数加 1，并通过串口输出当前计数值。\",\n        \"test_point_id\": \"T2\",\n        \"test_method\": \"trace\",\n        \"stimulus\": \"Generate two distinct presses with at least one release step between them (rising edges on io_0, with io_0 held true across each press then released to false). Keep io_2/io_2_valid as disabled (any values), and vary io_1 deltas arbitrarily (including non-zero).\",\n        \"oracle\": \"serial_0_trigger is true exactly on the two press-edge steps. serial_0_value_0 reports the incremented count each time: after first edge it is 1, after second edge it is 2; between edges serial_0_trigger is false.\"\n      }\n    ]\n  }\n}",
+      "issues": [],
+      "ok": true,
+      "completion": {
+        "finish_reason": "stop",
+        "refusal": null,
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "normalizations": [],
+      "generation_mode": "contract_assembly",
+      "rendered_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Integer;\n    in attribute io_2 : Integer;\n    in attribute io_2_valid : Boolean;\n    attribute count : Integer := 0;\n    attribute previousPressed : Boolean := false;\n    attribute pendingReport : Boolean := false;\n    perform action tick {\n      first start;\n      then if ((io_0) and ((not previousPressed))) {\n        first start;\n        then assign count := count + 1;\n        then assign pendingReport := true;\n      } else {\n        first start;\n        then assign pendingReport := false;\n      }\n      then assign previousPressed := io_0;\n    }\n    out attribute serial_0_trigger : Boolean = pendingReport;\n    out attribute serial_0_value_0 : Integer = count;\n  }\n  part system : Controller;\n}\n",
+      "stages": {
+        "sysml_generation": true,
+        "sysml_to_ir": true,
+        "ir_to_il": true
+      },
+      "focus_issues": [],
+      "coverage": {
+        "status": "structural_pass",
+        "issues": [],
+        "functional_status": "unverified",
+        "startup": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+        },
+        "pause": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+        },
+        "periodic": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+        },
+        "numeric": {
+          "status": "not_requested",
+          "checked": 0,
+          "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+        },
+        "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+      },
+      "diagnostic_fingerprint": [],
+      "no_progress": false,
+      "failed_obligation_keys": [],
+      "repeated_requirement": false,
+      "repair_locations": [],
+      "repair_example": null,
+      "failure_stage": null
+    }
+  ],
+  "coverage": {
+    "status": "structural_pass",
+    "issues": [],
+    "functional_status": "unverified",
+    "startup": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "First model step with all inputs at their contract initial values; not a hardware or full behavior proof."
+    },
+    "pause": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Press-edge pause output invariant on synthetic public stimuli; not complete period/resume verification."
+    },
+    "periodic": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Bounded public pulse, phase and pause/resume traces; no hardware or unbounded proof."
+    },
+    "numeric": {
+      "status": "not_requested",
+      "checked": 0,
+      "scope": "Public short-edge counter and sampled mapping/parity assertions only; no full hold timing or hardware proof."
+    },
+    "scope": "Interface, state/dependency coverage and requested public behavior assertions only. Full behavior requires independent tests."
+  }
+}

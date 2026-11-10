@@ -1,0 +1,129 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "servoAngleAccumMs",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "servoAngle1",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "servoAngle2",
+        "type": "f64",
+        "initial": 0.0
+      }
+    ],
+    "updates": [
+      {
+        "assign": "servoAngleAccumMs",
+        "value": "servoAngleAccumMs + io_8"
+      },
+      {
+        "if": "servoAngleAccumMs >= 2000",
+        "then": [
+          {
+            "assign": "servoAngleAccumMs",
+            "value": "servoAngleAccumMs - 2000"
+          },
+          {
+            "if": "servoAngle1 >= 180.0",
+            "then": [
+              {
+                "assign": "servoAngle1",
+                "value": 0.0
+              },
+              {
+                "assign": "servoAngle2",
+                "value": 0.0
+              }
+            ],
+            "else": [
+              {
+                "assign": "servoAngle1",
+                "value": "servoAngle1 + 30.0"
+              },
+              {
+                "assign": "servoAngle2",
+                "value": "servoAngle2 + 30.0"
+              }
+            ]
+          },
+          {
+            "if": "servoAngle1 >= 180.0",
+            "then": [
+              {
+                "assign": "servoAngle1",
+                "value": 0.0
+              },
+              {
+                "assign": "servoAngle2",
+                "value": 0.0
+              }
+            ],
+            "else": []
+          }
+        ],
+        "else": []
+      },
+      {
+        "if": "servoAngle1 == 0.0",
+        "then": [
+          {
+            "assign": "servoAngle2",
+            "value": 0.0
+          }
+        ],
+        "else": []
+      }
+    ],
+    "outputs": {
+      "io_0": "servoAngle1",
+      "io_1": "servoAngle2",
+      "io_2": {
+        "if": "servoAngle1 == 0.0 and servoAngle2 == 0.0",
+        "then": false,
+        "else": true
+      },
+      "io_3": false,
+      "io_4": false,
+      "io_5": {
+        "if": "servoAngle1 == 0.0 and servoAngle2 == 0.0",
+        "then": false,
+        "else": true
+      },
+      "io_6": false,
+      "io_7": true,
+      "io_9": {
+        "if": "((servoAngle1 + servoAngle2) / 2.0) >= 0.0 and ((servoAngle1 + servoAngle2) / 2.0) <= 90.0",
+        "then": true,
+        "else": false
+      },
+      "io_10": {
+        "if": "((servoAngle1 + servoAngle2) / 2.0) > 0.0 and ((servoAngle1 + servoAngle2) / 2.0) <= 180.0",
+        "then": true,
+        "else": false
+      },
+      "io_11": false,
+      "io_12": false,
+      "io_13": false,
+      "io_14": false
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to synchronize two servo motors (servo1, servo2), two RGB LEDs (rgb1, rgb2), and a 6-segment LED bar graph (bargraph1). The servos will rotate in fixed increments, while the RGB LEDs and bar graph dynamically reflect their positions.\n\n**Detail Rules**:\n1. **Initialization**: \n   - Both servos (servo1, servo2) start at 0°.\n   - Both RGB LEDs (rgb1, rgb2) remain off.\n   - The bar graph (bargraph1) shows no lit LEDs.\n\n2. **Servo Motion**:\n   - Every 2 seconds, both servos increment their angles by 30° simultaneously.\n   - After reaching 180°, both servos reset to 0° and repeat the cycle.\n\n3. **RGB LED Behavior**:\n   - rgb1 show red color.\n   - rgb2 show blue color.\n\n4. **Bar Graph Display**:\n   - The number of lit LEDs corresponds to the average angle of the servos. When the servos at [0°, 90°], the first RGB LED is lit. When at (90°, 180°], both RGB LEDs are lit.\n   - All LEDs reset when the servos return to 0°.\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb1\", \"top\": -130.4, \"left\": 39.5, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-rgb-led\", \"id\": \"rgb2\", \"top\": -130.4, \"left\": 97.1, \"attrs\": {\"common\": \"cathode\"}}, {\"type\": \"wokwi-servo\", \"id\": \"servo1\", \"left\": -201.6, \"top\": -11.6, \"attrs\": {}}, {\"type\": \"wokwi-servo\", \"id\": \"servo2\", \"left\": -201.6, \"top\": 79.4, \"attrs\": {}}, {\"type\": \"wokwi-led-bar-graph\", \"id\": \"bargraph1\", \"left\": 417.6, \"top\": -14.2, \"attrs\": {\"color\": \"lime\"}}], \"connections\": [[\"mega:GND.1\", \"rgb1:COM\", \"black\"], [\"mega:2\", \"rgb1:R\", \"red\"], [\"mega:3\", \"rgb1:G\", \"green\"], [\"mega:4\", \"rgb1:B\", \"blue\"], [\"mega:GND.1\", \"rgb2:COM\", \"black\"], [\"mega:5\", \"rgb2:R\", \"red\"], [\"mega:6\", \"rgb2:G\", \"green\"], [\"mega:7\", \"rgb2:B\", \"blue\"], [\"mega:8\", \"servo1:PWM\", \"orange\"], [\"mega:5V\", \"servo1:V+\", \"red\"], [\"mega:GND.1\", \"servo1:GND\", \"black\"], [\"mega:9\", \"servo2:PWM\", \"orange\"], [\"mega:5V\", \"servo2:V+\", \"red\"], [\"mega:GND.1\", \"servo2:GND\", \"black\"], [\"mega:10\", \"bargraph1:A1\", \"green\"], [\"mega:GND.1\", \"bargraph1:C1\", \"black\"], [\"mega:11\", \"bargraph1:A2\", \"green\"], [\"mega:GND.1\", \"bargraph1:C2\", \"black\"], [\"mega:12\", \"bargraph1:A3\", \"green\"], [\"mega:GND.1\", \"bargraph1:C3\", \"black\"], [\"mega:13\", \"bargraph1:A4\", \"green\"], [\"mega:GND.1\", \"bargraph1:C4\", \"black\"], [\"mega:44\", \"bargraph1:A5\", \"green\"], [\"mega:GND.1\", \"bargraph1:C5\", \"black\"], [\"mega:45\", \"bargraph1:A6\", \"green\"], [\"mega:GND.1\", \"bargraph1:C6\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "Drive io_8 with consecutive deltas that sum to 0ms, 2000ms, 4000ms, 6000ms, and 8000ms (e.g., one step per 2000ms); sample outputs after each accumulated 2000ms crossing.",
+        "oracle": "At 0ms: io_0=0.0, io_1=0.0, rgb outputs all false, and all bargraph segment outputs false. After each 2s increment: both servos increase by 30°; when the averaged angle is in [0°,90°] the first bar segment output is true and the second segment output is false; when in (90°,180°] the first two bar segments are true. When servos reach 180° they reset to 0° and all LED/bargraph outputs go off again."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_8 : Integer;\n    attribute servoAngleAccumMs : Integer := 0;\n    attribute servoAngle1 : Real := 0.0;\n    attribute servoAngle2 : Real := 0.0;\n    perform action tick {\n      first start;\n      then assign servoAngleAccumMs := servoAngleAccumMs + io_8;\n      then if servoAngleAccumMs >= 2000 {\n        first start;\n        then assign servoAngleAccumMs := servoAngleAccumMs - 2000;\n        then if servoAngle1 >= 180.0 {\n          first start;\n          then assign servoAngle1 := 0.0;\n          then assign servoAngle2 := 0.0;\n        } else {\n          first start;\n          then assign servoAngle1 := servoAngle1 + 30.0;\n          then assign servoAngle2 := servoAngle2 + 30.0;\n        }\n        then if servoAngle1 >= 180.0 {\n          first start;\n          then assign servoAngle1 := 0.0;\n          then assign servoAngle2 := 0.0;\n        }\n      }\n      then if servoAngle1 == 0.0 {\n        first start;\n        then assign servoAngle2 := 0.0;\n      }\n    }\n    out attribute io_0 : Real = servoAngle1;\n    out attribute io_1 : Real = servoAngle2;\n    out attribute io_2 : Boolean = (if servoAngle1 == 0.0 and servoAngle2 == 0.0 ? false else true);\n    out attribute io_3 : Boolean = false;\n    out attribute io_4 : Boolean = false;\n    out attribute io_5 : Boolean = (if servoAngle1 == 0.0 and servoAngle2 == 0.0 ? false else true);\n    out attribute io_6 : Boolean = false;\n    out attribute io_7 : Boolean = true;\n    out attribute io_9 : Boolean = (if ((servoAngle1 + servoAngle2) / 2.0) >= 0.0 and ((servoAngle1 + servoAngle2) / 2.0) <= 90.0 ? true else false);\n    out attribute io_10 : Boolean = (if ((servoAngle1 + servoAngle2) / 2.0) > 0.0 and ((servoAngle1 + servoAngle2) / 2.0) <= 180.0 ? true else false);\n    out attribute io_11 : Boolean = false;\n    out attribute io_12 : Boolean = false;\n    out attribute io_13 : Boolean = false;\n    out attribute io_14 : Boolean = false;\n  }\n  part system : Controller;\n}\n"
+}

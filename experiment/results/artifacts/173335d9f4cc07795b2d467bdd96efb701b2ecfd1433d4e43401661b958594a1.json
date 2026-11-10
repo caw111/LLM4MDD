@@ -1,0 +1,253 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "initialized",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "displayNumber",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousTensDigit",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousUnitsDigit",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "previousIncrementPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousDecrementPressed",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "incrementElapsed",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "decrementElapsed",
+        "type": "f64",
+        "initial": 0.0
+      },
+      {
+        "name": "incrementSteps",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "decrementSteps",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "calculations": [
+      {
+        "name": "sampledTensDigit",
+        "type": "i32",
+        "expression": "RealFunctions::floor(io_2 * 10.0 / 1024.0)"
+      },
+      {
+        "name": "sampledUnitsDigit",
+        "type": "i32",
+        "expression": "RealFunctions::floor(io_3 * 10.0 / 1024.0)"
+      },
+      {
+        "name": "incrementInterval",
+        "type": "f64",
+        "expression": "100.0 + io_2 * 900.0 / 1023.0"
+      },
+      {
+        "name": "decrementInterval",
+        "type": "f64",
+        "expression": "100.0 + io_3 * 900.0 / 1023.0"
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "not": "initialized"
+        },
+        "then": [
+          {
+            "assign": "displayNumber",
+            "value": "sampledTensDigit * 10 + sampledUnitsDigit"
+          },
+          {
+            "assign": "initialized",
+            "value": true
+          }
+        ],
+        "else": [
+          {
+            "if": {
+              "!=": [
+                "sampledTensDigit",
+                "previousTensDigit"
+              ]
+            },
+            "then": [
+              {
+                "assign": "displayNumber",
+                "value": "sampledTensDigit * 10 + (displayNumber - 10 * RealFunctions::floor(displayNumber / 10))"
+              }
+            ]
+          },
+          {
+            "if": {
+              "!=": [
+                "sampledUnitsDigit",
+                "previousUnitsDigit"
+              ]
+            },
+            "then": [
+              {
+                "assign": "displayNumber",
+                "value": "10 * RealFunctions::floor(displayNumber / 10) + sampledUnitsDigit"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "assign": "incrementSteps",
+        "value": 0
+      },
+      {
+        "assign": "decrementSteps",
+        "value": 0
+      },
+      {
+        "if": "io_0",
+        "then": [
+          {
+            "if": {
+              "not": "previousIncrementPressed"
+            },
+            "then": [
+              {
+                "assign": "incrementSteps",
+                "value": 1
+              },
+              {
+                "assign": "incrementElapsed",
+                "value": 0.0
+              }
+            ],
+            "else": [
+              {
+                "assign": "incrementElapsed",
+                "value": "incrementElapsed + io_5"
+              },
+              {
+                "assign": "incrementSteps",
+                "value": "RealFunctions::floor(incrementElapsed / incrementInterval)"
+              },
+              {
+                "assign": "incrementElapsed",
+                "value": "incrementElapsed - incrementSteps * incrementInterval"
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "incrementElapsed",
+            "value": 0.0
+          }
+        ]
+      },
+      {
+        "if": "io_1",
+        "then": [
+          {
+            "if": {
+              "not": "previousDecrementPressed"
+            },
+            "then": [
+              {
+                "assign": "decrementSteps",
+                "value": 1
+              },
+              {
+                "assign": "decrementElapsed",
+                "value": 0.0
+              }
+            ],
+            "else": [
+              {
+                "assign": "decrementElapsed",
+                "value": "decrementElapsed + io_5"
+              },
+              {
+                "assign": "decrementSteps",
+                "value": "RealFunctions::floor(decrementElapsed / decrementInterval)"
+              },
+              {
+                "assign": "decrementElapsed",
+                "value": "decrementElapsed - decrementSteps * decrementInterval"
+              }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "assign": "decrementElapsed",
+            "value": 0.0
+          }
+        ]
+      },
+      {
+        "assign": "displayNumber",
+        "value": "displayNumber + incrementSteps - decrementSteps"
+      },
+      {
+        "assign": "displayNumber",
+        "value": "displayNumber - 100 * RealFunctions::floor(displayNumber / 100)"
+      },
+      {
+        "assign": "previousTensDigit",
+        "value": "sampledTensDigit"
+      },
+      {
+        "assign": "previousUnitsDigit",
+        "value": "sampledUnitsDigit"
+      },
+      {
+        "assign": "previousIncrementPressed",
+        "value": "io_0"
+      },
+      {
+        "assign": "previousDecrementPressed",
+        "value": "io_1"
+      }
+    ],
+    "outputs": {
+      "io_4": "displayNumber"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "Target board is Arduino Mega 2560 as specified in the supplied circuit; use this board when the prose says UNO.\n\n\n**Task**:\nYou are tasked with programming an Arduino (uno) to control two 7-segment displays (sevseg1, sevseg2) using two shift registers (sr1, sr2). The displays will show a two-digit number that can be incremented or decremented using two push buttons (btn1, btn2). Additionally, two slide potentiometers (pot1, pot2) will control the speed at which the number increments or decrements when the buttons are held down. The potentiometers will also determine the initial value displayed on the 7-segment displays.\n\n**Detail Rules**:\nInitialization: Upon powering on or resetting, the 7-segment displays should show a two-digit number determined by the values of the potentiometers (pot1, pot2). The value of pot1 will determine the tens digit, and the value of pot2 will determine the units digit. The number should be between 00 and 99. The speed of of incrementing or decrementing the number when the buttons are held down is from 0.1 to 1.0 seconds, determined by the value of the potentiometers.\n\nButton Interaction:\n1. The first button (btn1) will increment the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to increment at a speed determined by the value of pot1.\n2. The second button (btn2) will decrement the displayed number by 1 each time it is pressed. If the button is held down, the number will continue to decrement at a speed determined by the value of pot2.\n3. If the number exceeds 99 after incrementing, it should reset to 00.\n4. If the number goes below 00 after decrementing, it should reset to 99.\nDisplay Update: The 7-segment displays should immediately update to reflect the new number after each button press or potentiometer adjustment.\n\n\nGiven circuit (must preserve wiring):\n{\"version\": 1, \"author\": \"Anonymous maker\", \"editor\": \"wokwi\", \"parts\": [{\"type\": \"wokwi-arduino-mega\", \"id\": \"mega\", \"top\": 0, \"left\": 0, \"attrs\": {}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn1\", \"top\": -195.4, \"left\": 19.2, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-pushbutton\", \"id\": \"btn2\", \"top\": -195.4, \"left\": 105.0, \"attrs\": {\"color\": \"green\"}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg1\", \"top\": -196.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr1\", \"top\": -87.6, \"left\": 408.3, \"attrs\": {}}, {\"type\": \"wokwi-7segment\", \"id\": \"sevseg2\", \"top\": -196.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-74hc595\", \"id\": \"sr2\", \"top\": -87.6, \"left\": 494.7, \"attrs\": {}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot1\", \"top\": -158, \"left\": -178.4, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}, {\"type\": \"wokwi-slide-potentiometer\", \"id\": \"pot2\", \"top\": -158, \"left\": -293.6, \"rotate\": 270, \"attrs\": {\"travelLength\": \"30\"}}], \"connections\": [[\"mega:GND.1\", \"btn1:2.r\", \"black\"], [\"mega:2\", \"btn1:1.l\", \"green\"], [\"mega:GND.1\", \"btn2:2.r\", \"black\"], [\"mega:3\", \"btn2:1.l\", \"green\"], [\"mega:5V\", \"sr1:VCC\", \"red\"], [\"mega:A2\", \"sr1:SHCP\", \"gray\"], [\"mega:A1\", \"sr1:STCP\", \"purple\"], [\"mega:A0\", \"sr1:DS\", \"blue\"], [\"sr1:VCC\", \"sr1:MR\", \"red\"], [\"sr1:MR\", \"sevseg1:COM.1\", \"red\"], [\"sr1:Q1\", \"sevseg1:B\", \"green\"], [\"sr1:Q2\", \"sevseg1:C\", \"green\"], [\"sr1:Q3\", \"sevseg1:D\", \"green\"], [\"sr1:Q4\", \"sevseg1:E\", \"green\"], [\"mega:GND.3\", \"sr1:GND\", \"black\"], [\"sr1:GND\", \"sr1:OE\", \"black\"], [\"sr1:Q0\", \"sevseg1:A\", \"green\"], [\"sr1:Q5\", \"sevseg1:F\", \"green\"], [\"sr1:Q6\", \"sevseg1:G\", \"green\"], [\"sr1:SHCP\", \"sr2:SHCP\", \"gray\"], [\"sr1:STCP\", \"sr2:STCP\", \"purple\"], [\"sr1:Q7S\", \"sr2:DS\", \"blue\"], [\"sr1:VCC\", \"sr2:MR\", \"red\"], [\"sr1:VCC\", \"sr2:VCC\", \"red\"], [\"sr1:OE\", \"sr2:OE\", \"black\"], [\"sevseg1:COM.1\", \"sevseg2:COM.1\", \"red\"], [\"sr2:Q0\", \"sevseg2:A\", \"green\"], [\"sr2:Q1\", \"sevseg2:B\", \"green\"], [\"sr2:Q2\", \"sevseg2:C\", \"green\"], [\"sr2:Q3\", \"sevseg2:D\", \"green\"], [\"sr2:Q4\", \"sevseg2:E\", \"green\"], [\"sr2:Q5\", \"sevseg2:F\", \"green\"], [\"sr2:Q6\", \"sevseg2:G\", \"green\"], [\"sr1:GND\", \"sr2:GND\", \"black\"], [\"pot1:GND\", \"mega:GND.1\", \"black\"], [\"pot1:VCC\", \"mega:5V\", \"red\"], [\"pot1:SIG\", \"mega:A3\", \"black\"], [\"pot2:GND\", \"mega:GND.1\", \"black\"], [\"pot2:VCC\", \"mega:5V\", \"red\"], [\"pot2:SIG\", \"mega:A4\", \"black\"]], \"dependencies\": {}}",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "On the circuit-preserved Mega target, restart with io_5=0 and representative io_2/io_3 pairs including 0/0, 512/1023 and 1023/1023. Exercise separate rising button edges and releases, including 99 incrementing and 00 decrementing. Hold each button with its potentiometer at 0, 1023 and intermediate ADC readings; supply actual deltas just below, at and beyond repeat boundaries, including deltas spanning several intervals. Release and repress. Change each potentiometer across a mapped-digit boundary and within a mapped digit. Press both buttons simultaneously.",
+        "oracle": "Startup io_4 equals 10*floor(io_2*10/1024)+floor(io_3*10/1024), giving 00, 59 and 99 for the stated pairs. Each sampled rising edge acts immediately once; held buttons repeat independently at 100+900*ADC/1023 milliseconds, retaining fractional elapsed residuals and accounting for multiple elapsed intervals. Releases clear the corresponding repeat phase. Increment wraps 99 to 00; decrement wraps 00 to 99. A mapped potentiometer digit change replaces only its corresponding displayed digit before button processing; all ADC changes immediately affect its repeat interval. Simultaneous increment/decrement contributions combine algebraically modulo 100. io_4 always remains in 0..99, and the frozen adapter displays both digits with leading zero on the preserved shift-register wiring."
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Boolean;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Real;\n    in attribute io_3 : Real;\n    in attribute io_5 : Integer;\n    attribute initialized : Boolean := false;\n    attribute displayNumber : Integer := 0;\n    attribute previousTensDigit : Integer := 0;\n    attribute previousUnitsDigit : Integer := 0;\n    attribute previousIncrementPressed : Boolean := false;\n    attribute previousDecrementPressed : Boolean := false;\n    attribute incrementElapsed : Real := 0.0;\n    attribute decrementElapsed : Real := 0.0;\n    attribute incrementSteps : Integer := 0;\n    attribute decrementSteps : Integer := 0;\n    attribute sampledTensDigit : Integer = RealFunctions::floor(io_2 * 10.0 / 1024.0);\n    attribute sampledUnitsDigit : Integer = RealFunctions::floor(io_3 * 10.0 / 1024.0);\n    attribute incrementInterval : Real = 100.0 + io_2 * 900.0 / 1023.0;\n    attribute decrementInterval : Real = 100.0 + io_3 * 900.0 / 1023.0;\n    perform action tick {\n      first start;\n      then if (not initialized) {\n        first start;\n        then assign displayNumber := sampledTensDigit * 10 + sampledUnitsDigit;\n        then assign initialized := true;\n      } else {\n        first start;\n        then if ((sampledTensDigit) != (previousTensDigit)) {\n          first start;\n          then assign displayNumber := sampledTensDigit * 10 + (displayNumber - 10 * RealFunctions::floor(displayNumber / 10));\n        }\n        then if ((sampledUnitsDigit) != (previousUnitsDigit)) {\n          first start;\n          then assign displayNumber := 10 * RealFunctions::floor(displayNumber / 10) + sampledUnitsDigit;\n        }\n      }\n      then assign incrementSteps := 0;\n      then assign decrementSteps := 0;\n      then if io_0 {\n        first start;\n        then if (not previousIncrementPressed) {\n          first start;\n          then assign incrementSteps := 1;\n          then assign incrementElapsed := 0.0;\n        } else {\n          first start;\n          then assign incrementElapsed := incrementElapsed + io_5;\n          then assign incrementSteps := RealFunctions::floor(incrementElapsed / incrementInterval);\n          then assign incrementElapsed := incrementElapsed - incrementSteps * incrementInterval;\n        }\n      } else {\n        first start;\n        then assign incrementElapsed := 0.0;\n      }\n      then if io_1 {\n        first start;\n        then if (not previousDecrementPressed) {\n          first start;\n          then assign decrementSteps := 1;\n          then assign decrementElapsed := 0.0;\n        } else {\n          first start;\n          then assign decrementElapsed := decrementElapsed + io_5;\n          then assign decrementSteps := RealFunctions::floor(decrementElapsed / decrementInterval);\n          then assign decrementElapsed := decrementElapsed - decrementSteps * decrementInterval;\n        }\n      } else {\n        first start;\n        then assign decrementElapsed := 0.0;\n      }\n      then assign displayNumber := displayNumber + incrementSteps - decrementSteps;\n      then assign displayNumber := displayNumber - 100 * RealFunctions::floor(displayNumber / 100);\n      then assign previousTensDigit := sampledTensDigit;\n      then assign previousUnitsDigit := sampledUnitsDigit;\n      then assign previousIncrementPressed := io_0;\n      then assign previousDecrementPressed := io_1;\n    }\n    out attribute io_4 : Integer = displayNumber;\n  }\n  part system : Controller;\n}\n"
+}

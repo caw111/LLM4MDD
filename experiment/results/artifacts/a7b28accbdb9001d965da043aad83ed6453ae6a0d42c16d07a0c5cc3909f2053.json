@@ -1,0 +1,283 @@
+{
+  "controller": {
+    "states": [
+      {
+        "name": "previousDoor",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "previousTempAbnormal",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "abnormalCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "vibrationCount",
+        "type": "i32",
+        "initial": 0
+      },
+      {
+        "name": "displayModeTemperature",
+        "type": "bool",
+        "initial": true
+      },
+      {
+        "name": "serialGatePending",
+        "type": "bool",
+        "initial": false
+      },
+      {
+        "name": "serialPosition",
+        "type": "i32",
+        "initial": 0
+      }
+    ],
+    "updates": [
+      {
+        "if": {
+          "and": [
+            "io_6_valid",
+            "serialGatePending"
+          ]
+        },
+        "then": [
+          {
+            "assign": "serialPosition",
+            "value": "io_6"
+          },
+          {
+            "assign": "serialGatePending",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">": [
+                "io_0",
+                30.0
+              ]
+            },
+            {
+              "not": "previousTempAbnormal"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "abnormalCount",
+            "value": "abnormalCount + 1"
+          },
+          {
+            "assign": "serialGatePending",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              "and": [
+                "io_2",
+                {
+                  "not": "previousDoor"
+                }
+              ]
+            },
+            {
+              "==": [
+                "displayModeTemperature",
+                true
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "abnormalCount",
+            "value": "abnormalCount + 1"
+          },
+          {
+            "assign": "serialGatePending",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_2",
+            {
+              "not": "previousDoor"
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "abnormalCount",
+            "value": "abnormalCount + 1"
+          },
+          {
+            "assign": "serialGatePending",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "==": [
+                "displayModeTemperature",
+                true
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "vibrationCount",
+            "value": "vibrationCount + 1"
+          },
+          {
+            "assign": "displayModeTemperature",
+            "value": false
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            "io_1",
+            {
+              "==": [
+                "displayModeTemperature",
+                false
+              ]
+            }
+          ]
+        },
+        "then": [
+          {
+            "assign": "vibrationCount",
+            "value": "vibrationCount + 1"
+          },
+          {
+            "assign": "displayModeTemperature",
+            "value": true
+          }
+        ]
+      },
+      {
+        "if": {
+          "and": [
+            {
+              ">": [
+                "io_0",
+                30.0
+              ]
+            },
+            "io_2"
+          ]
+        },
+        "then": [
+          {
+            "assign": "serialGatePending",
+            "value": true
+          }
+        ]
+      },
+      {
+        "assign": "previousDoor",
+        "value": "io_2"
+      },
+      {
+        "assign": "previousTempAbnormal",
+        "value": {
+          ">": [
+            "io_0",
+            30.0
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "io_3": {
+        "if": "displayModeTemperature",
+        "then": "RealFunctions::floor(io_0)",
+        "else": "abnormalCount"
+      },
+      "io_4": {
+        "if": {
+          "or": [
+            {
+              ">": [
+                "io_0",
+                30.0
+              ]
+            },
+            "io_2"
+          ]
+        },
+        "then": 1000,
+        "else": 0
+      },
+      "io_5": {
+        "if": {
+          "or": [
+            {
+              ">": [
+                "io_0",
+                30.0
+              ]
+            },
+            "io_2"
+          ]
+        },
+        "then": true,
+        "else": false
+      },
+      "serial_0_trigger": "serialGatePending",
+      "serial_0_value_0": "io_0",
+      "serial_0_value_1": "abnormalCount"
+    }
+  },
+  "req_test_map": {
+    "requirements_to_testpoints": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。",
+        "test_point_id": "T1",
+        "test_method": "trace",
+        "stimulus": "将io_0逐步提高并让其在某控制步首次变为>30.0，期间io_2保持false；同时在同一控制步或紧邻控制步提供io_6_valid=true且io_6为某位置值。",
+        "oracle": "该控制步之后io_5为true且io_4为1000；serial_0_trigger在串口有效位置就绪时为true，serial_0_value_0等于触发时io_0，serial_0_value_1递增后的abnormalCount包含本次温度异常次数。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。",
+        "test_point_id": "T2",
+        "test_method": "trace",
+        "stimulus": "保持io_0<=30.0，先使io_2从false变为true（开箱事件边沿）；同时在同一控制步或紧邻控制步提供io_6_valid=true且io_6为某位置值。",
+        "oracle": "发生开箱边沿后io_5为true且io_4为1000；serial_0_trigger在位置有效时为true，serial_0_value_0等于该步io_0，serial_0_value_1递增后的abnormalCount包含本次开箱事件次数。"
+      },
+      {
+        "requirement_id": "R1",
+        "requirement_text": "实现一个药品冷链运输箱监测系统，使用温度传感器 LM35（A1）、震动传感器 D2、门磁 D3、GPS 模拟数据通过串口输入、TM1637（CLK=D4，DIO=D5）、蜂鸣器 D6 和 LED D13。系统记录温度异常、开箱事件和剧烈震动次数，轮流显示当前温度和异常计数；一旦温度超过上限或运输过程中开箱，则立即报警并串口输出带位置的事件日志。",
+        "test_point_id": "T3",
+        "test_method": "trace",
+        "stimulus": "在io_0<=30.0且io_2=false条件下，施加多次io_1=true脉冲（不让报警条件成立），并在若干控制步间交替提供io_1触发使displayModeTemperature在temperature/abnormal-count之间切换；不提供温度异常/开箱。",
+        "oracle": "报警输出io_5保持false且io_4保持0；io_3在轮流模式下依次显示RealFunctions::floor(io_0)与abnormalCount（由此前温度异常/开箱累计的值）之间切换。"
+      }
+    ]
+  },
+  "system_sysml2": "package GeneratedModel {\n  private import ScalarValues::*;\n  part def Controller {\n    in attribute io_0 : Real;\n    in attribute io_1 : Boolean;\n    in attribute io_2 : Boolean;\n    in attribute io_6 : Integer;\n    in attribute io_6_valid : Boolean;\n    attribute previousDoor : Boolean := false;\n    attribute previousTempAbnormal : Boolean := false;\n    attribute abnormalCount : Integer := 0;\n    attribute vibrationCount : Integer := 0;\n    attribute displayModeTemperature : Boolean := true;\n    attribute serialGatePending : Boolean := false;\n    attribute serialPosition : Integer := 0;\n    perform action tick {\n      first start;\n      then if ((io_6_valid) and (serialGatePending)) {\n        first start;\n        then assign serialPosition := io_6;\n        then assign serialGatePending := false;\n      }\n      then if ((((io_0) > (30.0))) and ((not previousTempAbnormal))) {\n        first start;\n        then assign abnormalCount := abnormalCount + 1;\n        then assign serialGatePending := true;\n      }\n      then if ((((io_2) and ((not previousDoor)))) and (((displayModeTemperature) == (true)))) {\n        first start;\n        then assign abnormalCount := abnormalCount + 1;\n        then assign serialGatePending := true;\n      }\n      then if ((io_2) and ((not previousDoor))) {\n        first start;\n        then assign abnormalCount := abnormalCount + 1;\n        then assign serialGatePending := true;\n      }\n      then if ((io_1) and (((displayModeTemperature) == (true)))) {\n        first start;\n        then assign vibrationCount := vibrationCount + 1;\n        then assign displayModeTemperature := false;\n      }\n      then if ((io_1) and (((displayModeTemperature) == (false)))) {\n        first start;\n        then assign vibrationCount := vibrationCount + 1;\n        then assign displayModeTemperature := true;\n      }\n      then if ((((io_0) > (30.0))) and (io_2)) {\n        first start;\n        then assign serialGatePending := true;\n      }\n      then assign previousDoor := io_2;\n      then assign previousTempAbnormal := ((io_0) > (30.0));\n    }\n    out attribute io_3 : Integer = (if displayModeTemperature ? RealFunctions::floor(io_0) else abnormalCount);\n    out attribute io_4 : Integer = (if ((((io_0) > (30.0))) or (io_2)) ? 1000 else 0);\n    out attribute io_5 : Boolean = (if ((((io_0) > (30.0))) or (io_2)) ? true else false);\n    out attribute serial_0_trigger : Boolean = serialGatePending;\n    out attribute serial_0_value_0 : Real = io_0;\n    out attribute serial_0_value_1 : Integer = abnormalCount;\n  }\n  part system : Controller;\n}\n"
+}

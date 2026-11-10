@@ -1,0 +1,311 @@
+{
+  "version": 2,
+  "name": "Controller",
+  "page": "ProgramPage1",
+  "inputs": [
+    {
+      "name": "io_0",
+      "type": "bool"
+    },
+    {
+      "name": "io_1",
+      "type": "bool"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "io_2",
+      "type": "f64"
+    },
+    {
+      "name": "io_3",
+      "type": "bool"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compute_io_2",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "f64"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "f64"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    },
+    {
+      "id": "compute_io_3",
+      "type": "Expression",
+      "inports": [
+        {
+          "name": "arg0",
+          "type": "bool"
+        }
+      ],
+      "outports": [
+        {
+          "name": "result",
+          "type": "bool"
+        }
+      ],
+      "params": {
+        "Expression": "arg0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": {
+        "kind": "state",
+        "name": "servoAngle"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_2",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_2"
+      }
+    },
+    {
+      "src": {
+        "kind": "state",
+        "name": "ledOn"
+      },
+      "dst": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "arg0"
+      }
+    },
+    {
+      "src": {
+        "kind": "node",
+        "id": "compute_io_3",
+        "port": "result"
+      },
+      "dst": {
+        "kind": "output",
+        "name": "io_3"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "servoAngle",
+      "type": "f64",
+      "initial": "90.0"
+    },
+    {
+      "name": "ledOn",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "previousBtn1",
+      "type": "bool",
+      "initial": "true"
+    },
+    {
+      "name": "previousBtn2",
+      "type": "bool",
+      "initial": "true"
+    },
+    {
+      "name": "moving",
+      "type": "bool",
+      "initial": "false"
+    },
+    {
+      "name": "remainingMoveMs",
+      "type": "i32",
+      "initial": "0"
+    }
+  ],
+  "updates": [
+    {
+      "kind": "sequence",
+      "steps": [
+        {
+          "kind": "if",
+          "condition": "(arg0 && (arg1 <= 0))",
+          "sources": [
+            {
+              "kind": "state",
+              "name": "moving"
+            },
+            {
+              "kind": "state",
+              "name": "remainingMoveMs"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "moving",
+                "expression": "false",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "ledOn",
+                "expression": "false",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(((arg0 && (!arg1)) && (arg2 >= 0.0)) && (arg2 < 180.0))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            },
+            {
+              "kind": "state",
+              "name": "previousBtn1"
+            },
+            {
+              "kind": "state",
+              "name": "servoAngle"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "servoAngle",
+                "expression": "(((arg0 + 30.0) >= 180.0) ? 180.0 : (arg0 + 30.0))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "servoAngle"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "moving",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "remainingMoveMs",
+                "expression": "2000",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "ledOn",
+                "expression": "true",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "if",
+          "condition": "(((arg0 && (!arg1)) && (arg2 > 0.0)) && (arg2 <= 180.0))",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            },
+            {
+              "kind": "state",
+              "name": "previousBtn2"
+            },
+            {
+              "kind": "state",
+              "name": "servoAngle"
+            }
+          ],
+          "then": {
+            "kind": "sequence",
+            "steps": [
+              {
+                "kind": "assign",
+                "state": "servoAngle",
+                "expression": "(((arg0 - 30.0) <= 0.0) ? 0.0 : (arg0 - 30.0))",
+                "sources": [
+                  {
+                    "kind": "state",
+                    "name": "servoAngle"
+                  }
+                ]
+              },
+              {
+                "kind": "assign",
+                "state": "moving",
+                "expression": "true",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "remainingMoveMs",
+                "expression": "2000",
+                "sources": []
+              },
+              {
+                "kind": "assign",
+                "state": "ledOn",
+                "expression": "true",
+                "sources": []
+              }
+            ]
+          },
+          "else": null
+        },
+        {
+          "kind": "assign",
+          "state": "previousBtn1",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_0"
+            }
+          ]
+        },
+        {
+          "kind": "assign",
+          "state": "previousBtn2",
+          "expression": "arg0",
+          "sources": [
+            {
+              "kind": "input",
+              "name": "io_1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "execution": "step-actions-then-outputs"
+}
